@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build / cache
+.turbo/
+dist/
+.next/
+.vercel/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Python (verification-parser)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Env
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Test / browser artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# OS
+.DS_Store
+
+# Experiment / local run outputs
+experiments/**/output/
+scripts/experiments/**/output/
+internal/*.json
+internal/**/*.tgz

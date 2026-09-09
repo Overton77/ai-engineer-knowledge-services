@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "verificationContractVersion": {
+      "type": "string",
+      "const": "verification.v1"
+    },
+    "tenantId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "operationId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "requestDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "resultArtifact": {
+      "type": "object",
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "artifactId",
+        "digest"
+      ],
+      "additionalProperties": false
+    },
+    "sealedRun": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "manifestDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "manifestArtifact": {
+          "type": "object",
+          "properties": {
+            "artifactId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifactId",
+            "digest"
+          ],
+          "additionalProperties": false
+        },
+        "policyOutcome": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "pass_with_warnings",
+            "review",
+            "abstain",
+            "fail"
+          ]
+        },
+        "policy": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "availability": {
+                  "type": "string",
+                  "const": "verified"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "pass",
+                    "pass_with_warnings",
+                    "review",
+                    "abstain",
+                    "fail"
+                  ]
+                },
+                "reasonCodes": {
+                  "maxItems": 64,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "MECHANICAL_ASSERTION_FAILURE",
+                      "MECHANICAL_BUNDLE_FAILURE",
+                      "MECHANICAL_METRIC_FAILURE",
+                      "SEMANTIC_HARD_FAILURE",
+                      "SEMANTIC_DISPOSITION_FAIL",
+                      "SEMANTIC_DISPOSITION_ABSTAIN",
+                      "SEMANTIC_REVIEW_REQUIRED",
+                      "SEMANTIC_SUPPORT_NOT_FULL",
+                      "UNKNOWN_CRITICAL_FACTS",
+                      "MIXED_OR_CONFLICTING_EVIDENCE",
+                      "SOURCE_AUTHORITY_WITHHELD",
+                      "CROSS_FAMILY_SECOND_JUDGE_MISSING",
+                      "QUALIFIED_OR_PARTIAL_SUPPORT"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "availability",
+                "outcome",
+                "reasonCodes"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "availability": {
+                  "type": "string",
+                  "const": "unavailable"
+                }
+              },
+              "required": [
+                "availability"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "runId",
+        "manifestDigest",
+        "manifestArtifact",
+        "policyOutcome",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "useCase": {
+      "type": "string",
+      "const": "verifyReport"
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "const": "deterministic_only"
+        },
+        "deterministic": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "passed",
+                "failed",
+                "review_required"
+              ]
+            },
+            "semanticEligibility": {
+              "type": "boolean"
+            },
+            "capturesTotal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "capturesPassed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "assertionsTotal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "assertionsPassed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "metricsTotal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "metricsPassed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "failedCheckCodes": {
+              "maxItems": 1024,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "reviewReasons": {
+              "maxItems": 1024,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          },
+          "required": [
+            "status",
+            "semanticEligibility",
+            "capturesTotal",
+            "capturesPassed",
+            "assertionsTotal",
+            "assertionsPassed",
+            "metricsTotal",
+            "metricsPassed",
+            "failedCheckCodes",
+            "reviewReasons"
+          ],
+          "additionalProperties": false
+        },
+        "assertionsArtifact": {
+          "type": "object",
+          "properties": {
+            "artifactId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifactId",
+            "digest"
+          ],
+          "additionalProperties": false
+        },
+        "reportArtifact": {
+          "type": "object",
+          "properties": {
+            "artifactId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifactId",
+            "digest"
+          ],
+          "additionalProperties": false
+        },
+        "claimLedgerArtifact": {
+          "type": "object",
+          "properties": {
+            "artifactId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifactId",
+            "digest"
+          ],
+          "additionalProperties": false
+        },
+        "reportWide": {
+          "type": "object",
+          "properties": {
+            "claimWeightedCitationCompleteness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "citationCorrectness": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "validPointerConditionalCitationCorrectness": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "pointerFailureCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "misplacedCitationCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "duplicateAssertionGroupCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "conflictAssertionGroupCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "missingQualifierCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "consistencyMismatchGroupCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "crossSectionMismatchCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "independentSourceFamilyCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "distinctSourceFamilyCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unsupportedHighSeverityCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "claimWeightedCitationCompleteness",
+            "citationCorrectness",
+            "validPointerConditionalCitationCorrectness",
+            "pointerFailureCount",
+            "misplacedCitationCount",
+            "duplicateAssertionGroupCount",
+            "conflictAssertionGroupCount",
+            "missingQualifierCount",
+            "consistencyMismatchGroupCount",
+            "crossSectionMismatchCount",
+            "independentSourceFamilyCount",
+            "distinctSourceFamilyCount",
+            "unsupportedHighSeverityCount"
+          ],
+          "additionalProperties": false
+        },
+        "coverageScope": {
+          "type": "string",
+          "const": "producer_declared_assertions_only"
+        },
+        "reportGateArtifact": {
+          "type": "object",
+          "properties": {
+            "artifactId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "artifactId",
+            "digest"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mode",
+        "deterministic",
+        "assertionsArtifact",
+        "reportArtifact",
+        "claimLedgerArtifact",
+        "reportWide",
+        "coverageScope",
+        "reportGateArtifact"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "verificationContractVersion",
+    "tenantId",
+    "operationId",
+    "requestDigest",
+    "resultArtifact",
+    "sealedRun",
+    "useCase",
+    "output"
+  ],
+  "additionalProperties": false
+}

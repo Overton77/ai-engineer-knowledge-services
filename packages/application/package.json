@@ -1,0 +1,40 @@
+{
+  "name": "@aiengineer/knowledge-application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm && tsc --emitDeclarationOnly --rootDir src --outDir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aiengineer/knowledge-acquisition": "workspace:*",
+    "@aiengineer/knowledge-chunking": "workspace:*",
+    "@aiengineer/knowledge-contracts": "workspace:*",
+    "@aiengineer/knowledge-conversion": "workspace:*",
+    "@aiengineer/knowledge-documents": "workspace:*",
+    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-embeddings": "workspace:*",
+    "@aiengineer/knowledge-evaluation": "workspace:*",
+    "@aiengineer/knowledge-projections": "workspace:*",
+    "@aiengineer/knowledge-policy": "workspace:*",
+    "@aiengineer/knowledge-retrieval": "workspace:*",
+    "@aiengineer/knowledge-runtime": "workspace:*",
+    "@aiengineer/knowledge-verification": "workspace:*",
+    "@aiengineer/knowledge-vector-backends": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@aiengineer/knowledge-testkit": "workspace:*",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

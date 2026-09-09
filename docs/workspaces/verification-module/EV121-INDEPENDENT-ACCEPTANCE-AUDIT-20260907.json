@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "ev121-independent-acceptance-audit.v1",
+  "status": "bounded_candidate_verified",
+  "mode": "read_only_retained_evidence_review",
+  "evidence": {
+    "claimsDashboard": {
+      "path": "internal/verification-dashboard-native-567e30c2-1f5f-4547-a342-091df097ffec.json",
+      "sha256": "e6a4316b0d41f9a2e8acfd617fdd02ef22562dc0ed6aedc9ea3fa56564589e68",
+      "operationId": "520ff8e8-66dd-57bc-a1ff-49f2fdd930a3"
+    },
+    "reportDashboard": {
+      "path": "internal/verification-dashboard-native-d4f2d62b-3796-4a87-b9fe-4b5f3ab69bbf.json",
+      "sha256": "c56467d16574c1a63838dcecd5e2b1d3e732eddc5bac94a34c3869d5702622db",
+      "operationId": "1f87cb61-e6ef-59d7-a22d-c6195d8f9d19"
+    },
+    "ks": {
+      "path": "internal/verification-semantic-mission-control-5a6f7f5f-76a8-44f9-b2d3-cf2daa41ffb3.json",
+      "sha256": "f3daaf655282b5b40a62cdb5f33e95182fa275b47e676b6fc9c9d2970b231ad9"
+    },
+    "wrapper": {
+      "path": "internal/verification-semantic-mission-isolated-f271accc-fd94-4eb1-8170-7ac5b808d332.json",
+      "sha256": "a4ef5392ed61503a2b49c0a455c262225043c0d6c4b668150ec5d51da49a7d8e"
+    }
+  },
+  "checks": {
+    "historyHashesRecomputed": true,
+    "completedOperationIdentitiesCorrelated": true,
+    "duplicateUiResponsePathRecorded": true,
+    "twoSettledNativeAttemptsReviewed": true,
+    "captureObservationBindingsReviewed": true,
+    "wrapperCleanupRecorded": true
+  },
+  "costMicros": {
+    "claims": 363,
+    "report": 325,
+    "unknownCostLiability": false,
+    "finalReservedMicros": 0
+  },
+  "limitations": [
+    "no independent runtime re-execution",
+    "no direct post-cleanup database query",
+    "no CAS or signature audit",
+    "not full dashboard or Mission Control acceptance"
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "verification-report-result.v1"
+    },
+    "coverageScope": {
+      "type": "string",
+      "const": "producer_declared_assertions_only"
+    },
+    "deterministicResultDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "reportWide": {
+      "type": "object",
+      "properties": {
+        "claimWeightedCitationCompleteness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "citationCorrectness": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validPointerConditionalCitationCorrectness": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pointerFailures": {
+          "maxItems": 4096,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "misplacedCitationIds": {
+          "maxItems": 4096,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "duplicateAssertionGroups": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "minItems": 2,
+            "maxItems": 512,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        },
+        "conflictAssertionGroups": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "minItems": 2,
+            "maxItems": 512,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        },
+        "missingQualifierAssertionIds": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "consistencyMismatchGroups": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "minItems": 2,
+            "maxItems": 512,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        },
+        "crossSectionMismatches": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "facet": {
+                "type": "string",
+                "enum": [
+                  "entity",
+                  "date",
+                  "number",
+                  "other"
+                ]
+              },
+              "assertionIds": {
+                "minItems": 2,
+                "maxItems": 512,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                }
+              }
+            },
+            "required": [
+              "facet",
+              "assertionIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "independentSourceFamilyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "distinctSourceFamilyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "unsupportedHighSeverityAssertionIds": {
+          "maxItems": 512,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        }
+      },
+      "required": [
+        "claimWeightedCitationCompleteness",
+        "citationCorrectness",
+        "validPointerConditionalCitationCorrectness",
+        "pointerFailures",
+        "misplacedCitationIds",
+        "duplicateAssertionGroups",
+        "conflictAssertionGroups",
+        "missingQualifierAssertionIds",
+        "consistencyMismatchGroups",
+        "crossSectionMismatches",
+        "independentSourceFamilyCount",
+        "distinctSourceFamilyCount",
+        "unsupportedHighSeverityAssertionIds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "coverageScope",
+    "deterministicResultDigest",
+    "reportWide"
+  ],
+  "additionalProperties": false
+}

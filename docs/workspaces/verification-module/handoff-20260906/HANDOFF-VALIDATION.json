@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "checkedAt": "2026-09-07T01:11:13.688Z",
+  "markdownFiles": 9,
+  "words": 8916,
+  "sourceHashesVerified": 342,
+  "evidenceHashesVerified": 16,
+  "acceptanceRows": 46,
+  "missingLinks": [],
+  "files": [
+    {
+      "file": "01-RUNBOOK.md",
+      "bytes": 9869,
+      "sha256": "97ac11372d75b6f909bcd02fc479b5e1d1149c13eb310eefb6a9584e7cd5e258"
+    },
+    {
+      "file": "02-MODULES-AND-INVARIANTS.md",
+      "bytes": 11000,
+      "sha256": "58dd68bac807a37f40c4826d60cc71c9f37d84fe73c76ae89591110d3183f8bf"
+    },
+    {
+      "file": "03-REMAINING-GOALS.md",
+      "bytes": 7177,
+      "sha256": "704370e306305f41234ef7121685fcc7fa298063e653cd7a73bf908d6b9117c5"
+    },
+    {
+      "file": "04-TESTING.md",
+      "bytes": 7600,
+      "sha256": "f69c5e2f1c227cc068b8e41ba15cda27967e4577460df0dc798ac204a9d099c4"
+    },
+    {
+      "file": "05-EVIDENCE-AND-HISTORY.md",
+      "bytes": 5558,
+      "sha256": "927295cd3b0b430719e2ae28f581666455bfaadff6f423d135ad65dc83910a58"
+    },
+    {
+      "file": "06-CONTINUATION.md",
+      "bytes": 6067,
+      "sha256": "b3df1f73010c3af6ed59a36f36a56a3da81f8cd7aa8254ad20f591ce1b628bae"
+    },
+    {
+      "file": "07-CURRENT-INVENTORY.md",
+      "bytes": 45228,
+      "sha256": "f75bee35f71cf04a5fad611dad0e220b142756ee81fd1393148f16805ca7fe78"
+    },
+    {
+      "file": "ACCEPTANCE-SNAPSHOT.md",
+      "bytes": 8641,
+      "sha256": "4af59fe1a032cbb9b9916b90406a697721514947b91f7f3b16953c737584e5c3"
+    },
+    {
+      "file": "README.md",
+      "bytes": 4291,
+      "sha256": "a374f18a6778ee349f8759ae1dd2d7768a8928e1b7c048fe9e5490a562e8e0c9"
+    }
+  ],
+  "scope": "Documentation/reference/hash validation only; engineering tests not rerun"
+}

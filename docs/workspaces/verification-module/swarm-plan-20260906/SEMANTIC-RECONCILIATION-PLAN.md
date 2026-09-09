@@ -1,0 +1,16 @@
+# Semantic provider reconciliation extension plan
+
+Current reconciliation is intentionally extraction-only: `guard_provider_reconciliation` requires a terminal `verification_structured_extraction` operation and joins `verification_structured_extraction_execution`. That prevents a semantic claims/report provider attempt from being settled later, which is correct under the present schema but leaves unknown-cost liability unresolved.
+
+## Revision: no-response unknown-cost semantic attempts
+
+The semantic branch must not require an observation or response envelope. A dispatched/uncertain provider attempt may have no retained response, while a later supplier billing statement still establishes actual cost. Requiring capture would incorrectly exclude that liability path.
+
+Keep existing extraction receipt schemas and `verification-provider-reconciliation.v1` unchanged. Add a separate strict `verification-semantic-provider-reconciliation.v1` receipt. Its server-validated body binds tenant, claims/report operation and step, provider attempt, original state, R15 semantic dispatch lease token/holder/fencing context, budget/provider/model/reservation, semantic profile, blinded-input artifact, request artifact/digest, and a reconciliation artifact. Capture custody is optional; observation custody is separately optional and requires capture custody. This explicitly covers no response, captured response with no observation, and observed response. Each supplied handle must exactly match native capture/observation rows and request/raw parent closure. Omitted custody must be absent from the corresponding native table; the attempt response-artifact field alone is insufficient because capture can precede settlement. No-response settlement validates original dispatch/request/profile/blinded custody plus independent billing evidence.
+
+`basis` is not inferred from receipt text. The semantic receipt includes a server-authorized reconciliation basis selected by the control-plane reconciliation configuration: `synthetic_fixture` is allowed only for a server-marked synthetic execution; `supplier_statement` only for a server-authorized supplier billing evidence artifact. The guard validates this configuration/registered artifact relationship and never lets a caller choose authorization by JSON alone. Both branches retain `redispatchAuthorized=false`; settlement changes accounting only.
+
+Additional negative tests: no-response attempt with forged optional envelope; capture-present or observation-present attempt omitting its corresponding native custody; missing-response attempt with non-null response artifact; basis/execution-mode mismatch; and old v1 extraction receipt submitted for a semantic operation.
+
+
+Preserve extraction success/failure fixtures unchanged. Native tests must cover all three custody states, exact control-plane writer privileges, concurrent duplicate settlement (one ledger row and one budget adjustment), immutable sealed results, expiry after lock waits, and zero dispatches. A reported zero cost is permitted when authorized billing evidence establishes zero; missing cost remains a liability. The current plan is not implementation or permission to promote the migration.

@@ -1,0 +1,15 @@
+# Durable comparison service follow-on
+
+EV-070 provides trusted completed publication reads; EV-071 provides the independently checked two-run engineering comparison kernel. The public comparison operation is still absent. The full mission remains active.
+
+Preserve the existing strict public `CompareBenchmarkRunsRequestSchema`: `verificationContractVersion`, `baselineRunId`, `candidateRunId`, `comparisonProfile` (`paired_default` or `regression_gate`). Resolve both as canonical benchmark aggregate IDs under the authenticated tenant. Do not accept caller-supplied rows, datasets, signing keys, scores or arm remapping. Both operations must be succeeded and their signed publications/terminal receipts must be admitted through the existing read repository.
+
+The next concrete application slice should load both exact registered dataset/runner artifacts from these verified manifests and bind their byte/semantic digests, full case matrices, original run IDs and recorded provenance before invoking the kernel. Each request needs fresh tenant resolver state, bounded aggregate bytes, cancellation checks after awaits and no parser/provider/network fallback. Identical corresponding arm IDs across distinct runs are valid.
+
+A server-owned registered profile must define the arm pairs, source/report cluster unit, seed, resample/work bounds, primary engineering metric, full multiple-comparison family and any engineering regression threshold. The request's profile name alone is not authority. If several arm pairs are tested, correct the declared whole family rather than treating per-pair adjusted values as a global correction. No profile should convert replay observations or engineering labels into independent trials, human gold, calibrated quality or automatic promotion.
+
+Stable fenced publication must retain the first real comparison lifecycle and result under the canonical operation's active lease, then publish an artifact-backed comparison receipt. Determine the minimal canonical comparison row and additive artifact taxonomy migration in `ai-engineer-db-contract`; do not repurpose a benchmark run, fabricate eval arms, fake generic verification bundles or use arbitrary current timestamps on retries. Preserve exact original input publications and profile reference in signed provenance. Package/vendor/type parity follows any canonical migration.
+
+After the internal application/persistence boundary is reviewed, compose the configured worker and existing strict HTTP/client/CLI/MCP route inventory. Keep generic submission unadmitted. Prove actual two-run operation execution, same-key retry, foreign/missing/uncompleted input denial, drift, stale fences, stable sealed retry and process interruption. The kernel-only receipt9950834c is a prerequisite, not this operation's acceptance.
+
+The current local fixtures remain the43-case V4 engineering dataset with only three successful historical provider observations admitted to this worker. Full117-call retained replay, failed-call admission, case/score publication, human-gold/calibration work, other mutations, deployments, dashboard and final matrix audit remain required.

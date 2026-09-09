@@ -1,0 +1,13 @@
+# WS-08 per-arm benchmark publication handoff
+
+`PostgresVerificationBenchmarkPublisher.publishCompleted()` creates or exact-matches the frozen dataset/version, experiment, real arms, and one factual `verification.v1` eval run per arm under the active operation lease. It then seals the durable benchmark row with its distinct runner payload manifest and records immutable benchmark-to-arm mappings. The publisher snapshots inputs before I/O, copies benchmark timestamps inside SQL to retain PostgreSQL microseconds, and re-reads catalog, eval-run, and mapping identities on retry.
+
+Migrations `06030000` and additive `06030200` are applied locally. The mapping requires the complete planned arm set, admitted generic/publication-policy/arm-config artifacts, exact durable dataset artifact/SHA and verification.v1 version, operation mission/work-item/attempt, exact timestamps, arm configuration, target, and disposition. It prevents mutation of mapped eval runs, dataset versions, experiments, and mappings. No cases, gold labels, scores, bundles, deterministic verification results, or semantic-pass claims are fabricated.
+
+Positive local proof passed 36 checks with 172 durable checkpoints, four canonical eval runs, an exact retry, active cross-operation denial, stale-fence denial, and higher-fence reuse: `internal/verification-registered-replay-df378d7d-9e83-4abc-986c-8d66919e8cd3.json`. The initial positive publication snapshot remains at `internal/verification-benchmark-publication-06ead5cc-14a8-4b0d-889a-9f1ce0a53ea7.json`.
+
+The corrected independent local negative harness runs every mutation probe inside a transaction and accepts only expected PostgreSQL `23001` or `23503` rejections, recording the actual code/message. It proved immutable mapped eval-run, dataset-version, experiment, arm, mapping, and sealed-run rows and exact four bindings. Receipt: `internal/verification-benchmark-publication-negatives-06ead5cc-14a8-4b0d-889a-9f1ce0a53ea7.json`.
+
+Additive migration `06030300` now also guards a mapped `evaluation.eval_dataset`. The rerun receipt is `passed`: its dataset mutation is rejected with PostgreSQL `23001`, `published benchmark datasets are immutable`. The script has a strict standalone tsconfig and runs only through the local credential-in-memory helper mode `benchmark-publication-negatives`; it rejects remote databases.
+
+Per-arm case scores, human-gold claims, public read projection, operation terminal publication, and process-death publication recovery remain separate scope.

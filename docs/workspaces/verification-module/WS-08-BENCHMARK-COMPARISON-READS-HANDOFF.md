@@ -1,0 +1,9 @@
+# Benchmark comparison reads handoff
+
+This bounded slice owns only the read transport proof and this handoff. Production contracts, repository, application projection, runtime, API/client/CLI/MCP surfaces and their unit tests remain coordinator-owned.
+
+The final proof is `../../../../internal/verification-benchmark-comparison-reads-918b9463-6bc8-4b6e-b035-376a2bd2b2f8.json`, SHA-256 `a79f4f3a70949ce26858bf8e1dbcab20b4bc4c4b52dd2f5005f0a95ae30165a4`. It reads the first sealed comparison from `verification-benchmark-comparison-worker-f861733d-499b-43d0-96a5-4596ee51944c.json` using the final configured application build and its retained public signing key.
+
+The proof hydrates the actual registered comparison result independently, then compares every projected value across four pairs, nine metrics per pair and 72 globally corrected tests. The typed client, built CLI `benchmark comparison`, and actual MCP Streamable HTTP `knowledge_get_benchmark_comparison` all return the strict public resource. The public resource states paired engineering observations without assessed cluster independence and excludes Storage object keys, buckets, signature bytes, public keys, parent lineages, transformation signatures and the raw retained `pairComparisons` shape.
+
+Missing and authorized foreign-tenant IDs return 404. Invalid path IDs and unknown query keys return 400. An unconfigured read capability and a verifier configured with the wrong public key return 503. No migration, comparison execution or provider request occurs. The receipt contains nine scoped source snapshots whose hashes matched current production/proof bytes after the final run. An earlier functional receipt `verification-benchmark-comparison-reads-88d28863-663d-48ea-910f-5aa43cfb53f5.json` preceded the final application signature-presence check and is superseded. This handoff makes no EV acceptance claim and does not cover process termination recovery.

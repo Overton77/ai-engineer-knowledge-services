@@ -1,0 +1,73 @@
+import assert from "node:assert/strict";
+import { createHash, randomUUID } from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { VerificationAdmissionService, VerificationServiceCatalog, VerificationOperationApplicationService, ParseArtifactApplicationService } from "@aiengineer/knowledge-application";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { VerificationParseArtifactResultSchema } from "@aiengineer/knowledge-contracts";
+import { canonicalizeJson } from "@aiengineer/knowledge-verification";
+import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
+import { verificationParseArtifactActivityHandler } from "../apps/worker/src/verification-parse-activity.js";
+import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
+import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
+import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
+import { buildServer } from "../apps/api/src/server.js";
+import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
+import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
+
+const {loadVerifiedLocalDevelopmentConfig}=await import("../../internal/verification-local-direct-config.mjs") as {loadVerifiedLocalDevelopmentConfig():Promise<{DB_URL:string;API_URL:string;SECRET_KEY:string}>};
+const local=await loadVerifiedLocalDevelopmentConfig();
+const connectionString=local.DB_URL, projectUrl=local.API_URL, serviceRoleKey=local.SECRET_KEY;
+const storage=new URL(projectUrl);if(!["localhost","127.0.0.1"].includes(storage.hostname)||storage.port!=="54321")throw new Error("LOCAL_STORAGE_REQUIRED");
+const namespace=`verification-parse-terminal-parity-${randomUUID()}`, tenantId=randomUUID(), missionId=randomUUID(), workItemId=randomUUID(), attemptId=randomUUID(), sourceId=randomUUID();
+const bucket="ai-engineer-cloud-bucket", imageDigest="sha256:1669a3f9674b2e0a70ba1c8686c1cb3647492b8268bdfa7a9a4452fb0530fb37" as const, now=()=>new Date().toISOString(), createdAt=now();
+const database=new PostgresCanonicalRepository({connectionString,localOnly:true});
+const repository=new PostgresVerificationRepository(database,new SupabaseArtifactStore({projectUrl,serviceRoleKey,bucket,maximumBytes:8_000_000}),{async authorize(input){if(input.tenantId!==tenantId)throw new Error("TENANT_DENIED");}});
+const config={storageBucket:bucket,producerVersion:"verification-service.v1",encryptionClass:"supabase-managed",retentionClass:"verification-audit",now};
+const admission=new VerificationAdmissionService(repository,new SandboxedVerificationParser(imageDigest),{parserVersion:"verification-native-parser.v1",imageDigest,limits:VERIFICATION_PARSER_LIMITS},config);
+const operations=new PostgresKnowledgeOperationService(database,{admittedOperationKinds:["verification_capture","verification_parse_artifact"]});
+const application=new VerificationOperationApplicationService(operations,"http://127.0.0.1");
+const actor={kind:"service" as const,id:attemptId,serviceIdentity:"knowledge_worker" as const};
+const register=(bytes:string,type:string,mediaType="text/html")=>repository.registerContentAddressedArtifact({tenantId,bytes:new TextEncoder().encode(bytes),mediaType,createdAt,producerActivityId:"vr022-parse-fixture",producerVersion:"1",encryptionClass:"supabase-managed",retentionClass:"verification-audit",dataClassification:"restricted",artifactType:type,bucketClass:"ledger",storageBucket:bucket,producerAttemptId:attemptId,missionId});
+const execute=async(operationId:string,handlers:readonly any[])=>{const registry=new CanonicalActivityRegistry(handlers);const worker=new CanonicalDurableKnowledgeWorker(namespace,tenantId,database,async claim=>{const operation=await database.getOperationRecord(tenantId,claim.operationId);assert.ok(operation);return registry.execute(operation,claim);},30_000,registry.operationKinds());const result=await worker.runOperationOnce(operationId);assert.ok(result);assert.equal(result.operation?.status,"succeeded");return result;};
+try{
+ await database.transaction(tenantId,async client=>{await client.query("insert into orchestration.mission(id,tenant_id,slug,goal) values($1,$2,$3,$4)",[missionId,tenantId,namespace,"VR022 parse terminal parity"]);await client.query("insert into orchestration.work_item(id,tenant_id,mission_id,kind) values($1,$2,$3,'verify_extraction')",[workItemId,tenantId,missionId]);await client.query("insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,1,'vr022-parse-proof')",[attemptId,tenantId,workItemId]);});
+ const sourceArtifact=await register("<html><body><main><p id='exact'>Exact parse terminal parity</p><section hidden>secret</section></main></body></html>","source_capture");
+ const source={sourceId,kind:"web_page" as const,canonicalUri:"https://example.test/vr022-parse",logicalIdentity:namespace};
+ const captureCatalog=new VerificationServiceCatalog({captureGrants:[{source,contentArtifact:{artifactId:sourceArtifact.artifactId,digest:sourceArtifact.digest},capturedAt:createdAt,captureMethod:"registered_artifact",captureMethodVersion:"1",parserKind:"html",projectionKinds:["html_dom"]}],extractionProfileArtifacts:[]});
+ const captureContext={tenantId,missionId,workItemId,attemptId,operationId:randomUUID(),correlationId:randomUUID(),actor,capabilityVersion:"verification-service.v1",idempotencyKey:`${namespace}:capture`,reason:"VR022 local fixture",contractVersion:"v1" as const};
+ const capture=await application.submitCaptureSource({verificationContractVersion:"verification.v1",source:{mode:"register",sourceKind:"web_page",sourceId,contentArtifact:{artifactId:sourceArtifact.artifactId,digest:sourceArtifact.digest}},requestedProjectionKinds:["html_dom"]},captureContext);
+ const captureExecutor=createVerificationOperationExecutor({operations:database,repository,admission,catalog:captureCatalog,config});
+ const captured=await execute(capture.operationId,verificationActivityHandlers(captureExecutor));
+ const captureResult:any=captured.receipt.body; const captureId=captureResult.output.capture.captureId;
+ const parseCatalog=new VerificationServiceCatalog({captureGrants:[],extractionProfileArtifacts:[],parseArtifactGrants:[{captureId,sourceArtifact,parserKind:"html"}]});
+ const parseService=new ParseArtifactApplicationService(repository,admission,config);
+ const parseHandler=verificationParseArtifactActivityHandler({service:parseService,resolveKind:async input=>parseCatalog.parseArtifact(input.captureId,input.sourceArtifact).parserKind,assertActive:async input=>{const operation=await database.getOperationRecord(input.tenantId,input.operationId);if(operation?.status!=="running")throw new Error("PARSE_ARTIFACT_OPERATION_NOT_ACTIVE");}});
+ const grants=JSON.stringify([{tenantId,actor,missionId,agentDeploymentId:"vr022-parse-proof",capabilityVersion:"verification-service.v1"}]);
+ const ownership=createVerificationOwnershipResolver(database,grants);
+ const token=`vr022-${randomUUID()}`, identity={actor,grants:[{tenantId,roles:["knowledge_operator" as const],scopes:[]}]};
+ const api=buildServer({verificationOperationService:operations,resolveIdentity:value=>value===token?identity:undefined,resolveVerificationContext:ownership,isParseArtifactRequestAdmitted:()=>true});
+ try{
+  const baseUrl=await api.listen({host:"127.0.0.1",port:0});
+  const context={tenantId,missionId,workItemId,attemptId,correlationId:`${namespace}:parse`,idempotencyKey:`${namespace}:same-request`};
+  const request={verificationContractVersion:"verification.v1" as const,captureId,sourceArtifact};
+  const raw=await fetch(`${baseUrl}/v1/verification/artifacts:parse`,{method:"POST",headers:{authorization:`Bearer ${token}`,"content-type":"application/json","x-tenant-id":tenantId,"x-correlation-id":context.correlationId,"idempotency-key":context.idempotencyKey,"x-verification-mission-id":missionId,"x-verification-work-item-id":workItemId,"x-verification-attempt-id":attemptId},body:JSON.stringify(request)});assert.equal(raw.status,202);const http=await raw.json() as {operationId:string};
+  const client=new KnowledgeClient({baseUrl,getAccessToken:()=>token});
+  const typed=await client.parseArtifact(request,context);
+  const cli=await dispatchCliCommand(client,resolveCommand("artifact","parse")!,request,context) as {operationId:string};
+  const mcp=await createVerificationMcpToolExecutor({operationService:operations,apiOrigin:baseUrl,identity,apiClient:client})("knowledge_parse_artifact",{context,request});
+  const mcpResult=(mcp as any).structuredContent as {operationId:string};
+  for(const accepted of [typed,cli,mcpResult])assert.equal(accepted.operationId,http.operationId);
+  assert.equal((await database.getOperationRecord(tenantId,http.operationId))?.operationKind,"verification_parse_artifact");
+  const terminal=await execute(http.operationId,[parseHandler]); const receipt:any=terminal.receipt;assert.equal(receipt.outcome,"succeeded");
+  const body={...receipt.body};delete body.eventId;delete body.fencingToken;const result=VerificationParseArtifactResultSchema.parse(body);
+  assert.equal(result.operationId,http.operationId);assert.equal(result.sourceArtifact.artifactId,sourceArtifact.artifactId);assert.equal(result.output.projections.length,1);assert.equal(result.output.projections[0].projectionKind,"html_dom");
+  const resolver=repository.createTrustedArtifactResolver();await resolver.authorizeArtifact({tenantId,artifactId:result.resultArtifact.artifactId,purpose:"verification_replay"});const hydrated=await resolver.hydrateRegisteredArtifact({tenantId,artifactId:result.resultArtifact.artifactId});const {resultArtifact:_,...unsigned}=result;assert.equal(new TextDecoder().decode(hydrated.bytes),canonicalizeJson(VerificationParseArtifactResultSchema.omit({resultArtifact:true}).parse(unsigned)));
+  const output=resolve("..","internal",`${namespace}.json`);const sourceHashes=Object.fromEntries(await Promise.all(["apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","apps/worker/src/verification-parse-activity.ts","packages/application/src/verification-parse.ts"].map(async file=>[file,createHash("sha256").update(await readFile(file)).digest("hex")])));
+  await writeFile(output,JSON.stringify({schemaVersion:"verification-parse-terminal-parity-proof.v1",createdAt:now(),namespace,tenantId,operationId:http.operationId,checks:{sameDurableOperationAcrossHttpClientCliMcp:true,actualSandboxedParserWorkerSucceeded:true,canonicalTerminalResultArtifactHydrated:true,receiptEnvelopeBound:true},terminal:{resultArtifact:{artifactId:result.resultArtifact.artifactId,digest:result.resultArtifact.digest},projectionCount:result.output.projections.length,receiptId:receipt.id},providerCalls:0,remoteWrites:0,sourceHashes},null,2)+"\n",{flag:"wx"});console.log(JSON.stringify({output,operationId:http.operationId}));
+ }finally{await api.close();}
+}finally{await database.close();}
+

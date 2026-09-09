@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "rootDir": ".." },
+  "include": [
+    "verification-benchmark-comparison-crash-child.ts",
+    "prove-verification-benchmark-comparison-crash.ts"
+  ]
+}

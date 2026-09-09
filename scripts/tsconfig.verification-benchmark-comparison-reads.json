@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "exactOptionalPropertyTypes": false },
+  "include": ["prove-verification-benchmark-comparison-reads.ts"]
+}

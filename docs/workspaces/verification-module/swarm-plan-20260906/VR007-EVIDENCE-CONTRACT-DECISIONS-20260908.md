@@ -1,0 +1,13 @@
+# Extraction leaf evidence integration decisions
+
+The production `verifyExtraction` result now uses `verification-extraction-field-evidence.v1`. The pure verifier emits a typed core result; `VerificationAdmissionService` adds the source, native parser output, transformation and projection registrations before parsing the persisted contract. The pure helper is not an independently admitted result. This separation keeps tenant authorization and storage custody in the application layer.
+
+An accepted leaf's `fragmentId` is a deterministic identifier for the capture, immutable representation, exact selector and selected-content digest. The representation is retained; the fragment is resolved from those bytes. It is not a separate Storage artifact or human annotation. Replay recomputes this identity and the full admitted lineage. Source component/joining and comparison rules remain in the immutable profile that is also a result parent.
+
+`derivation.kind: direct` means the candidate preserves the selected scalar value. Its `comparison` still records decimal, date, enum, identifier or checksum validation. A successful validation does not invent a value transformation. Normalized values name their comparison operation; normalized text always records its explicitly declared normalization. Cross-field computation metadata describes a separately replayed constraint, not a claim that source evidence generated the candidate value.
+
+Only a globally valid verification result exposes accepted leaves. Missing optional fields emit no accepted leaf. The existing verifier enforces exact candidate leaf coverage and rejects duplicate rules/evidence; result schema checks cannot replace that candidate-dependent verification. A failed result retains diagnostics and an empty accepted-leaf list.
+
+Historical check-only results remain replayable with their exact original shape and algorithm. Newly submitted verification always emits enriched evidence; there is no caller-controlled legacy switch. Unknown result versions and malformed legacy shapes fail closed. Structured extraction continues to publish `unverified_candidate`; it gains no verification authority from schema validity.
+
+Independent review identified different component-fallback behavior in the first evidence collector. The coordinator extracted the original source-component validation into a shared internal helper, preserving existing messages and behavior. A follow-up collects source selections during the same verification pass so evidence cannot be taken from a second resolver invocation. Tests and final proof receipts are recorded separately; this design note does not accept VR-007 or replace the required gold field audit.

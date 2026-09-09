@@ -1,0 +1,41 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
+import { SupabaseArtifactStore } from "../packages/runtime/src/artifacts.js";
+import { VerificationProviderArtifactComposer } from "../packages/application/src/verification-provider.js";
+import { canonicalizeJson, sha256Digest } from "../packages/verification/src/index.js";
+
+const connectionString = process.env.POSTGRES_URL;
+const storageUrl=process.env.SUPABASE_URL,storageKey=process.env.SUPABASE_SECRET_KEY;
+if (!connectionString || new URL(connectionString).port !== "54322" || !["localhost","127.0.0.1"].includes(new URL(connectionString).hostname)
+ || !storageUrl || !storageKey || new URL(storageUrl).port !== "54321" || !["localhost","127.0.0.1"].includes(new URL(storageUrl).hostname)) throw new Error("LOCAL_POSTGRES_AND_STORAGE_REQUIRED");
+const tenantId = randomUUID();
+const budgetId = randomUUID();
+const attemptId = randomUUID();
+const database = new PostgresCanonicalRepository({ connectionString, localOnly: true });
+const accounting = new PostgresVerificationProviderAccounting(database);
+const repository = new PostgresVerificationRepository(database, new SupabaseArtifactStore({projectUrl:storageUrl,serviceRoleKey:storageKey,bucket:"ai-engineer-cloud-bucket",maximumBytes:200000}), { async authorize(input) {assert.equal(input.tenantId,tenantId);} });
+const now = new Date().toISOString();
+try {
+const composer=new VerificationProviderArtifactComposer(repository,{tenantId,storageBucket:"ai-engineer-cloud-bucket",producerActivityId:"provider-accounting-proof",producerVersion:"v2",encryptionClass:"supabase-managed",retentionClass:"proof",now:()=>now,externalProcessingGrant:{providerId:"gateway",dataClassification:"synthetic",modalities:["text"]}});
+const encode=(value:unknown)=>new TextEncoder().encode(canonicalizeJson(value));
+await composer.registerInput(encode({fixture:"synthetic accounting input",tenantId}),"application/json");
+const requestBytes=encode({fixture:"synthetic accounting request",tenantId}),digest=sha256Digest(requestBytes);
+await composer.persistBeforeDispatch({requestDigest:digest,requestBytes});
+const reserved = await accounting.reserve({ tenantId, budgetId, budgetKey: "ws06-conformance", ceilingCostMicros: 20_000_000, attemptId, requestDigest: digest, attemptOrdinal: 0, providerId: "gateway-extraction.v1", model: "openai/gpt-5.6-luna", reservationCostMicros: 500_000, estimatedCostMicros: 200_000,requestArtifactId:composer.requestArtifact(digest)!.artifactId });
+const claims = await Promise.all([accounting.claimDispatch({ tenantId, attemptId, dispatchFence: randomUUID() }), accounting.claimDispatch({ tenantId, attemptId, dispatchFence: randomUUID() })]);
+assert.equal(claims.filter((item) => item.claimed).length, 1);
+await composer.persistAfterResponse({requestDigest:digest,rawResponseBytes:encode({fixture:"synthetic response; no provider dispatched",tenantId})});
+const responseArtifact=composer.responseEnvelopeArtifact(digest)!;
+const settled = await accounting.settle({ tenantId, attemptId, actualCostMicros: 123_456, responseArtifactId: responseArtifact.artifactId });
+assert.equal(settled.attempt.state, "settled");
+await assert.rejects(accounting.settle({ tenantId, attemptId, actualCostMicros: 123_457, responseArtifactId: responseArtifact.artifactId }), /SETTLEMENT_REPLAY_CONFLICT/);
+const receipt = Object.freeze({ schemaVersion: "verification-provider-accounting-proof.v2", passed: true, providerDispatches:0,billing:"synthetic accounting fixture, not supplier charges",physicalStorage:true,tenantId, budgetId, responseArtifactId: responseArtifact.artifactId, reserved: reserved.attempt.reservationCostMicros, claimed: claims.filter((item) => item.claimed).length, settled: settled.attempt.actualCostMicros });
+const directory = resolve("..", "internal");
+await mkdir(directory, { recursive: true });
+const path = resolve(directory, `verification-provider-accounting-proof-${randomUUID()}.json`);
+await writeFile(path, JSON.stringify(receipt), { encoding: "utf8", flag: "wx" });
+console.log(JSON.stringify({ passed: true, receipt: path, claimed: receipt.claimed }));
+}finally{await database.close();}

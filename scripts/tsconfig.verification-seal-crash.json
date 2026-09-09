@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "files": ["verification-seal-crash-proof.ts", "verification-seal-crash-child.ts"],
+  "include": []
+}

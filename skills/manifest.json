@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "knowledge-skill-catalog/v1",
+  "contractVersion": "v1",
+  "skills": [
+    { "id": "knowledge-acquisition-and-vetting", "version": "1.0.0", "path": "knowledge-acquisition-and-vetting/SKILL.md" },
+    { "id": "knowledge-preparation-and-promotion", "version": "1.0.0", "path": "knowledge-preparation-and-promotion/SKILL.md" },
+    { "id": "knowledge-retrieval-and-evidence", "version": "1.0.0", "path": "knowledge-retrieval-and-evidence/SKILL.md" },
+    { "id": "knowledge-evaluation", "version": "1.0.0", "path": "knowledge-evaluation/SKILL.md" },
+    { "id": "knowledge-verification", "version": "1.0.0", "path": "knowledge-verification/SKILL.md" },
+    { "id": "vector-store-management", "version": "1.0.0", "path": "vector-store-management/SKILL.md" }
+  ]
+}

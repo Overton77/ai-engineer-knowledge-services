@@ -1,0 +1,13 @@
+# Native semantic coverage checkpoint
+
+## EV-166 - two missing native semantic assessments captured and replayed - 2026-09-08
+
+The strictly bounded successor selected only gl-interested-comparison-mutated and gl-repeatability-mutated from the original validated 40-case v1 dataset. Both completed through native MC / local Temporal / KS worker, with exactly one settled provider attempt, one observation and one response capture per case. Cost: 941 micro USD (USD0.000941), zero unknown costs. Original failed attempts remain unchanged; this is a new engineering attempt and does not establish unbiased single-pass quality.
+
+Native receipt: internal/verification-diagnostics-v1-semantic-pairs-c3e852f3-b2fb-495b-9177-c8c950137489.json, SHA256 faba5694b53c3cfa93720612a085820b54fe6050d965d0969576e8fe9c227711. Isolation receipt and journal: internal/verification-diagnostics-v1-semantic-pairs-isolated-340b801c-3036-44a3-9d2b-979872e24dbc.{json,jsonl}. Isolated database and owned dump directory are absent after cleanup; owned temporary Temporal PID43680 stopped. No Cloud deployment or migrations repeated.
+
+Export independently checked signed audit closure, native accounting crossbindings, original dataset and retained CAS bytes. Portable fixture sha256:a035191eb769dd706b47ef784ce6654a1cf8ec9ab07e4fea07a627520b3faabc retains 36 artifact objects for two cases. Native offline replay with global networking disabled passed: gl-interested-comparison-mutated = partially_supported/review; gl-repeatability-mutated = not_supported/review. Receipt: internal/verification-semantic-missing-two-replay-20260908.json. No grader/schema relaxation or admission promotion.
+
+The installed demo still defaults to the earlier 38-case fixture. Next engineering step: compose a successor 40-case fixture from preserved 38+2 entries without rewriting either original, checking shared artifact handles and retaining attempt provenance; wire and validate installed demo/policy output. Do not rerun this paid plan. Human review remains deferred; full provider/structured and quality acceptance remain open. Acceptance matrix unchanged: 31 proved / 8 partial / 7 missing.
+
+Cost guard: internal/verification-semantic-missing-two-reservation-20260908.json remains a full 10,000 micro USD liability after settlement. Future budget preflights must add it alongside the full 200,000 report reservation and 10,000 Eve Cloud unknown liability; inspectVerificationEveCohort alone does not read these reservation prefixes. Its new native attempts already add 941 micro USD; conservative overlap is intentional until reviewed reconciliation.

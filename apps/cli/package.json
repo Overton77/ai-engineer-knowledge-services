@@ -1,0 +1,27 @@
+{
+  "name": "@aiengineer/knowledge-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "knowledge": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --sourcemap && node scripts/copy-demo-assets.mjs",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aiengineer/knowledge-client": "workspace:*",
+    "@aiengineer/knowledge-contracts": "workspace:*",
+    "@aiengineer/knowledge-application": "workspace:*",
+    "@aiengineer/knowledge-verification": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

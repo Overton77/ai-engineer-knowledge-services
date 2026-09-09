@@ -1,0 +1,13 @@
+# Structured extraction terminal read review
+
+Coordinator session, 2026-09-06. This bounded slice adds a server-internal authenticated terminal read. The complete mission and WS-08 remain partial.
+
+`PostgresStructuredExtractionReadRepository.loadVerifiedExtraction(tenantId, operationId)` supports both accepted candidates and captured failures. It requires one terminal extraction operation, one matching terminal step, and exactly one receipt before creating a Storage resolver. The receipt's kind, outcome, input digest, exact result body, output digest, event identifier and fencing-token shape must agree with the canonical result reconstructed by installed SQL. Generic infrastructure failures without a published extraction result fail closed.
+
+The repository freshly authorizes `verification_replay`, hydrates the registered publication, checks the complete handle, bounded bytes, SHA256 and canonical JSON, and calls the existing accepted/failure result authenticator with a server-owned Ed25519 verifier. It binds the authenticated manifest to tenant, operation, step and step input. A second canonical query checks terminal state and receipt identity after hydration and signature verification. The result is deeply frozen. Published provider accounting remains the original signed snapshot.
+
+This is an internal full-manifest interface, not a public resource. Full handles contain Storage object paths. The next application projection must expose only bounded fields and compact artifact references, with tenant/owner authorization enforced by the public runtime. No raw receipt grants were added; app_reader remains unable to read knowledge_service receipts. No migration, supplier dispatch, budget mutation or remote deployment was performed.
+
+The executable proof uses the six real PostgreSQL/Storage outcomes from EV-087: Gateway and Interfaze, each accepted, HTTP failure and schema failure. It checks exact manifest/result equality and freezing, rejects invalid/missing/cross-tenant requests before Storage, unknown signing keys and corrupted actual hydrated bytes. Additional faults alter actual query results for receipt hash/body, step status, duplicate rows, status changes during hydration and receipt replacement. These are explicit fault injections, not claims of concurrent durable database mutation.
+
+Validation and artifact hashes are recorded in the EV-088 evidence-log entry after completion. Public projection, API/client/CLI/MCP transports and mutation admission remain pending, followed by the previously recorded process recovery, reconciliation, semantic, deployment, dashboard and full acceptance work.

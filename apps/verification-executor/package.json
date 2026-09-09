@@ -1,0 +1,35 @@
+{
+  "name": "@aiengineer/knowledge-verification-executor",
+  "version": "0.1.0",
+  "description": "Deterministic verification executors over filesystem intent artifacts. One process, three surfaces: CLI (knowledge-verify), Streamable HTTP MCP (/mcp), and a byte-registration HTTP route for sandbox handoff.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "knowledge-verify": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --sourcemap --clean",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "pack:sandbox": "node scripts/pack-sandbox.mjs"
+  },
+  "dependencies": {
+    "@aiengineer/knowledge-contracts": "workspace:*",
+    "@aiengineer/knowledge-policy": "workspace:*",
+    "@aiengineer/knowledge-verification": "workspace:*",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

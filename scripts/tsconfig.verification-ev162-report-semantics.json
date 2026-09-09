@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": [
+    "prepare-verification-ev162-report-semantics.ts",
+    "prove-verification-ev162-report-semantics.ts",
+    "seal-verification-ev162-report-semantic-fixture.ts"
+  ]
+}

@@ -1,0 +1,1 @@
+{"extends":"../tsconfig.base.json","compilerOptions":{"noEmit":true},"include":["prove-verification-structured-extraction-process-recovery.ts","verification-structured-extraction-crash-child.ts"]}

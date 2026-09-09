@@ -1,0 +1,38 @@
+# SW drift revalidation outbox SQL review — 2026-09-08
+
+Scope: read-only schema review of the new drift revalidation outbox against the canonical semantic observation, artifact custody, and established knowledge outbox contracts. No migration was applied and no database/provider call was made.
+
+## Verified compatibility
+
+- The tenant-scoped foreign keys in migration lines 21–22 resolve against the contract's prior `(tenant_id,id)` uniqueness: artifacts are upgraded in `20260903010000_knowledge_content_contract.sql`, and operations define `unique(tenant_id,id)` in `20260903010200_knowledge_runtime_security.sql`. The semantic observation has the referenced `observation_artifact_id`, `observation_sha256`, `operation_id`, and `revalidation_required` fields (semantic DDL lines 104–109).
+- The plan gate at lines 36–37 binds the submitted observation/hash/operation to a server-custodied semantic observation. Tenant context is checked and claim/ack predicates include tenant, owner, token, state, and unexpired lease (lines 49–62); no separate fencing defect was found in that predicate.
+
+## Concrete gaps for Terra/root
+
+1. **Retry/reconciliation is incomplete.** The new table only exposes `claim` and `ack`; `available_at` and `last_error` are never updated by a worker function, and attempts are consumed on every claim (lines 17–18, 51–54). A transient publish failure can only wait for lease expiry, while a permanent failure has no authenticated nack/classification path. The established `knowledge_service.outbox` contract has `max_delivery_attempts`, `nack_outbox(error_class,retry_delay)`, and `extend_outbox_claim` (20260903010500 lines 7–20, 114–170). Add the smallest equivalent retry/failure RPC and bounded retry policy before treating this as a durable revalidation outbox.
+2. **Idempotent replay has no stable result identity.** `plan_verification_drift_revalidation` returns only boolean (line 32; exact duplicate returns `false` at line 42), while direct table access is revoked from the granted roles (line 68). A caller retrying the same idempotency key cannot obtain the existing outbox id or current disposition from the function. Return the existing row identity plus `created`/replayed status, or provide a tenant-scoped read RPC with the same conflict rules.
+3. **Claim-token uniqueness is not hardened.** The established outbox adds a partial unique index on non-null `claim_token` (20260903010500 lines 25–26). The new table has no equivalent. The UUID collision risk is small, but the missing invariant permits duplicate token rows and weakens the exact claim capability contract; add the same partial unique index.
+4. **Five-dimension custody is not represented.** The new row stores labels in `dimensions` plus one semantic observation artifact/hash (lines 8–12, 21, 37–39); it has no immutable source handle for each provider/model/parser/grader/policy dimension. The existing trusted pattern is the single artifact registry plus immutable `verification_artifact_metadata` keyed by `(tenant_id,artifact_id)` with `parent_artifact_ids`, and admitted artifact/hash checks (20260905012000 lines 5–20; semantic guard lines 119–124). The smallest compatible design is an immutable per-outbox dimension binding (one row per dimension, `(tenant_id,outbox_id,dimension)`, source artifact id/hash/type, and composite artifact FK), populated only after server-side admission/lineage resolution. Do not accept caller-invented source handles or hashes; derive/check them from the observation's artifact metadata and parent closure.
+5. **Direct mutation protection is weaker than the established outbox.** Roles receive only function execution, so this is not an immediate app-role write path, but the new table has no append-only mutation guard. The established outbox rejects changes to identity/payload and terminal rows (20260903010500 lines 34–53). Add an equivalent guard if owner/admin or future grants are in scope.
+
+The existing `dimensions` check and `array_agg(distinct ... order by ...)` canonicalize ordering and reject empty/out-of-vocabulary arrays through the table check; no separate finding is raised for that behavior. Previously circulated findings (ACK public revoke, poison-code case, lease/state shape, and semantic-only lineage) are intentionally not repeated here.
+
+## Source hashes
+
+- `20260908030000_verification_drift_revalidation_outbox.sql`: f534a20d91879d532a965a2ba3bdb23525c7f8b6d31ed39d6dea9fcdb42ad055
+- `20260907013000_verification_semantic_provider_observation.sql`: b1d21c5697d0e2d7a40a5dddcb1563e6304299393b05857db509b1e4b6eebe3c
+- `20260905012000_verification_artifact_metadata.sql`: b1583d8fc29d04282e60a25176885b17a61c77a8ee9d0284c8f52273d3659e27
+- `20260903010500_outbox_claiming_and_packet_materialization.sql`: 762522f9d245e2827cba4643c010b2d181f11a61ed4d3f5df02f1ddd04518c51
+- `20260903010200_knowledge_runtime_security.sql`: 31d42ce7897583c431b6a307ff0e1046f5d2a1667bf74a657ea6158e5d769815
+
+## Executable local validation
+
+On 2026-09-08, the exact migration bytes (SHA-256 `f534a20d91879d532a965a2ba3bdb23525c7f8b6d31ed39d6dea9fcdb42ad055`) were executed after stripping only the outer `begin`/`commit`, inside an explicit local PostgreSQL `BEGIN` on loopback port 54322. The transaction was rolled back. The bounded check confirmed DDL execution, table RLS/policy, required columns, all three functions compiling, invalid-input/context guards, and six expected executor/control-plane function grants. The source hash was unchanged at teardown. No canonical row was inserted and no migration ledger changed. Receipt: `internal/verification-drift-revalidation-outbox-sql-validation-20260908.json`.
+
+This executable result removes the earlier possibility of a pure SQL name/type incompatibility. The retry RPC, per-dimension custody, mutation guard, and duplicate-result identity items remain design follow-ups; claim-token uniqueness and boolean replay identity are hardening/adaptor concerns rather than standalone release blockers absent a caller failure.
+
+## Rollback positive/negative path and application grant check
+
+The local database contained zero `revalidation_required` semantic observations, so a real positive `plan` path was unavailable without fabricating semantic/provider lineage. A second rollback-only execution used one existing tenant artifact and operation solely as foreign-key fixtures. It inserted one synthetic outbox row inside the transaction, then verified: worker-role direct table `SELECT` is denied (`42501`), claim succeeds, wrong token is rejected (`55000`), an expired lease is reclaimed with a new token, the current token acknowledges, duplicate acknowledgement is rejected, and a foreign tenant acknowledgement is rejected. The transaction rolled back and the migration hash remained unchanged. Reproducible script: `internal/verify-drift-revalidation-outbox-sql-rollback-20260908.mjs`; receipt: `internal/verification-drift-revalidation-outbox-sql-positive-validation-20260908.json`.
+
+This exposes one concrete integration blocker beyond the earlier SQL review: `PostgresVerificationDriftRevalidationOutbox.scanModelObservations` and `listPublishedReviewAlerts` directly `SELECT` the outbox table (`packages/persistence/src/verification-drift-revalidation-outbox.ts` lines 17–18 and 27–30), while the migration revokes table privileges from `executor_service`/`control_plane` (line 68) and grants only function execution. Either grant `SELECT` to the exact runtime roles under the existing tenant RLS policy, or route those reads through a security-definer read RPC. The rollback claim/ack function path itself works under the role boundary.

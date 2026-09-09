@@ -1,0 +1,24 @@
+# Structured candidate retention — coordinator review (EV-080)
+
+Accepted bounded candidate retention on 2026-09-06 UTC. The full verification-module goal remains active.
+
+The application replay service brands results by issuing instance, preparation and exact immutable content, including copied precontext bytes. Candidate retention rejects cloned, changed, cross-issuer, tenant/operation/provider-scope mismatches and failed replay before any writes. It snapshots data before asynchronous writes and validates returned full handles, digests, sizes, exact ordered parents, original creation time and transformation metadata. Cancellation is checked before and after writes.
+
+Coordinator review found a real CAS collision in the draft: the repository identifies artifacts only by tenant and payload digest. Identical naked output/precontext bytes cannot acquire different operation ancestry. The reviewed builder instead registers versioned operation-bound envelopes as `verification_extraction_candidate` and `verification_structured_extraction_precontext`. Candidate `outputDigest` hashes extracted JSON separately from the full envelope digest. Exact emitted precontext bytes are retained in base64 with their own digest. `verification_structured_extraction_provenance` binds all input/profile/schema/provider custody. Native SQL can recompute the exported ordered pipe-hash metadata signature; this is a hash binding, not a provider signature or verification seal. Output status remains `unverified_candidate`.
+
+The distinct `verification_structured_extraction` / `extract_and_register` vocabulary is now shared but excluded from default admission. Canonical local migrations315/316 register the artifact types and reject direct step/operation success until final lifecycle/receipt guards exist. Current database-contract0.2.19 matches179 installed canonical files; intermediate0.2.18 was superseded before acceptance. Types generation/check and typecheck pass. No remote rollout was performed.
+
+Actual local proof replays six previously captured Gateway/Interfaze synthetic responses in the actual adapters with zero external calls. Two success candidates retain exact idempotent CAS handles and separate candidate identities despite equal output. Four HTTP/schema failures write no candidates. Clone and operation drift fail before writes; direct unconfigured SQL terminal transitions fail. Nine named checks pass. The independent audit downloads19 actual Storage objects, checks native hashes/ordered ancestry/semantic signatures, exact precontext against captured raw response, distinct candidate identities and canonical capture/operation rows. Original provider accounting and cancelled operation states remain unchanged.
+
+This proof is **offline audit candidate retention from cancelled synthetic-provider captures**. The capture+1000ms deterministic artifact timestamp is a proof fixture, not a production completion timestamp. The capture producer attempt is used solely as an existing artifact-registration FK; no canonical execution attempt is fabricated. The candidate builder itself has no lease or dispatch authority and does not publish a successful extraction operation. Production integration must supply canonical original identity/timing and fenced persistence before exposing completion.
+
+Five focused candidate tests pass (including content-addressed collision and mutation during a write); application suite175 tests passes. Standalone candidate/replay script typechecks pass. Full workspace72/72 uncached typecheck/test/build tasks pass in2m10.599s; skipped opt-in integration tests are not counted as live evidence.
+
+Evidence in parent `internal/`:
+
+- `verification-structured-extraction-candidate-e538d944-3778-441e-b04a-0fffcce2156e.json` — SHA256 `aad264af236fab2c890d0a9cccc5fa8fbf5d86e22163ee154ef9a0342a6b6a56`
+- `verification-structured-extraction-candidate-audit-20260906.json` — SHA256 `3ffa64a2194f00880dc36d38f16d809f212ba5697bf449f47ec8ed5da04e9c73`
+- `verification-structured-extraction-candidate-workspace-20260906.log` — SHA256 `394f427754353defba12a2e360c62e1a569b328e5c59e619c09b74737ab27ed1`
+- `verification-contract-0219-audit-20260906.json` — SHA256 `fe9e49c95353db0925424f7cfd107b9d4887757c43709fd34b2dca21d8fa665f`
+
+Next: canonical identity/timing, candidate/provenance commit, completed result/publication and exact terminal receipts; then configured executor/worker/HTTP/client/CLI/MCP/authenticated reads and process-crash recovery. Missing capture after dispatch remains uncertain with no automatic redispatch. Producer array evidence mapping, post-cancellation supplier reconciliation, claims/report/adjudication, case/score completeness, deployment/runtime cutovers, dashboard/human gold/calibration and the full matrix audit remain open. See WS-08-STRUCTURED-EXTRACTION-EXECUTOR-NEXT.md. No whole acceptance row is closed by this slice.

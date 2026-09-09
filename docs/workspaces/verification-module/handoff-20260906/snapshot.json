@@ -1,0 +1,2260 @@
+{
+  "createdAt": "2026-09-07T01:10:07.214Z",
+  "scope": "documentation checkpoint; no new infrastructure verification",
+  "root": "C:/Users/Pinda/Proyectos/aiengineer",
+  "latestEvidence": "EV-097",
+  "goalComplete": false,
+  "userNextMovePending": true,
+  "acceptanceRows": 46,
+  "statusCounts": {
+    "partial": 26,
+    "missing": 20,
+    "proved": 0,
+    "contradicted": 0,
+    "not_applicable": 0
+  },
+  "databaseContractVersion": "0.2.29",
+  "lastRecordedLocalMigration": "20260906033000",
+  "lastRecordedRemoteMigration": "20260906022000",
+  "liveDatabaseRechecked": false,
+  "repositories": [
+    {
+      "name": "ai-engineer-knowledge-services",
+      "status": [
+        "?? .dockerignore",
+        "?? .env.example",
+        "?? .github/",
+        "?? .gitignore",
+        "?? README.md",
+        "?? agent_workspaces/",
+        "?? apps/",
+        "?? catalog/",
+        "?? docs/",
+        "?? infra/",
+        "?? package.json",
+        "?? packages/",
+        "?? pnpm-lock.yaml",
+        "?? pnpm-workspace.yaml",
+        "?? scripts/",
+        "?? services/",
+        "?? skills/",
+        "?? tsconfig.base.json",
+        "?? turbo.json"
+      ]
+    },
+    {
+      "name": "ai-engineer-db-contract",
+      "status": [
+        "M README.md",
+        " M package-lock.json",
+        " M package.json",
+        " M scripts/generate-types.mjs",
+        " M src/api.ts",
+        " M src/database.generated.ts",
+        " M src/index.ts",
+        " M src/pre-research.ts",
+        "?? aiengineer-database-contract-0.2.11.tgz",
+        "?? aiengineer-database-contract-0.2.7.tgz",
+        "?? docs/",
+        "?? pnpm-lock.yaml",
+        "?? scripts/reset-disposable-local.mjs",
+        "?? scripts/reset-disposable-local.test.mjs",
+        "?? src/provenance.ts",
+        "?? supabase/migrations/20260829012402_cloud_agent_research_operations.sql",
+        "?? supabase/migrations/20260829012710_cloud_agent_research_index_advisors.sql",
+        "?? supabase/migrations/20260829012824_case_study_entity_contract.sql",
+        "?? supabase/migrations/20260829014222_case_study_index_advisors.sql",
+        "?? supabase/migrations/20260829181815_cloud_agent_parallel_source_provenance.sql",
+        "?? supabase/migrations/20260829183016_cloud_agent_source_provenance_index_advisors.sql",
+        "?? supabase/migrations/20260829192855_optimize_ai_entity_taxonomy_and_relationships.sql",
+        "?? supabase/migrations/20260829194024_refine_multidimensional_organization_and_person_taxonomy.sql",
+        "?? supabase/migrations/20260829194310_harden_claim_extraction_and_verification_contract.sql",
+        "?? supabase/migrations/20260829194743_permit_one_way_claim_evidence_finalization.sql",
+        "?? supabase/migrations/20260829194915_require_direct_same_run_claim_verification.sql",
+        "?? supabase/migrations/20260829194954_normalize_append_only_claim_evidence_assessments.sql",
+        "?? supabase/migrations/20260829195259_lock_verification_and_attempt_identity.sql",
+        "?? supabase/migrations/20260829195450_lock_claim_content_and_provenance.sql",
+        "?? supabase/migrations/20260829195623_lock_typed_claim_associations.sql",
+        "?? supabase/migrations/20260831201650_project_provenance.sql",
+        "?? supabase/migrations/20260902010518_research_starter_channels.sql",
+        "?? supabase/migrations/20260903010000_knowledge_content_contract.sql",
+        "?? supabase/migrations/20260903010100_knowledge_retrieval_contract.sql",
+        "?? supabase/migrations/20260903010200_knowledge_runtime_security.sql",
+        "?? supabase/migrations/20260903010300_knowledge_retrieval_completeness.sql",
+        "?? supabase/migrations/20260903010400_atomic_publication_and_hybrid_retrieval.sql",
+        "?? supabase/migrations/20260903010500_outbox_claiming_and_packet_materialization.sql",
+        "?? supabase/migrations/20260903010600_source_native_packet_members.sql",
+        "?? supabase/migrations/20260903010700_packet_member_tenant_targets.sql",
+        "?? supabase/migrations/20260903010800_authorized_operation_retry.sql",
+        "?? supabase/migrations/20260903010900_callback_delivery_replay_ledger.sql",
+        "?? supabase/migrations/20260903011000_standalone_capture_operation_provenance.sql",
+        "?? supabase/migrations/20260904010000_canonical_retrieval_execution.sql",
+        "?? supabase/migrations/20260904011000_governed_projection_embedding_publication.sql",
+        "?? supabase/migrations/20260904012000_vector_store_operation_provenance.sql",
+        "?? supabase/migrations/20260904013000_vector_store_document_operation_provenance.sql",
+        "?? supabase/migrations/20260904014000_vector_store_ingestion_evidence.sql",
+        "?? supabase/migrations/20260904015000_vector_store_lifecycle_control_plane.sql",
+        "?? supabase/migrations/20260905010000_verification_persistence_contract.sql",
+        "?? supabase/migrations/20260905011000_artifact_registration_lifecycle.sql",
+        "?? supabase/migrations/20260905012000_verification_artifact_metadata.sql",
+        "?? supabase/migrations/20260905013000_verification_legacy_compatibility_and_isolation.sql",
+        "?? supabase/migrations/20260905014000_verification_taxonomy_and_source_identity.sql",
+        "?? supabase/migrations/20260905015000_append_only_verification_judgments.sql",
+        "?? supabase/migrations/20260905016000_verification_artifact_parent_order.sql",
+        "?? supabase/migrations/20260905017000_verification_null_and_legacy_guards.sql",
+        "?? supabase/migrations/20260905018000_verification_digest_documentation.sql",
+        "?? supabase/migrations/20260905019000_verification_projection_artifact_type.sql",
+        "?? supabase/migrations/20260905020000_verification_locator_selected_content.sql",
+        "?? supabase/migrations/20260905021000_verification_parser_admission_artifact_types.sql",
+        "?? supabase/migrations/20260905022000_verification_policy_inputs_artifact_type.sql",
+        "?? supabase/migrations/20260906010000_verification_provider_budget_accounting.sql",
+        "?? supabase/migrations/20260906011000_verification_provider_artifact_types.sql",
+        "?? supabase/migrations/20260906012000_harden_verification_provider_accounting.sql",
+        "?? supabase/migrations/20260906013000_verification_provider_dispatch_fence.sql",
+        "?? supabase/migrations/20260906014000_provider_accounting_identity_overrun_rls.sql",
+        "?? supabase/migrations/20260906015000_provider_response_envelope_artifact_type.sql",
+        "?? supabase/migrations/20260906016000_provider_accounting_runtime_schema_usage.sql",
+        "?? supabase/migrations/20260906017000_provider_cost_lookup_artifact_type.sql",
+        "?? supabase/migrations/20260906018000_provider_precontext_envelope_artifact_type.sql",
+        "?? supabase/migrations/20260906019000_verification_evaluation_dataset_manifest.sql",
+        "?? supabase/migrations/20260906020000_verification_artifact_contract_marker.sql",
+        "?? supabase/migrations/20260906021000_verification_artifact_consumer_admission.sql",
+        "?? supabase/migrations/20260906022000_verification_artifact_identity_scope.sql",
+        "?? supabase/migrations/20260906023000_verification_case_evidence_reads.sql",
+        "?? supabase/migrations/20260906024000_verification_case_reader_schema_access.sql",
+        "?? supabase/migrations/20260906025000_verification_benchmark_experiment_artifact.sql",
+        "?? supabase/migrations/20260906026000_verification_benchmark_profile_artifact.sql",
+        "?? supabase/migrations/20260906027000_verification_benchmark_recorded_call_artifact.sql",
+        "?? supabase/migrations/20260906028000_verification_benchmark_source_import_artifacts.sql",
+        "?? supabase/migrations/20260906029000_verification_benchmark_durable_run.sql",
+        "?? supabase/migrations/20260906029100_verification_benchmark_checkpoint_running_only.sql",
+        "?? supabase/migrations/20260906029200_verification_benchmark_remove_unmapped_eval_run.sql",
+        "?? supabase/migrations/20260906029300_verification_benchmark_nullsafe_request_binding.sql",
+        "?? supabase/migrations/20260906029400_verification_benchmark_checkpoint_result_binding.sql",
+        "?? supabase/migrations/20260906030000_verification_benchmark_arm_publication.sql",
+        "?? supabase/migrations/20260906030100_verification_benchmark_publication_artifacts.sql",
+        "?? supabase/migrations/20260906030200_verification_benchmark_publication_dataset_binding.sql",
+        "?? supabase/migrations/20260906030300_verification_benchmark_published_dataset_immutable.sql",
+        "?? supabase/migrations/20260906030400_verification_benchmark_comparison_artifacts.sql",
+        "?? supabase/migrations/20260906030500_verification_benchmark_comparison_lifecycle.sql",
+        "?? supabase/migrations/20260906030600_verification_benchmark_comparison_completion_required.sql",
+        "?? supabase/migrations/20260906030700_verification_benchmark_comparison_publication_type.sql",
+        "?? supabase/migrations/20260906030800_verification_benchmark_comparison_custody.sql",
+        "?? supabase/migrations/20260906030900_verification_benchmark_comparison_terminal_success.sql",
+        "?? supabase/migrations/20260906031000_verification_benchmark_comparison_claim.sql",
+        "?? supabase/migrations/20260906031100_verification_benchmark_comparison_semantic_binding.sql",
+        "?? supabase/migrations/20260906031200_verification_benchmark_comparison_terminal_artifact_type.sql",
+        "?? supabase/migrations/20260906031300_verification_provider_operation_scope.sql",
+        "?? supabase/migrations/20260906031400_verification_provider_response_capture.sql",
+        "?? supabase/migrations/20260906031500_verification_structured_extraction_candidate_artifacts.sql",
+        "?? supabase/migrations/20260906031600_verification_structured_extraction_precontext.sql",
+        "?? supabase/migrations/20260906031700_verification_structured_extraction_lifecycle.sql",
+        "?? supabase/migrations/20260906031800_verification_structured_extraction_execution.sql",
+        "?? supabase/migrations/20260906031900_verification_structured_extraction_publication.sql",
+        "?? supabase/migrations/20260906032000_verification_structured_extraction_source_custody.sql",
+        "?? supabase/migrations/20260906032100_verification_structured_extraction_terminal.sql",
+        "?? supabase/migrations/20260906032200_verification_structured_extraction_input_custody.sql",
+        "?? supabase/migrations/20260906032300_verification_structured_extraction_step_membership.sql",
+        "?? supabase/migrations/20260906032400_verification_structured_extraction_owner_custody.sql",
+        "?? supabase/migrations/20260906032500_verification_structured_extraction_failure.sql",
+        "?? supabase/migrations/20260906032600_verification_structured_extraction_failure_terminal.sql",
+        "?? supabase/migrations/20260906032700_verification_provider_reconciliation_artifact.sql",
+        "?? supabase/migrations/20260906032800_verification_provider_reconciliation_ledger.sql",
+        "?? supabase/migrations/20260906032900_verification_provider_reconciliation_missing_response.sql",
+        "?? supabase/migrations/20260906033000_verification_provider_reconciliation_success.sql",
+        "?? supabase/tests/"
+      ]
+    },
+    {
+      "name": "ai-engineer-mission-control",
+      "status": [
+        "?? .dockerignore",
+        "?? .env.example",
+        "?? .github/",
+        "?? .gitignore",
+        "?? README.md",
+        "?? apps/",
+        "?? catalog/",
+        "?? docs/",
+        "?? infra/",
+        "?? package.json",
+        "?? packages/",
+        "?? pnpm-lock.yaml",
+        "?? pnpm-workspace.yaml",
+        "?? scripts/",
+        "?? skills/",
+        "?? tsconfig.base.json",
+        "?? turbo.json",
+        "?? vendor/"
+      ]
+    },
+    {
+      "name": "research_ingestion_systems_agent",
+      "status": [
+        "M .gitignore",
+        " M AGENTS.md",
+        " D agent/agent.ts",
+        " D agent/channels/eve.ts",
+        " D agent/instructions.md",
+        " M package.json",
+        " M pnpm-lock.yaml",
+        " M pnpm-workspace.yaml",
+        " M tsconfig.json",
+        "?? .agents/",
+        "?? .env.example",
+        "?? EVE_MONOREPO_ARCHITECTURE_RESEARCH.md",
+        "?? HANDOFF-2026-08-27-AI-SEMANTIC-MISSION-INTAKE.md",
+        "?? INTERFAZE_EXPERIMENT_DESIGN.md",
+        "?? MISSION_INTAKE_CONSOLIDATION_PROTOTYPE.md",
+        "?? README.md",
+        "?? RESEARCH_INGESTION_RETRIEVAL_ARCHITECTURE_CHECKPOINT_2026-08-23.md",
+        "?? SYSTEMS_ARCHITECTURE_PLANNING_WORKBOOK.md",
+        "?? SYSTEMS_PLANNING_HANDOFF_2026-08-22.md",
+        "?? VERCEL_MONOREPO_OPERATIONS_GUIDE.md",
+        "?? VERIFICATION_AGENT_RESEARCH_AND_PROTOTYPE_PLAN_2026-08-27.md",
+        "?? VERIFICATION_SYSTEM_TECHNICAL_DECISIONS.md",
+        "?? agents/",
+        "?? apps/",
+        "?? experiments/",
+        "?? packages/",
+        "?? prompts/",
+        "?? scripts/",
+        "?? skills-lock.json",
+        "?? skills/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-transports-04b48945-7ae2-4adf-a0f5-db164e58b745.json",
+      "exists": true,
+      "bytes": 249365,
+      "sha256": "782c9ade8ddf9f47b8dc5e22a2775d650cfdc9cb58633a33f74aebecbc941487"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-transports-audit-20260906.json",
+      "exists": true,
+      "bytes": 476,
+      "sha256": "ded13e2d389ae309b70e022502fcb6df98208f517625a2ca885bd69a20773e6c"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-transports-workspace-20260906.log",
+      "exists": true,
+      "bytes": 55473,
+      "sha256": "1d15c16baa667fcc245159caddbd2cf39ba9a1adc23c28868279c982e491f778"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-http-da533043-57c9-4b9a-82ad-41bdd3494897.json",
+      "exists": true,
+      "bytes": 249069,
+      "sha256": "567eda95115dcc913166763a3a67d78afc73b178ddc652aae643a4675840f7ea"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-http-audit-20260906.json",
+      "exists": true,
+      "bytes": 470,
+      "sha256": "d4c3876c57c8a42183e60a068855edfa456f11bf56b2acf60c135eeb100f2198"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-http-workspace-20260906.log",
+      "exists": true,
+      "bytes": 55209,
+      "sha256": "98ccecc178cf636267fcab42c3103b4fb7c73763a20e9f30e4e86813cceff22d"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-reads-272dc9dc-775c-433f-952b-f14c4fef10c8.json",
+      "exists": true,
+      "bytes": 4253,
+      "sha256": "6255d6d895794afa71907e6bf953d5cab65d6c156193ffee695a83760c2c17e2"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-reads-workspace-20260906.log",
+      "exists": true,
+      "bytes": 54594,
+      "sha256": "ccfa21e7eef9eb8a78caa7b499f603ec283482428f1220b27c4a3067ea9fcde9"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-publications-9d8562b6-5f9b-486c-ac9a-2b696ce53f65.json",
+      "exists": true,
+      "bytes": 247756,
+      "sha256": "ea557e9187a7fc25a658d035afb4031c471d52849438fee5d6c9f9b7e72451b7"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-publications-audit-20260906.json",
+      "exists": true,
+      "bytes": 477,
+      "sha256": "a4f7f285d4b9181cf6a71bcd55391f32557d68b3fa49c135c940a892dacdf89b"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-contract-0229-audit-20260906.json",
+      "exists": true,
+      "bytes": 36794,
+      "sha256": "1e7e204ff6d5d3c8b33558c47c84458023d7a6f6f21884d54b369a30241d5cb6"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-2520a59b-d608-4d8c-bd48-43d02830fa1d.json",
+      "exists": true,
+      "bytes": 21310,
+      "sha256": "83ac4b904cd62ac18ffa7e62f67c136ad3079ba0ef92661da7ce83c548f41a29"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-provider-reconciliation-audit-20260906.json",
+      "exists": true,
+      "bytes": 463,
+      "sha256": "61ec880375ff2e00d2e61c41805f2e07080583bf56cb97d2e19a7fe28895ea4c"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-structured-extraction-process-recovery-39188231-7bdd-435a-8df3-fe66f6421425.json",
+      "exists": true,
+      "bytes": 185498,
+      "sha256": "e77f7c8241a9eb37d24f3fbdbebb0c141434bad629a9ff8822644c572d68365a"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-structured-extraction-dispatch-recovery-b2143f43-1da0-434a-b53e-7f1f2143cbe5.json",
+      "exists": true,
+      "bytes": 9962,
+      "sha256": "66c1075485896bcd62be450652c326ad3e6eecd3651e353ce32ba6d7c291a725"
+    },
+    {
+      "path": "C:/Users/Pinda/Proyectos/aiengineer/internal/verification-run-local-proof.mjs",
+      "exists": true,
+      "bytes": 22073,
+      "sha256": "e2d4c0dd0a5cbee231198954940fbcbfaf579af47ef0d4d7559614fcd5a493d6"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "apps/api/src/verification-benchmark-comparison-reads-runtime.ts",
+      "bytes": 1944,
+      "sha256": "22f09afe24b59ed6c7a41a5130473b0e9d39066bc3785254f1015b89e425200a"
+    },
+    {
+      "path": "apps/api/src/verification-benchmark-comparison-reads.test.ts",
+      "bytes": 2246,
+      "sha256": "e2b809225e887c3f50bb602d43cb8962ac091e3f3b58448791ba316f6ca53163"
+    },
+    {
+      "path": "apps/api/src/verification-benchmark-reads-runtime.test.ts",
+      "bytes": 1795,
+      "sha256": "4fc2a0d0584864fada809a6c2e6ae9b88e3d0dabf5c36a0d32148545a9a9d5a2"
+    },
+    {
+      "path": "apps/api/src/verification-benchmark-reads-runtime.ts",
+      "bytes": 3322,
+      "sha256": "6bcfc6f4774cfca277d06e7eac61077dde1f797aa1efacbf5bc6141d37d72cfb"
+    },
+    {
+      "path": "apps/api/src/verification-benchmark-reads.test.ts",
+      "bytes": 2466,
+      "sha256": "6817d8b89d99c1b3cc0d3ebe92a2838834ed1b53b60fa222325df076b6b0f9a2"
+    },
+    {
+      "path": "apps/api/src/verification-ownership.test.ts",
+      "bytes": 1729,
+      "sha256": "7f62b5fd90de0744122b493f04d141503dd7a0f395c923f1e01328a2f269ad1a"
+    },
+    {
+      "path": "apps/api/src/verification-ownership.ts",
+      "bytes": 5149,
+      "sha256": "9a85f1f017410f5b27a7eff296d63f2bf922a18953ec97d8d24c3e75a3776c24"
+    },
+    {
+      "path": "apps/api/src/verification-provider-reconciliation-runtime.ts",
+      "bytes": 4957,
+      "sha256": "2b67db77abc48917327296649cf4df8bcc7a2a46be020ce851e704e65815c4b3"
+    },
+    {
+      "path": "apps/api/src/verification-reads-runtime.ts",
+      "bytes": 1721,
+      "sha256": "26135e4548d8812efad536e6f5bdf36f5ba58693659d6d8e06e69b73ebaa943f"
+    },
+    {
+      "path": "apps/api/src/verification-reads.test.ts",
+      "bytes": 5315,
+      "sha256": "4631fe11e5246aec2c13d003f6099e283057c635fa53f8e5201b66ab8cf6914c"
+    },
+    {
+      "path": "apps/api/src/verification-routes.test.ts",
+      "bytes": 11336,
+      "sha256": "110cf95def575cad699da06a663f8acf552c3a73c9cfa5d88bfd7ae956ee93ef"
+    },
+    {
+      "path": "apps/api/src/verification-structured-extraction-reads-runtime.ts",
+      "bytes": 2325,
+      "sha256": "e00ef5c0bd98df5c6a5fd3110d818dfd3c3ea759e4241b5254f13d38ba7e62c0"
+    },
+    {
+      "path": "apps/api/src/verification-structured-extraction.test.ts",
+      "bytes": 3843,
+      "sha256": "893a2e5d93af7f1ec5b02297b3099064e5069a40f801df9662598980110ac81f"
+    },
+    {
+      "path": "apps/cli/src/commands.test.ts",
+      "bytes": 3697,
+      "sha256": "cb888a222f6f21eceae2ebf28beefee3c4b6b13d92b3b78387bcf2bb058d0b5a"
+    },
+    {
+      "path": "apps/cli/src/commands.ts",
+      "bytes": 15093,
+      "sha256": "8876af0f7d514d2120f776dae4f907078bc61d8f2b75927ac61330e9566b49b2"
+    },
+    {
+      "path": "apps/cli/src/index.ts",
+      "bytes": 2292,
+      "sha256": "463f489a61a4c64a1507191a067f8adf4578364cde1ad8f11baf2873e4a7eecc"
+    },
+    {
+      "path": "apps/cli/src/verification-benchmark.test.ts",
+      "bytes": 3605,
+      "sha256": "c8d5cab576c14d0652bb10338ea40e825ceef83681dc912e26fb6c2d57ad602c"
+    },
+    {
+      "path": "apps/cli/src/verification-case-reads.test.ts",
+      "bytes": 2021,
+      "sha256": "fc567319b478d654d759e7fb2872554aa4f16b99e845e993f774c8f055768b71"
+    },
+    {
+      "path": "apps/cli/src/verification-completion.ts",
+      "bytes": 2921,
+      "sha256": "fc44b9dccca374749f27456546baa19441adfc601d6ede6d4905abdfb998caef"
+    },
+    {
+      "path": "apps/mcp/src/catalog.test.ts",
+      "bytes": 935,
+      "sha256": "ba5cb2c6eb658f8b5701e6502b98e987c8dbdf17a244495d3eb2ed6518a992bc"
+    },
+    {
+      "path": "apps/mcp/src/catalog.ts",
+      "bytes": 2403,
+      "sha256": "33e645133b728cd19f862d26a37e31cb167d7e13aba3b5d1739b8faf5248481d"
+    },
+    {
+      "path": "apps/mcp/src/index.test.ts",
+      "bytes": 12126,
+      "sha256": "dbd8b0c46d8281aaa98beec2357682eff2cfef64fb6f7e18cba4bbc96ddb3282"
+    },
+    {
+      "path": "apps/mcp/src/index.ts",
+      "bytes": 23238,
+      "sha256": "baef618cc406674bf31dd4e14858539091f5958d910e34f44dd82e978a926c14"
+    },
+    {
+      "path": "apps/mcp/src/verification-tools.test.ts",
+      "bytes": 5014,
+      "sha256": "1ff710016ed01c63bfc15b946dab2cc572c42b91c557f7f299863fd9a5eb9f86"
+    },
+    {
+      "path": "apps/worker/src/verification-activities.test.ts",
+      "bytes": 2663,
+      "sha256": "40d5acde63002138d6624dbdca7975ed908828229fceee74dee237d03f6364bf"
+    },
+    {
+      "path": "apps/worker/src/verification-activities.ts",
+      "bytes": 4062,
+      "sha256": "0352f1668a65b3d436934263f8cdecb9eba9f2a7fb6ff57e77b62b4fef075252"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-activity.test.ts",
+      "bytes": 11189,
+      "sha256": "e9e300e604f37f68641f657819778f6c782cc961bbf7c96708e30333213f5bd8"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-activity.ts",
+      "bytes": 8905,
+      "sha256": "a2facf0998e9cd2f59425ee797b223aeec4377fde6f6cdf86233652cb795de09"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-comparison-activity.test.ts",
+      "bytes": 13137,
+      "sha256": "b8aab03288a6fe6ce83dafe495a036555d950d66d0d5a635622c029e84b264d5"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-comparison-activity.ts",
+      "bytes": 12436,
+      "sha256": "1d4bba39e53228282606b3e00f14933f0dd433e8e2058d6b6270db4a98cc475c"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-comparison-runtime.test.ts",
+      "bytes": 2023,
+      "sha256": "8b40f8cc12636d3838b3c008df029546fdd7de0967a981eb4e0370d4ad979a42"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-comparison-runtime.ts",
+      "bytes": 3529,
+      "sha256": "dc511754a93070b05be195dae9306512241ea2a5f62b4ab8a2af31553006cfac"
+    },
+    {
+      "path": "apps/worker/src/verification-benchmark-runtime.ts",
+      "bytes": 3640,
+      "sha256": "dac7fb789aa89e153d88657a00df9e660f0999c7d104a90b14c343d1ee0e6121"
+    },
+    {
+      "path": "apps/worker/src/verification-metric-activity.test.ts",
+      "bytes": 3032,
+      "sha256": "150372b6ad76c145c8f92ee3d8c81c78f81f4381d2828a3deb835922d7f95845"
+    },
+    {
+      "path": "apps/worker/src/verification-metric-activity.ts",
+      "bytes": 4476,
+      "sha256": "1866c2bafdec80722ca6e8ae8c09b7deebb2d47270b7ad240f083030ccf0b48b"
+    },
+    {
+      "path": "apps/worker/src/verification-metric-sealer.test.ts",
+      "bytes": 16687,
+      "sha256": "d0c6fa17dadc3446448d67b69982c889143e1ed4b234caf9b4d14524ee4334fb"
+    },
+    {
+      "path": "apps/worker/src/verification-metric-sealer.ts",
+      "bytes": 24750,
+      "sha256": "6969eab23ac4de1754ce7a12826de9a05f70b4489388d576881aaadecda6170e"
+    },
+    {
+      "path": "apps/worker/src/verification-sealed-replay-activity.test.ts",
+      "bytes": 6011,
+      "sha256": "5b645caa0ba4986a101e7daef684336687553b82c3725d5da54c046cdd45e80f"
+    },
+    {
+      "path": "apps/worker/src/verification-sealed-replay-activity.ts",
+      "bytes": 6289,
+      "sha256": "00d8eb875527aba60c9ad87a48946127157a308c3a0a3f5ba9d09ade024beb51"
+    },
+    {
+      "path": "apps/worker/src/verification-sealed-replay-runtime.test.ts",
+      "bytes": 1753,
+      "sha256": "9f7baf1d5dc16a9a8ab945f2bf142cdb1c673b1fa53cf8ad8156ec0315fad4d1"
+    },
+    {
+      "path": "apps/worker/src/verification-sealed-replay-runtime.ts",
+      "bytes": 2492,
+      "sha256": "fd2a3400ff0096bc6631e02f061c4319dd5aa437b1e5ec1f410cc5905e1eca35"
+    },
+    {
+      "path": "apps/worker/src/verification-structured-extraction-runtime.test.ts",
+      "bytes": 3613,
+      "sha256": "999ae69ac7367857e5c87ac7ecfd76ae54bf043de5b5560a9ff1c9bea562ba67"
+    },
+    {
+      "path": "apps/worker/src/verification-structured-extraction-runtime.ts",
+      "bytes": 16615,
+      "sha256": "5928cbce0b0f364eb3d12f346d84dc36aa29190c3a0ea9210da8a030703cbab5"
+    },
+    {
+      "path": "packages/application/src/verification-admission.test.ts",
+      "bytes": 20100,
+      "sha256": "3e5d120ef66d6859805a57dc02f5fe465a805d21d68ef54415d6e7889eb7475f"
+    },
+    {
+      "path": "packages/application/src/verification-admission.ts",
+      "bytes": 29760,
+      "sha256": "a60e6703ec0b711dfb493b591164affc2d0d7de18335ebe6505ecbc75904187c"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison-publication.ts",
+      "bytes": 7780,
+      "sha256": "2217aa51d3c7f00d2b1d808705a6005857d10b2d96d75ddfc73e9f11d3ce15cb"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison-reads.test.ts",
+      "bytes": 5471,
+      "sha256": "d5f98c6d3792918cce2b2900b4fedb53580a756e37b013667cfb4b9d0938b38d"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison-reads.ts",
+      "bytes": 4578,
+      "sha256": "f21e19552b7ec4fa2728a693475798c23e47a0a9e0fba267dc52b5b4d66825c3"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison-runtime-config.test.ts",
+      "bytes": 2545,
+      "sha256": "603bc068f3973fe7e1c0c5baef903596c3c20f8b3dfc285012d7f2e46792bee2"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison-runtime-config.ts",
+      "bytes": 2398,
+      "sha256": "87172c591b27062b20621dd3beaff16a3828793c874ebc0884998e83c194ac4f"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison.test.ts",
+      "bytes": 18742,
+      "sha256": "aab9cd54d32713ba729a8d981f6d94432bc27361a2b76b16b020dadf15ccb5c8"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-comparison.ts",
+      "bytes": 23675,
+      "sha256": "f8d461c2c4727a985415e205d75d6f058e8a2d760fa89f6319d68fe0ab697e76"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-inputs.test.ts",
+      "bytes": 9881,
+      "sha256": "30f43c679bf0781d15585ab744707621ddb5940391af4b42e51aca82a7d0b01a"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-inputs.ts",
+      "bytes": 8202,
+      "sha256": "6984bae384472eb725b1fb76488fd5ed4d362787849ff01734672c3549a567fa"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-observations.test.ts",
+      "bytes": 11733,
+      "sha256": "f573acaf4aae15e01f1cc6ab31518d76eb0d6cc826d5e4670e3b49d2a5ecdec5"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-observations.ts",
+      "bytes": 9416,
+      "sha256": "a6f43850abef172e263871d7a95bd089ff5a9c2701136fdfff365796b8e73fa8"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-offline-executor.ts",
+      "bytes": 6823,
+      "sha256": "5db8a6a0ac8f2bbc8c2b17b69bdecf161bb718643fdb0e7f8efbc570ea2a60b7"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-profile.test.ts",
+      "bytes": 2561,
+      "sha256": "6c966f860489da83d1b8bbc7a9655d246c6956c72c7a06295426a53d4fd3ef93"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-projections.test.ts",
+      "bytes": 9433,
+      "sha256": "565916c2e1f21c1b64e03da923cbd93c59d972eb5f999b5f5cb5bb05e52449f0"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-projections.ts",
+      "bytes": 9877,
+      "sha256": "05ff18cb81d872de7d2e0898b2b79f4f054160c73f51c07fbc3d96ec354eb817"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-publication.ts",
+      "bytes": 11484,
+      "sha256": "80fac1554738b41a966e1172a71eb3c12274be9ebc96d77e170c4c481268dbb8"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-reads.test.ts",
+      "bytes": 4989,
+      "sha256": "8464b6eadcc00120c9cb9fc4431a5acdeb3d8da4923b3379903a5b2f45ffc887"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-reads.ts",
+      "bytes": 6154,
+      "sha256": "363982b1b351524cf1fa4709f6c96dab71dccfa8268a0e3181dc3ae8de7e4f88"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-registered-profile.test.ts",
+      "bytes": 8488,
+      "sha256": "2ee9175c647f785c5ad774a8b39ed34fcffd1315d46fd33c96144102804cb1a2"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-registered-profile.ts",
+      "bytes": 11561,
+      "sha256": "8ba4e703a369bb0ce29e09c2142550a90dce5bdbadae06da6e7b8001b91000e3"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-registered-replay.test.ts",
+      "bytes": 34518,
+      "sha256": "12009d5c2f3b02bd7157133f23164c31662ee94f8280ab8ae86db75faf119577"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-registered-replay.ts",
+      "bytes": 30347,
+      "sha256": "5fb78adbdeacdaa03c518426eecccf4c977c0d631e63fab61c6af52b623059ee"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-response-replay.test.ts",
+      "bytes": 3694,
+      "sha256": "ae051458c8af514c2fd9e7d1fab2d5c5062b21f96ad2b584e4ebf727ab1e0e9b"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-response-replay.ts",
+      "bytes": 4962,
+      "sha256": "b225ec48a1e841e6bd3145430f3f50d996168fe45aafa50b1f55aac8efafc272"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-runtime-config.test.ts",
+      "bytes": 2663,
+      "sha256": "75b05ed9e33e08ca631afa40f1765cbaaa6f318ededbb7b373ce7c07e30d2d76"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-runtime-config.ts",
+      "bytes": 3737,
+      "sha256": "83866df61a733aaf2d20770d8c445b5cb4c108df7b260b124ab58f08fafddac9"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-source-import.test.ts",
+      "bytes": 9255,
+      "sha256": "9d51b3c60fa1bb6b36fd0d70a4885da7f4cdcbc0a6e2d55cd80fc7c593cbb2b1"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark-source-import.ts",
+      "bytes": 18360,
+      "sha256": "dbb1784a3960bc99049ce355a44874a1b289e8f9eb727a94d734f3145fec44e2"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark.test.ts",
+      "bytes": 28476,
+      "sha256": "1f5c7be2745b3cab6a39b42d08b93047c0f1f717502747298d79d7db13a6d533"
+    },
+    {
+      "path": "packages/application/src/verification-benchmark.ts",
+      "bytes": 74937,
+      "sha256": "561651f9abcf3beb570392774b2981702ae0adebb047d21f552d20611fa88142"
+    },
+    {
+      "path": "packages/application/src/verification-metrics.test.ts",
+      "bytes": 11305,
+      "sha256": "e5774bde35c01928482440e5601d86e2c44e8dbbfa5f4d1b0047eb00f1dd6216"
+    },
+    {
+      "path": "packages/application/src/verification-metrics.ts",
+      "bytes": 16531,
+      "sha256": "7a10b0b53389e0b1a211b8632d61d5e5c41afa84fb841d42be6d54ae3c91b402"
+    },
+    {
+      "path": "packages/application/src/verification-provider-reconciliation.ts",
+      "bytes": 8545,
+      "sha256": "cef4bd7df6c5404e99e7cddd3ef124329d14c24474a028f618126c2d41794f54"
+    },
+    {
+      "path": "packages/application/src/verification-provider-transport.test.ts",
+      "bytes": 5668,
+      "sha256": "8d2267e1756d4cce350c39102a8cf60d9261d5f924727b7a042fdeec027361f9"
+    },
+    {
+      "path": "packages/application/src/verification-provider-transport.ts",
+      "bytes": 2842,
+      "sha256": "9020d68b321f0df303d929689e314e70c2b8c8675d16990b8f4aadd5e6d911f7"
+    },
+    {
+      "path": "packages/application/src/verification-provider.test.ts",
+      "bytes": 6214,
+      "sha256": "34be2af2e8b31e658d55b035f532465dbcd593bdbaf42d0181004e02144d2d38"
+    },
+    {
+      "path": "packages/application/src/verification-provider.ts",
+      "bytes": 15691,
+      "sha256": "ad986a66ac059e3769028950f0f1648e69ce4ebbfa81bbd89117d7166e09d76e"
+    },
+    {
+      "path": "packages/application/src/verification-reads.test.ts",
+      "bytes": 13466,
+      "sha256": "dcebf30532da39ba09652b3d5b1540c758bb2ae8f663252ae7ee84a2caea969a"
+    },
+    {
+      "path": "packages/application/src/verification-reads.ts",
+      "bytes": 13712,
+      "sha256": "76b2fcc7370d019ac80c9d3c3dfea47326e4ccf4fc3ac8d90b0c282bb64e701a"
+    },
+    {
+      "path": "packages/application/src/verification-replay.ts",
+      "bytes": 5943,
+      "sha256": "a2b6e55043e4065278154465f0db13be6a85bba933c70b95291f14e279ef89e1"
+    },
+    {
+      "path": "packages/application/src/verification-seal-policy.test.ts",
+      "bytes": 4067,
+      "sha256": "12fabca5677d7f442c38510be2fed29dc310304b2fef3b28baa4450107d535ad"
+    },
+    {
+      "path": "packages/application/src/verification-seal-policy.ts",
+      "bytes": 2587,
+      "sha256": "f3071ed41e87e6e055b0b8c0d263aef60dc2dde18f5d7a24cef928fc979bbc40"
+    },
+    {
+      "path": "packages/application/src/verification-service.test.ts",
+      "bytes": 14202,
+      "sha256": "6bd41bda5feb0b356a5c001dec2f8b75155492a39c0b575d6c69bc0418c2b02e"
+    },
+    {
+      "path": "packages/application/src/verification-service.ts",
+      "bytes": 27505,
+      "sha256": "5a4ab6a379624f257cd5a79dc8a08d0d72e71f622b2f5eb51d088b998fe52204"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-candidate.test.ts",
+      "bytes": 21336,
+      "sha256": "19570751a63ca41766bd0c58c4aac7f32357fa1d35ad4e62ccc4d2f8bc4eab49"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-candidate.ts",
+      "bytes": 18119,
+      "sha256": "dab673c5d879fbc219ef1e8ca81b2c0e5330e356758c79d8ba4f3c0da2238209"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-failure-result.test.ts",
+      "bytes": 8573,
+      "sha256": "392a19c282d094d594576ab97bc4fdbe173cd3a02f38a088e135d4e121da7948"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-failure-result.ts",
+      "bytes": 5106,
+      "sha256": "e35ec46873e098175efd865244c80867b5e3fac58776c4362a754dce25fc8b34"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-failure.test.ts",
+      "bytes": 23720,
+      "sha256": "c5fd84c85854094af36df2888168ee9bebcaa8b870ce4d308c4188dd35ab4044"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-failure.ts",
+      "bytes": 30019,
+      "sha256": "8fb58a79472b6b2772030d5f39b01e9b24e11a9988d752e71a74233126215d14"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-profile.test.ts",
+      "bytes": 15787,
+      "sha256": "db91672f9b2fe257ad7e6fcb3c4cf6db4d3f3bd90efe802e5071844c2c11677c"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-profile.ts",
+      "bytes": 14954,
+      "sha256": "1b9fff4180d33a2ce28c32bf5ddd605b8e51a99d0974fa57732f4f3bb0f8a409"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-publication.test.ts",
+      "bytes": 22673,
+      "sha256": "6210f18ac99965216d617f11a0d602d916e59b3c3a3209cc720b821772417de4"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-publication.ts",
+      "bytes": 40961,
+      "sha256": "04ff284a298a7d74c9e8acb1a2d3dc216d5f32db8050a6d7f21b32648f48456a"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-reads.ts",
+      "bytes": 2744,
+      "sha256": "777d3b28a156580bbd8134adbfee079386214ba54b07129a4810ba5a1a7b8e90"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-replay.ts",
+      "bytes": 12617,
+      "sha256": "9039f0be9f855713078d1a22c7307cdfced21eedc075ad7763e9da9fc451756e"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-result.test.ts",
+      "bytes": 8874,
+      "sha256": "9f814bd546278d60bb82284cd545fb39802a8129cbc44d268d958f7bcf3c80f2"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-result.ts",
+      "bytes": 5370,
+      "sha256": "d7aa856b60aea876546d1582ccfcf2bed023e2ad92eee2efbeb4ef73116ba082"
+    },
+    {
+      "path": "packages/application/src/verification-structured-extraction-runtime.ts",
+      "bytes": 2443,
+      "sha256": "ae88f4cd14c7f0c193cc0afebee330b754fac856ecdddbe8f2fe4b62372c3a8c"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-comparison-publication.ts",
+      "bytes": 3926,
+      "sha256": "57508fddb48be1ab9c1c56a93d993490308f051c9d7421dbd500f7bef0e4329c"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-comparison-reads.ts",
+      "bytes": 2961,
+      "sha256": "b28d6c8bc2d26f3f98f81216a827f91e11b24eecfaed339111c9092f837819c4"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-comparison.test.ts",
+      "bytes": 2926,
+      "sha256": "456b21471f8f25c7851909b58a2a15c1748e209f95c2823a5957fee5808521d4"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-comparison.ts",
+      "bytes": 3120,
+      "sha256": "d77fdc9750c46f5cfaaf1c02057dd4eaf2c0e0c9aa91afcd9c3fd32d3f7d6ad7"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-experiment.test.ts",
+      "bytes": 1886,
+      "sha256": "95f3af516b63661f176e4297c6fce27c9bb54fa27d1e4fd231167a806602ca44"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-publication.ts",
+      "bytes": 5061,
+      "sha256": "5e804ff1b981a493863463a8ee316cddedd698d4daa6ca53f08a15d6524a5b82"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-reads.ts",
+      "bytes": 3897,
+      "sha256": "d2519c836add53e304ce2acda56c3b7b365477bdec762d734a8aff051232b6c2"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark-v1.test.ts",
+      "bytes": 2354,
+      "sha256": "4255c45fe9e0962a64822aa63f65f8dcc33b177aae1a09527d0d46ccd9ac7fa9"
+    },
+    {
+      "path": "packages/contracts/src/verification/benchmark.ts",
+      "bytes": 30480,
+      "sha256": "4dd57f81ac39517f9f743b9bec2ae7536d4888fae9a37b1bf6e958715c9c5cd9"
+    },
+    {
+      "path": "packages/contracts/src/verification/index-primitives.ts",
+      "bytes": 258,
+      "sha256": "6ce3f7ed771b06d1c2adfd0966c755d9988b35ba103b6925604c4ec07e207a94"
+    },
+    {
+      "path": "packages/contracts/src/verification/index.ts",
+      "bytes": 798,
+      "sha256": "f82c222338fb5c0ab9001e162ed618636b470f1258d5102f72ca9cc5897b6684"
+    },
+    {
+      "path": "packages/contracts/src/verification/model.ts",
+      "bytes": 15481,
+      "sha256": "01c7ca818378fab4d937cb65331ccf76c07d7772268f5a8ea81c19a5659e93a0"
+    },
+    {
+      "path": "packages/contracts/src/verification/operations.ts",
+      "bytes": 7985,
+      "sha256": "838511cd619921890514817bf5e3ab1c8cf3a265cb7802fe70b84438098f080a"
+    },
+    {
+      "path": "packages/contracts/src/verification/primitives.ts",
+      "bytes": 4569,
+      "sha256": "fce3d0f0f0b903b030bec60075be5f3a03bc4b824aa27b7c7ae3ae9a61070e20"
+    },
+    {
+      "path": "packages/contracts/src/verification/provider-reconciliation.test.ts",
+      "bytes": 587,
+      "sha256": "1ab8eb6bd16f347d9d2c691ece73bad9532d9658afc7b8dce7fc3c8bc5e98843"
+    },
+    {
+      "path": "packages/contracts/src/verification/provider-reconciliation.ts",
+      "bytes": 3071,
+      "sha256": "c2029b271d8cdd9831caa8de0fad7aafeb12558cb51f635692b3d9a17664847b"
+    },
+    {
+      "path": "packages/contracts/src/verification/reads.ts",
+      "bytes": 7353,
+      "sha256": "a30e2507febfc69f1f4ce7d6444cebe2d9844802d023d2d2b5b97ff70c1ccb08"
+    },
+    {
+      "path": "packages/contracts/src/verification/requests.test.ts",
+      "bytes": 7136,
+      "sha256": "8b1e4d1c34665de0c741b308c76a09dbaa6e45a2f74b7c920e523b0e13e846df"
+    },
+    {
+      "path": "packages/contracts/src/verification/requests.ts",
+      "bytes": 8519,
+      "sha256": "9b5d240d1f49df48dfd38fd9a5d2ebb2ff0e31fc16ec15aa1e3a99c2495c7a5f"
+    },
+    {
+      "path": "packages/contracts/src/verification/selectors.ts",
+      "bytes": 7631,
+      "sha256": "93902850d1ee663f6951c74ced1b44570e4fb44cec84872eb8a9753677b824a7"
+    },
+    {
+      "path": "packages/contracts/src/verification/semantic-policy.ts",
+      "bytes": 8437,
+      "sha256": "af3b15fb826e824eecde44c0ec4f521ba6c337969fed1a62a580bad376153d9c"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-failure-result.test.ts",
+      "bytes": 2804,
+      "sha256": "b257b0b5f1d342198e525abe22e135bf228a05dcfce723ad50475445a01fc1fc"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-failure-result.ts",
+      "bytes": 1752,
+      "sha256": "2d6c80440d31a32d7a3e86a71750ab078bdb045f7b438329cc12c0c5cd8d44d3"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-failure.test.ts",
+      "bytes": 7224,
+      "sha256": "e897fc6c9d9e6917af656e7b414e51f0357a6de0aa757f4ea506fb31ce05c8ba"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-failure.ts",
+      "bytes": 11069,
+      "sha256": "5c4ee675a58104b35db1a72780679fca6f02ddb5e073782dd14e3bc990b3d255"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-publication.test.ts",
+      "bytes": 6780,
+      "sha256": "ab6e1373d972ce9f919a0432184085728ebe625d901f01eb91c6a8e6c614c688"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-publication.ts",
+      "bytes": 16022,
+      "sha256": "23abcebbbc19b9cd90640a788f46bdcfff86b44f033bfbcf525a2b7167e10c6f"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-reads.ts",
+      "bytes": 1363,
+      "sha256": "3e7d13e94ece11a94288223654d53a00a81126cc72757a26023598c567e9925f"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-result.test.ts",
+      "bytes": 2245,
+      "sha256": "0133b7b1b59b42e39824693bea10e085a052e8207b4cd813fa06b88cb44b2c41"
+    },
+    {
+      "path": "packages/contracts/src/verification/structured-extraction-result.ts",
+      "bytes": 1267,
+      "sha256": "72c2387a646d90337d15e74d773cfcf36d8a0ee3dd854088472683f86772ec9f"
+    },
+    {
+      "path": "packages/contracts/src/verification/verification.test.ts",
+      "bytes": 10421,
+      "sha256": "9922c77bd633fa0b64fde732dbb14ed1c3f6684fc9e039bbd0eeb9e5f505f0b6"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark-run-comparison.test.ts",
+      "bytes": 14752,
+      "sha256": "d536f76f4db0861c9f0d516d6f5b74003c87e8d0c6874b71e1bdde16a52927b1"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark-run-comparison.ts",
+      "bytes": 19665,
+      "sha256": "cf5848ccf21fcd8d32608912a5d717eb4ad36828042d20df25155ff5c2190e59"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark-v1.test.ts",
+      "bytes": 7332,
+      "sha256": "3dbb53af4b5274cb64d22cf4de5257ab812d819624f5ee2f3235fc4ddad753fd"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark-v1.ts",
+      "bytes": 10531,
+      "sha256": "3af635be4d8c673fd3b4f7e28b43258a018effaf0fcbdcb591e720f2354a71f2"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark.test.ts",
+      "bytes": 14404,
+      "sha256": "ca7d4ca39b61ff17cdb742711b4e720c4514e0e3cdbdcced650ff715cd2be02b"
+    },
+    {
+      "path": "packages/evaluation/src/verification-benchmark.ts",
+      "bytes": 32663,
+      "sha256": "ba71d50fc568cc2568fd970d988de87caff6e3aba44411b4bcec1506449e2877"
+    },
+    {
+      "path": "packages/evaluation/src/verification-statistics.test.ts",
+      "bytes": 4088,
+      "sha256": "fac849bedae16b5cae1f5b33d442e6271dc2bfd5b9ca4dbb0a87aa17c08408ca"
+    },
+    {
+      "path": "packages/evaluation/src/verification-statistics.ts",
+      "bytes": 11464,
+      "sha256": "5416cc49a394eec05add786690befd826f6d3a10fcbc0072a54d80145957e094"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-comparison-reads.ts",
+      "bytes": 10283,
+      "sha256": "7d3eccb5b8b3e32dbb822a4d56012222a850c8171ce9630d2b8012014248a620"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-comparison.test.ts",
+      "bytes": 6590,
+      "sha256": "13d40612f3692cfc7452f01a1516a022da9cb649659cfab6c5d84a97b8cf8e62"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-comparison.ts",
+      "bytes": 14451,
+      "sha256": "15c50426d9b6fd871275724c16a9eb7f275c1d15891bdbc81cd52b76819c4562"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-publication.ts",
+      "bytes": 17182,
+      "sha256": "fdf7da8540395c7b09b6b1f0439f138b6fb0c43c0542e599ae8c7133af0a72fc"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-reads.test.ts",
+      "bytes": 9824,
+      "sha256": "11975d267fc2cdc4e1378ec564698d3bdfb7fc92c8ff7b3b2bb0c35e018be5e3"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-reads.ts",
+      "bytes": 18832,
+      "sha256": "743161c34f3154b9939534843c25170cc956d5b1d65a5a3de4d85aa0e0c3cf9c"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-run.test.ts",
+      "bytes": 5082,
+      "sha256": "d6981ffd9cf8a26a78a8d43a066d9cedd1374d05e082048fb0921bdc40e7c3bc"
+    },
+    {
+      "path": "packages/persistence/src/verification-benchmark-run.ts",
+      "bytes": 16961,
+      "sha256": "e1b16d19c63844cca8e6b4e24ed4d9d8c64e72258defa36d068d9a8aac87f9fd"
+    },
+    {
+      "path": "packages/persistence/src/verification-case-reads.ts",
+      "bytes": 5686,
+      "sha256": "6acb320fcf35ee7d15c61b2a0cad0c5a9471ace920ef11fada566a60d3fb3a17"
+    },
+    {
+      "path": "packages/persistence/src/verification-case-writer.test.ts",
+      "bytes": 10578,
+      "sha256": "33258dee8acbac62e3b6ef40a8b96931fa38bee89d3f8fd97f078bc969d361eb"
+    },
+    {
+      "path": "packages/persistence/src/verification-case-writer.ts",
+      "bytes": 11829,
+      "sha256": "d09bb7e5b7dbc6917f99b6c246cc7ef432d147bf68ab4c1efbd2ff09507c7287"
+    },
+    {
+      "path": "packages/persistence/src/verification-metric-principals.test.ts",
+      "bytes": 6386,
+      "sha256": "2d9f7d4884ce9200c021c75ed980f6bb5ed29415027d6fd4e90c3141aaca6180"
+    },
+    {
+      "path": "packages/persistence/src/verification-metric-principals.ts",
+      "bytes": 7606,
+      "sha256": "29cb6c7e7174b24ff3e1bfcd8ec354797088cee436910f1a99b3cbfaf600cf3e"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-accounting.test.ts",
+      "bytes": 6985,
+      "sha256": "11323d6aac4860eb1bd6dbd7e18c16ab0d6523142b1c697d77dbd457de1aed24"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-accounting.ts",
+      "bytes": 21713,
+      "sha256": "bb837e6e10ece0c58254613749822a9cf6383c97c535cf854e759813c0929ae5"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-reconciliation-reads.ts",
+      "bytes": 4165,
+      "sha256": "5d301249df794a64846c344ae281e1972c8f25a3a8f61f793dace4b4451261a9"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-reconciliation.ts",
+      "bytes": 2500,
+      "sha256": "fde2d014fe67c5f4b6100e8ec0389465122c157f460c3c830b03dafa716c21b4"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-response-capture.test.ts",
+      "bytes": 1133,
+      "sha256": "7e5f575a7b6e2fa3e6c182a7f482d88a7584252a408e410d05199cd13a9a38c3"
+    },
+    {
+      "path": "packages/persistence/src/verification-provider-response-capture.ts",
+      "bytes": 7786,
+      "sha256": "a0a7600890f6716fa54e9c688169a00fecbec1a690af6a1b6024e224aee71798"
+    },
+    {
+      "path": "packages/persistence/src/verification-run-recording.test.ts",
+      "bytes": 10303,
+      "sha256": "c8722f6d19ee45c36d890743c57b10ea16578cf8aa58d2e4ddeb5c098ee0273b"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-execution.ts",
+      "bytes": 9335,
+      "sha256": "12078685035a6b6f583def857017436568de394afef3c55eeef9d632285792dd"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-failure.ts",
+      "bytes": 17487,
+      "sha256": "602a5364e417b3a4404d42356a1650fd4e643c34947b7d6ec9ef9cab661176cc"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-lifecycle.test.ts",
+      "bytes": 16287,
+      "sha256": "a2ff00def913885fad328cb79a255e91b9ee34b3ebf0ce11b24aab329f4a6fa2"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-lifecycle.ts",
+      "bytes": 31770,
+      "sha256": "fd5f39f8eca5a4dbc88e0a468e4716305c29a3380dae6021b733bf34907ca2dc"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-publication.ts",
+      "bytes": 11567,
+      "sha256": "b49b54ca3fccc44504f8c7de1277112f937838496a53a5fec35cbe957dee3c54"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-reads.ts",
+      "bytes": 6638,
+      "sha256": "34eb6b217e1c21ee98af9c84fabc707e0ffbbfde287c0c8a6bde46697322f54b"
+    },
+    {
+      "path": "packages/persistence/src/verification-structured-extraction-recovery.ts",
+      "bytes": 7691,
+      "sha256": "5893d211c51ec3860ccbfdedc03ef633d1d9f7bd1ac6b5f26c368aafc95cfbba"
+    },
+    {
+      "path": "packages/persistence/src/verification.test.ts",
+      "bytes": 1625,
+      "sha256": "78128080a090ea4323a5adc057f5378b8feecddd60225879a01f325ba7e64fd1"
+    },
+    {
+      "path": "packages/persistence/src/verification.ts",
+      "bytes": 46320,
+      "sha256": "437781865966f910b9a5a933854b995a1bdc73b9c4f98d52a30b93a366f690c4"
+    },
+    {
+      "path": "packages/policy/src/verification-policy.test.ts",
+      "bytes": 10948,
+      "sha256": "1225716b69941a3305e31738f929aba438c10b37dcc89d9712d3b21037a9f03b"
+    },
+    {
+      "path": "packages/policy/src/verification-policy.ts",
+      "bytes": 14771,
+      "sha256": "03d08bb8b66c1e2c9c62cab8f16af984af7f85e73cadcd79be73ffb0d718ca91"
+    },
+    {
+      "path": "packages/verification/src/authority/assessment.ts",
+      "bytes": 3562,
+      "sha256": "2ffaeb060e14032cbfffffb4897d0006cb057ce4f720635731f082ba8c44d5d9"
+    },
+    {
+      "path": "packages/verification/src/authority/index.ts",
+      "bytes": 33,
+      "sha256": "9ee338298b0da128a6f0f302a99a47ec547e37dcacabaea7f5ea1ed6f165d220"
+    },
+    {
+      "path": "packages/verification/src/claims/decomposition.ts",
+      "bytes": 6095,
+      "sha256": "07a3363465f53752614bbb7ca1d5eea1465ac435de2ba0f1e4c92a3159ebaead"
+    },
+    {
+      "path": "packages/verification/src/claims/index.ts",
+      "bytes": 65,
+      "sha256": "2a6435a2b2c00b0fe9c2726ef0f29bf33f31f100e4d10eaed840a5ca373103e0"
+    },
+    {
+      "path": "packages/verification/src/claims/report.ts",
+      "bytes": 8374,
+      "sha256": "d0a01fc76aafc4061d81162d47acd73faa7aa0ef6e785a18fab6c733dac89683"
+    },
+    {
+      "path": "packages/verification/src/deterministic/canonical.d.ts",
+      "bytes": 550,
+      "sha256": "ddd695a43366afc971cbaa67a152def4445318c2fda74aaa7264f6fb26599428"
+    },
+    {
+      "path": "packages/verification/src/deterministic/canonical.ts",
+      "bytes": 2638,
+      "sha256": "6ed8bd269111b9e8b496b022bdd6d4e93008d4e5a44ea8d004c47acb1ab6cc13"
+    },
+    {
+      "path": "packages/verification/src/deterministic/decimal.d.ts",
+      "bytes": 722,
+      "sha256": "d1f9d203125842a4b7e3196b478616e5c9987b6665a78000bb5d7cc660294d2d"
+    },
+    {
+      "path": "packages/verification/src/deterministic/decimal.ts",
+      "bytes": 4292,
+      "sha256": "54fe9d3fbf2a63e3379791d4d2db2b22e614e1c629f4a05eaa702177e0c311b2"
+    },
+    {
+      "path": "packages/verification/src/deterministic/deterministic.test.ts",
+      "bytes": 15638,
+      "sha256": "e4c74f8438a3f18687d0e7835fc0527f4211bbb099e76c99d26d05f3b2a05a37"
+    },
+    {
+      "path": "packages/verification/src/deterministic/engine.d.ts",
+      "bytes": 1607,
+      "sha256": "77cacf8543d416b4b2c398226e7f4ffa6107a99541f170c015513f2e667c86fa"
+    },
+    {
+      "path": "packages/verification/src/deterministic/engine.ts",
+      "bytes": 25491,
+      "sha256": "f46a6b0e4a8703eb42d4f33091bb80b0bca9a19e59f681f05c7de1e8d7b7bc22"
+    },
+    {
+      "path": "packages/verification/src/deterministic/index.ts",
+      "bytes": 123,
+      "sha256": "1f6b46631112a49a4d7c3ac88d5bc744c9507345ab82fec5b28331d1fc2b0e73"
+    },
+    {
+      "path": "packages/verification/src/deterministic/selectors.d.ts",
+      "bytes": 1256,
+      "sha256": "97ff66daa9e37029752273df178e30d0d83ddf6dbe6ad3f01e569e6659fbf055"
+    },
+    {
+      "path": "packages/verification/src/deterministic/selectors.ts",
+      "bytes": 13619,
+      "sha256": "4f7d5dad9d2ebde83cbff0ed9472f9ec1d680c5a4b059b76904d0f7c8eae8a26"
+    },
+    {
+      "path": "packages/verification/src/deterministic/testing/prototype-parity.fixture.d.ts",
+      "bytes": 317,
+      "sha256": "8763adc42dd1284245f018dbce125ef40febc0db212eef4e4387c3fe6f54e227"
+    },
+    {
+      "path": "packages/verification/src/deterministic/testing/prototype-parity.fixture.ts",
+      "bytes": 9054,
+      "sha256": "800ed5867e43e600b716b29f9b6648ecced801b29864f377600c5555aec00478"
+    },
+    {
+      "path": "packages/verification/src/extraction/extraction.test.ts",
+      "bytes": 18577,
+      "sha256": "f9ac7fd20cfba6e7b1e0200978ff19b7a738044749ad76bee1da9b75dccc00cd"
+    },
+    {
+      "path": "packages/verification/src/extraction/index.ts",
+      "bytes": 64,
+      "sha256": "4f3924d9c09211bb612f415fad9a76be547676317fd6dbee8a55d3e9960d4f85"
+    },
+    {
+      "path": "packages/verification/src/extraction/schema.ts",
+      "bytes": 24030,
+      "sha256": "af90e3553a73764dac673fc515786b8162f9d51b884b06cdef4ca3c0bdc4f12b"
+    },
+    {
+      "path": "packages/verification/src/extraction/verification.ts",
+      "bytes": 28195,
+      "sha256": "e16d1d41b5b46ee0b1e28ebbedb4b3ca1ed9857b8883ee687a9995719f3731eb"
+    },
+    {
+      "path": "packages/verification/src/index.ts",
+      "bytes": 1155,
+      "sha256": "f8e15a3aa88f87f1b0da62769710573cfac49c372b5bb294a6ce8ca3bfc586b7"
+    },
+    {
+      "path": "packages/verification/src/provenance/benchmark-comparison-publication.test.ts",
+      "bytes": 4245,
+      "sha256": "b02e5e8cfe2ca2caaf2471d1406639482077094d4598b867010a389300f9492c"
+    },
+    {
+      "path": "packages/verification/src/provenance/benchmark-comparison-publication.ts",
+      "bytes": 2211,
+      "sha256": "c9d9ba7b83f05688299482d2522bff8810cf56a3f2a92361a59599c33611f095"
+    },
+    {
+      "path": "packages/verification/src/provenance/benchmark-publication.test.ts",
+      "bytes": 5570,
+      "sha256": "01bf73e4cee934e8b3d9e1bc0ec9fbe9f0a1d77bfe481243aa6523fa479af30b"
+    },
+    {
+      "path": "packages/verification/src/provenance/benchmark-publication.ts",
+      "bytes": 2847,
+      "sha256": "23347f35b9f391aa5e58e808559f66e9aca3f1ea8e2dc1e4d634132876d45deb"
+    },
+    {
+      "path": "packages/verification/src/provenance/index.ts",
+      "bytes": 219,
+      "sha256": "9855993862e586a4e81e4d969ab14d14cf1fb5aabda66599dc0255cecd50a0b6"
+    },
+    {
+      "path": "packages/verification/src/provenance/model.ts",
+      "bytes": 3395,
+      "sha256": "5396b97999005e0cea27a95058a71d3113ab18fd6a384755eda79c44ac9ab499"
+    },
+    {
+      "path": "packages/verification/src/provenance/policy-inputs.ts",
+      "bytes": 2829,
+      "sha256": "4217b58e62eeb82c0a3eeb3a83ba8943385ee785c0b7a0331a7cfe0780301b9f"
+    },
+    {
+      "path": "packages/verification/src/provenance/provenance.test.ts",
+      "bytes": 14305,
+      "sha256": "57db944c79ce330f9a3c14ef7b0de64b7356306256914c7e32d7771c80fcecef"
+    },
+    {
+      "path": "packages/verification/src/provenance/replay.ts",
+      "bytes": 5315,
+      "sha256": "1b5c78d61a04ba7f802c333b1661d6870e2f1a16438aa858994652352caab2b4"
+    },
+    {
+      "path": "packages/verification/src/provenance/seal.ts",
+      "bytes": 15591,
+      "sha256": "d4a1d18d1146934592a7f29b2b9229d517ec8b7dede170a52680b74699257beb"
+    },
+    {
+      "path": "packages/verification/src/providers/bounds.ts",
+      "bytes": 7797,
+      "sha256": "019a4bb702a5ed5ad860daf51400d7938ee357c351e7fcf130a996acabb3deec"
+    },
+    {
+      "path": "packages/verification/src/providers/gateway.ts",
+      "bytes": 14249,
+      "sha256": "9ff66bc88a62f39e0ec1dcde906ca7d64370bb5dac8f7f6fac5a199b2d2d5ca2"
+    },
+    {
+      "path": "packages/verification/src/providers/index.ts",
+      "bytes": 122,
+      "sha256": "938c6f1e428037b7e548bdc4c4fdde2fe9a00f3af8341531b617eaaec9fde321"
+    },
+    {
+      "path": "packages/verification/src/providers/interfaze.ts",
+      "bytes": 12574,
+      "sha256": "7892ef44b7b4a363af1e45321424e7f8c5d84c36b885e97f304908d04cff7a45"
+    },
+    {
+      "path": "packages/verification/src/providers/providers.test.ts",
+      "bytes": 8335,
+      "sha256": "def7c8f62066f7669d0a50727c6d21d23cc0e86e058aa383fe8c886550a4d70b"
+    },
+    {
+      "path": "packages/verification/src/providers/registry.ts",
+      "bytes": 4598,
+      "sha256": "0804607ebab900f58ffe35c0e8dae311f141058f517c9bcdbf0da7af3bb355cd"
+    },
+    {
+      "path": "packages/verification/src/selectors/index.ts",
+      "bytes": 66,
+      "sha256": "cdb521ea9ba5e8e38bd5df120f265fa76a33d5dcc716e97af9cda47db0d4d28c"
+    },
+    {
+      "path": "packages/verification/src/selectors/projections.ts",
+      "bytes": 20902,
+      "sha256": "5ad52548b578633cdfcf5e3037c7de910c374c4bc3fc543e01639bbb5ab99b29"
+    },
+    {
+      "path": "packages/verification/src/selectors/resolvers.test.ts",
+      "bytes": 12844,
+      "sha256": "8ffda7df0060194d528a8830b5c2b0f968527cfa901d716041738de4f2b56f16"
+    },
+    {
+      "path": "packages/verification/src/selectors/resolvers.ts",
+      "bytes": 20646,
+      "sha256": "c561c4a8f76cc403a6a12e4cc0f61200d3fd45abd85f0adc09209f602d48264a"
+    },
+    {
+      "path": "packages/verification/src/semantic/attribution.ts",
+      "bytes": 1800,
+      "sha256": "e6c14d635696030fb66c9cc0d84291ca22f379922b0d4495a86d70c38959600f"
+    },
+    {
+      "path": "packages/verification/src/semantic/diagnostics.test.ts",
+      "bytes": 12010,
+      "sha256": "5c343f6ecacae908b732756aa9c0fa21e894a5814026eecd759d03c1c89afde8"
+    },
+    {
+      "path": "packages/verification/src/semantic/index.ts",
+      "bytes": 98,
+      "sha256": "f711c26a3c15064c1bcce98f9aa61f77c942e8cb8dba40dad5f41516ea1b2dee"
+    },
+    {
+      "path": "packages/verification/src/semantic/rescue.ts",
+      "bytes": 2168,
+      "sha256": "4c51c9e6eb8257808bb731c4641452c968179d0c7f744d99c365a1a91c810d35"
+    },
+    {
+      "path": "packages/verification/src/semantic/verification.test.ts",
+      "bytes": 9795,
+      "sha256": "8f4accea07f6453cd932800a648a50f3c422cab94d8b2adc1b4371e8a74bea01"
+    },
+    {
+      "path": "packages/verification/src/semantic/verification.ts",
+      "bytes": 17594,
+      "sha256": "64fa6f888ee32e7b306f9b2f18a3f4d25d42255e2fa907175fbf0140ced0740f"
+    },
+    {
+      "path": "scripts/.verification-remote-accounting-b209eefa-c188-490c-8f85-6e1f75312b7e.ts",
+      "bytes": 4660,
+      "sha256": "8cbaae442059e6dbbe524143683def0cc29eb4975635f44d99b469b62b6e1c34"
+    },
+    {
+      "path": "scripts/.verification-remote-persistence-8b83958c-b307-474a-ba1a-7aa2cd4ef8f6.ts",
+      "bytes": 35532,
+      "sha256": "2a065c02ace5eb2db02bdc39489ab3e099012bd142cc10c4c661a0bb21aff938"
+    },
+    {
+      "path": "scripts/audit-verification-benchmark-smoke-state.ts",
+      "bytes": 3097,
+      "sha256": "2394408cb63281f8fae02eac139a18a8c130b985f5f00c7f64fd79d3901b3670"
+    },
+    {
+      "path": "scripts/persist-verification-benchmark-v4.ts",
+      "bytes": 20970,
+      "sha256": "f91ccc6a5079b2a0a282c94b6c2a1a7a3cdc0f343ad4ff66a309266366a31d2d"
+    },
+    {
+      "path": "scripts/prepare-verification-full-retained-replay.ts",
+      "bytes": 7850,
+      "sha256": "0ef3dae5c93b279cabaa72cc048fe302978af592f803391d8d9ae6fb9a2061fe"
+    },
+    {
+      "path": "scripts/prepare-verification-provider-reconciliation-publications.ts",
+      "bytes": 15324,
+      "sha256": "a52d57c0f4052037ee163898ef63d841e0c90ce613f195447f900f333acdc07b"
+    },
+    {
+      "path": "scripts/prepare-verification-provider-reconciliation.ts",
+      "bytes": 14803,
+      "sha256": "ede6c66a7338b3aeabcdd7b2c38bb9f8d501e433e9135147a1bef5b3d60ce6ae"
+    },
+    {
+      "path": "scripts/prepare-verification-structured-extraction.ts",
+      "bytes": 7073,
+      "sha256": "ec07a5283fdd712ea716780f0384f80f0253aaa83efe462c3aa16cff611c15c6"
+    },
+    {
+      "path": "scripts/prove-verification-admission.ts",
+      "bytes": 22919,
+      "sha256": "7715489793db7854451971445ab0e6ca3e5c2494dd82d1521c3996ead61d8b68"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-application.ts",
+      "bytes": 13672,
+      "sha256": "eed818c5ff9cc125787f707d56d4cbb9d4b592a5c7a7f421ff7152b9d5827a37"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-crash.ts",
+      "bytes": 26189,
+      "sha256": "da10ac1559d1a840672c50eeb0d6259d7dc41e1a85742cf786f58c1cd761154f"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-kernel.ts",
+      "bytes": 6148,
+      "sha256": "59f001a6e51a9d658affb79976edec4de4ff339d057a1e51471300e54e2a2295"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-lifecycle.ts",
+      "bytes": 17344,
+      "sha256": "ecff9bf578c9270c0aee594f81ea93ce74d0b93d9cde00ddec02b3a42dac39b0"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-reads.ts",
+      "bytes": 13482,
+      "sha256": "f092a41ac495d03842eeb6d02fe11d017575d4389051a5abd03f81097e0698d8"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-terminal-success.ts",
+      "bytes": 7920,
+      "sha256": "dd746a89b8a06eb2b880e82545c48e8726a30ef16ae88eb72df446d152b6a924"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-comparison-worker.ts",
+      "bytes": 24633,
+      "sha256": "bf4f301f6c17254c75dadc8a534a9252c0f3b5d0c383fa1066279316b544cf38"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-crash.ts",
+      "bytes": 11378,
+      "sha256": "01aa7ba5a8271ef2ab284421ade1bbbe1a1b015120cd20653fe3b379045cd1dc"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-durable-negatives.ts",
+      "bytes": 10849,
+      "sha256": "4efa17f9d7077d710b0b1f36aa8bb5e1156df62bdc8cc88dea39777abf497231"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-extraction-experiment.ts",
+      "bytes": 10271,
+      "sha256": "4d74f47a8cd5499f16611038e36a60cac669c9f7c20ee194f8895815e4c3101b"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-extraction-live.ts",
+      "bytes": 71733,
+      "sha256": "f679303fc7c7bc375739657b9b9e0df40b9a71f9dbd1d61aea6ebc0f3205a6df"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-freeze-v4.ts",
+      "bytes": 14042,
+      "sha256": "77257884dcb76deb3fca8aa82d14823c19cceb858520e44676c1c6919d41819c"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-freeze.ts",
+      "bytes": 21220,
+      "sha256": "1b15f7115f288c7eee27bec7cd394115d2690e0ece9f54174fff4d8836d2821d"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-live-smoke.ts",
+      "bytes": 13083,
+      "sha256": "194e06efe0f027367db24ac4bc95198a2d95c26438342af6cbf28e493954337e"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-normalization.ts",
+      "bytes": 4701,
+      "sha256": "1b37499fb054f422ec8c36594c76f96d8f1ad1347a2d7a3f22eb131018442c3c"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-offline.ts",
+      "bytes": 1566,
+      "sha256": "28466768fe22e32c59628263805823bacda920a2556b1c2e0678dff981de8e82"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-publication-negatives.ts",
+      "bytes": 5335,
+      "sha256": "88aa30ca7298290be349716f630679edd1b1c3c33184f18121c3cd359d2dcf20"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-reads.ts",
+      "bytes": 9023,
+      "sha256": "3c419c2dcc425f23a4657054835d5998492d6c46ec8a9558d4ac752cf5b2121f"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-v1-tooling.ts",
+      "bytes": 9429,
+      "sha256": "ba4becaafed4614acbe4a40776e017d3087424c88ff5f8c26952d5dbf2891baa"
+    },
+    {
+      "path": "scripts/prove-verification-benchmark-worker.ts",
+      "bytes": 16710,
+      "sha256": "2abb2127296101f46f972d13ea61b26500920635606eb6d0e2f213ba046f0164"
+    },
+    {
+      "path": "scripts/prove-verification-full-retained-replay.ts",
+      "bytes": 12894,
+      "sha256": "2c9ee08eca55c39a870bf1d09cbc7ae98e07681440675271aee31631981b5959"
+    },
+    {
+      "path": "scripts/prove-verification-metric-service.ts",
+      "bytes": 28739,
+      "sha256": "0f16ea6fe814da8fe22aa01fbc577caeb2d6220945fb8ff16a8a6121768bdde0"
+    },
+    {
+      "path": "scripts/prove-verification-operation-ownership.ts",
+      "bytes": 7883,
+      "sha256": "3813956f55c3b35bb2c264937c661d9161ce1581d72112d32c507f9667a83070"
+    },
+    {
+      "path": "scripts/prove-verification-parser-review.mjs",
+      "bytes": 4025,
+      "sha256": "5d93a4fff27805988d69568be105ef8d4ff4c7f73f4e70b8c65f04502af80a40"
+    },
+    {
+      "path": "scripts/prove-verification-parser-v2-visible.ts",
+      "bytes": 2460,
+      "sha256": "7ed0c9e546b6a0af87d5da701beb24b5bdb68ac339a2cd2bf3e1967cdefeee4b"
+    },
+    {
+      "path": "scripts/prove-verification-persistence.ts",
+      "bytes": 50401,
+      "sha256": "8696693e187aa49862a9566d6fc3243a5c773d7202cdc9f05e676eeecdf652ca"
+    },
+    {
+      "path": "scripts/prove-verification-provider-accounting.ts",
+      "bytes": 4410,
+      "sha256": "2950ffe0ab4c0849e74716ee9c8ce70c5f1670910ac8839de7fcd39cccbebf94"
+    },
+    {
+      "path": "scripts/prove-verification-provider-operation-scope.ts",
+      "bytes": 13588,
+      "sha256": "e962af4d0055e0645b48475637cc15fe313b37202a5ba38db47dd178eab4254a"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation-admission.ts",
+      "bytes": 9050,
+      "sha256": "89277254f59f493a9049264bf32661ea25c825834f457898699b4eaf8b9fde3e"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation-http.ts",
+      "bytes": 18370,
+      "sha256": "3f4468a55e579ecf86517164d8b49aafa433d9af27347a1c425c11b4ad05fbb9"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation-publications.ts",
+      "bytes": 16092,
+      "sha256": "c3142e2fbd311077c768cb8f994faf9dcff47b9b60661427ced6cd2bb133e68f"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation-reads.ts",
+      "bytes": 7701,
+      "sha256": "9af6969b53bf033e0795d35055035d20b963039b02afb525d560436051b39928"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation-transports.ts",
+      "bytes": 21509,
+      "sha256": "8f445e127e8b1b9c0b535c293d167ad45ba1fbfc62376d69dc4bcdaa7490330e"
+    },
+    {
+      "path": "scripts/prove-verification-provider-reconciliation.ts",
+      "bytes": 12979,
+      "sha256": "0206ee8afd4f4be59ea23a860fdc7aeacdf267ebbafd22a8f9e5d9c51b4913d9"
+    },
+    {
+      "path": "scripts/prove-verification-provider-response-capture.ts",
+      "bytes": 10971,
+      "sha256": "f6f03b302405466541f6052e868fb32fa482b82fb4642902e03c97d552e1695c"
+    },
+    {
+      "path": "scripts/prove-verification-providers.ts",
+      "bytes": 19021,
+      "sha256": "aa54eeb592dc7ee19c3186fb9e29a90bd9e71cdf89e49ae10b6b6e7efa57e728"
+    },
+    {
+      "path": "scripts/prove-verification-registered-replay.ts",
+      "bytes": 32849,
+      "sha256": "0ff5ecbd88c824c4500f7bc0638e9da7707cd025c5fa4e88469c919b3b3012da"
+    },
+    {
+      "path": "scripts/prove-verification-service-worker.ts",
+      "bytes": 20271,
+      "sha256": "16eb32936a27405988c98fb7bc98a5817f0bbe084c91e6c034c621af9727534f"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-accepted-recovery.ts",
+      "bytes": 39477,
+      "sha256": "e6002bfcf933eb9b60a731f3f436d2016ed5a71da80464950276f4a9b7b5da1c"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-candidate.ts",
+      "bytes": 8716,
+      "sha256": "023612da5add4862830e5da02e95971c5196f8d7de7e3f39258b68cc6b87eafe"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-dispatch-recovery.ts",
+      "bytes": 14410,
+      "sha256": "9a46e9828269549e64f08fd21aa240804cde10e6db39267c2c835c934a32ecb1"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-failure-recovery.ts",
+      "bytes": 28505,
+      "sha256": "aeb2832f156a4af8b93dc6d57c2cded79b0b39de6c2317bce90b503384e6108b"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-failure-terminal.ts",
+      "bytes": 26653,
+      "sha256": "911cd60bf8eecf174181c80303deb62c65e938296deb42c5ef360e493141bd80"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-failure.ts",
+      "bytes": 22129,
+      "sha256": "8757ce66b24eb0e94f925f00c91d323ac934c2964d8a803df859ac9bb73f7a1a"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-lifecycle.ts",
+      "bytes": 15409,
+      "sha256": "04f44b3706ca67592774c7033cec716062dbf4b5ff22fb98855c21060671ff78"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-process-recovery.ts",
+      "bytes": 15941,
+      "sha256": "1584a8dfcd4e345adfb85ccbd66cc7fc28d1dd98410c8b66f28a17a48ddebb20"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-public-worker.ts",
+      "bytes": 15215,
+      "sha256": "a67bae629c01412c261140b4d8035cc701ed2db915d3fc479d02beca661a845b"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-publication.ts",
+      "bytes": 29648,
+      "sha256": "c9c4f2a4d0f41af817443adf92968a91fd140600207b3ae25dce119fc17afa38"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-reads.ts",
+      "bytes": 6102,
+      "sha256": "c222d0e91fe8dc180b9c0ecade08bd0357733f7b9ad024210cd68db89cb03ab8"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-replay.ts",
+      "bytes": 11069,
+      "sha256": "866631c5ce6a91588035f71aa7e71d336538b75f7ee89d23ac0e1b7875c08725"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-terminal.ts",
+      "bytes": 37601,
+      "sha256": "118b359fe8802095e0d83281ce3864c7966b0aea3bb96774eb4dcdd5e393966f"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-transports.ts",
+      "bytes": 13157,
+      "sha256": "76b082c65725a2f0eef44db6ac2aaae2398b7519d2a90f2b1e61e67f46d3f423"
+    },
+    {
+      "path": "scripts/prove-verification-structured-extraction-worker.ts",
+      "bytes": 12141,
+      "sha256": "bb25840b0f8d40f975403aef6ae25d427b49c05cda668d6a28bfa91c6fe01074"
+    },
+    {
+      "path": "scripts/reconcile-verification-gateway-costs.ts",
+      "bytes": 9578,
+      "sha256": "0ecc3922a2332e403fbc966392711f47984a2c4099cdf4609d7ab990374bacda"
+    },
+    {
+      "path": "scripts/reconcile-verification-provider-live.ts",
+      "bytes": 7020,
+      "sha256": "717f7cf2ce1e05fa38f074a22412449241789305ff30fd8b6b9ad9b406ddcf64"
+    },
+    {
+      "path": "scripts/recover-verification-benchmark-after-reset.ts",
+      "bytes": 33462,
+      "sha256": "90ca130edbdc8a909015bd811414b4991922617d1baab8e08318e299dfa38144"
+    },
+    {
+      "path": "scripts/repair-verification-uncertain-fixture.ts",
+      "bytes": 2162,
+      "sha256": "43a0c7122975c6eacea6c8bb155207b522b5c4eddbc25b2bf4ba626b767b4a16"
+    },
+    {
+      "path": "scripts/report-verification-benchmark-extraction-live.ts",
+      "bytes": 45487,
+      "sha256": "9f4ef580e501f5661ffeadd2dfb42f408c29b84c6dc502ff76929b5a7bbd8977"
+    },
+    {
+      "path": "scripts/restore-verification-offline-source-preparation.ts",
+      "bytes": 5417,
+      "sha256": "8b65ea34c169a3b29554b4b3422b7ab9745525984eb2c8d1716b12bfaabe7042"
+    },
+    {
+      "path": "scripts/tsconfig.verification-admission.json",
+      "bytes": 147,
+      "sha256": "18713b7a4d1a6e6b635f8f3b0821f366244388c7fa7790f19064a548c0e99722"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-application.json",
+      "bytes": 192,
+      "sha256": "9219fdaa06d83e0a5b4ed5b06cd07413ba13aa3650ad92c2913074fce4c05d2d"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-crash.json",
+      "bytes": 230,
+      "sha256": "c089a1178f8132c2d5111a7ec12f52cef849597a3476a04b0ad666f129450a9b"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-kernel.json",
+      "bytes": 134,
+      "sha256": "35468241ea8a1cc8aa0f63f6df6ecb895ff71ab9b0154f0c78c0cefcc7111392"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-lifecycle.json",
+      "bytes": 137,
+      "sha256": "fb9ddc461650d5f83baf575ed61e8467a3d2bd22ff5271a9af727a9b495cb3ad"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-reads.json",
+      "bytes": 186,
+      "sha256": "3c2a498c8f815971ba5f395b385fd804de88ba9414dc64c77bf46286d0a4acf8"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-terminal-success.json",
+      "bytes": 197,
+      "sha256": "33e6ad731967b3ce2d6c4114c2df082fc70446e39e790a17a72ec6811e91889e"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-comparison-worker.json",
+      "bytes": 187,
+      "sha256": "46d2e0cf4af8d4661ac177da22a1e45d0522d516f79a836ad07b59fdc4507e3e"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-crash.json",
+      "bytes": 196,
+      "sha256": "443d899f7e1d7d472eed203df365c06b92c96d0dbc534c19831ec871a0073a86"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-durable-negatives.json",
+      "bytes": 134,
+      "sha256": "6501d8512ac293155649de9f7f3397517660f925e0bdb15f21efee01a6a39ddd"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-publication-negatives.json",
+      "bytes": 137,
+      "sha256": "dd60b039234bb4b48ce34b94fef98f12e996d68fcfa5199eba4ee223bb2cbe3b"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-reads.json",
+      "bytes": 157,
+      "sha256": "692017fd94ace54e622c7635ba65ef0789cb89dcf3eaceb4026ecf4d6904af3a"
+    },
+    {
+      "path": "scripts/tsconfig.verification-benchmark-worker.json",
+      "bytes": 169,
+      "sha256": "7ede8a21834f2c3a13e0ca370cd164e727fea224159d5ed932332b52d1d37fe8"
+    },
+    {
+      "path": "scripts/tsconfig.verification-full-retained-replay-preparation.json",
+      "bytes": 143,
+      "sha256": "ed57039e0b1f69419c5b8e92a68badf3c44725eb27bd0486d3f3ca614404aae7"
+    },
+    {
+      "path": "scripts/tsconfig.verification-full-retained-replay.json",
+      "bytes": 141,
+      "sha256": "31d947aa18ce73f54a364dec3252bd885111fb2402dc99ec7cc26d0fe527c4bc"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-operation-scope.json",
+      "bytes": 147,
+      "sha256": "31fff37332892aaacf84f9fcd1bcbe3b97e452865172d874b888e37a0a89e4db"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation-admission.json",
+      "bytes": 140,
+      "sha256": "31710be80845ffa9d9ef5350642a03f2dcebb67263978f918e053a3f75a373d7"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation-http.json",
+      "bytes": 134,
+      "sha256": "f23701583f0594f3f167f156f23ac06bb49eeb6baf3cd123c3da43848a88facb"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation-publications.json",
+      "bytes": 207,
+      "sha256": "c692d85d0f2d3338feb7a70c6cd3453d5db069576d06431c685dc50d03b98369"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation-reads.json",
+      "bytes": 135,
+      "sha256": "a4b33481e9a6aed3dbeb48e1bac28e5d90a1c8b164b4419b57b6ab53e2b6b39c"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation-transports.json",
+      "bytes": 175,
+      "sha256": "cca23fd3180354c8c406294c60ae7d2575426e6c32ef1ee48b28dd51d1e97247"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-reconciliation.json",
+      "bytes": 181,
+      "sha256": "631bcec0c18a02bad6caffe30a44d0b432d9ae9fc27625c4d4909f0ee547cdff"
+    },
+    {
+      "path": "scripts/tsconfig.verification-provider-response-capture.json",
+      "bytes": 148,
+      "sha256": "279ee3bcad8ca69f8b2d9cdfa4e3b96be3fdcc9222bb4dbe2968d3d6a284fef0"
+    },
+    {
+      "path": "scripts/tsconfig.verification-registered-replay.json",
+      "bytes": 155,
+      "sha256": "5370d3c9c8dc40feeff18974f7d8d92eb7e3b31f544a8325a1bc44dd05fbb7d6"
+    },
+    {
+      "path": "scripts/tsconfig.verification-seal-crash.json",
+      "bytes": 184,
+      "sha256": "08bd8b897e772e589278de43975f6335ba030e3bbcbd1594a23b619e71205df6"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-accepted-recovery.json",
+      "bytes": 147,
+      "sha256": "9cb4b209e275f21f961a216123a59c1fb33e2aba1a6d0a08ea2da2b7317c311a"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-candidate.json",
+      "bytes": 154,
+      "sha256": "058299c5fef58b93c8adfab3838a19d52c03621e36bb785641781d2e0f15c57d"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-dispatch-recovery.json",
+      "bytes": 208,
+      "sha256": "1147a75ae549589379f2b83925c3deb943d3179e2ec38c2b2ebf17e6e576cf62"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-failure-recovery.json",
+      "bytes": 148,
+      "sha256": "e47e4be8c708eba072b937f7b336739055ad5b684ff398f6a8f07371d9ee5221"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-failure-terminal.json",
+      "bytes": 148,
+      "sha256": "58c7dfabc2133cff511e15d10524b5818bdb52a8432f329907cc5ffd7298383f"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-failure.json",
+      "bytes": 139,
+      "sha256": "4e6b4d6c618a5966dc68a9295f1016f69f60e4f7de7d4e7fd3747ceaed5f137f"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-lifecycle.json",
+      "bytes": 138,
+      "sha256": "3e18d6a7a33b2170bfdf017ad231d32d2e8f583c23c2c9de31c42d56d57c78ac"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-preparation.json",
+      "bytes": 146,
+      "sha256": "032a6d320604fba3e99af5a23c0698b217fdadf749715edfbf2c20bbb58bbcd7"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-process-recovery.json",
+      "bytes": 198,
+      "sha256": "a7da0bb3ddda8bd0318e5edc6430f616d2a49dcc8d968d9dc2841a7b2428b05c"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-public-worker.json",
+      "bytes": 143,
+      "sha256": "55b65bb8f9e9ba279d8ed7c413c37f1796372c20d9bafe1129828a215f3a7969"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-publication.json",
+      "bytes": 141,
+      "sha256": "c1031594526a17328f203473f2062eea13d99a118b528fc375b3b454f218b133"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-reads.json",
+      "bytes": 134,
+      "sha256": "3e1192b233c03be18e7d83a567924c2d6d4af2d6e7ec98d676695b666df67a2d"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-replay.json",
+      "bytes": 151,
+      "sha256": "2962a061b2c5f23d219df10652ec96a5df9197f620ee8f051504d4ed9845d349"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-terminal.json",
+      "bytes": 138,
+      "sha256": "b9b44a4642e88b71634000283e4bae89477f79142ba2b0db8d9c0290d3a14cb0"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-transports.json",
+      "bytes": 174,
+      "sha256": "a7e665ec99e2be3c97b780e634f6d90561af3d0088b95aef15e977d2659ab57d"
+    },
+    {
+      "path": "scripts/tsconfig.verification-structured-extraction-worker.json",
+      "bytes": 138,
+      "sha256": "c1b00e04103c863274af2dddbb8eaf66da40e0e03e1a75b9424e9e659c62eca5"
+    },
+    {
+      "path": "scripts/verification-abandoned-lease-fixture.ts",
+      "bytes": 705,
+      "sha256": "483fdd5fe0ec346a66ed4fb5d2df0cf56181c8c3a4bf6e3144bb2b7b62a3f52e"
+    },
+    {
+      "path": "scripts/verification-benchmark-comparison-crash-child.ts",
+      "bytes": 4584,
+      "sha256": "e470dbc113ad67e0687ea03130212e1c75e59e76c247751d9bc73d4aaf8d87b2"
+    },
+    {
+      "path": "scripts/verification-benchmark-crash-child.ts",
+      "bytes": 4102,
+      "sha256": "c3824ca54632eb66e9e7fd5f45d019a565a047ef8df598e18b1b1e82b5ca1cd7"
+    },
+    {
+      "path": "scripts/verification-metric-runtime-proof.ts",
+      "bytes": 16704,
+      "sha256": "a0147463d9e2b28b75233aaa55ee38c7bdba8ce9d04cf6cd1a28e9ab88704830"
+    },
+    {
+      "path": "scripts/verification-reads-runtime-proof.ts",
+      "bytes": 11094,
+      "sha256": "b7ec5f7cecf6d8504f24d959cb10d9a25af3de8a4c3b30fd65b877449339cc4b"
+    },
+    {
+      "path": "scripts/verification-seal-crash-child.ts",
+      "bytes": 10703,
+      "sha256": "92323f3c3b59cfa6b57b80a40814cfef4b6101db1598f9e7350a336f78cbb389"
+    },
+    {
+      "path": "scripts/verification-seal-crash-proof.ts",
+      "bytes": 6956,
+      "sha256": "4689d3dec017a1d5554f6e98bf9394fb336b99b43d41f2cd70d2f4c7fe71a355"
+    },
+    {
+      "path": "scripts/verification-structured-extraction-crash-child.ts",
+      "bytes": 2679,
+      "sha256": "ed340421b6e7a10ae4a96ca7212505e06ba7809fa7c1480d58fe6cba3fd21548"
+    },
+    {
+      "path": "scripts/verification-structured-extraction-dispatch-crash-child.ts",
+      "bytes": 2914,
+      "sha256": "e0191a9b7fa2d779e3d572fef4fdab6c9bfa05fd735ad4b482c63d6dcb72bcae"
+    },
+    {
+      "path": "services/verification-parser/README.md",
+      "bytes": 3156,
+      "sha256": "416f7f1c9d51432e6de9808355050cb513355431cd76c1b9b62915c8c1abaa16"
+    },
+    {
+      "path": "services/verification-parser/parser.py",
+      "bytes": 7047,
+      "sha256": "90775b768424e59540e350e75f1319e92b010f6d8236715b480cbbc425977c34"
+    }
+  ],
+  "helperModes": [
+    "provider-reconciliation-transports-audit",
+    "provider-reconciliation-transports",
+    "provider-reconciliation-http-audit",
+    "provider-reconciliation-http",
+    "provider-reconciliation-reads",
+    "provider-reconciliation-publications-audit",
+    "provider-reconciliation-publications",
+    "provider-reconciliation-publications-prepare",
+    "provider-reconciliation-audit",
+    "provider-reconciliation",
+    "provider-reconciliation-prepare",
+    "provider-reconciliation-admission-audit",
+    "provider-reconciliation-admission",
+    "structured-extraction-dispatch-recovery-audit",
+    "structured-extraction-dispatch-recovery",
+    "structured-extraction-process-recovery-audit",
+    "structured-extraction-process-recovery",
+    "structured-extraction-public-worker",
+    "structured-extraction-transports",
+    "structured-extraction-reads",
+    "structured-extraction-replay-audit",
+    "structured-extraction-candidate-audit",
+    "structured-extraction-lifecycle-audit",
+    "structured-extraction-publication-audit",
+    "structured-extraction-terminal-audit",
+    "structured-extraction-failure-audit",
+    "structured-extraction-failure-terminal-audit",
+    "structured-extraction-failure-terminal",
+    "structured-extraction-accepted-recovery",
+    "structured-extraction-failure-recovery",
+    "structured-extraction-accepted-recovery-audit",
+    "structured-extraction-failure-recovery-audit",
+    "structured-extraction-worker-audit",
+    "structured-extraction-worker",
+    "structured-extraction-failure",
+    "structured-extraction-terminal",
+    "structured-extraction-publication",
+    "structured-extraction-lifecycle",
+    "structured-extraction-candidate",
+    "structured-extraction-replay",
+    "structured-extraction-prepare",
+    "provider-response-capture-audit",
+    "provider-response-capture",
+    "provider-operation-scope-audit",
+    "provider-operation-scope",
+    "registered-replay",
+    "benchmark-durable-negatives",
+    "benchmark-publication-negatives",
+    "benchmark-crash",
+    "benchmark-comparison-kernel",
+    "benchmark-comparison-application",
+    "benchmark-comparison-lifecycle",
+    "benchmark-comparison-audit",
+    "benchmark-comparison-worker-audit",
+    "benchmark-comparison-crash-audit",
+    "benchmark-comparison-terminal-success",
+    "benchmark-comparison-worker",
+    "benchmark-comparison-reads",
+    "benchmark-comparison-crash",
+    "full-retained-replay-prepare",
+    "full-retained-replay-worker",
+    "full-retained-replay-audit",
+    "benchmark-reads",
+    "benchmark-worker",
+    "storage-http",
+    "frozen-sources",
+    "frozen-export",
+    "uncertain-fixture-repair",
+    "metric-service",
+    "service-worker",
+    "operation-ownership",
+    "persistence",
+    "admission",
+    "provider-accounting",
+    "provider-live",
+    "provider-live-reconcile",
+    "provider-gateway-cost",
+    "benchmark-live-smoke",
+    "benchmark-smoke-audit",
+    "restore-offline-sources",
+    "benchmark-reset-recovery",
+    "benchmark-v4-persist",
+    "benchmark-extraction-live",
+    "benchmark-extraction-admission-preflight"
+  ],
+  "migrations": [
+    "20260814025347_research_starter_videos.sql",
+    "20260815015402_research_pre_research_schema.sql",
+    "20260815020333_claim_pre_research_video_by_id.sql",
+    "20260815021906_claim_pre_research_video_digest_search_path.sql",
+    "20260816205230_pre_research_v2_enum_values.sql",
+    "20260816205231_pre_research_v2_schema.sql",
+    "20260822010000_app_factory_optimization_control_plane.sql",
+    "20260822040000_factory_runtime_event_ledger.sql",
+    "20260822050000_factory_ledger_safety.sql",
+    "20260822234000_allow_intent_review_reclassification.sql",
+    "20260823182200_add_pre_research_complete.sql",
+    "20260824011000_stateless_pre_research_stage_execution.sql",
+    "20260825022000_pre_research_stage_dependency_guard.sql",
+    "20260826000000_teardown_legacy_app.sql",
+    "20260826000100_foundation.sql",
+    "20260826000200_orchestration.sql",
+    "20260826000300_evidence_core.sql",
+    "20260826000400_taxonomy_core.sql",
+    "20260826000500_corpus.sql",
+    "20260826000600_knowledge.sql",
+    "20260826000700_staging.sql",
+    "20260826000800_ranking.sql",
+    "20260826000900_research.sql",
+    "20260826001000_retrieval.sql",
+    "20260826001050_fix_evidence_gate_generated_column.sql",
+    "20260826001100_evaluation.sql",
+    "20260826001200_observability.sql",
+    "20260826001300_curriculum.sql",
+    "20260826001400_deferred_fks.sql",
+    "20260826001450_wire_capability_profile_fks.sql",
+    "20260826001500_api_and_grants.sql",
+    "20260826001550_rls_policies.sql",
+    "20260826001600_fix_corpus_knowledge_dag_violation.sql",
+    "20260829012402_cloud_agent_research_operations.sql",
+    "20260829012710_cloud_agent_research_index_advisors.sql",
+    "20260829012824_case_study_entity_contract.sql",
+    "20260829014222_case_study_index_advisors.sql",
+    "20260829181815_cloud_agent_parallel_source_provenance.sql",
+    "20260829183016_cloud_agent_source_provenance_index_advisors.sql",
+    "20260829192855_optimize_ai_entity_taxonomy_and_relationships.sql",
+    "20260829194024_refine_multidimensional_organization_and_person_taxonomy.sql",
+    "20260829194310_harden_claim_extraction_and_verification_contract.sql",
+    "20260829194743_permit_one_way_claim_evidence_finalization.sql",
+    "20260829194915_require_direct_same_run_claim_verification.sql",
+    "20260829194954_normalize_append_only_claim_evidence_assessments.sql",
+    "20260829195259_lock_verification_and_attempt_identity.sql",
+    "20260829195450_lock_claim_content_and_provenance.sql",
+    "20260829195623_lock_typed_claim_associations.sql",
+    "20260831201650_project_provenance.sql",
+    "20260902010518_research_starter_channels.sql",
+    "20260903010000_knowledge_content_contract.sql",
+    "20260903010100_knowledge_retrieval_contract.sql",
+    "20260903010200_knowledge_runtime_security.sql",
+    "20260903010300_knowledge_retrieval_completeness.sql",
+    "20260903010400_atomic_publication_and_hybrid_retrieval.sql",
+    "20260903010500_outbox_claiming_and_packet_materialization.sql",
+    "20260903010600_source_native_packet_members.sql",
+    "20260903010700_packet_member_tenant_targets.sql",
+    "20260903010800_authorized_operation_retry.sql",
+    "20260903010900_callback_delivery_replay_ledger.sql",
+    "20260903011000_standalone_capture_operation_provenance.sql",
+    "20260904010000_canonical_retrieval_execution.sql",
+    "20260904011000_governed_projection_embedding_publication.sql",
+    "20260904012000_vector_store_operation_provenance.sql",
+    "20260904013000_vector_store_document_operation_provenance.sql",
+    "20260904014000_vector_store_ingestion_evidence.sql",
+    "20260904015000_vector_store_lifecycle_control_plane.sql",
+    "20260905010000_verification_persistence_contract.sql",
+    "20260905011000_artifact_registration_lifecycle.sql",
+    "20260905012000_verification_artifact_metadata.sql",
+    "20260905013000_verification_legacy_compatibility_and_isolation.sql",
+    "20260905014000_verification_taxonomy_and_source_identity.sql",
+    "20260905015000_append_only_verification_judgments.sql",
+    "20260905016000_verification_artifact_parent_order.sql",
+    "20260905017000_verification_null_and_legacy_guards.sql",
+    "20260905018000_verification_digest_documentation.sql",
+    "20260905019000_verification_projection_artifact_type.sql",
+    "20260905020000_verification_locator_selected_content.sql",
+    "20260905021000_verification_parser_admission_artifact_types.sql",
+    "20260905022000_verification_policy_inputs_artifact_type.sql",
+    "20260906010000_verification_provider_budget_accounting.sql",
+    "20260906011000_verification_provider_artifact_types.sql",
+    "20260906012000_harden_verification_provider_accounting.sql",
+    "20260906013000_verification_provider_dispatch_fence.sql",
+    "20260906014000_provider_accounting_identity_overrun_rls.sql",
+    "20260906015000_provider_response_envelope_artifact_type.sql",
+    "20260906016000_provider_accounting_runtime_schema_usage.sql",
+    "20260906017000_provider_cost_lookup_artifact_type.sql",
+    "20260906018000_provider_precontext_envelope_artifact_type.sql",
+    "20260906019000_verification_evaluation_dataset_manifest.sql",
+    "20260906020000_verification_artifact_contract_marker.sql",
+    "20260906021000_verification_artifact_consumer_admission.sql",
+    "20260906022000_verification_artifact_identity_scope.sql",
+    "20260906023000_verification_case_evidence_reads.sql",
+    "20260906024000_verification_case_reader_schema_access.sql",
+    "20260906025000_verification_benchmark_experiment_artifact.sql",
+    "20260906026000_verification_benchmark_profile_artifact.sql",
+    "20260906027000_verification_benchmark_recorded_call_artifact.sql",
+    "20260906028000_verification_benchmark_source_import_artifacts.sql",
+    "20260906029000_verification_benchmark_durable_run.sql",
+    "20260906029100_verification_benchmark_checkpoint_running_only.sql",
+    "20260906029200_verification_benchmark_remove_unmapped_eval_run.sql",
+    "20260906029300_verification_benchmark_nullsafe_request_binding.sql",
+    "20260906029400_verification_benchmark_checkpoint_result_binding.sql",
+    "20260906030000_verification_benchmark_arm_publication.sql",
+    "20260906030100_verification_benchmark_publication_artifacts.sql",
+    "20260906030200_verification_benchmark_publication_dataset_binding.sql",
+    "20260906030300_verification_benchmark_published_dataset_immutable.sql",
+    "20260906030400_verification_benchmark_comparison_artifacts.sql",
+    "20260906030500_verification_benchmark_comparison_lifecycle.sql",
+    "20260906030600_verification_benchmark_comparison_completion_required.sql",
+    "20260906030700_verification_benchmark_comparison_publication_type.sql",
+    "20260906030800_verification_benchmark_comparison_custody.sql",
+    "20260906030900_verification_benchmark_comparison_terminal_success.sql",
+    "20260906031000_verification_benchmark_comparison_claim.sql",
+    "20260906031100_verification_benchmark_comparison_semantic_binding.sql",
+    "20260906031200_verification_benchmark_comparison_terminal_artifact_type.sql",
+    "20260906031300_verification_provider_operation_scope.sql",
+    "20260906031400_verification_provider_response_capture.sql",
+    "20260906031500_verification_structured_extraction_candidate_artifacts.sql",
+    "20260906031600_verification_structured_extraction_precontext.sql",
+    "20260906031700_verification_structured_extraction_lifecycle.sql",
+    "20260906031800_verification_structured_extraction_execution.sql",
+    "20260906031900_verification_structured_extraction_publication.sql",
+    "20260906032000_verification_structured_extraction_source_custody.sql",
+    "20260906032100_verification_structured_extraction_terminal.sql",
+    "20260906032200_verification_structured_extraction_input_custody.sql",
+    "20260906032300_verification_structured_extraction_step_membership.sql",
+    "20260906032400_verification_structured_extraction_owner_custody.sql",
+    "20260906032500_verification_structured_extraction_failure.sql",
+    "20260906032600_verification_structured_extraction_failure_terminal.sql",
+    "20260906032700_verification_provider_reconciliation_artifact.sql",
+    "20260906032800_verification_provider_reconciliation_ledger.sql",
+    "20260906032900_verification_provider_reconciliation_missing_response.sql",
+    "20260906033000_verification_provider_reconciliation_success.sql"
+  ]
+}

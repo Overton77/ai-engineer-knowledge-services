@@ -1,0 +1,338 @@
+schema_version: verification-workspace.v1
+program: knowledge-verification-module
+specification: ../../specifications/verification-module.md
+coordination:
+  status_board: STATUS.md
+  acceptance_matrix: ACCEPTANCE-MATRIX.md
+  evidence_log: EVIDENCE-LOG.md
+  decisions: DECISIONS.md
+  migration_map: MIGRATION-MAP.md
+  test_matrix: TEST-MATRIX.md
+completion_session:
+  started_at: 2026-09-07
+  ledger: swarm-plan-20260906/LEDGER.md
+  streams:
+    - id: SW-02
+      owner: claims_custody
+      state: native_worker_replay_public_audit_and_terminal_reads_accepted_EV107_EV108_EV111_EV113_adjudication_pending
+      owned_files: [packages/contracts, packages/application/claims-report, apps/worker/claims-report, apps/api, apps/cli, apps/mcp, packages/client-typescript]
+      invariant: server-owned judgments and full native evidence custody
+      required_proof: admitted claims/report direct-worker-HTTP-CLI-MCP parity and prohibited-authority negatives
+    - id: SW-03
+      owner: semantic
+      state: native_semantic_worker_signed_terminal_lifecycle_accepted_EV120_EV121_EV122
+      owned_files: [packages/verification/src/semantic, packages/verification/src/providers, packages/config]
+      invariant: evidence-only judges cannot override mechanical failure
+      required_proof: exact-input recorded fixtures, bounded capabilities, live conformance separately labelled
+    - id: SW-04
+      owner: coordinator
+      state: v3_atomization_export_accepted_EV101_human_labels_pending
+      owned_files: [packages/evaluation/src/verification-human-review, scripts/human-review, catalog/verification-benchmarks/human-review]
+      invariant: no model label becomes a human annotation
+      required_proof: frozen case export, empty-label UI, strict import and tamper tests
+    - id: SW-06
+      owner: coordinator
+      state: claims_parse_audit_dispatch_accepted_EV104_EV106_EV112_cloud_pending
+      owned_files: [../ai-engineer-mission-control/packages/config, ../ai-engineer-mission-control/packages/mission-kernel, ../ai-engineer-mission-control/apps/api, ../ai-engineer-mission-control/apps/worker]
+      invariant: durable dispatch and consistent authenticated transport
+      required_proof: actual Cloud history with original operation receipts
+    - id: SW-07
+      owner: dashboard
+      state: native_claims_report_run_manifest_navigation_accepted_EV122_full_evidence_controls_pending
+      owned_files: [../ai-engineer-mission-control/apps/dashboard]
+      invariant: supported API boundaries and truthful command state
+      required_proof: route/auth tests and actual browser execution/evidence navigation
+    - id: STAB-01
+      owner: coordinator
+      state: stabilization_docs_skill_polling_audited_EV168
+      owned_files: [docs/verification, packages/verification/README.md, skills/knowledge-verification, skills/manifest.json, apps/cli/src/verification-completion.ts, apps/cli/src/commands.ts, apps/mcp/src/index.ts, docs/workspaces/verification-module/stabilization-20260908]
+      invariant: documentation describes only as-built behaviour; no acceptance row promoted by documentation
+      required_proof: code-derived inventory, independent WS-12 audit with remediation ledger, green package tests
+    - id: public-parse-artifact
+      owner: claims_report
+      state: public_source_accepted_EV108_native_parser_pending
+      owned_files: [packages/contracts/src/verification/parse.ts, packages/application/src/verification-parse.ts, apps/worker/src/verification-parse-activity.ts]
+      invariant: full registered source custody and one sandbox parser owner
+      required_proof: HTML/PDF parse admission, fenced recovery and public transport parity
+baseline:
+  state: preserved_archive
+  command: corepack pnpm verify
+  checkpoint: ../../../../internal/verification-checkpoints/20260905-initial/manifest.json
+work_items:
+  - id: WS-00
+    title: Coordinator, baseline, and architecture
+    status: active
+    owner: coordinator
+    depends_on: []
+  - id: WS-01
+    title: Contracts and domain taxonomy
+    status: done
+    owner: verification-foundation-agent
+    depends_on: [WS-00]
+  - id: WS-02
+    title: Deterministic verification core
+    status: done
+    owner: verification-foundation-agent
+    depends_on: [WS-01]
+  - id: WS-03
+    title: Provenance, persistence, and object storage
+    status: done
+    owner: verification-persistence-agent
+    claimed_at: 2026-09-05
+    owned_paths:
+      - packages/verification/src/provenance/**
+      - packages/persistence/src/verification*
+      - packages/persistence/src/index.ts
+      - packages/persistence/package.json
+      - scripts/prove-verification-persistence.ts
+      - ../ai-engineer-db-contract/supabase/migrations/*verification*
+      - ../ai-engineer-db-contract/src/database.generated.ts
+      - ../ai-engineer-db-contract/package.json
+      - packages/persistence/vendor/ai-engineer-db-contract-*.tgz
+    depends_on: [WS-00, WS-01]
+    evidence: [EV-012, EV-013]
+  - id: WS-04
+    title: Extraction, parsers, normalization, and selectors
+    status: partial
+    owner: verification-admission-agent
+    claimed_at: 2026-09-05
+    scope: accepted bounded selector/extraction/native PDF-HTML parser and authenticated admission slices; generic replay, semantic and unsupported modality/provider routes remain
+    owned_paths:
+      - packages/verification/src/selectors/**
+      - docs/workspaces/verification-module/HANDOFF-WS-04-SELECTORS.md
+      - packages/verification/src/extraction/**
+      - packages/verification/src/index.ts
+      - docs/workspaces/verification-module/HANDOFF-WS-04-EXTRACTION.md
+      - services/verification-parser/**
+      - packages/conversion/src/verification-parser*
+      - docs/workspaces/verification-module/HANDOFF-WS-04-PARSER.md
+      - packages/application/src/verification-admission*
+      - packages/application/src/index.ts
+      - packages/application/package.json
+      - pnpm-lock.yaml
+      - packages/persistence/src/verification.ts
+      - packages/persistence/src/index.ts
+      - packages/verification/src/provenance/model.ts
+      - ../ai-engineer-db-contract/supabase/migrations/20260905021000_verification_parser_admission_artifact_types.sql
+      - scripts/prove-verification-admission.ts
+      - scripts/prove-verification-parser-review.mjs
+      - ../internal/verification-run-local-proof.mjs
+      - docs/workspaces/verification-module/PARSER-REVIEW.md
+      - docs/workspaces/verification-module/HANDOFF-WS-04-ADMISSION.md
+    depends_on: [WS-01, WS-02, WS-03]
+    evidence: [EV-014, EV-016, EV-018, EV-021, EV-022]
+  - id: WS-05
+    title: Claims, semantic verification, authority, and policy
+    status: partial
+    owner: verification-semantics-agent
+    claimed_at: 2026-09-05T00:45:48-04:00
+    scope: bounded claims, authority, evidence-closed semantics, deterministic policy and immutable recorded-input offline policy replay; synthetic adapters only; live providers, calibration, human gold and production shadow remain pending
+    owned_paths:
+      - packages/verification/src/claims/**
+      - packages/verification/src/authority/**
+      - packages/verification/src/semantic/**
+      - packages/verification/src/index.ts
+      - packages/contracts/src/verification/**
+      - packages/contracts/generated/**
+      - packages/policy/src/verification*
+      - packages/policy/src/index.ts
+      - packages/policy/package.json
+      - packages/verification/src/provenance/**
+      - packages/application/src/verification-replay*
+      - packages/application/src/index.ts
+      - packages/application/package.json
+      - packages/evaluation/src/verification-semantic*
+      - packages/evaluation/src/index.ts
+      - ../ai-engineer-db-contract/supabase/migrations/20260905022000_verification_policy_inputs_artifact_type.sql
+      - ../ai-engineer-db-contract/package.json
+      - packages/persistence/package.json
+      - packages/persistence/vendor/aiengineer-database-contract-0.2.1.tgz
+      - pnpm-lock.yaml
+      - scripts/prove-verification-persistence.ts
+      - docs/workspaces/verification-module/HANDOFF-WS-05.md
+    depends_on: [WS-01, WS-02]
+    evidence: [EV-027, EV-028, EV-029]
+  - id: WS-06
+    title: Provider framework and Interfaze
+    status: partial
+    owner: verification-providers-agent
+    claimed_at: 2026-09-06
+    scope: bounded Gateway semantic-rubric and extraction plus Interfaze text/OCR adapters, strict request/response admission, persistent pilot accounting, and synthetic live-safe conformance complete; benchmark arms, billing reconciliation for Interfaze, and promotion remain pending
+    owned_paths:
+      - packages/verification/src/providers/**
+      - packages/verification/src/index.ts
+      - packages/contracts/src/verification/operations.ts
+      - packages/contracts/src/verification/verification.test.ts
+      - packages/contracts/generated/**
+      - packages/application/src/verification-provider*
+      - packages/application/src/index.ts
+      - packages/application/package.json
+      - scripts/prove-verification-providers.*
+      - internal/verification-provider-*
+      - docs/workspaces/verification-module/HANDOFF-WS-06.md
+    depends_on: [WS-01, WS-03, WS-04]
+    evidence: [EV-030, EV-031, EV-032, EV-033]
+  - id: WS-07
+    title: Benchmarks, statistics, and experiments
+    status: review
+    owner: verification-benchmarks-agent
+    scope: benchmark contracts, immutable Pilot and v1 tooling, runner, diagnostics reports, statistics review, replay and evidence
+    owned_paths:
+      - packages/evaluation/src/verification-statistics*
+      - packages/evaluation/src/verification-benchmark*
+      - packages/contracts/src/verification/benchmark*
+      - packages/application/src/verification-benchmark*
+      - packages/application/src/verification-demo*
+      - catalog/verification-benchmarks/**
+      - scripts/prove-verification-benchmark*
+      - docs/workspaces/verification-module/HANDOFF-WS-07-STATISTICS.md
+      - docs/workspaces/verification-module/HANDOFF-WS-07.md
+    depends_on: [WS-01, WS-02, WS-04, WS-05]
+    evidence: [EV-020, EV-026, EV-034]
+  - id: WS-08
+    title: API, client, CLI, MCP, worker, and skills
+    status: active
+    owner: coordinator
+    claimed_at: 2026-09-05
+    scope: bounded durable vertical slice for native capture registration, deterministic extraction verification and offline replay across shared application/persistence/API/client/CLI/MCP/worker composition; remaining inventory follows independent review
+    owned_paths:
+      - packages/application/src/verification-service*
+      - packages/persistence/src/verification-operation*
+      - apps/api/src/verification*
+      - packages/client-typescript/src/verification*
+      - apps/cli/src/verification*
+      - apps/mcp/src/verification*
+      - apps/worker/src/verification*
+      - docs/workspaces/verification-module/WS-08-IMPLEMENTATION-PLAN.md
+      - docs/workspaces/verification-module/HANDOFF-WS-08.md
+    note: Capture, extraction verification, metric verification, replay and registered offline benchmark have bounded runtime proofs. EV-068/069 accept configured benchmark submission/worker and two actual SIGKILL recovery boundaries. EV-070 accepts authenticated signed benchmark reads. EV-072/073 accept registered comparison profiles, durable signed lifecycle and actual canonical completion. EV-074 accepts configured comparison worker, mutation transports and authenticated statistics reads. EV-075 accepts two actual comparison process recovery boundaries and EV-076 accepts full117-call retained replay with explicit failures. EV-077 accepts structured-extraction profile admission and operation-scoped accounting prerequisites; EV-078 accepts observed transport status and durable response capture; EV-079 accepts native profile admission and actual captured-byte adapter replay; durable candidate custody and worker/transports remain next; other mutations, case/score completeness, disconnected replay, deployment, human review and promotion remain open. EV-168 completes the operator surface for integration — CLI `--wait` grades claims/report, strict `verify status` read, MCP `knowledge_get_verification_operation`, agent skill `skills/knowledge-verification`, and the `docs/verification` guide set.
+    evidence:
+      - docs/workspaces/verification-module/HANDOFF-WS-08-REQUESTS.md
+      - EV-038
+      - EV-049
+      - EV-050
+      - EV-051
+      - EV-052
+      - EV-053
+      - EV-054
+      - EV-055
+      - EV-056
+      - EV-057
+      - EV-058
+      - EV-059
+      - EV-060
+      - EV-061
+      - EV-062
+      - EV-063
+      - EV-064
+      - EV-065
+      - EV-066
+      - EV-067
+      - EV-068
+      - EV-069
+      - EV-070
+      - EV-071
+      - EV-072
+      - EV-073
+      - EV-074
+      - EV-075
+      - EV-076
+      - EV-077
+      - EV-078
+      - EV-079
+      - EV-080
+      - EV-081
+      - EV-082
+      - EV-083
+      - EV-084
+      - EV-085
+      - EV-086
+      - EV-087
+      - EV-088
+      - EV-089
+      - EV-090
+      - EV-091
+      - EV-092
+      - EV-093
+      - EV-094
+      - EV-095
+      - EV-096
+      - EV-097
+      - EV-168
+    depends_on: [WS-01, WS-02, WS-03]
+  - id: WS-09
+    title: Security, privacy, observability, and operations
+    status: preparation
+    owner: coordinator
+    note: Threat model draft and bounded coordinator MCP HTTP/startup error hardening; independent architecture and final security review pending.
+    depends_on: [WS-00]
+  - id: WS-10
+    title: Cursor, EVE, Temporal, and Mission Control integration
+    status: partial
+    owner: coordinator
+    note: Local authenticated Mission Control dispatch, cancellation, uncertain submission recovery and Temporal history replay are evidenced. Production deployment/capability health, Temporal Cloud, real Cursor Cloud and EVE cutover remain open.
+    evidence: [EV-044, EV-045, EV-046, EV-047, EV-048, EV-098, EV-104]
+    depends_on: [WS-07, WS-08, WS-09]
+  - id: WS-11
+    title: Dashboard and human review
+    status: partial
+    evidence: [EV-102, EV-119, EV-121, EV-122]
+    note: Native claims/report launch and compact terminal views accepted; full evidence navigation, benchmark/control lifecycle and human review remain open.
+    depends_on: [WS-03, WS-07, WS-08, WS-10]
+  - id: WS-12
+    title: Independent completion audit
+    status: partial
+    owner: coordinator
+    claimed_at: 2026-09-08
+    note: EV-168 static integration-readiness audit (stabilization-20260908/WS-12-COMPLETION-AUDIT.md) verified CLI/MCP/HTTP/env surfaces against code; two doc blockers and five must-fix items remediated same session. Final whole-module release audit remains open until the external inputs listed in ENGINEERING-HANDOFF-20260908.md arrive.
+    evidence: [EV-168]
+    depends_on: [WS-01, WS-02, WS-03, WS-04, WS-05, WS-06, WS-07, WS-08, WS-09, WS-10, WS-11]
+
+# EV-114: Two native local MC audit workflows, independent SQL/history replay and33-task full MC check accepted.
+# EV-115: Local native readonly typegen restored; contract0.2.32 pinned with exact vendor parity.
+# Adjudication draft unapplied; runtime and independent schema review active. Whole-goal acceptance unchanged.
+
+# EV-116: Local subject-only migration applied; DB0.2.33 installed,138migrations/72types. Native packet-subject persistence remains active.
+
+# EV-117: Native pending adjudication request workflow accepted; terminal readers/MC integration active; no human decisions.
+
+# EV-118: Native pending-subject reads/public transports accepted; full KS72/0cached. MC adjudication integration active, human authority candidate next.
+
+# EV-119: Native MC adjudication2 workflows independently audited/replayed; UI mock3/3; human authority candidate active.
+
+# EV-123: Installed v1 offline one-case semantic replay and linked evidence appendix accepted; 19artifact fixture,22outputfiles, CLI28/app264/worker87pass5skip. Full paired benchmark/human-gold/quality exits remain open. No whole acceptance row promoted.
+
+# EV-124: Strict full-demo13gates/exit2 incomplete with24files; actual40locator+40digest corruptions rejected. No whole acceptance promotion.
+
+# EV-125: Live one-source acquisition native proof/6CASartifacts accepted; typedcaptureterminal/candidatepublication/CLIrefresh remain open. No whole acceptance promotion.
+
+# EV-126: Authenticated compact HTML capture read/native receipt repair accepted; full capture-proposal lifecycle and46-row acceptance remain open.
+
+# EV-127: Server-owned profile capture native proof and pure16-source proposal assembly; CLIwriter/fullrefresh/PDF/freshselectors remainopen.
+
+# EV-128: Installed16sourceattempt13captured3unavailable, immutableproposal/exactdiff proved; fullrefresh/PDF/freshselectors/humanapproval remainopen.
+
+# EV-129: Native PDF capture/proposal/diff proved;14/16sources captured,2unavailable. No whole acceptance promotion.
+
+# EV-130: VR-043 proved for installed frozen-v1 mini-report assertion paths; full-module acceptance remains active.
+
+# EV-137/138: Native Eve same-deployment and corrupted-locator controls independently accepted;
+# worker rejects unqualified verifier before seal. VR-003 and VR-032 now proved;
+# matrix 3 proved / 30 partial / 13 missing. Dashboard initial API boundary audited.
+# Remaining active local work: Eve prohibited-tool/injection controls, enforceable live-model
+# dispatch/cost gate, and local-only D-017 exact-route HTTP bridge preparation.
+# Cloud namespace D-016 remains user-provisioned/pending; no tunnel or Cloud mutation.
+
+# 2026-09-08 EV139–141 coordinator checkpoint:
+# Matrix: 8 proved / 27 partial / 11 missing; overall mission remains unfinished.
+# Accepted: VR002/003/004/013/032/043/044/046. Exact frozen VR044 scope only.
+# Active: sibling native live-Eve harness, aggregate cohort admission/cleanup,
+# shared selector/display and deterministic numeric inventory audit (VR005/009).
+# Pending user inputs: actual human reviewer/labels; Temporal Cloud namespace;
+# D017 short-lived fixture-only HTTPS exposure. No tunnel/provider run started here.
+
+# 2026-09-08 EV-168 stabilization checkpoint:
+# Matrix unchanged 31 proved / 8 partial / 7 missing. Delivered docs/verification guide set, packages/verification README,
+# skills/knowledge-verification agent skill (+ manifest, Cursor wrapper), CLI --wait claims/report grading, verify status,
+# MCP knowledge_get_verification_operation, per-package Vitest timeouts, independent WS-12 audit + remediation.
+# See STATUS.md (EV-168), EVIDENCE-LOG.md (EV-168), stabilization-20260908/.

@@ -1,0 +1,1 @@
+{"extends":"../tsconfig.base.json","compilerOptions":{"noEmit":true},"include":["prove-verification-provider-reconciliation-publications.ts","prepare-verification-provider-reconciliation-publications.ts"]}
