@@ -93,3 +93,11 @@ export * from "./verification-benchmark-version-diff.js";
 export * from "./verification-benchmark-refresh-proposal.js";
 export * from "./verification-capture-reads.js";
 export * from "./verification-adjudication-decision.js";
+export * from "./verification-recovery.js";
+export * from "./source-discovery.js";
+
+export * from "./checkpoints-ports.js";
+
+export * from "./checkpoints.js";
+export * from "./verification-recovery-durable-ports.js";
+export * from "./verification-recovery-durable.js";

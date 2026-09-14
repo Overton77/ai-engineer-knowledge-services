@@ -128,8 +128,9 @@ Keep a list of dropped claims for the summary.
 
 When the task asks for a metrics table, write `40-extraction-intent.json`
 (`verification-extraction-intent.v1`): a small bounded JSON schema (`additionalProperties:
-false`, string fields with `maxLength`), a `candidate` object with the values exactly as printed,
-and `fields` binding each JSON pointer to `{ captureId, quote, comparison }`.
+false`, `required`, a `description` on every node, string fields with `maxLength`), a `candidate`
+object with the values exactly as printed, and `fields` binding each JSON pointer to
+`{ captureId, quote, comparison }` — one binding per leaf.
 
 ```bash
 knowledge-verify verify-extraction 40-extraction-intent.json --run "$RUN" --out 41-extraction-result.json

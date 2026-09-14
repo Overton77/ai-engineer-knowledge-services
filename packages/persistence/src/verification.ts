@@ -148,12 +148,13 @@ interface ArtifactRow extends Record<string, unknown> {
   producer_activity_id: string; producer_version: string; content_encoding: string | null;
   encryption_class: string; retention_class: string; data_classification: VerificationArtifactHandle["dataClassification"];
   parent_artifact_ids: string[]; transformation_signature: string | null; attestation_artifact_id: string | null;
+  logical_object_key?: string | null;
 }
 
 function handleFromRow(row: ArtifactRow): VerificationArtifactHandle {
   return VerificationArtifactHandleSchema.parse({
     artifactId: String(row.id), tenantId: String(row.tenant_id), digest: `sha256:${String(row.sha256)}`,
-    mediaType: String(row.media_type), byteLength: Number(row.size_bytes), objectKey: String(row.object_path),
+    mediaType: String(row.media_type), byteLength: Number(row.size_bytes), objectKey: String(row.logical_object_key ?? row.object_path),
     ...(row.content_encoding ? { contentEncoding: String(row.content_encoding) } : {}), createdAt: iso(row.created_at),
     producerActivityId: String(row.producer_activity_id), producerVersion: String(row.producer_version),
     encryptionClass: String(row.encryption_class), retentionClass: String(row.retention_class),
@@ -172,7 +173,7 @@ export class PostgresVerificationRepository {
 
   async #readArtifact(client: TenantSqlClient, tenantId: string, artifactId: string): Promise<ArtifactRow | undefined> {
     return (await client.query<ArtifactRow>(`select a.*,m.producer_activity_id,m.producer_version,m.content_encoding,
-      m.encryption_class,m.retention_class,m.data_classification,m.parent_artifact_ids,m.transformation_signature,m.attestation_artifact_id
+      m.encryption_class,m.retention_class,m.data_classification,m.parent_artifact_ids,m.transformation_signature,m.attestation_artifact_id,m.logical_object_key
       from orchestration.artifact a join orchestration.verification_artifact_metadata m
        on m.tenant_id=a.tenant_id and m.artifact_id=a.id where a.tenant_id=$1 and a.id=$2
        and a.verification_contract_version='verification.v1'`, [tenantId,artifactId])).rows[0];
@@ -181,6 +182,7 @@ export class PostgresVerificationRepository {
   async registerArtifact(inputValue: RegisterVerificationArtifactInput, fence?: { readonly producerAttemptId: string; readonly lease: VerificationRunLease }): Promise<VerificationArtifactHandle> {
     const input = { ...inputValue, handle: VerificationArtifactHandleSchema.parse(inputValue.handle) };
     const { handle } = input;
+    const storageKey = `${handle.tenantId}/${handle.digest.slice(7,9)}/${handle.digest.slice(7)}`;
     requireUuid(handle.tenantId, "tenantId"); requireUuid(handle.artifactId, "artifactId");
     if (handle.createdAt !== new Date(handle.createdAt).toISOString()) throw new Error("ARTIFACT_CREATED_AT_NOT_CANONICAL");
     if (handle.downloadHandle) throw new Error("VOLATILE_DOWNLOAD_HANDLE_NOT_PERSISTABLE");
@@ -200,25 +202,26 @@ export class PostgresVerificationRepository {
          producer_attempt_id,mission_id,created_at,storage_state,available_at,verification_contract_version)
         values($1,$2,$3,1,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending',null,'verification.v1') on conflict do nothing`,
         [handle.artifactId,handle.tenantId,input.artifactType,input.handle.digest.slice(7),input.bucketClass,input.storageBucket,
-         handle.objectKey,handle.mediaType,handle.byteLength,input.producerAttemptId??null,input.missionId??null,handle.createdAt]);
+         storageKey,handle.mediaType,handle.byteLength,input.producerAttemptId??null,input.missionId??null,handle.createdAt]);
       const marker = (await client.query<{ verification_contract_version: string | null }>(
         "select verification_contract_version from orchestration.artifact where tenant_id=$1 and id=$2",
         [handle.tenantId,handle.artifactId])).rows[0];
       if (marker?.verification_contract_version !== "verification.v1") throw new Error("ARTIFACT_REGISTRATION_COLLISION");
       await client.query(`insert into orchestration.verification_artifact_metadata
         (tenant_id,artifact_id,producer_activity_id,producer_version,content_encoding,encryption_class,retention_class,
-         data_classification,parent_artifact_ids,transformation_signature,attestation_artifact_id,created_at)
-        values($1,$2,$3,$4,$5,$6,$7,$8,$9::uuid[],$10,$11,$12) on conflict do nothing`,
+         data_classification,parent_artifact_ids,transformation_signature,attestation_artifact_id,created_at,logical_object_key)
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9::uuid[],$10,$11,$12,$13) on conflict do nothing`,
         [handle.tenantId,handle.artifactId,handle.producerActivityId,handle.producerVersion,handle.contentEncoding??null,
          handle.encryptionClass,handle.retentionClass,handle.dataClassification,handle.parentArtifactIds,
-         handle.transformationSignature ? digestHex(handle.transformationSignature) : null,handle.attestationArtifactId??null,handle.createdAt]);
+         handle.transformationSignature ? digestHex(handle.transformationSignature) : null,handle.attestationArtifactId??null,handle.createdAt,
+         handle.objectKey === storageKey ? null : handle.objectKey]);
       for (const parentId of handle.parentArtifactIds) await client.query(`insert into orchestration.artifact_lineage
         (tenant_id,from_artifact_id,to_artifact_id,relation_kind,activity_id,activity_version,transformation_signature,created_at)
         values($1,$2,$3,'generated',$4,$5,$6,$7) on conflict do nothing`,
         [handle.tenantId,handle.artifactId,parentId,handle.producerActivityId,handle.producerVersion,digestHex(handle.transformationSignature!),handle.createdAt]);
       const stored = await this.#readArtifact(client,handle.tenantId,handle.artifactId);
       if (!stored || stored.verification_contract_version !== "verification.v1" || stored.storage_bucket !== input.storageBucket || stored.artifact_type !== input.artifactType
-        || stored.bucket_class !== input.bucketClass || digestCanonicalJson(handleFromRow(stored)) !== digestCanonicalJson(handle)) {
+        || stored.bucket_class !== input.bucketClass || stored.object_path !== storageKey || digestCanonicalJson(handleFromRow(stored)) !== digestCanonicalJson(handle)) {
         throw new Error("ARTIFACT_REGISTRATION_COLLISION");
       }
       return stored.storage_state;
@@ -229,13 +232,7 @@ export class PostgresVerificationRepository {
       return handle;
     }
     try {
-      const stored = await this.artifacts.put({ tenantId:handle.tenantId,mediaType:handle.mediaType,bytes:input.bytes });
-      if (stored.artifactId !== handle.artifactId || stored.tenantId !== handle.tenantId || stored.digest !== handle.digest
-        || stored.mediaType !== handle.mediaType || stored.byteLength !== handle.byteLength || stored.storageKey !== handle.objectKey) {
-        throw new Error("OBJECT_STORE_REGISTRATION_MISMATCH");
-      }
-      const hydrated = await this.artifacts.get(handle.tenantId,handle.digest);
-      if (!hydrated || hydrated.byteLength !== handle.byteLength || sha256Digest(hydrated) !== handle.digest) throw new Error("OBJECT_STORE_WRITE_NOT_VERIFIED");
+      await this.#ensureArtifactBytes(input, storageKey);
       await this.database.transaction(handle.tenantId, async (client) => {
         if (fence) await this.#assertLiveArtifactLease(client,handle.tenantId,fence.producerAttemptId,fence.lease);
         const row = (await client.query<{ storage_state: string }>("select storage_state from orchestration.artifact where tenant_id=$1 and id=$2 for update", [handle.tenantId,handle.artifactId])).rows[0];
@@ -245,11 +242,56 @@ export class PostgresVerificationRepository {
       return handle;
     } catch (error) {
       await this.database.transaction(handle.tenantId, async (client) => {
+        if (fence) await this.#assertLiveArtifactLease(client,handle.tenantId,fence.producerAttemptId,fence.lease);
         await client.query(`update orchestration.artifact set storage_state='failed',available_at=null,registration_error_class='object_write_failed'
           where tenant_id=$1 and id=$2 and storage_state='pending'`, [handle.tenantId,handle.artifactId]);
       }).catch(() => undefined);
       throw error;
     }
+  }
+
+  async #ensureArtifactBytes(input: RegisterVerificationArtifactInput, storageKey: string): Promise<void> {
+    const { handle } = input;
+    const existing = await this.artifacts.get(handle.tenantId,requireDigest(handle.digest));
+    if (!existing) {
+      try {
+        const stored = await this.artifacts.put({ tenantId:handle.tenantId,mediaType:handle.mediaType,bytes:input.bytes });
+        if (stored.tenantId !== handle.tenantId || stored.digest !== handle.digest
+          || stored.mediaType !== handle.mediaType || stored.byteLength !== handle.byteLength || stored.storageKey !== storageKey) {
+          throw new Error("OBJECT_STORE_REGISTRATION_MISMATCH");
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message === "OBJECT_STORE_REGISTRATION_MISMATCH") throw error;
+        // A successful upload can lose its acknowledgement. Only verified bytes recover it.
+        const recovered = await this.artifacts.get(handle.tenantId,requireDigest(handle.digest)).catch(() => undefined);
+        if (!recovered || recovered.byteLength !== handle.byteLength || sha256Digest(recovered) !== handle.digest) throw error;
+      }
+    }
+    const hydrated = await this.artifacts.get(handle.tenantId,requireDigest(handle.digest));
+    if (!hydrated || hydrated.byteLength !== handle.byteLength || sha256Digest(hydrated) !== handle.digest) throw new Error("OBJECT_STORE_WRITE_NOT_VERIFIED");
+  }
+
+  async registerLogicalArtifact(input: RegisterVerificationArtifactInput, fence?: { readonly producerAttemptId: string; readonly lease: VerificationRunLease }): Promise<VerificationArtifactHandle> {
+    return this.registerArtifact(input, fence);
+  }
+
+  /** Metadata discovery is not an availability acknowledgement; callers must still register or hydrate bytes. */
+  async getLogicalArtifactRegistration(input: { readonly tenantId: string; readonly artifactId: string }): Promise<{
+    handle: VerificationArtifactHandle; storageState: "pending" | "available" | "failed";
+  } | undefined> {
+    requireUuid(input.tenantId, "tenantId"); requireUuid(input.artifactId, "artifactId");
+    await this.authorization.authorize({ ...input, purpose: "verification_replay" });
+    const row = await this.database.transaction(input.tenantId, client => this.#readArtifact(client,input.tenantId,input.artifactId));
+    return row ? { handle: handleFromRow(row), storageState: row.storage_state } : undefined;
+  }
+
+  async getLogicalArtifact(input: { readonly tenantId: string; readonly artifactId: string }): Promise<{ handle: VerificationArtifactHandle; bytes: Uint8Array } | undefined> {
+    requireUuid(input.tenantId, "tenantId"); requireUuid(input.artifactId, "artifactId");
+    await this.authorization.authorize({ ...input, purpose: "verification_replay" });
+    const row = await this.database.transaction(input.tenantId, client => this.#readArtifact(client,input.tenantId,input.artifactId));
+    if (!row) return undefined;
+    const hydrated = await this.#hydrateRegisteredArtifact(input);
+    return { handle: hydrated.registration, bytes: hydrated.bytes };
   }
 
   /**
@@ -285,7 +327,7 @@ export class PostgresVerificationRepository {
       await this.#assertLiveArtifactLease(client,artifact.tenantId,artifact.producerAttemptId!,input.lease);
       return this.#readArtifact(client,artifact.tenantId,proposed.artifactId);
     });
-    if (existing) return this.#verifyReusableArtifact(existing,artifact,requireDigest(proposed.digest),proposed.byteLength);
+    if (existing) return this.#verifyReusableArtifact(existing,artifact,requireDigest(proposed.digest),proposed.byteLength,input.lease);
     try {
       return await this.registerArtifact({
         handle: proposed, bytes: artifact.bytes, artifactType: artifact.artifactType,
@@ -299,7 +341,7 @@ export class PostgresVerificationRepository {
         return this.#readArtifact(client,artifact.tenantId,proposed.artifactId);
       });
       if (!raced) throw error;
-      return this.#verifyReusableArtifact(raced,artifact,requireDigest(proposed.digest),proposed.byteLength);
+      return this.#verifyReusableArtifact(raced,artifact,requireDigest(proposed.digest),proposed.byteLength,input.lease);
     }
   }
 
@@ -308,9 +350,10 @@ export class PostgresVerificationRepository {
     input: RegisterContentAddressedVerificationArtifactInput,
     digest: `sha256:${string}`,
     byteLength: number,
+    lease?: VerificationRunLease,
   ): Promise<VerificationArtifactHandle> {
     const registration = handleFromRow(row);
-    if (row.storage_state !== "available" || row.artifact_type !== input.artifactType || row.bucket_class !== input.bucketClass
+    if (row.artifact_type !== input.artifactType || row.bucket_class !== input.bucketClass
       || row.storage_bucket !== input.storageBucket || registration.digest !== digest || registration.byteLength !== byteLength
       || registration.mediaType !== input.mediaType || registration.objectKey !== `${input.tenantId}/${digest.slice(7,9)}/${digest.slice(7)}`
       || registration.contentEncoding !== input.contentEncoding || registration.encryptionClass !== input.encryptionClass
@@ -320,6 +363,12 @@ export class PostgresVerificationRepository {
       || registration.attestationArtifactId !== input.attestationArtifactId) {
       throw new Error("ARTIFACT_REGISTRATION_COLLISION");
     }
+    if (row.storage_state !== "available") return this.registerArtifact({
+      handle: registration, bytes: input.bytes, artifactType: input.artifactType,
+      bucketClass: input.bucketClass, storageBucket: input.storageBucket,
+      ...(input.producerAttemptId ? { producerAttemptId: input.producerAttemptId } : {}),
+      ...(input.missionId ? { missionId: input.missionId } : {}),
+    }, lease && input.producerAttemptId ? { producerAttemptId: input.producerAttemptId, lease } : undefined);
     const bytes = await this.artifacts.get(input.tenantId,digest);
     if (!bytes || bytes.byteLength !== byteLength || sha256Digest(bytes) !== digest || sha256Digest(input.bytes) !== digest) {
       throw new Error("REGISTERED_ARTIFACT_BYTES_UNAVAILABLE");

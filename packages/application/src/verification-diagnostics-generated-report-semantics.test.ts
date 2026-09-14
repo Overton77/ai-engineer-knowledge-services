@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OperationContext, SemanticAssessmentRecord, VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { sha256Digest, verifySemanticCase } from "@aiengineer/knowledge-verification";
+import { gatewaySemanticPromptDigest, sha256Digest, verifySemanticCase } from "@aiengineer/knowledge-verification";
 import { prepareDiagnosticsGeneratedReportSemantics, executeDiagnosticsGeneratedReportSemantics, replayDiagnosticsGeneratedReportSemantics, type DiagnosticsGeneratedReportSemanticDispatchGrant, type DiagnosticsReportSemanticSourceBinding } from "./verification-diagnostics-generated-report-semantics.js";
 vi.mock("@aiengineer/knowledge-verification", async importOriginal => ({ ...await importOriginal<object>(), verifySemanticCase: vi.fn() }));
 vi.mock("./verification-claims.js", () => ({ VerificationClaimsApplicationService: class {
@@ -11,7 +11,7 @@ vi.mock("./verification-claims.js", () => ({ VerificationClaimsApplicationServic
 const digest=sha256Digest("fixture"),uuid=(n:number)=>`11111111-1111-4111-8111-${String(n).padStart(12,"0")}`;
 const context:OperationContext={contractVersion:"v1",tenantId:uuid(1),operationId:uuid(2),attemptId:uuid(3),correlationId:"test",actor:{kind:"service",id:uuid(4),serviceIdentity:"knowledge_worker"},capabilityVersion:"verification.v1",idempotencyKey:"diagnostic-test",reason:"fixture"};
 const handle=(n:number):VerificationArtifactHandle=>({artifactId:uuid(n),tenantId:context.tenantId,digest,mediaType:"application/json",byteLength:7,objectKey:`fixture/${n}`,createdAt:"2026-09-08T00:00:00.000Z",producerActivityId:"test",producerVersion:"1",encryptionClass:"managed",retentionClass:"test",dataClassification:"internal",parentArtifactIds:[]});
-const identity={deploymentId:"diagnostic-luna",provider:"vercel-ai-gateway",family:"openai",model:"openai/gpt-5.6-luna",capability:"llm_evidence_rubric" as const,graderVersion:"evidence-only.v1",promptDigest:digest,outputSchemaDigest:digest,configurationDigest:digest};
+const identity={deploymentId:"diagnostic-luna",provider:"vercel-ai-gateway",family:"openai",model:"openai/gpt-5.6-luna",capability:"llm_evidence_rubric" as const,graderVersion:"evidence-only.v1",promptDigest:gatewaySemanticPromptDigest,outputSchemaDigest:digest,configurationDigest:digest};
 async function fixture(){
  const localLedgerHandles=Array.from({length:43},(_,i)=>handle(100+i)),reportHandles=Array.from({length:3},(_,i)=>handle(200+i)),sourceBindings:DiagnosticsReportSemanticSourceBinding[]=[];
  const reports=reportHandles.map((report,i)=>({reportId:`report-${i}`,request:{verificationContractVersion:"verification.v1",captureIds:["capture"],report:{artifactId:report.artifactId,digest},claimLedger:{artifactId:localLedgerHandles[i]!.artifactId,digest}},expectedReportArtifact:report,expectedClaimLedgerArtifact:localLedgerHandles[i]!}));

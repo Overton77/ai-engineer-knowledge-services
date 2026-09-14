@@ -3,17 +3,21 @@ import { basename, extname } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { mediaTypeForFilename } from "./capture.js";
 import { loadExecutorConfig, VerificationExecutor } from "./executor.js";
-import { createHttpServer } from "./http.js";
 import { createVerificationMcpServer } from "./mcp.js";
 import { RemoteExecutor, RemoteExecutorError } from "./remote.js";
+import { createKnowledgeFromEnv, describeRunning, startExecutorServer } from "./serve.js";
 
 export * from "./executor.js";
 export * from "./intents.js";
 export * from "./store.js";
-export { createVerificationMcpServer } from "./mcp.js";
+export { createVerificationMcpServer, registerKnowledgeTools } from "./mcp.js";
 export { createHttpServer } from "./http.js";
 export { RemoteExecutor, RemoteExecutorError } from "./remote.js";
 export { SUPPORTED_MEDIA_TYPES, mediaTypeForFilename } from "./capture.js";
+export { startExecutorServer, createKnowledgeFromEnv } from "./serve.js";
+export { knowledgeOperations } from "./knowledge/operations.js";
+export { createKnowledgeServices, loadKnowledgeConfig, KNOWLEDGE_EXECUTOR_VERSION } from "./knowledge/context.js";
+export { defineOperation, OperationRegistry } from "./operations/define.js";
 
 const HELP = `knowledge-verify — deterministic verification executor over agent-written intent files
 
@@ -25,9 +29,11 @@ Modes
                                (or pass --remote <url>; --token / VERIFY_EXECUTOR_TOKEN for bearer auth)
 
 Serving
-  serve [--port 4310] [--host 127.0.0.1]     HTTP: /mcp (Streamable HTTP MCP), /artifacts, /captures, /runs/:id, /health
+  serve [--port 4310] [--host 127.0.0.1]     HTTP: /mcp (Streamable HTTP MCP), /artifacts, /captures, /runs/:id, /health,
+                                             /knowledge/:operation (schema_*, db_*, ingest_*, artifact_get when POSTGRES_URL is set)
   mcp-stdio                                  MCP over stdio (for local agent harnesses)
   health                                     remote: GET /health; local: store info
+  (the sibling \`knowledge\` binary drives the schema / db / ingest operations; \`knowledge help\`)
 
 Capture (evidence enters the system only here)
   capture <url> --run <runId> --capture-id <id> [--method auto|firecrawl|https_get]
@@ -211,15 +217,17 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     else process.stdout.write(`${text}\n`);
   };
 
-  if (command === "serve" || command === "mcp-stdio") {
+  if (command === "mcp-stdio") {
     const executor = await VerificationExecutor.create(loadExecutorConfig());
-    if (command === "mcp-stdio") { await createVerificationMcpServer(executor).connect(new StdioServerTransport()); return; }
+    await createVerificationMcpServer(executor, await createKnowledgeFromEnv(process.env, executor)).connect(new StdioServerTransport());
+    return;
+  }
+  if (command === "serve") {
     const port = num(flags.port) ?? Number(process.env.VERIFY_PORT ?? 4310);
     const host = str(flags.host) ?? process.env.VERIFY_HOST ?? "127.0.0.1";
-    const server = createHttpServer(executor, token ? { token } : {});
-    await new Promise<void>((resolve) => server.listen(port, host, resolve));
-    console.error(JSON.stringify({ listening: `http://${host}:${port}`, mcp: `http://${host}:${port}/mcp`, store: executor.store.rootDir, tenantId: executor.store.tenantId, auth: token ? "bearer" : "none" }));
-    await new Promise<void>((resolve) => { process.on("SIGINT", () => server.close(() => resolve())); process.on("SIGTERM", () => server.close(() => resolve())); });
+    const running = await startExecutorServer({ port, host, ...(token ? { token } : {}) });
+    console.error(JSON.stringify(describeRunning(running, token ? "bearer" : "none")));
+    await new Promise<void>((resolve) => { process.on("SIGINT", () => void running.close().then(resolve)); process.on("SIGTERM", () => void running.close().then(resolve)); });
     return;
   }
 

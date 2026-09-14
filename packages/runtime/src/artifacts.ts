@@ -116,7 +116,15 @@ export class SupabaseArtifactStore implements ArtifactStore {
   async get(tenantId: string, digest: ArtifactDigest): Promise<Uint8Array | undefined> {
     if (!/^[a-zA-Z0-9-]+$/.test(tenantId) || !/^sha256:[a-f0-9]{64}$/.test(digest)) throw new Error("Unsafe artifact identity");
     const storageKey = `${tenantId}/${digest.slice(7, 9)}/${digest.slice(7)}`; const response = await this.fetcher(this.#url(storageKey), { method: "GET", headers: this.#headers() });
-    if (response.status === 404) return undefined; if (!response.ok) throw new Error(`SUPABASE_STORAGE_DOWNLOAD_FAILED:${response.status}`);
+    if (response.status === 404) return undefined;
+    if (response.status === 400) {
+      const raw = await readBoundedArtifactResponse(response, 4096);
+      let error: unknown;
+      try { error = JSON.parse(new TextDecoder().decode(raw)); } catch { error = undefined; }
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "NoSuchKey"
+        && "statusCode" in error && String(error.statusCode) === "404") return undefined;
+    }
+    if (!response.ok) throw new Error(`SUPABASE_STORAGE_DOWNLOAD_FAILED:${response.status}`);
     const bytes = await readBoundedArtifactResponse(response, this.config.maximumBytes); if (digestBytes(bytes) !== digest) throw new Error("ARTIFACT_DIGEST_MISMATCH"); return bytes;
   }
 }

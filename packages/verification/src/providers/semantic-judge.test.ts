@@ -8,20 +8,20 @@ const identity = (capability: "trained_nli" | "llm_evidence_rubric") => ({ deplo
 
 describe("semantic judge adapters", () => {
   it("returns only recorded categorical output and exposes an empty tool catalog", async () => {
-    const input = { rubricVersion: "evidence-only.v1" as const, assertionId: "assertion", proposition: "p", qualifiers: [], entityBindings: [], fragments: [] };
+    const input = { rubricVersion: "evidence-only.v1" as const, assertionId: "assertion", proposition: "p", value: { status: "preview" }, qualifiers: [], entityBindings: [], fragments: [] };
     const recorded = new Map([[digestCanonicalJson(input), output]]);
     const adapter = new RecordedSemanticJudgeAdapter({ identity: identity("llm_evidence_rubric"), outputs: recorded });
     recorded.clear();
     expect(adapter.toolCatalog).toEqual([]);
     await expect(adapter.judge({ ...input, inputArtifactDigest: digestCanonicalJson(input) }, {})).resolves.toMatchObject({ verdict: "directly_supported" });
-    await expect(adapter.judge({ ...input, inputArtifactDigest: digestCanonicalJson({ ...input, proposition: "changed" }) }, {})).rejects.toThrow("RECORDED_JUDGE_FIXTURE_MISSING");
+    await expect(adapter.judge({ ...input, inputArtifactDigest: digestCanonicalJson({ ...input, value: { status: "ga" } }) }, {})).rejects.toThrow("RECORDED_JUDGE_FIXTURE_MISSING");
   });
 
   it("adapts a bounded three-way NLI classifier without tools", async () => {
     let observed: unknown;
     const adapter = new ThreeWayNliSemanticJudgeAdapter({ identity: identity("trained_nli"), classify: async (input) => { observed = input; return output; } });
     expect(adapter.toolCatalog).toEqual([]);
-    await expect(adapter.judge({ rubricVersion: "evidence-only.v1", assertionId: "assertion", proposition: "p", qualifiers: [], entityBindings: [], fragments: [{ fragmentId: "fragment", exactText: "e" }] }, {})).resolves.toMatchObject({ nliLabel: "entailed" });
-    expect(observed).toMatchObject({ assertionId: "assertion", qualifiers: [], entityBindings: [], execution: {} });
+    await expect(adapter.judge({ rubricVersion: "evidence-only.v1", assertionId: "assertion", proposition: "p", value: { status: "preview" }, qualifiers: [], entityBindings: [], fragments: [{ fragmentId: "fragment", exactText: "e" }] }, {})).resolves.toMatchObject({ nliLabel: "entailed" });
+    expect(observed).toMatchObject({ assertionId: "assertion", value: { status: "preview" }, qualifiers: [], entityBindings: [], execution: {} });
   });
 });

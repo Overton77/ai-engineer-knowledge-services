@@ -210,18 +210,42 @@ importers:
 
   apps/verification-executor:
     dependencies:
+      '@aiengineer/database-contract':
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
+      '@aiengineer/knowledge-application':
+        specifier: workspace:*
+        version: link:../../packages/application
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@aiengineer/knowledge-db-read':
+        specifier: workspace:*
+        version: link:../../packages/db-read
+      '@aiengineer/knowledge-ingestion':
+        specifier: workspace:*
+        version: link:../../packages/ingestion
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
       '@aiengineer/knowledge-policy':
         specifier: workspace:*
         version: link:../../packages/policy
+      '@aiengineer/knowledge-runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
+      '@aiengineer/knowledge-schema-workspace':
+        specifier: workspace:*
+        version: link:../../packages/schema-workspace
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../../packages/verification
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
         version: 1.30.0(zod@4.5.4)
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -229,6 +253,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.0
+      '@types/pg':
+        specifier: 8.15.5
+        version: 8.15.5
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -478,6 +505,34 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
+  packages/db-read:
+    dependencies:
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../persistence
+      '@aiengineer/knowledge-runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@aiengineer/knowledge-schema-workspace':
+        specifier: workspace:*
+        version: link:../schema-workspace
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.4.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
   packages/documents:
     dependencies:
       '@aiengineer/knowledge-contracts':
@@ -551,6 +606,34 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
+  packages/ingestion:
+    dependencies:
+      '@aiengineer/knowledge-db-read':
+        specifier: workspace:*
+        version: link:../db-read
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../persistence
+      '@aiengineer/knowledge-schema-workspace':
+        specifier: workspace:*
+        version: link:../schema-workspace
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.4.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
   packages/observability:
     dependencies:
       '@aiengineer/knowledge-domain':
@@ -570,8 +653,8 @@ importers:
   packages/persistence:
     dependencies:
       '@aiengineer/database-contract':
-        specifier: file:vendor/aiengineer-database-contract-0.2.38.tgz
-        version: file:packages/persistence/vendor/aiengineer-database-contract-0.2.38.tgz
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../application
@@ -692,6 +775,28 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
+  packages/schema-workspace:
+    dependencies:
+      '@aiengineer/database-contract':
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.4.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
   packages/testkit:
     dependencies:
       '@aiengineer/knowledge-domain':
@@ -764,9 +869,9 @@ packages:
     resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
     engines: {node: '>=18'}
 
-  '@aiengineer/database-contract@file:packages/persistence/vendor/aiengineer-database-contract-0.2.38.tgz':
-    resolution: {integrity: sha512-vSFzrjbnBfVh+OmaWLK7FWnoo3I43nvnH2CGVsY6dSvd9Hzn4nRw4g9brz4NDGRuTM+T1utltNKvtC7sb9QkOA==, tarball: file:packages/persistence/vendor/aiengineer-database-contract-0.2.38.tgz}
-    version: 0.2.38
+  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.7.tgz':
+    resolution: {integrity: sha512-VRnLXVXbsuRKH2Sg9l3rdrvRFOCB+EfZ79HUI0dSWZW3N2C5y+ehQ6jxVJYIM/ICZTWFvE2fvxnA3HYqTapFrw==, tarball: file:vendor/aiengineer-database-contract-0.4.7.tgz}
+    version: 0.4.7
     engines: {node: '>=20'}
 
   '@esbuild/aix-ppc64@0.27.7':
@@ -2576,7 +2681,7 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@aiengineer/database-contract@file:packages/persistence/vendor/aiengineer-database-contract-0.2.38.tgz': {}
+  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.7.tgz': {}
 
   '@esbuild/aix-ppc64@0.27.7':
     optional: true

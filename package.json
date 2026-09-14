@@ -39,6 +39,8 @@
     "fixture:canonical": "tsx scripts/canonical-fixture.ts",
     "prove:canonical-durability": "tsx scripts/prove-canonical-durability.ts",
     "prove:durable-preparation": "tsx scripts/prove-durable-preparation.ts",
+    "prove:current-schema": "node scripts/prove-current-schema.mjs",
+    "prove:artifact-custody": "node scripts/prove-artifact-custody.mjs",
     "prove:governed-indexing": "tsx scripts/prove-governed-indexing.ts",
     "prove:hnsw-local": "tsx scripts/prove-local-hnsw.ts",
     "prove:canonical-retrieval-api": "tsx scripts/prove-canonical-retrieval-api.ts",

@@ -1,0 +1,1024 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "path": "apps",
+      "summary": "Executable transports and durable workers.",
+      "inventory": "directories"
+    },
+    {
+      "path": "packages",
+      "summary": "Business algorithms, contracts, adapters, and use-case composition.",
+      "inventory": "directories"
+    },
+    {
+      "path": "packages/verification/src",
+      "summary": "Internal verification algorithm seams.",
+      "inventory": "directories"
+    },
+    {
+      "path": "services",
+      "summary": "Separately deployed conversion and native parser boundaries.",
+      "inventory": "directories"
+    },
+    {
+      "path": "scripts",
+      "summary": "Explicit proof, evaluation, reconciliation, and experiment commands.",
+      "inventory": "none"
+    },
+    {
+      "path": "skills",
+      "summary": "Agent skills for schema navigation, bounded reads, and ingestion.",
+      "inventory": "none"
+    }
+  ],
+  "routes": [
+    {
+      "task": "Change an HTTP/MCP/CLI verification surface",
+      "modules": [
+        "contracts",
+        "application",
+        "api",
+        "mcp",
+        "cli"
+      ]
+    },
+    {
+      "task": "Change locator or evidence verification",
+      "modules": [
+        "verification",
+        "verification-selectors",
+        "verification-deterministic",
+        "verification-semantic"
+      ]
+    },
+    {
+      "task": "Debug worker retry or persistence",
+      "modules": [
+        "worker",
+        "runtime",
+        "persistence"
+      ]
+    },
+    {
+      "task": "Change parsing and conversion",
+      "modules": [
+        "conversion",
+        "verification-parser",
+        "docling"
+      ]
+    },
+    {
+      "task": "Change retrieval or embedding",
+      "modules": [
+        "retrieval",
+        "embeddings",
+        "vector-backends",
+        "policy"
+      ]
+    },
+    {
+      "task": "Find proof and evaluation commands",
+      "modules": [
+        "script-proofs",
+        "script-evaluation",
+        "script-reconciliation"
+      ]
+    },
+    {
+      "task": "Change schema workspace, knowledge read, or ingestion",
+      "modules": [
+        "schema-workspace",
+        "db-read",
+        "ingestion",
+        "verification-executor"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "api",
+      "path": "apps/api",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Fastify HTTP transport, authentication, resource reads, and verification routes.",
+      "entrypoints": [
+        "apps/api/src/index.ts",
+        "apps/api/src/server.ts"
+      ],
+      "interface": [
+        "Versioned HTTP endpoints backed by application services."
+      ],
+      "tests": [
+        "apps/api/src/server.test.ts",
+        "apps/api/src/verification-routes.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "apps/api/package.json"
+    },
+    {
+      "id": "cli",
+      "path": "apps/cli",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Machine-readable knowledge operator/developer commands and selected local demos.",
+      "entrypoints": [
+        "apps/cli/src/index.ts",
+        "apps/cli/src/commands.ts"
+      ],
+      "interface": [
+        "knowledge command surface; check command-specific mutation and provider preconditions."
+      ],
+      "tests": [
+        "apps/cli/src/commands.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "apps/cli/package.json"
+    },
+    {
+      "id": "mcp",
+      "path": "apps/mcp",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Stateless Streamable HTTP MCP tools over knowledge application behavior.",
+      "entrypoints": [
+        "apps/mcp/src/index.ts",
+        "apps/mcp/src/catalog.ts"
+      ],
+      "interface": [
+        "MCP catalog and tool handlers; not a second business-rule authority."
+      ],
+      "tests": [
+        "apps/mcp/src/adjudication-reads.test.ts",
+        "apps/mcp/src/adjudication.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "apps/mcp/package.json"
+    },
+    {
+      "id": "verification-executor",
+      "path": "apps/verification-executor",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP.",
+      "entrypoints": [
+        "apps/verification-executor/src/index.ts",
+        "apps/verification-executor/src/executor.ts",
+        "apps/verification-executor/src/knowledge/operations.ts",
+        "apps/verification-executor/src/knowledge/cli.ts",
+        "apps/verification-executor/src/knowledge/context.ts",
+        "apps/verification-executor/src/operations/define.ts"
+      ],
+      "interface": [
+        "knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP."
+      ],
+      "tests": [
+        "apps/verification-executor/src/knowledge/cli.test.ts"
+      ],
+      "constraints": [
+        "Distinct from apps/api's durable service transport; preserve the explicit sandbox capability model. Knowledge services are absent when no database URL is configured."
+      ],
+      "uses": [
+        "schema-workspace",
+        "db-read",
+        "ingestion"
+      ],
+      "packageJson": "apps/verification-executor/package.json"
+    },
+    {
+      "id": "worker",
+      "path": "apps/worker",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Durable knowledge-operation execution, activity dispatch, and verification runtime wiring.",
+      "entrypoints": [
+        "apps/worker/src/index.ts",
+        "apps/worker/src/worker.ts",
+        "apps/worker/src/activity-registry.ts"
+      ],
+      "interface": [
+        "Worker loop and activity registry; preserve lease ownership and idempotent terminal receipts."
+      ],
+      "tests": [
+        "apps/worker/src/worker.test.ts",
+        "apps/worker/src/activity-registry.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "apps/worker/package.json"
+    },
+    {
+      "id": "acquisition",
+      "path": "packages/acquisition",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, and paper adapters.",
+      "entrypoints": [
+        "packages/acquisition/src/index.ts"
+      ],
+      "interface": [
+        "Acquisition request/result types and source adapters."
+      ],
+      "tests": [
+        "packages/acquisition/src/acquisition.test.ts",
+        "packages/acquisition/src/deadline.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/acquisition/package.json"
+    },
+    {
+      "id": "application",
+      "path": "packages/application",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Composes knowledge use cases, capability admission, preparation, and verification surfaces.",
+      "entrypoints": [
+        "packages/application/src/index.ts"
+      ],
+      "interface": [
+        "Application service facades and use-case functions; transports call these rather than implementing algorithms."
+      ],
+      "tests": [
+        "packages/application/src/a2a-adapter.test.ts",
+        "packages/application/src/capability-admission.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/application/package.json"
+    },
+    {
+      "id": "chunking",
+      "path": "packages/chunking",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Builds bounded chunks with strategy profiles, overlap controls, and source spans.",
+      "entrypoints": [
+        "packages/chunking/src/index.ts"
+      ],
+      "interface": [
+        "Chunk profiles and deterministic chunk preparation."
+      ],
+      "tests": [
+        "packages/chunking/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/chunking/package.json"
+    },
+    {
+      "id": "client-typescript",
+      "path": "packages/client-typescript",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Typed HTTP client for cross-repository consumers of the Knowledge Services contract.",
+      "entrypoints": [
+        "packages/client-typescript/src/index.ts"
+      ],
+      "interface": [
+        "Client methods plus public contract types."
+      ],
+      "tests": [
+        "packages/client-typescript/src/adjudication-decision-read.test.ts",
+        "packages/client-typescript/src/adjudication.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/client-typescript/package.json"
+    },
+    {
+      "id": "config",
+      "path": "packages/config",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Validates server, authentication, and semantic-provider configuration.",
+      "entrypoints": [
+        "packages/config/src/index.ts"
+      ],
+      "interface": [
+        "Configuration loaders; do not read or emit environment secrets in docs."
+      ],
+      "tests": [],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/config/package.json"
+    },
+    {
+      "id": "contracts",
+      "path": "packages/contracts",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Versioned Zod schemas and types shared by transports, application composition, and clients.",
+      "entrypoints": [
+        "packages/contracts/src/index.ts"
+      ],
+      "interface": [
+        "Public request/result and verification contract schemas."
+      ],
+      "tests": [
+        "packages/contracts/src/contracts.test.ts",
+        "packages/contracts/src/deployment.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/contracts/package.json"
+    },
+    {
+      "id": "conversion",
+      "path": "packages/conversion",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Converts captured inputs and wraps external Docling and isolated native parser routes.",
+      "entrypoints": [
+        "packages/conversion/src/index.ts"
+      ],
+      "interface": [
+        "Conversion providers, HTTP clients, and SandboxedVerificationParser."
+      ],
+      "tests": [
+        "packages/conversion/src/conversion.test.ts",
+        "packages/conversion/src/verification-parser.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/conversion/package.json"
+    },
+    {
+      "id": "db-read",
+      "path": "packages/db-read",
+      "kind": "package",
+      "state": "partial",
+      "summary": "Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger.",
+      "entrypoints": [
+        "packages/db-read/src/index.ts",
+        "packages/db-read/src/read-executor.ts",
+        "packages/db-read/src/sql-guard.ts"
+      ],
+      "interface": [
+        "ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH."
+      ],
+      "tests": [
+        "packages/db-read/src/db-read.test.ts",
+        "packages/db-read/src/read-executor.integration.test.ts"
+      ],
+      "constraints": [
+        "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run."
+      ],
+      "uses": [
+        "schema-workspace"
+      ],
+      "packageJson": "packages/db-read/package.json"
+    },
+    {
+      "id": "documents",
+      "path": "packages/documents",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Constructs immutable document nodes and source locators from structural blocks.",
+      "entrypoints": [
+        "packages/documents/src/index.ts"
+      ],
+      "interface": [
+        "Structural document builder and deterministic document identity."
+      ],
+      "tests": [
+        "packages/documents/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/documents/package.json"
+    },
+    {
+      "id": "domain",
+      "path": "packages/domain",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Shared digest, identity, idempotency, error, authority, and state-machine primitives.",
+      "entrypoints": [
+        "packages/domain/src/index.ts"
+      ],
+      "interface": [
+        "Small pure invariants and value helpers."
+      ],
+      "tests": [
+        "packages/domain/src/domain.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/domain/package.json"
+    },
+    {
+      "id": "embeddings",
+      "path": "packages/embeddings",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Embedding adapter requests, cache/route identity, bounded batches, and receipts.",
+      "entrypoints": [
+        "packages/embeddings/src/index.ts"
+      ],
+      "interface": [
+        "EmbeddingAdapter with discoverModel, embedOne, and embedMany."
+      ],
+      "tests": [
+        "packages/embeddings/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/embeddings/package.json"
+    },
+    {
+      "id": "ingestion",
+      "path": "packages/ingestion",
+      "kind": "package",
+      "state": "partial",
+      "summary": "Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling.",
+      "entrypoints": [
+        "packages/ingestion/src/index.ts",
+        "packages/ingestion/src/plan.ts",
+        "packages/ingestion/src/apply.ts",
+        "packages/ingestion/src/executor.ts",
+        "packages/ingestion/src/duplicate.ts"
+      ],
+      "interface": [
+        "IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf."
+      ],
+      "tests": [
+        "packages/ingestion/src/plan.test.ts",
+        "packages/ingestion/src/duplicate.test.ts",
+        "packages/ingestion/src/executor.integration.test.ts"
+      ],
+      "constraints": [
+        "Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row."
+      ],
+      "uses": [
+        "db-read",
+        "schema-workspace"
+      ],
+      "packageJson": "packages/ingestion/package.json"
+    },
+    {
+      "id": "evaluation",
+      "path": "packages/evaluation",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Retrieval evaluations, benchmark statistics/comparisons, and human review structures.",
+      "entrypoints": [
+        "packages/evaluation/src/index.ts"
+      ],
+      "interface": [
+        "Evaluation cases and benchmark/review functions."
+      ],
+      "tests": [
+        "packages/evaluation/src/index.test.ts",
+        "packages/evaluation/src/verification-benchmark-run-comparison.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/evaluation/package.json"
+    },
+    {
+      "id": "observability",
+      "path": "packages/observability",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "In-memory operation telemetry, SLO summaries, and manifest reconciliation.",
+      "entrypoints": [
+        "packages/observability/src/index.ts"
+      ],
+      "interface": [
+        "InMemoryTelemetry and reconcileManifests; not a full external telemetry deployment."
+      ],
+      "tests": [
+        "packages/observability/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/observability/package.json"
+    },
+    {
+      "id": "persistence",
+      "path": "packages/persistence",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Postgres, storage, operation ledger, verification records, and runtime wiring adapters.",
+      "entrypoints": [
+        "packages/persistence/src/index.ts"
+      ],
+      "interface": [
+        "Persistence implementations; schema migrations remain in the database-contract repository."
+      ],
+      "tests": [
+        "packages/persistence/src/eve-verification-binding.test.ts",
+        "packages/persistence/src/operation-service.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/persistence/package.json"
+    },
+    {
+      "id": "policy",
+      "path": "packages/policy",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Authorization, capability, retrieval, promotion, and verification admission decisions.",
+      "entrypoints": [
+        "packages/policy/src/index.ts"
+      ],
+      "interface": [
+        "Policy functions; successful execution alone does not authorize publication."
+      ],
+      "tests": [
+        "packages/policy/src/policy.test.ts",
+        "packages/policy/src/verification-policy.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/policy/package.json"
+    },
+    {
+      "id": "projections",
+      "path": "packages/projections",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Produces domain projections whose assertions remain bound to source evidence.",
+      "entrypoints": [
+        "packages/projections/src/index.ts"
+      ],
+      "interface": [
+        "EvidenceSupport and supported projection construction."
+      ],
+      "tests": [
+        "packages/projections/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/projections/package.json"
+    },
+    {
+      "id": "retrieval",
+      "path": "packages/retrieval",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval.",
+      "entrypoints": [
+        "packages/retrieval/src/index.ts"
+      ],
+      "interface": [
+        "buildRetrievalPlan and retrieval results with stage receipts."
+      ],
+      "tests": [
+        "packages/retrieval/src/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/retrieval/package.json"
+    },
+    {
+      "id": "runtime",
+      "path": "packages/runtime",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Content-addressed artifacts and operation/step/lease/event/receipt primitives.",
+      "entrypoints": [
+        "packages/runtime/src/index.ts"
+      ],
+      "interface": [
+        "Artifact stores and ledger interfaces; in-memory implementations are not deployment authority."
+      ],
+      "tests": [
+        "packages/runtime/src/eve-runtime-attestation.test.ts",
+        "packages/runtime/src/runtime.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/runtime/package.json"
+    },
+    {
+      "id": "schema-workspace",
+      "path": "packages/schema-workspace",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles.",
+      "entrypoints": [
+        "packages/schema-workspace/src/index.ts"
+      ],
+      "interface": [
+        "loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/."
+      ],
+      "tests": [
+        "packages/schema-workspace/src/schema-workspace.test.ts"
+      ],
+      "constraints": [
+        "Consumes the committed workspace tree; it does not regenerate IR from the live database at request time."
+      ],
+      "uses": [],
+      "packageJson": "packages/schema-workspace/package.json"
+    },
+    {
+      "id": "testkit",
+      "path": "packages/testkit",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Curated evaluation corpora, embedding bundles, retrieval fixtures, and operational test assets.",
+      "entrypoints": [
+        "packages/testkit/src/index.ts"
+      ],
+      "interface": [
+        "Fixture loaders and test helpers; some bundle sources are sibling-repository inputs."
+      ],
+      "tests": [
+        "packages/testkit/src/broad-evaluation-corpus.test.ts",
+        "packages/testkit/src/embedding-bundles.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/testkit/package.json"
+    },
+    {
+      "id": "vector-backends",
+      "path": "packages/vector-backends",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Vector-store adapters and publication handling for exact and Postgres search.",
+      "entrypoints": [
+        "packages/vector-backends/src/index.ts"
+      ],
+      "interface": [
+        "Backend types, in-memory exact adapter, and Postgres adapter."
+      ],
+      "tests": [
+        "packages/vector-backends/src/in-memory-exact.test.ts",
+        "packages/vector-backends/src/postgres.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/vector-backends/package.json"
+    },
+    {
+      "id": "verification",
+      "path": "packages/verification",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Evidence verification algorithms behind deterministic, selector, claim, semantic, and provenance facades.",
+      "entrypoints": [
+        "packages/verification/src/index.ts"
+      ],
+      "interface": [
+        "Algorithm exports consumed inside Knowledge Services; external callers use public service surfaces."
+      ],
+      "tests": [
+        "packages/verification/src/prototype-compat.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/verification/package.json"
+    },
+    {
+      "id": "verification-deterministic",
+      "path": "packages/verification/src/deterministic",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Canonical numeric, selector, and mechanical verification checks.",
+      "entrypoints": [
+        "packages/verification/src/deterministic/index.ts"
+      ],
+      "interface": [
+        "Deterministic engine and exact decimal/canonicalization helpers."
+      ],
+      "tests": [
+        "packages/verification/src/deterministic/deterministic.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-selectors",
+      "path": "packages/verification/src/selectors",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Canonical projection models and deterministic source locator resolution.",
+      "entrypoints": [
+        "packages/verification/src/selectors/index.ts"
+      ],
+      "interface": [
+        "Projection parsing and resolvers."
+      ],
+      "tests": [
+        "packages/verification/src/selectors/resolvers.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-extraction",
+      "path": "packages/verification/src/extraction",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Schema-bound extraction field verification and evidence comparisons.",
+      "entrypoints": [
+        "packages/verification/src/extraction/index.ts"
+      ],
+      "interface": [
+        "verifyExtractionFields and extraction evidence/schema types."
+      ],
+      "tests": [
+        "packages/verification/src/extraction/extraction.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-provenance",
+      "path": "packages/verification/src/provenance",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Verification seals, replay, policy inputs, attestations, and publication bindings.",
+      "entrypoints": [
+        "packages/verification/src/provenance/index.ts"
+      ],
+      "interface": [
+        "Seal/replay/attestation functions over immutable lineage."
+      ],
+      "tests": [
+        "packages/verification/src/provenance/attestation.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-claims",
+      "path": "packages/verification/src/claims",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Claim decomposition and report-level evidence structure.",
+      "entrypoints": [
+        "packages/verification/src/claims/index.ts"
+      ],
+      "interface": [
+        "Decomposition and report functions."
+      ],
+      "tests": [],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-authority",
+      "path": "packages/verification/src/authority",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Source authority and corroboration assessments.",
+      "entrypoints": [
+        "packages/verification/src/authority/index.ts"
+      ],
+      "interface": [
+        "Authority assessment functions."
+      ],
+      "tests": [],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-semantic",
+      "path": "packages/verification/src/semantic",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Evidence-closed semantic verification, rescue, and attribution checks.",
+      "entrypoints": [
+        "packages/verification/src/semantic/index.ts"
+      ],
+      "interface": [
+        "Semantic verification functions; no reversal of deterministic failure."
+      ],
+      "tests": [
+        "packages/verification/src/semantic/diagnostics.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-providers",
+      "path": "packages/verification/src/providers",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Bounded semantic-provider adapters, gateway routes, and provider registry.",
+      "entrypoints": [
+        "packages/verification/src/providers/index.ts"
+      ],
+      "interface": [
+        "Semantic judge/provider adapters with explicit limits."
+      ],
+      "tests": [
+        "packages/verification/src/providers/gateway-semantic-observation.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "docling",
+      "path": "services/docling",
+      "kind": "service",
+      "state": "implemented",
+      "summary": "Pinned Docling Serve conversion deployment boundary.",
+      "entrypoints": [
+        "services/docling/compose.yaml",
+        "services/docling/README.md"
+      ],
+      "interface": [
+        "Conversion HTTP service behind the TypeScript adapter."
+      ],
+      "tests": [],
+      "constraints": [
+        "Docling is not orchestration or publication authority."
+      ],
+      "uses": [
+        "conversion"
+      ]
+    },
+    {
+      "id": "verification-parser",
+      "path": "services/verification-parser",
+      "kind": "service",
+      "state": "implemented",
+      "summary": "Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.",
+      "entrypoints": [
+        "services/verification-parser/parser.py",
+        "services/verification-parser/Dockerfile"
+      ],
+      "interface": [
+        "Bounded stdin/stdout parser job invoked by SandboxedVerificationParser."
+      ],
+      "tests": [],
+      "constraints": [
+        "Selectors never start processes. Deployment configuration, not request input, selects the admitted image."
+      ],
+      "uses": [
+        "conversion"
+      ]
+    },
+    {
+      "id": "script-proofs",
+      "path": "scripts",
+      "kind": "scripts",
+      "state": "implemented",
+      "summary": "Targeted durability, transport, recovery, and integration proof executables.",
+      "entrypoints": [
+        "scripts/prove-durable-preparation.ts",
+        "scripts/prove-verification-service-worker.ts"
+      ],
+      "interface": [
+        "Explicit one-off proof scripts; inspect each script's prerequisites and effects before running."
+      ],
+      "tests": [],
+      "constraints": [
+        "Names such as prove do not imply read-only or offline behavior. This map never executes them."
+      ],
+      "uses": [
+        "worker",
+        "application",
+        "persistence"
+      ]
+    },
+    {
+      "id": "script-evaluation",
+      "path": "scripts",
+      "kind": "scripts",
+      "state": "implemented",
+      "summary": "Corpus/bundle evaluation and review sampling helpers.",
+      "entrypoints": [
+        "scripts/evaluate-real-bundles.ts",
+        "scripts/evaluate-broad-corpus.ts"
+      ],
+      "interface": [
+        "Evaluation scripts; distinguish deterministic fixtures from live provider evaluations."
+      ],
+      "tests": [],
+      "constraints": [],
+      "uses": [
+        "evaluation",
+        "testkit"
+      ]
+    },
+    {
+      "id": "script-reconciliation",
+      "path": "scripts",
+      "kind": "scripts",
+      "state": "implemented",
+      "summary": "Provider accounting and reconciliation operations.",
+      "entrypoints": [
+        "scripts/reconcile-verification-gateway-costs.ts",
+        "scripts/reconcile-verification-provider-live.ts"
+      ],
+      "interface": [
+        "Operator scripts with explicit provider/database preconditions."
+      ],
+      "tests": [],
+      "constraints": [
+        "Do not treat these scripts as routine documentation-generation commands."
+      ],
+      "uses": [
+        "persistence",
+        "verification"
+      ]
+    },
+    {
+      "id": "script-experiments",
+      "path": "scripts/experiments",
+      "kind": "experiment",
+      "state": "partial",
+      "summary": "Curated model-card verification experiments; run results are not canonical architecture.",
+      "entrypoints": [
+        "scripts/experiments/model-card-verification/README.md"
+      ],
+      "interface": [
+        "Experiment-specific instructions and selected entry points; outputs stay excluded."
+      ],
+      "tests": [],
+      "constraints": [],
+      "uses": [
+        "verification"
+      ]
+    },
+    {
+      "id": "skill-schema-explore",
+      "path": "skills/schema-explore",
+      "kind": "skill",
+      "state": "implemented",
+      "summary": "Progressive-disclosure procedure for navigating the pinned schema workspace without querying the database.",
+      "entrypoints": [
+        "skills/schema-explore/SKILL.md"
+      ],
+      "interface": [
+        "schema-explore skill: knowledge schema search/get/manifest/materialize; MCP schema_* equivalents."
+      ],
+      "tests": [],
+      "constraints": [
+        "Does not query the database; use knowledge-db."
+      ],
+      "uses": [
+        "schema-workspace",
+        "verification-executor"
+      ]
+    },
+    {
+      "id": "skill-knowledge-db",
+      "path": "skills/knowledge-db",
+      "kind": "skill",
+      "state": "implemented",
+      "summary": "Procedure for catalog reads and reproducible knowledge-read snapshots that an ingestion intent can cite.",
+      "entrypoints": [
+        "skills/knowledge-db/SKILL.md"
+      ],
+      "interface": [
+        "knowledge-db skill: knowledge db head/read-intent/sql/explain and artifact get; MCP db_* / artifact_get."
+      ],
+      "tests": [],
+      "constraints": [
+        "Never writes; catalog queries are evidence, ad-hoc SQL is not."
+      ],
+      "uses": [
+        "db-read",
+        "verification-executor"
+      ]
+    },
+    {
+      "id": "skill-knowledge-ingest",
+      "path": "skills/knowledge-ingest",
+      "kind": "skill",
+      "state": "implemented",
+      "summary": "Procedure for composing, planning, applying, and verifying knowledge-ingestion intents through the executor.",
+      "entrypoints": [
+        "skills/knowledge-ingest/SKILL.md"
+      ],
+      "interface": [
+        "knowledge-ingest skill: knowledge ingest plan/apply/receipt; MCP ingest_* / artifact_get."
+      ],
+      "tests": [],
+      "constraints": [
+        "The agent never writes SQL; the executor writes as executor_service."
+      ],
+      "uses": [
+        "ingestion",
+        "verification-executor"
+      ]
+    }
+  ]
+}

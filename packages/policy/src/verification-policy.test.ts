@@ -120,3 +120,25 @@ describe("immutable verification policy truth table", () => {
     expect(() => appendAuthorizedPolicyOverride({ decision: replay.decision, after: "review", reason: "unauthorized", authority: { principalId: "caller-label", authorities: [] }, recordedAt: "2026-09-05T01:00:00.000Z", existing: records })).toThrow("POLICY_OVERRIDE_UNAUTHORIZED");
   });
 });
+
+
+describe("explicit literal-extraction policy", () => {
+  const pending = () => semantic({ verdict: "pending_semantic_review", disposition: "review", evidenceSupport: "not_assessed", worldCorrectness: "not_assessed", attributionFaithfulness: "not_assessed", sourceAuthority: "not_assessed", provenanceIntegrity: "not_assessed", judgeIdentities: [], supportingFragmentIds: [], contradictingFragmentIds: [], unsupportedFacets: ["semantic_support", "source_authority"], reasonCodes: ["DETERMINISTIC_ONLY"], crossFamilySecondJudge: false, rawProviderConfidences: [] });
+  const definition: VerificationPolicyDefinition = { ...policy, literalExtraction: { assertionIds: ["claim-1"], downstreamUses: ["knowledge_ingestion:claim.materialize"] } };
+  const extraction = () => recorded({ literalExtraction: true, downstreamUse: ["knowledge_ingestion:claim.materialize"], semantic: pending() });
+  it("defaults to semantic review, and accepts only an explicit frozen opt-in", () => {
+    expect(evaluateVerificationPolicy(policy, extraction()).outcome).toBe("review");
+    expect(evaluateVerificationPolicy(definition, extraction())).toMatchObject({ outcome: "pass", assertionOutcomes: [{ assertionId: "claim-1", reasonCodes: ["LITERAL_EXTRACTION_POLICY_AUTHORIZED"] }] });
+  });
+  it.each(["risk", "use", "classification", "manual-review", "semantic-fail", "judgment", "authority"])("never waives %s restrictions", restriction => {
+    const input = extraction(); const assertion = input.assertions[0]!;
+    if (restriction === "risk") assertion.riskClass = "high";
+    if (restriction === "use") assertion.downstreamUse = ["publication"];
+    if (restriction === "classification") delete assertion.literalExtraction;
+    if (restriction === "manual-review") assertion.semantic.reasonCodes = ["HUMAN_REVIEW_REQUIRED"];
+    if (restriction === "semantic-fail") assertion.semantic = pending(), assertion.semantic.disposition = "fail";
+    if (restriction === "judgment") assertion.semantic = semantic({ disposition: "review", verdict: "pending_semantic_review" });
+    if (restriction === "authority") { input.sourceAssessments[0]!.vector.authority = "unknown"; assertion.authorityStatus = "unknown"; }
+    expect(["review", "abstain", "fail"]).toContain(evaluateVerificationPolicy(definition, input).outcome);
+  });
+});

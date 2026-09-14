@@ -16,6 +16,35 @@
       "minLength": 1,
       "maxLength": 255
     },
+    "literalExtraction": {
+      "type": "object",
+      "properties": {
+        "assertionIds": {
+          "minItems": 1,
+          "maxItems": 256,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "downstreamUses": {
+          "minItems": 1,
+          "maxItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "const": "knowledge_ingestion:claim.materialize"
+          }
+        }
+      },
+      "required": [
+        "assertionIds",
+        "downstreamUses"
+      ],
+      "additionalProperties": false
+    },
     "criticalDownstreamUses": {
       "maxItems": 32,
       "type": "array",

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SemanticBlindedInputSchema, VerificationArtifactHandleSchema, type SemanticBlindedInput, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
+import { SemanticBlindedInputSchema, SemanticJudgeIdentitySchema, VerificationArtifactHandleSchema, type SemanticBlindedInput, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, prepareGatewaySemanticRequest, providerDigest, sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { VerificationProviderTransportResponseSchema, prepareVerificationProviderTransportResponse, VerificationProviderTransportBindingSchema } from "./verification-provider-transport.js";
 
@@ -36,7 +36,9 @@ export async function hydrateSemanticGatewayCapture(input: {
     if (registration.tenantId !== capture.tenantId || registration.artifactId !== expected.artifactId || registration.digest !== expected.digest || bytes.byteLength > limit || bytes.byteLength !== registration.byteLength || sha256Digest(bytes) !== expected.digest || (full && !equal(full, registration))) fail();
     return { registration, bytes };
   }
-  await hydrate(profile, 96_000, profile);
+  const retainedProfile = await hydrate(profile, 96_000, profile);
+  const profileBody = z.strictObject({ schemaVersion: z.literal("verification-semantic-judge-profile.v1"), identity: SemanticJudgeIdentitySchema }).parse(JSON.parse(decoder.decode(retainedProfile.bytes)));
+  if (profileBody.identity.model !== model) fail();
   const retainedInput = await hydrate(blinded, 96_000, blinded);
   if (decoder.decode(retainedInput.bytes) !== canonicalizeJson(body) || blinded.parentArtifactIds.length !== 0) fail();
   const retainedTransport = await hydrate({ artifactId: capture.transportArtifactId, digest: capture.transportDigest }, 32_000);
@@ -48,7 +50,7 @@ export async function hydrateSemanticGatewayCapture(input: {
   const envelope = envelopeSchema.parse(JSON.parse(decoder.decode(retainedEnvelope.bytes)));
   if (decoder.decode(retainedEnvelope.bytes) !== canonicalizeJson(envelope) || envelope.requestDigest !== transport.requestDigest || envelope.rawResponseArtifactId !== transport.rawResponse.artifactId || envelope.rawResponseDigest !== transport.rawResponse.digest || !equal(retainedEnvelope.registration.parentArtifactIds, [envelope.requestArtifactId, envelope.rawResponseArtifactId]) || retainedEnvelope.registration.transformationSignature !== providerDigest({ kind: "verification_provider_response_envelope.v1", requestDigest: envelope.requestDigest, rawResponseDigest: envelope.rawResponseDigest })) fail();
   const request = await hydrate({ artifactId: envelope.requestArtifactId, digest: envelope.requestDigest }, 96_000);
-  const expectedRequest = prepareGatewaySemanticRequest({ ...body, inputArtifactDigest: blinded.digest as `sha256:${string}` }, model);
+  const expectedRequest = prepareGatewaySemanticRequest({ ...body, inputArtifactDigest: blinded.digest as `sha256:${string}` }, model, 64_000, profileBody.identity.promptDigest);
   if (expectedRequest.requestDigest !== envelope.requestDigest || !equal(JSON.parse(decoder.decode(request.bytes)), JSON.parse(decoder.decode(expectedRequest.requestBytes))) || !equal(request.registration.parentArtifactIds, [blinded.artifactId]) || request.registration.transformationSignature !== providerDigest({ kind: "verification_provider_request.v1", requestDigest: envelope.requestDigest })) fail();
   const raw = await hydrate(transport.rawResponse, 96_000, transport.rawResponse);
   active();

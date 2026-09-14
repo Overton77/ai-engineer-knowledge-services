@@ -10,6 +10,8 @@ uncaptured text, or by editing files the executor produced.
 |---|---|---|
 | `FIRECRAWL_SCRAPE_FAILED:4xx/5xx` | the page blocked the scraper or timed out | retry once; then try `--method https_get`; then another URL for the same fact |
 | `FIRECRAWL_MARKDOWN_EMPTY` | JS-only page or empty PDF text layer | find the HTML equivalent of the page, or a different primary source |
+| `CAPTURE_ID_CONFLICT:<captureId>:existing=…:new=…` | the same `--capture-id` was reused for different bytes (page changed, or a different URL) | pick a new `--capture-id`; never reuse an id for different content. Re-capturing identical bytes under the same id is fine (`reused: true`) |
+| URL capture and `capture-file` of the same PDF have different text digests | the URL was scraped in place instead of downloaded and parsed | `.pdf` URLs are downloaded + parsed by default; for a PDF served without a `.pdf` extension use `--method https_get` so both paths share the parser |
 | `HTTPS_GET_FAILED:404/403` | wrong or gated URL | re-check the URL with your discovery skill (`map`/`search`); never capture a search-result page as a source |
 | `HTTPS_GET_TEXT_EMPTY` | page has no text body | use `--method firecrawl` (JS rendering) |
 | `HTTPS_GET_DOCUMENT_REQUIRES_FIRECRAWL` / `CAPTURE_FILE_DOCUMENT_REQUIRES_FIRECRAWL` | binary document but the executor has no `FIRECRAWL_API_KEY` | report the configuration gap; do not convert the document yourself |
@@ -81,6 +83,8 @@ After changing any claim, re-run `verify-claims`, then `judge`, then `policy`, t
 |---|---|
 | `RUN_HAS_NO_CLAIMS_VERIFICATION` / missing decision (exit 2) | run `verify-claims`, `judge`, `policy` first |
 | `inspection.valid: false` (exit 1) | an artifact changed after policy; re-run `policy` then `seal` |
+| `LINEAGE_PARENT_MISSING:<artifactId>` (exit 2) | the run state references a derived artifact whose parents are not in this run. Re-run `policy` then `seal`. If it persists, the store is stale: report it, do not hand-edit the store |
+| sealing twice | `seal` is idempotent for an unchanged run. After *any* change (a claim fix, a re-judge) the chain is `verify-claims` → `judge` → `policy` → `seal` again; skipping `policy` is the usual cause of a failed re-seal |
 
 ## check-report
 

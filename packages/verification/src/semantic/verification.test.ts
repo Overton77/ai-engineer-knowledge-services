@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { sha256Digest, verifyDeterministicBundle } from "../deterministic/index.js";
+import { digestCanonicalJson, sha256Digest, verifyDeterministicBundle } from "../deterministic/index.js";
 import { prototypeClaimInput } from "../deterministic/testing/prototype-parity.fixture.js";
-import { observeSemanticModelDrift, verifyAssertionSemantics, verifySemanticCase, type AuthorizedSemanticCase, type SemanticJudgeAdapter } from "./verification.js";
+import { authorizeSemanticCase, semanticJudgeInput, observeSemanticModelDrift, verifyAssertionSemantics, verifySemanticCase, type AuthorizedSemanticCase, type SemanticJudgeAdapter } from "./verification.js";
 
 const digest = `sha256:${"a".repeat(64)}` as const;
 function adapter(deploymentId: string, family: string, output: Record<string, unknown>): SemanticJudgeAdapter {
@@ -103,5 +103,19 @@ describe("evidence-closed semantic verification with declared synthetic adapters
     value.input.bundle.assertions[0]!.proposition = variant;
     const result = await verifyAssertionSemantics({ bundle: value.input.bundle, deterministicResult: verifyDeterministicBundle(value.input), assertionId: "claim-1", selectedFragments: value.selectedFragments, adapters: { primary: adapter("luna-a", "luna", directOutput("contradicted")) } });
     expect(result).toMatchObject({ verdict: "contradicted", disposition: "fail" });
+  });  it("includes normalized values in judged bytes, clones them, and binds the returned assessment", async () => {
+    const value = fixture();
+    const normalized = { status: "preview", nested: { scope: "limited" } };
+    value.input.bundle.assertions[0]!.value = normalized;
+    const authorized = authorizeSemanticCase(value.input.bundle, value.deterministicResult, "claim-1", value.selectedFragments);
+    normalized.nested.scope = "unrestricted";
+    const input = semanticJudgeInput(authorized);
+    expect(input.value).toEqual({ status: "preview", nested: { scope: "limited" } });
+    const judge = adapter("synthetic", "synthetic", directOutput());
+    const assessment = await verifySemanticCase(authorized, { primary: judge });
+    expect(assessment.assertionValueDigest).toBe(digestCanonicalJson(input.value));
+    expect(judge.judge).toHaveBeenCalledWith(expect.objectContaining({ value: input.value, inputArtifactDigest: digestCanonicalJson(input) }), {});
+    expect(digestCanonicalJson({ ...input, value: { status: "ga" } })).not.toBe(digestCanonicalJson(input));
   });
+
 });

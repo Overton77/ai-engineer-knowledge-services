@@ -1,35 +1,49 @@
 {
   "name": "@aiengineer/knowledge-verification-executor",
   "version": "0.1.0",
-  "description": "Deterministic verification executors over filesystem intent artifacts. One process, three surfaces: CLI (knowledge-verify), Streamable HTTP MCP (/mcp), and a byte-registration HTTP route for sandbox handoff.",
+  "description": "Knowledge executor host: deterministic verification (knowledge-verify), schema workspace + bounded database reads + deterministic ingestion (knowledge). One process, three surfaces: CLI, Streamable HTTP MCP (/mcp), and HTTP routes for sandbox handoff.",
   "private": true,
   "type": "module",
   "bin": {
-    "knowledge-verify": "./dist/index.js"
+    "knowledge-verify": "./dist/index.js",
+    "knowledge": "./dist/knowledge.js"
   },
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --sourcemap --clean",
+    "build": "tsup",
     "dev": "tsx src/index.ts",
+    "dev:knowledge": "tsx src/knowledge.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "pack:sandbox": "node scripts/pack-sandbox.mjs"
   },
   "dependencies": {
+    "@aiengineer/knowledge-application": "workspace:*",
+    "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.7.tgz",
     "@aiengineer/knowledge-contracts": "workspace:*",
+    "@aiengineer/knowledge-db-read": "workspace:*",
+    "@aiengineer/knowledge-ingestion": "workspace:*",
+    "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-policy": "workspace:*",
+    "@aiengineer/knowledge-runtime": "workspace:*",
+    "@aiengineer/knowledge-schema-workspace": "workspace:*",
     "@aiengineer/knowledge-verification": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
+    "pg": "8.16.3",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "8.15.5",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }
+
+
+

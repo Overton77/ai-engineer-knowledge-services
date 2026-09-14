@@ -14,7 +14,11 @@ For every candidate result the module evaluates **five ordered questions**. Late
 4. **Semantic support** — does the selected evidence support the complete atomic claim?
 5. **Policy admission** — does the risk- and use-case-specific policy permit publication, ranking, or downstream use?
 
-Policy admission (question 5) is recorded here as binding artifacts and digests. `packages/policy` is the admission authority.
+Policy admission (question 5) is recorded here as binding artifacts and digests. `packages/policy` is the admission authority. [Knowledge admission and recovery](KNOWLEDGE-ADMISSION.md) documents the sealed-evidence ingestion boundary, persisted preflights and P1 recovery contracts.
+
+[Scoped intermediate work custody](CHECKPOINTS.md) describes standalone checkpoint receipts, executor-state restoration, retention and the Eve/Mission Control responsibility boundary.
+
+[Durable recovery cases](RECOVERY-CASES.md) describes preserved original denominators, repair reservations, dependency claims, authenticated review waits and existing operation recovery.
 
 ### Orthogonal properties
 
@@ -54,7 +58,7 @@ packages/application           use-case composition, admission, catalogs
 apps/api | apps/cli | apps/mcp | apps/worker
 ```
 
-- Persistence uses the pinned `@aiengineer/database-contract` **0.2.38** (`packages/persistence` vendored tgz). Migrations live in `../ai-engineer-db-contract`. Apps do not own a second schema tree.
+- Persistence, schema workspace and verification executor use the pinned `@aiengineer/database-contract` **0.4.1** (vendored tgz), migration head `20260913020000`. Migrations live in `../ai-engineer-db-contract`. Apps do not own a second schema tree.
 - Object storage bucket: `VERIFICATION_STORAGE_BUCKET` (default `ai-engineer-cloud-bucket`). Object key: `{tenantId}/{digest[7:9]}/{digest[7:]}` where digest is the hex after `sha256:`.
 - Mission Control / Temporal in `../ai-engineer-mission-control` is the cross-service orchestrator (`verificationWorkflow`, launch `REJECT_DUPLICATE`). KS owns algorithms and durable execution; MC owns dispatch, cancellation, and retry classification.
 

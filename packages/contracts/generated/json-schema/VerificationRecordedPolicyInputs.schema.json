@@ -611,6 +611,10 @@
               "method_validation"
             ]
           },
+          "literalExtraction": {
+            "type": "boolean",
+            "const": true
+          },
           "semantic": {
             "type": "object",
             "properties": {
@@ -618,6 +622,10 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 255
+              },
+              "assertionValueDigest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
               },
               "verdict": {
                 "type": "string",

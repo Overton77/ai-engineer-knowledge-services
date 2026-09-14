@@ -234,15 +234,24 @@ async function persistCapture(store: FilesystemStore, fetched: Fetched, requeste
     sourceKind: fetched.sourceKind,
     logicalIdentity: canonicalUrl(requestedUri),
   };
-  let reused = false;
+  // A captureId names one immutable body of evidence. Re-capturing the same bytes under the
+  // same id is idempotent (the original record, with its original capturedAt, is kept so
+  // quotes located against it stay valid). Different bytes under an existing id is a conflict:
+  // silently overwriting would invalidate every quote and claim already bound to that id.
+  let previous: CaptureRecord | undefined;
   try {
-    const previous = await store.readCapture(captureId);
-    reused = previous.contentArtifact.digest === contentArtifact.digest;
+    previous = await store.readCapture(captureId);
   } catch {
     /* new capture */
   }
+  if (previous) {
+    if (previous.contentArtifact.digest !== contentArtifact.digest) {
+      throw new Error(`CAPTURE_ID_CONFLICT:${captureId}:existing=${previous.contentArtifact.digest}:new=${contentArtifact.digest}:choose a new --capture-id`);
+    }
+    return { record: previous, content: fetched.content, reused: true };
+  }
   await store.writeCapture(record);
-  return { record, content: fetched.content, reused };
+  return { record, content: fetched.content, reused: false };
 }
 
 /** Capture a URL. HTML → Firecrawl markdown (or tag-stripped text), PDF/DOCX/XLSX/… → Firecrawl parse. */
@@ -256,8 +265,11 @@ export async function captureSource(store: FilesystemStore, input: CaptureInput,
     if (!firecrawlKey) throw new Error("FIRECRAWL_API_KEY_REQUIRED");
     fetched = await viaFirecrawlScrape(input.url, firecrawlKey);
   } else if (method === "auto" && firecrawlKey && guessed === "application/pdf") {
-    // PDFs: Firecrawl scrape parses them in place; fall back to download + parse.
-    try { fetched = await viaFirecrawlScrape(input.url, firecrawlKey); } catch { fetched = await viaHttps(input.url, firecrawlKey); }
+    // PDFs: download the original bytes and parse them (same path as capture-file, so a URL
+    // capture and a file capture of the same document yield the same text digest and the
+    // original bytes are stored for provenance). Firecrawl scrape is only a fallback when the
+    // direct download is refused (bot walls, auth redirects).
+    try { fetched = await viaHttps(input.url, firecrawlKey); } catch { fetched = await viaFirecrawlScrape(input.url, firecrawlKey); }
   } else {
     fetched = await viaHttps(input.url, firecrawlKey);
   }

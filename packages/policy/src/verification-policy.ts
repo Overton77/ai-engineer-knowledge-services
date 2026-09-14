@@ -63,6 +63,8 @@ export function evaluateVerificationPolicy(
       outcome = "fail";
       reasons.push("SEMANTIC_HARD_FAILURE");
     }
+    const literalExtraction = literalExtractionAuthorized(definition, assertion);
+    if (literalExtraction) reasons.push("LITERAL_EXTRACTION_POLICY_AUTHORIZED");
     const criticalUse = assertion.riskClass === "critical" || assertion.downstreamUse.some((use) => definition.criticalDownstreamUses.includes(use));
     const sourceItems = recorded.sourceAssessments.filter((item) => item.assertionId === assertion.assertionId);
     if (sourceItems.some((item) => item.claimScope !== assertion.claimScope)) throw new Error("POLICY_SOURCE_CLAIM_SCOPE_MISMATCH");
@@ -101,7 +103,7 @@ export function evaluateVerificationPolicy(
     } else if (outcome !== "fail" && assertion.semantic.disposition === "abstain") {
       outcome = stricter(outcome, "abstain");
       reasons.push("SEMANTIC_DISPOSITION_ABSTAIN");
-    } else if (outcome === "pass" && assertion.semantic.disposition === "review") {
+    } else if (outcome === "pass" && assertion.semantic.disposition === "review" && !literalExtraction) {
       outcome = definition.reviewAvailable ? "review" : "abstain";
       reasons.push("SEMANTIC_REVIEW_REQUIRED");
     }
@@ -109,7 +111,7 @@ export function evaluateVerificationPolicy(
       outcome = "pass_with_warnings";
       reasons.push("QUALIFIED_OR_PARTIAL_SUPPORT");
     }
-    if (outcome === "pass" && !supportPass.has(assertion.semantic.verdict)) {
+    if (outcome === "pass" && !supportPass.has(assertion.semantic.verdict) && !literalExtraction) {
       outcome = definition.reviewAvailable ? "review" : "abstain";
       reasons.push("SEMANTIC_SUPPORT_NOT_FULL");
     }
@@ -218,4 +220,19 @@ function digestOverride(record: VerificationPolicyOverrideRecord): `sha256:${str
 
 function digestCanonical(value: unknown): `sha256:${string}` {
   return `sha256:${createHash("sha256").update(canonicalizeJson(value)).digest("hex")}`;
+}
+
+/** A prior immutable policy may waive only the executor's unassessed literal-extraction placeholder. */
+function literalExtractionAuthorized(definition: VerificationPolicyDefinition, assertion: VerificationRecordedPolicyInputs["assertions"][number]): boolean {
+  const semantic = assertion.semantic;
+  const configured = definition.literalExtraction;
+  return Boolean(configured && assertion.literalExtraction && configured.assertionIds.includes(assertion.assertionId)
+    && assertion.riskClass === "low" && assertion.downstreamUse.length > 0
+    && assertion.downstreamUse.every(use => configured.downstreamUses.some(allowed => allowed === use))
+    && !assertion.downstreamUse.some(use => definition.criticalDownstreamUses.includes(use))
+    && semantic.verdict === "pending_semantic_review" && semantic.disposition === "review" && !semantic.judgeIdentities.length
+    && semantic.reasonCodes.length === 1 && semantic.reasonCodes[0] === "DETERMINISTIC_ONLY"
+    && !semantic.supportingFragmentIds.length && !semantic.contradictingFragmentIds.length && !semantic.rawProviderConfidences.length
+    && semantic.unsupportedFacets.length === 2 && semantic.unsupportedFacets.includes("semantic_support") && semantic.unsupportedFacets.includes("source_authority")
+    && [semantic.evidenceSupport, semantic.worldCorrectness, semantic.attributionFaithfulness, semantic.sourceAuthority, semantic.provenanceIntegrity].every(status => status === "not_assessed"));
 }

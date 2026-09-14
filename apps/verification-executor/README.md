@@ -67,9 +67,15 @@ Quotes must be exact substrings of the capture and occur exactly once
 ## Store
 
 `VERIFY_STORE_DIR` (default `.verification-store`) is a content-addressed filesystem
-store: `artifacts/<sha256>` bytes + `handles/<artifactId>.json`, `captures/<captureId>.json`,
-`runs/<runId>/run.json` + step receipts. Puts are idempotent; reads re-hash and fail on
-mismatch. Swapping the directory for a bucket changes only `store.ts`.
+store: `artifacts/<sha256>` bytes + `artifacts/<sha256>[.<lineage16>].handle.json`,
+`captures/<captureId>.json`, `runs/<runId>/state.json` + step receipts. Artifact identity is
+**bytes + lineage**: parentless artifacts (captures, registered files) are keyed by digest alone
+and re-putting them is idempotent; derived artifacts (results, decisions, bundles) are keyed by
+digest + sorted parents + transformation, so the same bytes re-derived from new parents get a
+new handle and `seal` never sees a stale parent. A `captureId` is immutable: identical bytes
+under an existing id return the original record (`reused: true`), different bytes raise
+`CAPTURE_ID_CONFLICT`. Reads re-hash and fail on mismatch. Swapping the directory for a bucket
+changes only `store.ts`.
 
 ## Environment
 
@@ -78,11 +84,43 @@ mismatch. Swapping the directory for a bucket changes only `store.ts`.
 `VERIFY_TENANT_ID` `VERIFY_PRODUCER_DEPLOYMENT_ID` `VERIFY_VERIFIER_DEPLOYMENT_ID`
 `AI_GATEWAY_API_KEY` (judge) `FIRECRAWL_API_KEY` (capture; falls back to HTTPS GET).
 
+## Knowledge executor (`knowledge` bin)
+
+The same process also hosts the schema-workspace, bounded-read, and ingestion surfaces
+(spec: `ai-engineer-db-contract/docs/SCHEMA_WORKSPACE_MATERIALIZATION_SPEC.md` §5–§7). They are
+generated from one operation registry (`src/knowledge/operations.ts`, `defineOperation`) into:
+
+| surface | shape |
+|---|---|
+| CLI | `knowledge schema search\|get\|manifest\|materialize`, `knowledge db head\|read-intent\|sql\|explain`, `knowledge ingest plan\|apply\|receipt`, `knowledge artifact get` (`knowledge help`) |
+| HTTP | `POST /knowledge/<operation>` (JSON in/out), `GET /knowledge/operations`, `/health` reports workspace and database heads |
+| MCP | `schema_search`, `schema_get`, `schema_manifest`, `schema_materialize`, `db_head`, `db_read_intent`, `db_sql_readonly`, `db_explain`, `ingest_plan`, `ingest_apply`, `ingest_receipt`, `artifact_get` beside the `verify_*` tools on `/mcp` |
+
+Libraries: `packages/schema-workspace` (load/search/pages/head check/materialize),
+`packages/db-read` (catalog-driven `knowledge-read-intent.v1` → snapshot, guarded SQL, artifact ledger),
+`packages/ingestion` (`knowledge-ingestion-intent.v1` → plan → apply as `executor_service` → receipt).
+Skills: `skills/schema-explore`, `skills/knowledge-db`, `skills/knowledge-ingest`.
+
+Exit lattice for `knowledge`: 0 ok · 1 domain outcome (`PARAMS_INVALID`, `VOCABULARY_VIOLATION`, `REBASE_REQUIRED`, plan rejected, …) · 2 infrastructure (`WORKSPACE_MISSING`, `HEAD_MISMATCH`, `DB_UNAVAILABLE`, usage).
+
+### Environment (knowledge)
+
+`POSTGRES_URL` or `KNOWLEDGE_DB_URL` (enables the knowledge tools; the pool connects as the login user and `set local role` switches to
+`pipeline_agent`/`app_reader` for reads and `executor_service` for ingestion inside each transaction)
+`SCHEMA_WORKSPACE_DIR` (default: the pinned `@aiengineer/database-contract` `workspace/`)
+`KNOWLEDGE_TENANT_ID` (default tenant for CLI/MCP calls) `KNOWLEDGE_ARTIFACT_DIR` (default `.knowledge-artifacts`; ledger rows are `storage_state='pending'` until bucket upload)
+`KNOWLEDGE_ARTIFACT_STORAGE=supabase` + `SUPABASE_URL` + `SUPABASE_SECRET_KEY` (upload to `research-ingestion-intents`)
+`KNOWLEDGE_ALLOW_STALE=1` (experiments only: run when workspace head ≠ database head)
+`KNOWLEDGE_EVIDENCE_ORACLE=declared` is rejected. Every production surface requires the co-hosted sealed verification store with the same tenant. Tests inject their own explicit synthetic adapter.
+`KNOWLEDGE_EVIDENCE_POLICY_VERSION` selects the host-authorized version; custom versions also require `KNOWLEDGE_EVIDENCE_POLICY_DIGEST` for the exact immutable definition. See [knowledge admission and recovery](../../docs/verification/KNOWLEDGE-ADMISSION.md).
+`KNOWLEDGE_EXECUTOR_URL` / `KNOWLEDGE_EXECUTOR_TOKEN` (remote mode for the `knowledge` CLI; `VERIFY_EXECUTOR_URL` is honoured too).
+
 ## Build
 
 ```sh
-pnpm --filter @aiengineer/knowledge-verification-executor build   # dist/index.js, workspace deps inlined
-node apps/verification-executor/dist/index.js serve --port 4310
+pnpm --filter @aiengineer/knowledge-verification-executor build   # dist/index.js + dist/knowledge.js, workspace deps inlined
+node apps/verification-executor/dist/index.js serve --port 4310     # or: node dist/knowledge.js serve --port 4310
 ```
 
-`dist/index.js` plus `@modelcontextprotocol/sdk` and `zod` is everything a sandbox needs.
+`dist/index.js` + `dist/knowledge.js` plus `@modelcontextprotocol/sdk`, `zod`, and `pg` is everything a sandbox needs
+(`pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox` stages both bins and all four skills).

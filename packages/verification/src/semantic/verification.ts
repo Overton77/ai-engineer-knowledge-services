@@ -9,7 +9,7 @@ import {
   type SemanticJudgeOutput,
   type VerificationBundle,
 } from "@aiengineer/knowledge-contracts";
-import { digestCanonicalJson, sha256Digest } from "../deterministic/index.js";
+import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "../deterministic/index.js";
 
 const MAX_FRAGMENTS = 16;
 const MAX_FRAGMENT_CHARS = 16_000;
@@ -31,6 +31,7 @@ export interface AuthorizedSemanticCase {
   readonly [authorizedSemanticCaseBrand]: true;
   readonly assertionId: string;
   readonly proposition: string;
+  readonly value?: Assertion["value"];
   readonly qualifiers: readonly string[];
   readonly entityBindings: readonly { readonly role: string; readonly canonicalId: string }[];
   readonly riskClass: Assertion["riskClass"];
@@ -53,6 +54,7 @@ export interface SemanticJudgeAdapter {
     readonly inputArtifactDigest?: `sha256:${string}`;
     readonly assertionId: string;
     readonly proposition: string;
+    readonly value?: Assertion["value"];
     readonly qualifiers: readonly string[];
     readonly entityBindings: readonly { readonly role: string; readonly canonicalId: string }[];
     readonly fragments: readonly { readonly fragmentId: string; readonly exactText: string }[];
@@ -114,6 +116,7 @@ export function authorizeSemanticCase(
     [authorizedSemanticCaseBrand]: true as const,
     assertionId,
     proposition: assertion.proposition,
+    ...(assertion.value !== undefined ? { value: freezeValue(structuredClone(assertion.value)) } : {}),
     qualifiers: Object.freeze([...assertion.qualifiers]),
     entityBindings: Object.freeze(assertion.entityBindings.map((binding) => Object.freeze({ ...binding }))),
     riskClass: assertion.riskClass,
@@ -160,18 +163,12 @@ function validateOutput(raw: unknown, semanticCase: AuthorizedSemanticCase): Sem
 async function runJudge(snapshot: ReturnType<typeof snapshotAdapter>, semanticCase: AuthorizedSemanticCase, execution: SemanticJudgeExecution): Promise<{ identity: SemanticJudgeIdentity; output: SemanticJudgeOutput }> {
   assertExecutionActive(execution);
   const inputCharacters = semanticCase.assertionId.length + semanticCase.proposition.length
+    + (semanticCase.value === undefined ? 0 : canonicalizeJson(semanticCase.value).length)
     + semanticCase.qualifiers.reduce((sum, item) => sum + item.length, 0)
     + semanticCase.entityBindings.reduce((sum, item) => sum + item.role.length + item.canonicalId.length, 0)
     + semanticCase.fragments.reduce((sum, item) => sum + item.fragmentId.length + item.exactText.length, 0);
   if (inputCharacters > snapshot.maximumInputCharacters) throw new Error("JUDGE_INPUT_CAPACITY_EXCEEDED");
-  const blindedInput = {
-    rubricVersion: "evidence-only.v1" as const,
-    assertionId: semanticCase.assertionId,
-    proposition: semanticCase.proposition,
-    qualifiers: semanticCase.qualifiers,
-    entityBindings: semanticCase.entityBindings,
-    fragments: semanticCase.fragments.map(({ fragmentId, exactText }) => ({ fragmentId, exactText })),
-  };
+  const blindedInput = semanticJudgeInput(semanticCase);
   const raw = await snapshot.adapter.judge({
     ...blindedInput,
     inputArtifactDigest: digestCanonicalJson(blindedInput),
@@ -222,6 +219,7 @@ export async function verifySemanticCase(
     : verdict === "contradicted" || verdict === "not_supported" ? "not_satisfied" : "unknown";
   return SemanticAssessmentRecordSchema.parse({
     assertionId: semanticCase.assertionId,
+    ...(semanticCase.value !== undefined ? { assertionValueDigest: digestCanonicalJson(semanticCase.value) } : {}),
     verdict,
     disposition,
     evidenceSupport: supportStatus,
@@ -315,4 +313,23 @@ export function mechanicalSemanticClosure(
 
 export function semanticCalibrationStatus(): { readonly status: "pending_empirical_labels"; readonly calibratedProbabilityAvailable: false } {
   return Object.freeze({ status: "pending_empirical_labels", calibratedProbabilityAvailable: false });
+}
+
+/** Shared live/replay envelope: normalized values cannot be excluded from the reviewed bytes. */
+export function semanticJudgeInput(semanticCase: AuthorizedSemanticCase) {
+  if (!authorizedSemanticCases.has(semanticCase)) throw new Error("SEMANTIC_CASE_NOT_AUTHORIZED");
+  return {
+    rubricVersion: "evidence-only.v1" as const, assertionId: semanticCase.assertionId, proposition: semanticCase.proposition,
+    ...(semanticCase.value !== undefined ? { value: structuredClone(semanticCase.value) } : {}),
+    qualifiers: [...semanticCase.qualifiers], entityBindings: semanticCase.entityBindings.map(binding => ({ ...binding })),
+    fragments: semanticCase.fragments.map(({ fragmentId, exactText }) => ({ fragmentId, exactText })),
+  };
+}
+
+function freezeValue<T>(value: T): T {
+  if (value !== null && typeof value === "object") {
+    for (const child of Object.values(value)) freezeValue(child);
+    Object.freeze(value);
+  }
+  return value;
 }

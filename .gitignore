@@ -8,6 +8,7 @@ dist/
 .next/
 .vercel/
 coverage/
+.cache/
 *.tsbuildinfo
 *.log
 
@@ -32,9 +33,28 @@ blob-report/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Local agent / scraper caches
+.eve
+.firecrawl/
+.herenow/
+
+# Runtime / local run outputs (catalog fixtures stay tracked)
+/artifacts/
+/outputs/
+/runs/
+/receipts/
 
 # Experiment / local run outputs
 experiments/**/output/
+experiments/**/results/
 scripts/experiments/**/output/
 internal/*.json
 internal/**/*.tgz
+internal_hidden_docs/
+
+# Packed npm artifacts. Keep only the currently referenced database-contract pin.
+*.tgz
+!vendor/aiengineer-database-contract-0.4.7.tgz
+packages/persistence/vendor/

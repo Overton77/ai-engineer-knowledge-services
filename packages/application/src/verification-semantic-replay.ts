@@ -1,5 +1,5 @@
 import { SemanticAssessmentRecordSchema, SemanticProviderResponseObservationSchema, VerificationArtifactHandleSchema, type SemanticAssessmentRecord, type SemanticJudgeIdentity, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, interpretCapturedGatewaySemanticResponse, providerDigest, sha256Digest, verifySemanticCase, type AuthorizedSemanticCase, type SemanticJudgeAdapter, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
+import { semanticJudgeInput, digestCanonicalJson, canonicalizeJson, interpretCapturedGatewaySemanticResponse, providerDigest, sha256Digest, verifySemanticCase, type AuthorizedSemanticCase, type SemanticJudgeAdapter, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { hydrateSemanticGatewayCapture } from "./verification-semantic-recovery.js";
 import { semanticObservationTransformationSignature } from "./verification-semantic-observation.js";
 
@@ -18,11 +18,12 @@ export async function replayCapturedSemanticAssessment(input: {
   readonly signal?: AbortSignal;
 }) {
   const semanticCase = input.semanticCase, expected = SemanticAssessmentRecordSchema.parse(input.expectedAssessment);
+  if (semanticCase.value !== undefined && expected.assertionValueDigest !== digestCanonicalJson(semanticCase.value)) throw new Error("SEMANTIC_REPLAY_VALUE_BINDING");
   const judges = structuredClone(input.judges), producer = input.producerDeploymentId, signal = input.signal;
   const createResolver = input.createResolver;
   if (judges.length < 1 || judges.length > 2 || judges.some(judge => judge.identity.deploymentId === producer) || new Set(judges.map(judge => judge.identity.deploymentId)).size !== judges.length) throw new Error("SEMANTIC_REPLAY_JUDGE_BINDING");
   const active = () => { if (signal?.aborted) throw new Error("SEMANTIC_REPLAY_CANCELLED"); };
-  const blinded = { rubricVersion: "evidence-only.v1" as const, assertionId: semanticCase.assertionId, proposition: semanticCase.proposition, qualifiers: [...semanticCase.qualifiers], entityBindings: semanticCase.entityBindings.map(value => ({ ...value })), fragments: semanticCase.fragments.map(({ fragmentId, exactText }) => ({ fragmentId, exactText })) };
+  const blinded = semanticJudgeInput(semanticCase);
   const replayedArtifactIds = new Set<string>(), adapters: SemanticJudgeAdapter[] = [];
   for (const judge of judges) {
     active();

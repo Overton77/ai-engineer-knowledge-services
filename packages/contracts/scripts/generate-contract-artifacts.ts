@@ -1,5 +1,6 @@
 import {VerificationExtractionFieldEvidenceResultSchema,ApplyProviderReconciliationRequestSchema,VerificationProviderReconciliationResourceSchema} from "../src/index.js";
 import { VerificationProfileCaptureAcceptedSchema } from "../src/index.js";
+import { VerificationFailureSetSchema, VerificationRecoveryPlanSchema, VerificationRecoveryReceiptSchema, VerificationRecoveryInvalidationSchema } from "../src/index.js";
 import { ParseArtifactRequestSchema, VerificationParseArtifactResultSchema } from "../src/index.js";
 import { VerificationCaptureTerminalResourceSchema } from "../src/index.js";
 import {VerificationProviderReconciliationSchema} from "../src/index.js";
@@ -96,6 +97,10 @@ const schemas = {
   VerificationClaimsTerminalResource: VerificationClaimsTerminalResourceSchema,
   VerificationCaptureTerminalResource: VerificationCaptureTerminalResourceSchema,
   VerificationProfileCaptureAccepted: VerificationProfileCaptureAcceptedSchema,
+  VerificationRecoveryInvalidation: VerificationRecoveryInvalidationSchema,
+  VerificationFailureSet: VerificationFailureSetSchema,
+  VerificationRecoveryPlan: VerificationRecoveryPlanSchema,
+  VerificationRecoveryReceipt: VerificationRecoveryReceiptSchema,
   VerificationClaimsReportTerminalResource: VerificationClaimsReportTerminalResourceSchema,
   VerificationReportTerminalResource: VerificationReportTerminalResourceSchema,
   VerificationReportGateArtifact: VerificationReportGateArtifactSchema,

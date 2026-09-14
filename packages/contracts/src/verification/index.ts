@@ -28,3 +28,4 @@ export * from "./semantic-provider-reconciliation.js";
 export * from "./capture-reads.js";
 export * from "./eve-runtime-attestation.js";
 export * from "./extraction-field-evidence.js";
+export * from "./recovery.js";

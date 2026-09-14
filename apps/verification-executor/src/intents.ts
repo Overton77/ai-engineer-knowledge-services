@@ -1,3 +1,4 @@
+import { LiteralExtractionPolicySchema } from "@aiengineer/knowledge-contracts";
 import { z } from "zod";
 
 /**
@@ -86,6 +87,7 @@ export const ReportIntentSchema = z.object({
 export type ReportIntent = z.infer<typeof ReportIntentSchema>;
 
 export const PolicyDefinitionInputSchema = z.object({
+  literalExtraction: LiteralExtractionPolicySchema.optional(),
   policyVersion: z.string().min(1).max(160).default("executor-default.v1"),
   criticalDownstreamUses: z.array(z.string().min(1).max(120)).max(32).default([]),
   requireCrossFamilyForRisk: z.array(z.enum(["low", "medium", "high", "critical"])).max(4).default([]),

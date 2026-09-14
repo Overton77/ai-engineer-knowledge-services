@@ -14,3 +14,7 @@ export * from "./spaces.js";
 export * from "./transformation.js";
 export * from "./vector-store.js";
 export * from "./verification/index.js";
+export * from "./source-discovery.js";
+
+export * from "./checkpoints.js";
+export * from "./verification-recovery-durable.js";

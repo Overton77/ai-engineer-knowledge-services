@@ -926,7 +926,7 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
   async recordArtifact(tenantId: string, input: { artifactId: string; artifactType: string; sha256: string; bucketClass: string; storageBucket: string; objectPath: string; mediaType: string; sizeBytes: number }): Promise<string> {
     return this.transaction(tenantId, async (client) => {
       await client.query(`insert into orchestration.artifact(id,tenant_id,artifact_type,sha256,bucket_class,storage_bucket,object_path,media_type,size_bytes)
-        values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(storage_bucket,object_path) do nothing`, [input.artifactId,tenantId,input.artifactType,input.sha256,input.bucketClass,input.storageBucket,input.objectPath,input.mediaType,input.sizeBytes]);
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(storage_bucket,object_path) where verification_contract_version is null do nothing`, [input.artifactId,tenantId,input.artifactType,input.sha256,input.bucketClass,input.storageBucket,input.objectPath,input.mediaType,input.sizeBytes]);
       const stored = (await client.query<Row>("select * from orchestration.artifact where tenant_id=$1 and storage_bucket=$2 and object_path=$3", [tenantId,input.storageBucket,input.objectPath])).rows[0];
       if (!stored || stored.sha256 !== input.sha256 || Number(stored.size_bytes) !== input.sizeBytes) throw new Error("ARTIFACT_METADATA_CONFLICT");
       return String(stored.id);

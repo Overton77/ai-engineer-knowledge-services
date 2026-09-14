@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "id": "ai-engineer-knowledge-services",
+  "purpose": "Knowledge preparation, retrieval, evidence, evaluation, publication, and verification; API, MCP, CLI, durable workers, and parser boundaries.",
+  "lifecycle": "Active service repository; see deployment docs for rollout state.",
+  "budgetBytes": 8192,
+  "rules": [
+    "Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.",
+    "Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.",
+    "Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.",
+    "Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.",
+    "Search explicit source paths first. Do not recursively enumerate artifacts, outputs, runs, receipts, caches, dependencies, or private notes. Read an individual artifact only when the task calls for it.",
+    "Knowledge schema/read/ingest live in packages/schema-workspace, packages/db-read, packages/ingestion and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation."
+  ],
+  "commands": [
+    "corepack pnpm verify"
+  ],
+  "docs": [
+    {
+      "path": "README.md",
+      "task": "Service boundaries and startup",
+      "modules": [
+        "api",
+        "cli",
+        "mcp",
+        "worker",
+        "verification-executor",
+        "application",
+        "schema-workspace",
+        "db-read",
+        "ingestion"
+      ]
+    },
+    {
+      "path": "docs/architecture/0001-runtime-and-deployment.md",
+      "task": "Runtime, transport, and deployment changes",
+      "modules": [
+        "api",
+        "mcp",
+        "worker",
+        "config",
+        "docling"
+      ],
+      "status": "accepted"
+    },
+    {
+      "path": "docs/architecture/0002-deterministic-preparation.md",
+      "task": "Preparation pipeline",
+      "modules": [
+        "acquisition",
+        "conversion",
+        "documents",
+        "chunking",
+        "projections",
+        "application",
+        "runtime"
+      ],
+      "status": "accepted"
+    },
+    {
+      "path": "docs/architecture/0003-embedding-retrieval-evaluation.md",
+      "task": "Embedding, retrieval, evaluation",
+      "modules": [
+        "embeddings",
+        "retrieval",
+        "evaluation",
+        "vector-backends",
+        "policy",
+        "observability",
+        "testkit"
+      ],
+      "status": "accepted"
+    },
+    {
+      "path": "docs/verification/README.md",
+      "task": "Verification behavior and invariants",
+      "modules": [
+        "verification",
+        "verification-deterministic",
+        "verification-selectors",
+        "verification-extraction",
+        "verification-provenance",
+        "verification-claims",
+        "verification-authority",
+        "verification-semantic",
+        "verification-providers",
+        "application",
+        "policy"
+      ]
+    },
+    {
+      "path": "docs/verification/INTEGRATION-GUIDE.md",
+      "task": "Cross-service verification integration",
+      "modules": [
+        "api",
+        "mcp",
+        "cli",
+        "client-typescript",
+        "contracts"
+      ]
+    },
+    {
+      "path": "docs/verification/OPERATOR-RUNBOOK.md",
+      "task": "Verification recovery and operator actions",
+      "modules": [
+        "worker",
+        "persistence",
+        "script-proofs",
+        "script-reconciliation"
+      ]
+    },
+    {
+      "path": "docs/verification/DEPLOYMENT.md",
+      "task": "Verification deployment and rollback",
+      "modules": [
+        "api",
+        "worker",
+        "verification-parser",
+        "docling"
+      ]
+    },
+    {
+      "path": "docs/operations/runbooks.md",
+      "task": "Worker restart, leases, callbacks, incidents",
+      "modules": [
+        "runtime",
+        "worker",
+        "persistence",
+        "observability"
+      ]
+    },
+    {
+      "path": "docs/security.md",
+      "task": "Authentication, capability admission, parser isolation",
+      "modules": [
+        "config",
+        "policy",
+        "verification-parser",
+        "verification-providers"
+      ]
+    }
+  ],
+  "watch": [
+    "package.json",
+    "apps/worker/src/worker.ts",
+    "packages/runtime/src/ledger.ts",
+    "packages/db-read/src/read-executor.ts",
+    "packages/ingestion/src/executor.ts",
+    "apps/verification-executor/src/knowledge/operations.ts"
+  ],
+  "decisions": [
+    "A knowledge-read retrieval operation is accepted in the intent schema but skipped as RETRIEVAL_UNAVAILABLE; catalog query retrieval.hybrid_search is pending an embedding.",
+    "Ingestion records orchestration.operation_intent/receipt and does not write a knowledge_service.operation row or outbox.",
+    "The database-contract pin is a local link: path, not a git ref. Cloud deployment of the km_13–km_15 contract additions is not verified by this map.",
+    "skills/ also contains knowledge-verification, vector-store-management, knowledge-evaluation, knowledge-retrieval-and-evidence, knowledge-preparation-and-promotion, and knowledge-acquisition-and-vetting; those were not registered in this update."
+  ],
+  "ciWorkflow": ".github/workflows/agent-docs.yml",
+  "codeMap": ".agent-docs/modules.json"
+}

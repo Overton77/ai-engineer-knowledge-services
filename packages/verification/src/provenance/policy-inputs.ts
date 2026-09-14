@@ -1,6 +1,7 @@
 import {
   VerificationRecordedPolicyInputsSchema,
   type DeterministicVerificationResult,
+  type Assertion,
   type VerificationArtifactHandle,
   type VerificationBundle,
   type VerificationRecordedPolicyInputs,
@@ -26,6 +27,8 @@ export function validateRecordedPolicyInputsArtifact(input: {
   for (const assertion of parsed.assertions) {
     const declared = bundleAssertions.get(assertion.assertionId);
     if (!declared || assertion.riskClass !== declared.riskClass || digestCanonicalJson(assertion.downstreamUse) !== digestCanonicalJson(declared.downstreamUse)) throw new Error("POLICY_INPUT_ASSERTION_BINDING_MISMATCH");
+    if (assertion.literalExtraction && !isLiteralExtractionAssertion(declared)) throw new Error("POLICY_LITERAL_EXTRACTION_BINDING_MISMATCH");
+    if (assertion.semantic.judgeIdentities.length > 0 && declared.value !== undefined && assertion.semantic.assertionValueDigest !== digestCanonicalJson(declared.value)) throw new Error("POLICY_SEMANTIC_VALUE_BINDING_MISMATCH");
     if (assertion.semantic.assertionId !== assertion.assertionId) throw new Error("POLICY_INPUT_SEMANTIC_ASSERTION_MISMATCH");
     const fragmentIds = new Set(declared.evidence.map((edge) => edge.fragment.fragmentId));
     if ([...assertion.semantic.supportingFragmentIds, ...assertion.semantic.contradictingFragmentIds].some((id) => !fragmentIds.has(id))) throw new Error("POLICY_INPUT_SEMANTIC_FRAGMENT_UNKNOWN");
@@ -37,4 +40,14 @@ export function validateRecordedPolicyInputsArtifact(input: {
     if (!assertion || !assertion.evidence.some((edge) => edge.fragment.fragmentId === assessment.fragmentId)) throw new Error("POLICY_INPUT_SOURCE_FRAGMENT_UNKNOWN");
   }
   return parsed;
+}
+
+/** Only a verbatim source value, with no added entity, qualifier, or inferred meaning, is mechanical extraction. */
+export function isLiteralExtractionAssertion(assertion: Assertion): boolean {
+  return assertion.kind === "claim" && ["attribute", "measurement", "provenance"].includes(assertion.claimType ?? "")
+    && assertion.riskClass === "low" && assertion.derivation === "direct" && typeof assertion.value === "string"
+    && assertion.proposition === assertion.value && !assertion.qualifiers.length && !assertion.entityBindings.length
+    && assertion.evidence.length > 0 && assertion.evidence.every(edge => edge.role === "supports"
+      && edge.fragment.selector.kind === "text_quote" && edge.fragment.selector.normalization === "none"
+      && edge.fragment.selector.quote === assertion.value);
 }

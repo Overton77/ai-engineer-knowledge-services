@@ -1,11 +1,15 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
 import type { VerificationExecutor } from "./executor.js";
-import { createVerificationMcpServer } from "./mcp.js";
+import type { KnowledgeServices } from "./knowledge/context.js";
+import { knowledgeOperations } from "./knowledge/operations.js";
+import { createVerificationMcpServer, errorEnvelope } from "./mcp.js";
+import { UnknownOperationError } from "./operations/define.js";
 
 /**
  * Routes
- *   GET  /health
+ *   GET  /health                   store, tenant, and (when configured) workspace/database heads
  *   POST /mcp                      Streamable HTTP MCP (stateless; one server per request)
  *   POST /artifacts                raw bytes -> handle (headers: content-type, x-artifact-label, x-run-id)
  *   POST /captures                 document bytes -> capture (headers: content-type, x-filename, x-source-uri, x-capture-id, x-run-id)
@@ -13,6 +17,8 @@ import { createVerificationMcpServer } from "./mcp.js";
  *   GET  /artifacts/:artifactId    raw bytes back (digest re-verified on read)
  *   GET  /runs/:runId              chain state + step receipts
  *   GET  /captures                 list captures
+ *   POST /knowledge/:operation     JSON input -> JSON output for any knowledge operation (schema_*, db_*, ingest_*, artifact_get)
+ *   GET  /knowledge/operations     the operation catalog
  *
  * Optional bearer auth: set VERIFY_EXECUTOR_TOKEN and clients must send `Authorization: Bearer <token>`.
  */
@@ -34,24 +40,58 @@ function json(response: ServerResponse, status: number, value: unknown): void {
   response.end(JSON.stringify(value, null, 2));
 }
 
-export function createHttpServer(executor: VerificationExecutor, options: { token?: string } = {}): Server {
+export interface HttpServerOptions {
+  readonly token?: string;
+  readonly knowledge?: KnowledgeServices;
+}
+
+async function healthPayload(executor: VerificationExecutor, knowledge: KnowledgeServices | undefined): Promise<Record<string, unknown>> {
+  const base = { status: "ok", store: executor.store.rootDir, tenantId: executor.store.tenantId };
+  if (!knowledge) return base;
+  const databaseHead = await knowledge.reads.databaseHead().catch(() => undefined);
+  return { ...base, knowledge: { workspaceDir: knowledge.workspace.dir, workspaceHead: knowledge.workspace.migrationHead, workspaceFingerprint: knowledge.workspace.fingerprint ?? null, databaseHead: databaseHead ?? null, headMatches: databaseHead === knowledge.workspace.migrationHead, defaultTenantId: knowledge.config.defaultTenantId, operations: knowledgeOperations.list().map((operation) => operation.name) } };
+}
+
+async function handleKnowledge(request: IncomingMessage, response: ServerResponse, url: URL, knowledge: KnowledgeServices | undefined): Promise<boolean> {
+  if (!url.pathname.startsWith("/knowledge/")) return false;
+  if (!knowledge) { json(response, 503, { error: "KNOWLEDGE_UNAVAILABLE", code: "KNOWLEDGE_UNAVAILABLE", exit: 2, hint: "set POSTGRES_URL (or KNOWLEDGE_DB_URL) and SCHEMA_WORKSPACE_DIR" }); return true; }
+  if (request.method === "GET" && url.pathname === "/knowledge/operations") {
+    json(response, 200, knowledgeOperations.list().map((operation) => ({ name: operation.name, title: operation.title, description: operation.description, cli: operation.cli })));
+    return true;
+  }
+  const name = url.pathname.slice("/knowledge/".length);
+  if (request.method !== "POST") { json(response, 405, { error: "METHOD_NOT_ALLOWED" }); return true; }
+  const body = Buffer.from(await readBody(request, name === "checkpoint_harness" ? 96_000_000 : 16_000_000)).toString("utf8");
+  try {
+    const { operation, output } = await knowledgeOperations.invoke(name, body ? JSON.parse(body) : {}, knowledge);
+    const gate = operation.gate?.(output);
+    json(response, 200, gate ? { ...(output as Record<string, unknown>), qualityGate: { passed: false, reason: gate } } : output);
+  } catch (error) {
+    if (error instanceof UnknownOperationError) json(response, 404, { error: error.message, code: "OPERATION_UNKNOWN", known: error.known });
+    else json(response, isKnowledgeError(error) ? (error.exit === 1 ? 422 : 502) : 400, errorEnvelope(error));
+  }
+  return true;
+}
+
+export function createHttpServer(executor: VerificationExecutor, options: HttpServerOptions = {}): Server {
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
     try {
-      if (request.method === "GET" && url.pathname === "/health") return json(response, 200, { status: "ok", store: executor.store.rootDir, tenantId: executor.store.tenantId });
+      if (request.method === "GET" && url.pathname === "/health") return json(response, 200, await healthPayload(executor, options.knowledge));
       if (options.token) {
         const header = request.headers.authorization ?? "";
         if (header !== `Bearer ${options.token}`) return json(response, 401, { error: "UNAUTHORIZED" });
       }
       if (url.pathname === "/mcp") {
         const body = request.method === "POST" ? JSON.parse(Buffer.from(await readBody(request)).toString("utf8") || "null") : undefined;
-        const server = createVerificationMcpServer(executor);
+        const server = createVerificationMcpServer(executor, options.knowledge);
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
         await server.connect(transport);
         response.on("close", () => { void transport.close(); void server.close(); });
         await transport.handleRequest(request, response, body);
         return;
       }
+      if (await handleKnowledge(request, response, url, options.knowledge)) return;
       if (request.method === "POST" && url.pathname === "/artifacts") {
         const bytes = await readBody(request);
         if (bytes.byteLength === 0) return json(response, 400, { error: "EMPTY_BODY" });

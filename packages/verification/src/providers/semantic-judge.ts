@@ -32,6 +32,7 @@ export class RecordedSemanticJudgeAdapter implements SemanticJudgeAdapter {
 export type NliClassifier = (input: {
   readonly assertionId: string;
   readonly proposition: string;
+  readonly value?: Parameters<SemanticJudgeAdapter["judge"]>[0]["value"];
   readonly qualifiers: readonly string[];
   readonly entityBindings: readonly { readonly role: string; readonly canonicalId: string }[];
   readonly fragments: readonly { readonly fragmentId: string; readonly exactText: string }[];
@@ -54,7 +55,7 @@ export class ThreeWayNliSemanticJudgeAdapter implements SemanticJudgeAdapter {
 
   async judge(input: Parameters<SemanticJudgeAdapter["judge"]>[0], execution: SemanticJudgeExecution): Promise<SemanticJudgeOutput> {
     if (execution.signal?.aborted) throw new Error("JUDGE_CANCELLED");
-    const classified = await this.#classify({ assertionId: input.assertionId, proposition: input.proposition, qualifiers: input.qualifiers, entityBindings: input.entityBindings, fragments: input.fragments, execution });
+    const classified = await this.#classify({ assertionId: input.assertionId, proposition: input.proposition, ...(input.value !== undefined ? { value: input.value } : {}), qualifiers: input.qualifiers, entityBindings: input.entityBindings, fragments: input.fragments, execution });
     return SemanticJudgeOutputSchema.parse({ schemaVersion: "verification-semantic-judge.v1", assertionId: input.assertionId, ...classified });
   }
 }

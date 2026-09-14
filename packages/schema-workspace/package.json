@@ -1,0 +1,31 @@
+{
+  "name": "@aiengineer/knowledge-schema-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Loads the pinned schema workspace (manifest, search index, named-query catalog, rules), checks its migration head, and answers schema_search / schema_get / schema_materialize.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm && tsc --emitDeclarationOnly --rootDir src --outDir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.7.tgz",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
+
+
+

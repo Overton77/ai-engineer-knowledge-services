@@ -1,5 +1,11 @@
 # `@aiengineer/knowledge-verification`
 
+For implementation, use the authoritative [final clean-code plan](CLEAN-CODE-RECOMMENDATION.md), which consolidates code and testing recommendations with ordered phases and completion criteria.
+
+For an agent-oriented walkthrough of interfaces, call sequences and clean-code recommendations, start with the [comprehension guide](COMPREHENSION.md).
+
+For the test suite, read the [testing comprehension guide](TESTING-COMPREHENSION.md) and [clean testing recommendation](CLEAN-TESTING-RECOMMENDATION.md).
+
 Private workspace package that owns verification **algorithms** for Knowledge Services (`verification.v1`). Transport schemas live in `@aiengineer/knowledge-contracts`. `packages/application` composes use cases with persistence. `apps/api`, `apps/cli`, `apps/mcp`, and `apps/worker` are thin transports.
 
 The module answers the spec’s five ordered questions (capture integrity → selector integrity → mechanical correctness → semantic support → policy admission). Later stages may add restrictions; they must not reverse an earlier deterministic failure. Orthogonal properties (evidence support, world correctness, attribution faithfulness, source authority, provenance integrity) are stored separately. Semantic/policy verdicts follow the contract lattice (`directly_supported`, `locator_error`, `unverifiable`, …). Cross-repository consumers must use HTTP, CLI, or MCP — never import this package.

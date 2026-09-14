@@ -10,6 +10,7 @@ import type {
   PreparationRepository,
 } from "./types.js";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
+import { canonicalCaptureMethod, canonicalDocumentType } from "./preparation-vocabulary.js";
 
 type Row = Record<string, unknown>;
 const iso = (value: unknown) => value instanceof Date ? value.toISOString() : String(value);
@@ -31,7 +32,7 @@ function artifactFromRow(row: Row): PersistedPreparationArtifact {
 async function persistArtifact(client: TenantSqlClient, tenantId: string, artifact: PersistedPreparationArtifact): Promise<void> {
   await client.query(`insert into orchestration.artifact
     (id,tenant_id,artifact_type,sha256,bucket_class,storage_bucket,object_path,media_type,size_bytes)
-    values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(storage_bucket,object_path) do nothing`, [
+    values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(storage_bucket,object_path) where verification_contract_version is null do nothing`, [
     artifact.artifactId, tenantId, artifact.artifactType, artifact.digest.slice(7), artifact.bucketClass,
     artifact.storageBucket, artifact.storageKey, artifact.mediaType, artifact.byteLength,
   ]);
@@ -56,7 +57,7 @@ function captureFromRow(row: Row): PersistedCapture {
     operationId: String(context.operationId), sourceId:String(row.source_id), captureId:String(row.id),
     sourceClass:row.source_class as PersistedCapture["sourceClass"], canonicalUrl:String(row.canonical_url),
     ...(row.publisher ? { publisher:String(row.publisher) } : {}), sensitivity:row.sensitivity as PersistedCapture["sensitivity"],
-    artifact:artifactFromRow(row), captureMethod:String(row.capture_method), captureMethodVersion:String(row.capture_method_version),
+    artifact:artifactFromRow(row), captureMethod:String(context.captureMethod ?? row.capture_method), captureMethodVersion:String(row.capture_method_version),
     requestUrl:String(row.request_url), ...(row.http_status === null ? {} : { httpStatus:Number(row.http_status) }),
     observations:context.observations ?? {}, capturedAt:iso(row.captured_at),
   };
@@ -71,6 +72,7 @@ export class PostgresPreparationRepository implements PreparationRepository {
   constructor(private readonly database: PostgresCanonicalRepository) {}
 
   async persistCapture(tenantId: string, input: PersistCaptureInput): Promise<PersistedCapture> {
+    const captureMethod = canonicalCaptureMethod(input.captureMethod);
     return this.database.transaction(tenantId, async (client) => {
       await persistArtifact(client, tenantId, input.artifact);
       await client.query(`insert into evidence.source(id,tenant_id,source_class,canonical_url,publisher,sensitivity)
@@ -78,12 +80,12 @@ export class PostgresPreparationRepository implements PreparationRepository {
       const source = (await client.query<Row>("select * from evidence.source where tenant_id=$1 and id=$2", [tenantId,input.sourceId])).rows[0];
       if (!source || String(source.canonical_url) !== input.canonicalUrl || String(source.source_class) !== input.sourceClass
         || String(source.sensitivity) !== input.sensitivity) throw new Error("SOURCE_IDENTITY_CONFLICT");
-      const context = { operationId:input.operationId, observations:input.observations };
+      const context = { operationId:input.operationId, observations:input.observations, captureMethod:input.captureMethod };
       await client.query(`insert into evidence.source_capture
         (id,tenant_id,source_id,artifact_id,content_sha256,media_type,captured_at,capture_method,capture_method_version,request_url,http_status,context,knowledge_operation_id)
         values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13) on conflict(id) do nothing`, [
         input.captureId,tenantId,input.sourceId,input.artifact.artifactId,input.artifact.digest.slice(7),input.artifact.mediaType,input.capturedAt,
-        input.captureMethod,input.captureMethodVersion,input.requestUrl,input.httpStatus??null,JSON.stringify(context),input.operationId,
+        captureMethod,input.captureMethodVersion,input.requestUrl,input.httpStatus??null,JSON.stringify(context),input.operationId,
       ]);
       const row = (await client.query<Row>(`select c.*,s.source_class,s.canonical_url,s.publisher,s.sensitivity,
         a.id artifact_id,a.artifact_type,a.sha256,a.bucket_class,a.storage_bucket,a.object_path,a.media_type,a.size_bytes
@@ -92,6 +94,8 @@ export class PostgresPreparationRepository implements PreparationRepository {
         where c.tenant_id=$1 and c.id=$2`, [tenantId,input.captureId])).rows[0];
       if (!row || String(row.content_sha256) !== input.artifact.digest.slice(7)
         || String(row.knowledge_operation_id)!==input.operationId
+        || String(row.capture_method)!==captureMethod || String(row.capture_method_version)!==input.captureMethodVersion
+        || String((row.context as Record<string, unknown>).captureMethod ?? row.capture_method)!==input.captureMethod
         || (row.context as Record<string, unknown>).operationId !== input.operationId) throw new Error("CAPTURE_IDEMPOTENCY_CONFLICT");
       return captureFromRow(row);
     });
@@ -109,13 +113,14 @@ export class PostgresPreparationRepository implements PreparationRepository {
   }
 
   async persistRepresentation(tenantId: string, input: PersistRepresentationInput): Promise<PersistedRepresentation> {
+    const documentType = canonicalDocumentType(input.documentKind);
     return this.database.transaction(tenantId, async (client) => {
       await persistArtifact(client,tenantId,input.sourceArtifact);
       for (const artifact of input.outputArtifacts) await persistArtifact(client,tenantId,artifact);
-      await client.query(`insert into content.document(id,tenant_id,document_kind,canonical_title,canonical_source_id)
-        values($1,$2,$3,$4,$5) on conflict(id) do nothing`, [input.documentId,tenantId,input.documentKind,input.canonicalTitle,input.canonicalSourceId]);
+      await client.query(`insert into content.document(id,tenant_id,document_type_code,canonical_title,canonical_source_id)
+        values($1,$2,$3,$4,$5) on conflict(id) do nothing`, [input.documentId,tenantId,documentType,input.canonicalTitle,input.canonicalSourceId]);
       const document = (await client.query<Row>("select * from content.document where tenant_id=$1 and id=$2",[tenantId,input.documentId])).rows[0];
-      if (!document || String(document.document_kind)!==input.documentKind || String(document.canonical_title)!==input.canonicalTitle
+      if (!document || String(document.document_type_code)!==documentType || String(document.canonical_title)!==input.canonicalTitle
         || String(document.canonical_source_id)!==input.canonicalSourceId) throw new Error("DOCUMENT_IDENTITY_CONFLICT");
       if (input.identifier) {
         await client.query(`insert into content.document_identifier(id,tenant_id,document_id,identifier_type,normalized_value,authority)
@@ -135,16 +140,19 @@ export class PostgresPreparationRepository implements PreparationRepository {
         where tenant_id=$1 and document_version_id=$2 and source_capture_id=$3`,[tenantId,input.documentVersionId,input.sourceCaptureId])).rows[0];
       if (!captureLink || String(captureLink.capture_role)!=="primary" || Number(captureLink.identity_confidence)!==1
         || digestHex(captureLink.resolution_evidence)!==digestHex({deterministic:true})) throw new Error("DOCUMENT_CAPTURE_LINK_CONFLICT");
-      const parameters = { providerKey:input.providerKey,providerVersion:input.providerVersion,profileDigest:input.profileDigest };
+      const parameters = { providerKey:input.providerKey,providerVersion:input.providerVersion,profileDigest:input.profileDigest,
+        documentKind:input.documentKind,transformationKind:"structural_conversion" };
       await client.query(`insert into content.transformation_run
         (id,tenant_id,transformation_kind,contract_version,code_ref,provider_route,parameters,parameters_sha256,operation_id,status,idempotency_key,input_manifest_sha256,output_manifest_sha256,receipt,resource_observations,cost_usd,started_at,ended_at)
-        values($1,$2,'structural_conversion','knowledge.transformation/v1','packages/conversion',$3,$4::jsonb,$5,$6,'succeeded',$7,$8,$9,$10::jsonb,$11::jsonb,0,$12,$12) on conflict(tenant_id,idempotency_key) do nothing`,[
+        values($1,$2,'structural_parse','knowledge.transformation/v1','packages/conversion',$3,$4::jsonb,$5,$6,'succeeded',$7,$8,$9,$10::jsonb,$11::jsonb,0,$12,$12) on conflict(tenant_id,idempotency_key) do nothing`,[
         input.transformationRunId,tenantId,`${input.providerKey}@${input.providerVersion}`,JSON.stringify(parameters),digestHex(parameters),input.operationId,
         `transformation:${input.operationId}`,input.sourceArtifact.digest.slice(7),digestHex(input.outputArtifacts.map((item)=>item.digest)),JSON.stringify(input.receipt),
         JSON.stringify({receiptDigest:input.receiptDigest,nodeCount:input.nodes.length}),input.completedAt,
       ]);
       const run = (await client.query<Row>("select * from content.transformation_run where tenant_id=$1 and idempotency_key=$2",[tenantId,`transformation:${input.operationId}`])).rows[0];
       if (!run || String(run.id)!==input.transformationRunId || String(run.input_manifest_sha256)!==input.sourceArtifact.digest.slice(7)
+        || String(run.transformation_kind)!=="structural_parse" || String(run.parameters_sha256)!==digestHex(parameters)
+        || String(run.provider_route)!==`${input.providerKey}@${input.providerVersion}`
         || String(run.output_manifest_sha256)!==digestHex(input.outputArtifacts.map((item)=>item.digest))) throw new Error("TRANSFORMATION_IDEMPOTENCY_CONFLICT");
       await client.query(`insert into content.document_representation
         (id,tenant_id,document_version_id,artifact_id,representation_kind,representation_class,media_type,content_sha256,acceptance_state,source_native_byte_identical)

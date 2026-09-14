@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "knowledge-executor-skill-catalog/v1",
+  "description": "Session-layer skills shipped with the knowledge executor tarball (pack-sandbox.mjs). knowledge-verify is canonical here; the three schema-workspace skills are canonical in ../../skills.",
+  "skills": [
+    { "id": "knowledge-verify", "version": "1.0.0", "path": "knowledge-verify/SKILL.md", "cli": "knowledge-verify *", "mcp": "verify_*" },
+    { "id": "schema-explore", "version": "0.1.0", "path": "../../../skills/schema-explore/SKILL.md", "cli": "knowledge schema *", "mcp": "schema_*" },
+    { "id": "knowledge-db", "version": "0.1.0", "path": "../../../skills/knowledge-db/SKILL.md", "cli": "knowledge db *, knowledge artifact get", "mcp": "db_*, artifact_get" },
+    { "id": "knowledge-ingest", "version": "0.1.0", "path": "../../../skills/knowledge-ingest/SKILL.md", "cli": "knowledge ingest *", "mcp": "ingest_*" }
+  ]
+}

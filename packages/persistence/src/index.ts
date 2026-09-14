@@ -1,5 +1,6 @@
 export * from "./types.js";
 export * from "./postgres.js";
+export * from "./role-transaction.js";
 export * from "./wiring.js";
 export * from "./exploratory-fixture.js";
 export * from "./operation-service.js";
@@ -57,3 +58,7 @@ export * from './eve-verification-binding.js';
 export * from './verification-adjudication-decision-preparation.js';
 export * from './verification-adjudication-decision.js';
 export * from './verification-adjudication-decision-reads.js';
+export * from './source-discovery.js';
+
+export * from "./checkpoints.js";
+export * from "./verification-recovery-durable.js";

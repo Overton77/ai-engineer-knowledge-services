@@ -39,6 +39,7 @@ export type SemanticJudgeIdentity = z.infer<typeof SemanticJudgeIdentitySchema>;
 
 export const SemanticAssessmentRecordSchema = z.strictObject({
   assertionId: VerificationIdSchema,
+  assertionValueDigest: Sha256DigestSchema.optional(),
   verdict: SemanticVerdictSchema,
   disposition: z.enum(["admit", "review", "abstain", "fail"]),
   evidenceSupport: SemanticSupportStatusSchema,
@@ -89,10 +90,16 @@ export const VerificationSourceAssessmentSchema = z.strictObject({
 });
 export type VerificationSourceAssessment = z.infer<typeof VerificationSourceAssessmentSchema>;
 
+export const LiteralExtractionPolicySchema = z.strictObject({
+  assertionIds: z.array(VerificationIdSchema).min(1).max(256),
+  downstreamUses: z.array(z.literal("knowledge_ingestion:claim.materialize")).min(1).max(1),
+});
+
 export const VerificationPolicyDefinitionSchema = z.strictObject({
   schemaVersion: z.literal("verification-policy.v1"),
   policyVersion: NonEmptyStringSchema.max(160),
   definitionId: VerificationIdSchema,
+  literalExtraction: LiteralExtractionPolicySchema.optional(),
   criticalDownstreamUses: z.array(NonEmptyStringSchema.max(120)).max(32),
   requireCrossFamilyForRisk: z.array(z.enum(["low", "medium", "high", "critical"])).max(4),
   requireIndependentAuthorityForScopes: z.array(z.enum([
@@ -120,6 +127,7 @@ export const VerificationRecordedPolicyInputsSchema = z.strictObject({
       "source_summary", "descriptive_fact", "population_accuracy", "clinical_utility",
       "comparative_superiority", "causal", "product_validation", "method_validation",
     ]),
+    literalExtraction: z.literal(true).optional(),
     semantic: SemanticAssessmentRecordSchema,
     authorityStatus: z.enum(["sufficient", "withheld", "unknown"]),
     independentCorroboration: z.boolean(),

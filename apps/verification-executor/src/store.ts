@@ -4,19 +4,20 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
+import { assertSameArtifact, readArtifactFile, validateStoredArtifact, writeArtifactFileOnce, type ArtifactCustody } from "./store-custody.js";
 
 /**
  * Content-addressed filesystem store.
  *
  * Layout under `rootDir`:
  *   artifacts/<hex>              raw bytes (hex = sha256 of the bytes)
- *   artifacts/<hex>.handle.json  the VerificationArtifactHandle registered for those bytes
+ *   artifacts/<hex>.<identity>.handle.json  the logical handle; legacy plain handles remain readable
  *   captures/<captureId>.json    capture records (source + content handle)
  *   runs/<runId>/state.json      chain state for one claims-verification run
  *   runs/<runId>/steps.jsonl     append-only step receipts (one JSON object per line)
  *   runs/<runId>/steps/NNN-<op>.json  the same receipts, one file per step, for humans
  *
- * Puts are idempotent (same bytes -> same handle). Gets recompute the digest and
+ * Puts reuse the same bytes and provenance identity. Gets recompute the digest and
  * refuse to return bytes that do not match the address.
  */
 
@@ -77,10 +78,47 @@ export interface RunState {
 export class FilesystemStore {
   readonly rootDir: string;
   readonly tenantId: string;
+  private custody: ArtifactCustody | undefined;
 
   constructor(rootDir: string, tenantId: string) {
     this.rootDir = resolve(rootDir);
     this.tenantId = tenantId;
+  }
+
+  attachCustody(custody: ArtifactCustody): void {
+    if (this.custody) throw new Error("ARTIFACT_CUSTODY_ALREADY_BOUND");
+    this.custody = custody;
+  }
+
+  private async persist(handle: VerificationArtifactHandle, visiting = new Set<string>()): Promise<void> {
+    if (!this.custody) return;
+    if (visiting.has(handle.artifactId)) throw new Error("ARTIFACT_LINEAGE_CYCLE");
+    visiting.add(handle.artifactId);
+    try {
+      for (const parentId of [...handle.parentArtifactIds, ...(handle.attestationArtifactId ? [handle.attestationArtifactId] : [])]) {
+        const parent = await this.handleById(parentId);
+        if (!parent) throw new Error(`ARTIFACT_PARENT_NOT_FOUND:${parentId}`);
+        await this.persist(parent, visiting);
+      }
+      assertSameArtifact(handle, await this.custody.register(handle, await this.bytes(handle)));
+    } finally { visiting.delete(handle.artifactId); }
+  }
+
+  async preserve(artifactId: string): Promise<VerificationArtifactHandle> {
+    if (!this.custody) throw new Error("ARTIFACT_REMOTE_CUSTODY_UNAVAILABLE");
+    const handle = await this.resolveHandle({ artifactId });
+    await this.persist(handle);
+    return handle;
+  }
+
+  private async materialize(value: VerificationArtifactHandle, bytes: Uint8Array): Promise<VerificationArtifactHandle> {
+    const handle = validateStoredArtifact(this.tenantId, value, bytes);
+    await mkdir(join(this.rootDir, "artifacts"), { recursive: true });
+    validateStoredArtifact(this.tenantId, handle, await writeArtifactFileOnce(join(this.rootDir, handle.objectKey), bytes));
+    const path = join(this.rootDir, "artifacts", `${handle.digest.slice(7)}.${handle.artifactId}.handle.json`);
+    const stored = await writeArtifactFileOnce(path, encoder.encode(JSON.stringify(handle)));
+    assertSameArtifact(handle, validateStoredArtifact(this.tenantId, JSON.parse(decoder.decode(stored))));
+    return handle;
   }
 
   async init(): Promise<void> {
@@ -89,8 +127,20 @@ export class FilesystemStore {
 
   // ---- artifacts -----------------------------------------------------------
 
-  artifactIdFor(digest: `sha256:${string}`): string {
-    return deterministicUuid("artifact", `${this.tenantId}:${digest}`);
+  /**
+   * Artifact identity = bytes + lineage. Two derived artifacts with identical bytes but
+   * different parents (e.g. a policy decision re-evaluated after a re-judge that happened to
+   * produce the same outcome) must not collapse into one handle, otherwise the older handle's
+   * parents leak into the newer run and the seal fails with LINEAGE_PARENT_MISSING.
+   * New identities also bind producer and media metadata. Compatible legacy handles retain
+   * their original identity; the stored bytes remain shared by digest.
+   */
+  artifactIdFor(digest: `sha256:${string}`, lineageSignature?: `sha256:${string}`): string {
+    return deterministicUuid("artifact", lineageSignature ? `${this.tenantId}:${digest}:${lineageSignature}` : `${this.tenantId}:${digest}`);
+  }
+
+  private handlePath(hex: string, lineageSignature?: `sha256:${string}`): string {
+    return join(this.rootDir, "artifacts", lineageSignature ? `${hex}.${lineageSignature.slice("sha256:".length, "sha256:".length + 16)}.handle.json` : `${hex}.handle.json`);
   }
 
   async put(input: RegisterArtifactInput): Promise<VerificationArtifactHandle> {
@@ -98,10 +148,29 @@ export class FilesystemStore {
     const hex = digest.slice("sha256:".length);
     const parents = [...(input.parentArtifactIds ?? [])].sort();
     if (parents.length > 0 && input.transformation === undefined) throw new Error("ARTIFACT_TRANSFORMATION_REQUIRED_FOR_PARENTS");
-    const existing = await this.handleByDigest(digest);
-    if (existing) return existing;
-    const handle: VerificationArtifactHandle = {
-      artifactId: this.artifactIdFor(digest),
+    const transformationSignature = input.transformation !== undefined ? sha256Digest(canonicalizeJson(stripUndefined(input.transformation))) : undefined;
+    const lineageSignature = sha256Digest(canonicalizeJson(stripUndefined({
+      parents, transformationSignature, producerActivityId: input.producerActivityId,
+      producerVersion: input.producerVersion, mediaType: input.mediaType,
+      dataClassification: input.dataClassification ?? "public",
+    })));
+    const handlePath = this.handlePath(hex, lineageSignature);
+    const legacySignature = parents.length > 0 ? sha256Digest(canonicalizeJson({ parents, transformationSignature })) : undefined;
+    const legacyPath = this.handlePath(hex, legacySignature);
+    const priorPath = existsSync(handlePath) ? handlePath : existsSync(legacyPath) ? legacyPath : undefined;
+    if (priorPath) {
+      const existing = validateStoredArtifact(this.tenantId, JSON.parse(await readFile(priorPath, "utf8")), input.bytes);
+      if (existing.producerActivityId === input.producerActivityId && existing.producerVersion === input.producerVersion
+        && existing.mediaType === input.mediaType && existing.dataClassification === (input.dataClassification ?? "public")
+        && canonicalizeJson(existing.parentArtifactIds) === canonicalizeJson(parents)
+        && existing.transformationSignature === transformationSignature) {
+        await this.persist(existing);
+        return existing;
+      }
+      if (priorPath === handlePath) throw new Error("ARTIFACT_REGISTRATION_COLLISION");
+    }
+    let handle: VerificationArtifactHandle = {
+      artifactId: this.artifactIdFor(digest, lineageSignature),
       tenantId: this.tenantId,
       digest,
       mediaType: input.mediaType,
@@ -114,12 +183,31 @@ export class FilesystemStore {
       retentionClass: "experiment",
       dataClassification: input.dataClassification ?? "public",
       parentArtifactIds: parents,
-      ...(input.transformation !== undefined ? { transformationSignature: sha256Digest(canonicalizeJson(stripUndefined(input.transformation))) } : {}),
+      ...(transformationSignature ? { transformationSignature } : {}),
     };
+    const registered = await this.custody?.lookup(handle.artifactId);
+    if (registered) {
+      assertSameArtifact({ ...handle, createdAt: registered.createdAt }, registered);
+      handle = registered;
+    }
     await mkdir(join(this.rootDir, "artifacts"), { recursive: true });
-    await writeFile(join(this.rootDir, handle.objectKey), input.bytes);
-    await writeFile(join(this.rootDir, `${handle.objectKey}.handle.json`), JSON.stringify(handle, null, 2));
-    return handle;
+    const objectPath = join(this.rootDir, handle.objectKey);
+    validateStoredArtifact(this.tenantId, handle, await writeArtifactFileOnce(objectPath, input.bytes));
+    if (this.custody) {
+      for (const parentId of handle.parentArtifactIds) {
+        const parent = await this.handleById(parentId);
+        if (!parent) throw new Error(`ARTIFACT_PARENT_NOT_FOUND:${parentId}`);
+        await this.persist(parent);
+      }
+      const winner = await this.custody.register(handle, input.bytes);
+      assertSameArtifact({ ...handle, createdAt: winner.createdAt }, winner);
+      handle = winner;
+    }
+    const stored = validateStoredArtifact(this.tenantId, JSON.parse(decoder.decode(await writeArtifactFileOnce(handlePath, encoder.encode(JSON.stringify(handle))))), input.bytes);
+    assertSameArtifact({ ...handle, createdAt: stored.createdAt }, stored);
+    if (!this.custody) return stored;
+    assertSameArtifact(handle, stored);
+    return stored;
   }
 
   async putJson(value: unknown, input: Omit<RegisterArtifactInput, "bytes">): Promise<{ handle: VerificationArtifactHandle; bytes: Uint8Array }> {
@@ -127,35 +215,53 @@ export class FilesystemStore {
     return { handle: await this.put({ ...input, bytes }), bytes };
   }
 
+  /** Any handle over these bytes: the parentless one when it exists, else the first lineaged one. */
   async handleByDigest(digest: `sha256:${string}`): Promise<VerificationArtifactHandle | undefined> {
-    const path = join(this.rootDir, "artifacts", `${digest.slice("sha256:".length)}.handle.json`);
-    if (!existsSync(path)) return undefined;
-    return JSON.parse(await readFile(path, "utf8")) as VerificationArtifactHandle;
+    const hex = digest.slice("sha256:".length);
+    const plain = this.handlePath(hex);
+    if (existsSync(plain)) return JSON.parse(await readFile(plain, "utf8")) as VerificationArtifactHandle;
+    const dir = join(this.rootDir, "artifacts");
+    if (!existsSync(dir)) return undefined;
+    const lineaged = (await readdir(dir)).filter((name) => name.startsWith(`${hex}.`) && name.endsWith(".handle.json")).sort();
+    if (lineaged.length === 0) return undefined;
+    return JSON.parse(await readFile(join(dir, lineaged[0]!), "utf8")) as VerificationArtifactHandle;
   }
 
   async handleById(artifactId: string): Promise<VerificationArtifactHandle | undefined> {
     const dir = join(this.rootDir, "artifacts");
-    if (!existsSync(dir)) return undefined;
-    for (const name of await readdir(dir)) {
+    for (const name of existsSync(dir) ? await readdir(dir) : []) {
       if (!name.endsWith(".handle.json")) continue;
-      const handle = JSON.parse(await readFile(join(dir, name), "utf8")) as VerificationArtifactHandle;
+      const handle = validateStoredArtifact(this.tenantId, JSON.parse(await readFile(join(dir, name), "utf8")));
       if (handle.artifactId === artifactId) return handle;
+    }
+    const remote = await this.custody?.resolve(artifactId);
+    if (remote) {
+      if (remote.handle.artifactId !== artifactId) throw new Error("ARTIFACT_CUSTODY_IDENTITY_MISMATCH");
+      return this.materialize(remote.handle, remote.bytes);
     }
     return undefined;
   }
 
   async resolveHandle(ref: { artifactId?: string; digest?: string }): Promise<VerificationArtifactHandle> {
-    const handle = ref.digest
-      ? await this.handleByDigest(ref.digest as `sha256:${string}`)
-      : ref.artifactId
-        ? await this.handleById(ref.artifactId)
+    const handle = ref.artifactId
+      ? await this.handleById(ref.artifactId)
+      : ref.digest
+        ? await this.handleByDigest(ref.digest as `sha256:${string}`)
         : undefined;
     if (!handle) throw new Error(`ARTIFACT_NOT_FOUND:${ref.artifactId ?? ref.digest ?? "?"}`);
+    if (ref.digest && handle.digest !== ref.digest) throw new Error("ARTIFACT_REFERENCE_DIGEST_MISMATCH");
     return handle;
   }
 
   async bytes(handle: VerificationArtifactHandle): Promise<Uint8Array> {
-    const raw = new Uint8Array(await readFile(join(this.rootDir, handle.objectKey)));
+    validateStoredArtifact(this.tenantId, handle);
+    if (!existsSync(join(this.rootDir, handle.objectKey)) && this.custody) {
+      const remote = await this.custody.resolve(handle.artifactId);
+      if (!remote) throw new Error(`ARTIFACT_NOT_FOUND:${handle.artifactId}`);
+      assertSameArtifact(handle, remote.handle);
+      await this.materialize(remote.handle, remote.bytes);
+    }
+    const raw = await readArtifactFile(join(this.rootDir, handle.objectKey));
     if (sha256Digest(raw) !== handle.digest) throw new Error(`ARTIFACT_DIGEST_MISMATCH:${handle.artifactId}`);
     if (raw.byteLength !== handle.byteLength) throw new Error(`ARTIFACT_LENGTH_MISMATCH:${handle.artifactId}`);
     return raw;

@@ -48,11 +48,13 @@ export class PostgresGovernedIndexRepository implements GovernedIndexRepository 
 
   async persistProjectionProposal(tenantId:string,input:GovernedProjectionProposalInput):Promise<GovernedProjectionProposal>{
     return this.database.transaction(tenantId,async(client)=>{
-      const rows=(await client.query<Row>(`select c.*,cs.representation_id,r.content_sha256 representation_sha256
+      const rows=(await client.query<Row>(`select c.*,cs.representation_id,r.content_sha256 representation_sha256,
+        retrieval.validate_chunk_projection_target(c.tenant_id,c.id) eligible
         from retrieval.retrieval_chunk c join retrieval.chunk_set cs on cs.tenant_id=c.tenant_id and cs.id=c.chunk_set_id
         join content.document_representation r on r.tenant_id=cs.tenant_id and r.id=cs.representation_id
         where c.tenant_id=$1 and c.chunk_set_id=$2 order by c.ordinal,c.id`,[tenantId,input.chunkSetId])).rows;
       if(!rows.length)throw new Error("PROJECTION_CHUNKS_NOT_FOUND");
+      if(rows.some((row)=>row.eligible!==true))throw new Error("PROJECTION_CHUNK_INELIGIBLE");
       const representationId=String(rows[0]!.representation_id);
       if(rows.some((row)=>String(row.representation_id)!==representationId))throw new Error("PROJECTION_REPRESENTATION_MISMATCH");
       const decision=(await client.query<Row>(`select * from content.representation_decision where tenant_id=$1 and id=$2
@@ -69,8 +71,8 @@ export class PostgresGovernedIndexRepository implements GovernedIndexRepository 
         const chunkId=String(row.id),targetId=deterministicUuid("projection-target",`${tenantId}:${chunkId}`);
         const projectionId=deterministicUuid("search-projection",`${targetId}:${input.projectionProcedureId}:${input.purpose}:${embeddingDigest}`);
         await client.query(`insert into retrieval.projection_target
-          (id,tenant_id,target_kind,schema_version,canonical_table,canonical_record_id,eligibility_validator)
-          values($1,$2,'retrieval_chunk',1,'retrieval.retrieval_chunk',$3,'retrieval.validate_chunk_projection_target(uuid,uuid)') on conflict(id) do nothing`,[targetId,tenantId,chunkId]);
+          (id,tenant_id,target_kind,chunk_id)
+          values($1,$2,'chunk',$3) on conflict(id) do nothing`,[targetId,tenantId,chunkId]);
         await client.query(`insert into retrieval.search_projection
           (id,tenant_id,projection_target_id,projection_procedure_id,purpose,source_text,contextual_prefix,embedding_text,
            source_text_sha256,contextual_prefix_sha256,embedding_text_sha256,support_manifest,language,content_kind,visibility,classification,promotion_state,generator_identity,prompt_schema_version)
@@ -81,8 +83,8 @@ export class PostgresGovernedIndexRepository implements GovernedIndexRepository 
         await client.query(`insert into retrieval.search_projection_chunk_support
           (tenant_id,search_projection_id,ordinal,chunk_id,support_kind,selected_text_sha256)
           values($1,$2,0,$3,'faithful_source',$4) on conflict(tenant_id,search_projection_id,ordinal) do nothing`,[tenantId,projectionId,chunkId,sourceDigest.slice(7)]);
-        const stored=(await client.query<Row>(`select p.*,s.chunk_id,s.support_kind,s.selected_text_sha256,t.target_kind,t.schema_version,
-          t.canonical_table::text canonical_table_name,t.canonical_record_id,t.eligibility_validator::text validator_name
+        const stored=(await client.query<Row>(`select p.*,s.chunk_id,s.support_kind,s.selected_text_sha256,t.target_kind,
+          t.chunk_id target_chunk_id,t.retired_at target_retired_at
           from retrieval.search_projection p
           join retrieval.search_projection_chunk_support s on s.tenant_id=p.tenant_id and s.search_projection_id=p.id and s.ordinal=0
           join retrieval.projection_target t on t.tenant_id=p.tenant_id and t.id=p.projection_target_id
@@ -93,8 +95,7 @@ export class PostgresGovernedIndexRepository implements GovernedIndexRepository 
           ||String(stored.contextual_prefix_sha256)!==sha256Digest(input.contextualPrefix).slice(7)||String(stored.embedding_text_sha256)!==embeddingDigest.slice(7)
           ||String(stored.content_kind)!=="retrieval_chunk"||String(stored.visibility)!==input.visibility||String(stored.classification)!==input.classification
           ||String(stored.promotion_state)!=="candidate"||String(stored.generator_identity)!==input.proposedBy||String(stored.prompt_schema_version)!=="knowledge.projection/v1"
-          ||String(stored.target_kind)!=="retrieval_chunk"||Number(stored.schema_version)!==1||String(stored.canonical_table_name)!=="retrieval.retrieval_chunk"
-          ||String(stored.canonical_record_id)!==chunkId||!String(stored.validator_name).startsWith("retrieval.validate_chunk_projection_target")
+          ||String(stored.target_kind)!=="chunk"||String(stored.target_chunk_id)!==chunkId||stored.target_retired_at!==null
           ||String(stored.chunk_id)!==chunkId||String(stored.support_kind)!=="faithful_source"
           ||String(stored.selected_text_sha256)!==sourceDigest.slice(7))throw new Error("SEARCH_PROJECTION_REPLAY_CONFLICT");
         projections.push({projectionId,targetId,chunkId,sourceDigest:sourceDigest.slice(7),embeddingDigest:embeddingDigest.slice(7)});
@@ -159,7 +160,8 @@ export class PostgresGovernedIndexRepository implements GovernedIndexRepository 
         join retrieval.search_projection_chunk_support s on s.tenant_id=p.tenant_id and s.search_projection_id=p.id and s.ordinal=0
         join retrieval.projection_target t on t.tenant_id=p.tenant_id and t.id=p.projection_target_id
         where p.tenant_id=$1 and p.id=any($2::uuid[]) and p.projection_procedure_id=$3
-          and t.target_kind='retrieval_chunk' and retrieval.validate_chunk_projection_target(p.tenant_id,t.canonical_record_id)
+          and t.target_kind='chunk' and t.chunk_id=s.chunk_id and t.retired_at is null
+          and retrieval.validate_chunk_projection_target(p.tenant_id,t.chunk_id)
         order by p.id`,[tenantId,projectionIds,version.projection_procedure_id])).rows;
       if(projections.length!==projectionIds.length)throw new Error("EMBEDDING_PROJECTION_INELIGIBLE");
       const byId=new Map(projections.map((row)=>[String(row.id),row]));

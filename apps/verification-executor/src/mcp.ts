@@ -1,11 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
 import { z } from "zod";
 import type { VerificationExecutor } from "./executor.js";
 import { ClaimsIntentSchema, ExtractionIntentSchema, ReportIntentSchema, PolicyDefinitionInputSchema } from "./intents.js";
+import type { KnowledgeServices } from "./knowledge/context.js";
+import { knowledgeOperations } from "./knowledge/operations.js";
 
 /**
  * One MCP tool per executor step. Every tool is stateless from the client's
  * point of view; chain state lives in the filesystem store under `runId`.
+ * When knowledge services are configured, the `schema_*` / `db_*` / `ingest_*` /
+ * `artifact_get` tools are generated from the same operation registry as the CLI and HTTP routes.
  */
 
 const runId = z.string().min(1).max(200).describe("Agent-chosen run id. Every mutation is logged as a step receipt under this id.");
@@ -17,16 +22,34 @@ function ok(value: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
 }
 
-function error(err: unknown): ToolResult {
+/** Knowledge errors keep `code` and `exit` so remote CLIs reproduce the exit lattice. */
+export function errorEnvelope(err: unknown): Record<string, unknown> {
+  if (isKnowledgeError(err)) return err.toJSON();
   const message = err instanceof Error ? err.message : String(err);
   const issues = typeof err === "object" && err && "issues" in err ? (err as { issues: unknown }).issues : undefined;
-  return { content: [{ type: "text", text: JSON.stringify({ error: message, ...(issues ? { issues } : {}) }, null, 2) }], isError: true };
+  return { error: message, ...(issues ? { issues, code: "INPUT_INVALID", exit: 1 } : {}) };
+}
+
+function error(err: unknown): ToolResult {
+  return { content: [{ type: "text", text: JSON.stringify(errorEnvelope(err), null, 2) }], isError: true };
 }
 
 const guard = <T>(fn: () => Promise<T>) => fn().then(ok).catch(error);
 
-export function createVerificationMcpServer(executor: VerificationExecutor): McpServer {
+export function registerKnowledgeTools(server: McpServer, services: KnowledgeServices): void {
+  for (const operation of knowledgeOperations.list()) {
+    server.registerTool(operation.name, { title: operation.title, description: operation.description, inputSchema: operation.input }, async (input) =>
+      guard(async () => {
+        const { output } = await knowledgeOperations.invoke(operation.name, input, services);
+        const gate = operation.gate?.(output);
+        return gate ? { ...(output as Record<string, unknown>), qualityGate: { passed: false, reason: gate } } : output;
+      }));
+  }
+}
+
+export function createVerificationMcpServer(executor: VerificationExecutor, knowledge?: KnowledgeServices): McpServer {
   const server = new McpServer({ name: "knowledge-verification-executor", version: "0.1.0" });
+  if (knowledge) registerKnowledgeTools(server, knowledge);
 
   server.registerTool(
     "verify_capture_source",

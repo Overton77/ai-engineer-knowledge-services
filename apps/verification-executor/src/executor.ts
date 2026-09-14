@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { beginExecutorStateMutation } from "./checkpoint-state-fence.js";
 import type {
   Assertion,
   DeterministicVerificationResult,
@@ -23,6 +24,7 @@ import {
   gatewaySemanticOutputSchemaDigest,
   gatewaySemanticPromptDigest,
   inspectAuditBundle,
+  isLiteralExtractionAssertion,
   sealAuditBundle,
   sha256Digest,
   verificationManifestDigest,
@@ -138,6 +140,7 @@ export class VerificationExecutor {
   // ---- step receipts -----------------------------------------------------------
 
   private async step<T>(runId: string | undefined, operation: string, input: unknown, fn: () => Promise<T>, summarize: (output: T) => unknown = (output) => output): Promise<T> {
+    const releaseState = beginExecutorStateMutation(this.store, runId);
     const startedAt = new Date().toISOString();
     try {
       const output = await fn();
@@ -147,6 +150,8 @@ export class VerificationExecutor {
       const message = error instanceof Error ? error.message : String(error);
       if (runId) await this.store.appendStep({ runId, operation, startedAt, completedAt: new Date().toISOString(), status: "failed", input, output: null, error: message });
       throw error;
+    } finally {
+      releaseState();
     }
   }
 
@@ -574,6 +579,7 @@ export class VerificationExecutor {
           const knownVectors = items.length > 0 && items.every((item) => Object.values(item.vector).every((value) => value !== "unknown"));
           return {
             assertionId: assertion.assertionId,
+            ...(isLiteralExtractionAssertion(assertion) ? { literalExtraction: true as const } : {}),
             riskClass: assertion.riskClass,
             downstreamUse: [...assertion.downstreamUse],
             claimScope: claimScope(assertion.claimType),
