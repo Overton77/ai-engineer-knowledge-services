@@ -571,6 +571,91 @@ describe("production activity handlers", () => {
     expect(durable.repository.persistCapture).not.toHaveBeenCalled();
   });
 
+  it("accepts an attested local upload target and still seals one artifact", async () => {
+    const artifacts = new InMemoryArtifactStore();
+    const durable = preparationFixture();
+    const acquisition = new FixtureAcquisitionAdapter("manual-upload", "upload", artifacts, {
+      normalizedTarget: "upload:notes",
+      mediaType: "text/plain",
+      bytes: new TextEncoder().encode("operator file"),
+      observations: { origin: "operator" },
+      identifiers: ["upload:notes"],
+    });
+    const registry = createProductionActivityRegistry({
+      ...productionDependencies(),
+      durablePreparation: {
+        ...durable,
+        acquisition,
+        sourceStorageBucket: "source-captures",
+        derivativeStorageBucket: "content-derivatives",
+      },
+    });
+    const captureInput = {
+      schemaVersion: "knowledge.capture/v1",
+      source: {
+        sourceClass: "other",
+        canonicalUrl: "file://operator/notes.txt",
+        publisher: "Operator",
+        sensitivity: "public",
+      },
+      request: {
+        purpose: "prepare a local fixture",
+        target: { kind: "upload", uploadId: "notes", declaredOrigin: "operator" },
+        expectedSourceClass: "other",
+        preferredMediaTypes: ["text/plain"],
+        egressProfile: "public-web-v1",
+        maximumBytes: 100_000,
+        renderingPolicy: "none",
+        interactionPolicy: "none",
+        classification: "public",
+        expectedOutputs: ["source_capture"],
+      },
+    };
+    const captureRun = invocation("capture", "acquire", captureInput);
+    await expect(registry.execute(captureRun.operation, captureRun.claim)).resolves.toMatchObject({
+      schemaVersion: "knowledge.capture-result/v1",
+      verification: { accepted: true },
+    });
+    expect(durable.repository.persistCapture).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an HTTP capture whose canonical URL does not match the target", async () => {
+    const durable = preparationFixture();
+    const registry = createProductionActivityRegistry({
+      ...productionDependencies(),
+      durablePreparation: {
+        ...durable,
+        sourceStorageBucket: "source-captures",
+        derivativeStorageBucket: "content-derivatives",
+      },
+    });
+    const run = invocation("capture", "acquire", {
+      schemaVersion: "knowledge.capture/v1",
+      source: {
+        sourceClass: "web_page",
+        canonicalUrl: "https://example.com/other",
+        sensitivity: "public",
+      },
+      request: {
+        purpose: "prepare",
+        target: { kind: "http", url: "https://example.com/durable-agents" },
+        expectedSourceClass: "web_page",
+        preferredMediaTypes: ["text/markdown"],
+        egressProfile: "public-web-v1",
+        maximumBytes: 1000,
+        renderingPolicy: "none",
+        interactionPolicy: "none",
+        classification: "public",
+        expectedOutputs: ["source_capture"],
+      },
+    });
+    await expect(registry.execute(run.operation, run.claim)).rejects.toMatchObject({
+      code: "INVALID_ACTIVITY_INPUT",
+      retryable: false,
+    });
+    expect(durable.repository.persistCapture).not.toHaveBeenCalled();
+  });
+
   it("performs deterministic source vetting without publishing or embedding", async () => {
     const dependencies = productionDependencies();
     const registry = createProductionActivityRegistry(dependencies);

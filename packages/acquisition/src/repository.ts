@@ -10,7 +10,7 @@ import type {
   RepositoryManifest,
   SupportDecision,
 } from "./types.js";
-import type { RepositoryAcquisitionAdapter as RepositoryAdapterContract } from "./fakes.js";
+import type { RepositoryAcquisitionAdapter as RepositoryAdapterContract } from "./types.js";
 
 export interface RepositoryArchiveEntry {
   path: string;

@@ -5,7 +5,12 @@ import {
 } from "@aiengineer/knowledge-application";
 import { lookup as resolveAcquisitionHost } from "node:dns/promises";
 import { pathToFileURL } from "node:url";
-import { ExactHttpAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
+import {
+  BoundedManualUploadAdapter,
+  ExactHttpAcquisitionAdapter,
+  FilesystemManualUploadSource,
+  RoutedAcquisitionAdapter,
+} from "@aiengineer/knowledge-acquisition";
 import {
   createIntegrationService,
   createKnowledgeApplication,
@@ -366,7 +371,7 @@ export async function startWorker(
     const allowedHosts = environment.ACQUISITION_ALLOWED_HOSTS?.split(",")
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean);
-    const acquisition = new ExactHttpAcquisitionAdapter(sourceArtifacts, {
+    const httpAcquisition = new ExactHttpAcquisitionAdapter(sourceArtifacts, {
       allowedProtocols: [
         "https:",
         ...(environment.ALLOW_INSECURE_HTTP_ACQUISITION === "1"
@@ -395,6 +400,22 @@ export async function startWorker(
       ),
       ...(allowedHosts?.length ? { allowedHosts } : {}),
     });
+    const uploadRoot = environment.ACQUISITION_UPLOAD_ROOT?.trim();
+    const acquisition = new RoutedAcquisitionAdapter([
+      httpAcquisition,
+      ...(uploadRoot
+        ? [
+            new BoundedManualUploadAdapter(
+              sourceArtifacts,
+              new FilesystemManualUploadSource(uploadRoot),
+              {
+                maximumBytes: maximumArtifactBytes,
+                maximumPathLength: 240,
+              },
+            ),
+          ]
+        : []),
+    ]);
     const conversionProviders: DocumentConversionProvider[] = [
       new DeterministicTextConversionProvider(preparationArtifacts),
       new DoclingServeProvider(

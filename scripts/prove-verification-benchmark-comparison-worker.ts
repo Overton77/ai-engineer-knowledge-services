@@ -133,9 +133,9 @@ try {
   const sourcePaths = [
     "apps/worker/src/verification-benchmark-comparison-activity.ts",
     "apps/worker/src/verification-benchmark-comparison-runtime.ts",
-    "packages/application/src/verification-benchmark-comparison.ts",
-    "packages/application/src/verification-benchmark-comparison-publication.ts",
-    "packages/application/src/verification-benchmark-comparison-runtime-config.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison-publication.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison-runtime-config.ts",
     "packages/persistence/src/verification-benchmark-comparison.ts",
     "apps/api/src/server.ts",
     "packages/client-typescript/src/client.ts",

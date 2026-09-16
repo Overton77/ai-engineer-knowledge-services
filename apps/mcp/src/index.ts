@@ -15,9 +15,15 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   assertOperationKindAdmitted,
   productionWorkerOperationKinds,
+  VerificationOperationApplicationService,
   type KnowledgeOperationPort,
+  type ResolveVerificationContext,
 } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
+import {
+  createVerificationHostRuntime,
+  type VerificationHostAdmission,
+} from "@aiengineer/knowledge-persistence";
 import {
   actorsMatch,
   createLocalIdentityResolver,
@@ -62,11 +68,34 @@ const McpToolArgumentsSchema = z.object({
 });
 type McpToolArguments = z.infer<typeof McpToolArgumentsSchema>;
 
+const verificationToolUseCases = {
+  knowledge_extract_structured_data: "extractStructuredData",
+  knowledge_compare_benchmark_runs: "compareBenchmarkRuns",
+  knowledge_run_benchmark: "runBenchmark",
+  knowledge_verify_claims: "verifyClaims",
+  knowledge_verify_report: "verifyReport",
+  knowledge_verify_metric: "verifyMetricObservation",
+  knowledge_capture_source: "captureSource",
+  knowledge_parse_artifact: "parseArtifact",
+  knowledge_verify_extraction: "verifyExtraction",
+  knowledge_request_adjudication: "requestAdjudication",
+  knowledge_record_adjudication_decision: "recordAdjudicationDecision",
+  knowledge_inspect_audit_bundle: "inspectAuditBundle",
+  knowledge_replay_run: "replayRun",
+} as const;
+
 export interface KnowledgeMcpServerOptions {
   readonly operationService: KnowledgeOperationPort;
   /** Public API origin used by accepted-operation links, never the MCP origin. */
   readonly apiOrigin: string;
   readonly identity: LocalApiIdentity;
+  readonly verificationOperations?: VerificationOperationApplicationService;
+  readonly resolveVerificationContext?: ResolveVerificationContext;
+  readonly verificationAdmission?: VerificationHostAdmission;
+  readonly incomingRequest?: {
+    readonly headers: Record<string, unknown>;
+    readonly body: unknown;
+  };
   readonly apiClient?: Pick<
     KnowledgeClient,
     | "applyProviderReconciliation"
@@ -172,6 +201,126 @@ const verificationToolSchemas = {
   }),
 } as const;
 
+type VerificationMcpToolName = (typeof VERIFICATION_MCP_TOOL_NAMES)[number];
+type VerificationAdmissionResult = "ok" | "CAPABILITY_NOT_ADMITTED" | "FORBIDDEN";
+type VerificationAdmissionGate = (
+  tenantId: string,
+  request: never,
+) => boolean | Promise<boolean>;
+
+const VERIFICATION_MCP_ADMISSION_GATES: {
+  readonly [Name in VerificationMcpToolName]?: (
+    admission: VerificationHostAdmission,
+  ) => VerificationAdmissionGate | undefined;
+} = {
+  knowledge_parse_artifact: (admission) => admission.isParseArtifactRequestAdmitted,
+  knowledge_extract_structured_data: (admission) =>
+    admission.isStructuredExtractionRequestAdmitted,
+  knowledge_run_benchmark: (admission) => admission.isBenchmarkRequestAdmitted,
+  knowledge_compare_benchmark_runs: (admission) =>
+    admission.isBenchmarkComparisonRequestAdmitted,
+  knowledge_verify_claims: (admission) => admission.isClaimsRequestAdmitted,
+  knowledge_verify_report: (admission) => admission.isClaimsRequestAdmitted,
+  knowledge_inspect_audit_bundle: (admission) =>
+    admission.isAuditInspectionRequestAdmitted,
+  knowledge_request_adjudication: (admission) =>
+    admission.isAdjudicationRequestAdmitted,
+};
+
+const VERIFICATION_IN_PROCESS_SUBMIT: {
+  readonly [Name in VerificationMcpToolName]: (
+    operations: VerificationOperationApplicationService,
+    request: unknown,
+    context: OperationContext,
+  ) => unknown;
+} = {
+  knowledge_extract_structured_data: (operations, request, context) =>
+    operations.submitExtractStructuredData(request, context),
+  knowledge_compare_benchmark_runs: (operations, request, context) =>
+    operations.submitCompareBenchmarkRuns(request, context),
+  knowledge_run_benchmark: (operations, request, context) =>
+    operations.submitRunBenchmark(request, context),
+  knowledge_verify_claims: (operations, request, context) =>
+    operations.submitVerifyClaims(request, context),
+  knowledge_verify_report: (operations, request, context) =>
+    operations.submitVerifyReport(request, context),
+  knowledge_verify_metric: (operations, request, context) =>
+    operations.submitVerifyMetricObservation(request, context),
+  knowledge_capture_source: (operations, request, context) =>
+    operations.submitCaptureSource(request, context),
+  knowledge_parse_artifact: (operations, request, context) =>
+    operations.submitParseArtifact(request, context),
+  knowledge_verify_extraction: (operations, request, context) =>
+    operations.submitVerifyExtraction(request, context),
+  knowledge_request_adjudication: (operations, request, context) =>
+    operations.submitRequestAdjudication(request, context),
+  knowledge_record_adjudication_decision: (operations, request, context) =>
+    operations.submitRecordAdjudicationDecision(request, context),
+  knowledge_inspect_audit_bundle: (operations, request, context) =>
+    operations.submitInspectAuditBundle(request, context),
+  knowledge_replay_run: (operations, request, context) =>
+    operations.submitReplayRun(request, context),
+};
+
+async function admitVerificationMcpRequest(input: {
+  readonly name: VerificationMcpToolName;
+  readonly tenantId: string;
+  readonly request: unknown;
+  readonly admission: VerificationHostAdmission | undefined;
+}): Promise<VerificationAdmissionResult> {
+  const selectGate = VERIFICATION_MCP_ADMISSION_GATES[input.name];
+  if (selectGate === undefined) return "ok";
+  const gate = input.admission ? selectGate(input.admission) : undefined;
+  if (gate === undefined) return "CAPABILITY_NOT_ADMITTED";
+  if (!(await gate(input.tenantId, input.request as never))) return "FORBIDDEN";
+  return "ok";
+}
+
+async function executeVerificationInProcess(input: {
+  readonly name: VerificationMcpToolName;
+  readonly parsed: z.infer<(typeof verificationToolSchemas)[VerificationMcpToolName]>;
+  readonly options: KnowledgeMcpServerOptions;
+}) {
+  const { name, parsed, options } = input;
+  const resolved = await options.resolveVerificationContext!({
+    ...(options.incomingRequest ? { request: options.incomingRequest } : {}),
+    tenantId: parsed.context.tenantId,
+    identity: options.identity,
+    correlationId: parsed.context.correlationId,
+    idempotencyKey: parsed.context.idempotencyKey,
+    useCase: verificationToolUseCases[name],
+    hints: parsed.context,
+  });
+  if (!resolved) return toolError("FORBIDDEN");
+  const admission = await admitVerificationMcpRequest({
+    name,
+    tenantId: resolved.tenantId,
+    request: parsed.request,
+    admission: options.verificationAdmission,
+  });
+  if (admission !== "ok") return toolError(admission);
+  if (name === "knowledge_record_adjudication_decision") {
+    const gate = options.verificationAdmission?.isAdjudicationDecisionAdmitted;
+    if (!gate) return toolError("CAPABILITY_NOT_ADMITTED");
+    if (
+      !(await gate({
+        request: parsed.request as never,
+        context: resolved,
+      }))
+    )
+      return toolError("FORBIDDEN");
+  }
+  const result = await VERIFICATION_IN_PROCESS_SUBMIT[name](
+    options.verificationOperations!,
+    parsed.request,
+    resolved,
+  );
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(result) }],
+    structuredContent: result as unknown as Record<string, unknown>,
+  };
+}
+
 export function createVerificationMcpToolExecutor(
   options: KnowledgeMcpServerOptions,
 ) {
@@ -183,6 +332,13 @@ export function createVerificationMcpToolExecutor(
       context = parsed.context;
     if (!isAuthorized(options.identity, context.tenantId, "operation.submit"))
       return toolError("FORBIDDEN");
+    if (
+      options.verificationOperations &&
+      options.resolveVerificationContext &&
+      (name !== "knowledge_record_adjudication_decision" ||
+        options.verificationAdmission?.isAdjudicationDecisionAdmitted)
+    )
+      return executeVerificationInProcess({ name, parsed, options });
     const client = options.apiClient;
     if (!client) return toolError("CAPABILITY_NOT_ADMITTED");
     const result =
@@ -444,6 +600,9 @@ export interface KnowledgeMcpAppOptions {
   readonly operationService: KnowledgeOperationPort;
   readonly apiOrigin: string;
   readonly resolveIdentity: ResolveApiIdentity;
+  readonly verificationOperations?: VerificationOperationApplicationService;
+  readonly resolveVerificationContext?: ResolveVerificationContext;
+  readonly verificationAdmission?: VerificationHostAdmission;
   readonly createApiClient?: (
     accessToken: string,
   ) => KnowledgeMcpServerOptions["apiClient"];
@@ -515,11 +674,8 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
         ],
         nextCursor: null,
       };
-    else if (name === "retrieval.plan_validate" && client)
-      readResult = await client.validateRetrievalPlan(
-        RetrievalPlanSchema.parse(inputObject.plan ?? inputObject),
-        context,
-      );
+    else if (name === "retrieval.plan_validate")
+      readResult = RetrievalPlanSchema.parse(inputObject.plan ?? inputObject);
     else if (name === "retrieval.search" && client)
       readResult = await client.createRetrievalRun(
         RetrievalPlanSchema.parse(inputObject.plan ?? inputObject),
@@ -544,12 +700,15 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
       readResult = await client.getEvaluationFailures(id, context);
     } else if (
-      (name === "embedding.run_status" || name === "promotion.status") &&
-      client
+      name === "embedding.run_status" ||
+      name === "promotion.status"
     ) {
       const id = uuid("operationId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = await client.getOperation(id, context);
+      const item = await options.operationService.get(id, context.tenantId);
+      if (!item)
+        throw Object.assign(new Error("NOT_FOUND"), { code: "NOT_FOUND" });
+      readResult = item;
     } else if (name === "vector_store.ingestion_status" && client) {
       const storeId = uuid("vectorStoreId"),
         operationId = uuid("operationId");
@@ -568,15 +727,12 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
     if (
       ["embedding.model_list", "embedding.estimate"].includes(name) ||
       [
-        "retrieval.plan_validate",
         "retrieval.search",
         "retrieval.explain_run",
         "retrieval.read_run",
         "retrieval.read_evidence_packet",
         "retrieval.replay_citations",
         "evaluation.inspect_failures",
-        "embedding.run_status",
-        "promotion.status",
         "vector_store.ingestion_status",
       ].includes(name)
     )
@@ -618,11 +774,12 @@ export function createVerificationOperationReadMcpExecutor(
       verificationOperationReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getVerificationOperation(
+    const result = await options.operationService.get(
       operationId,
-      context,
+      context.tenantId,
     );
+    if (!result)
+      throw Object.assign(new Error("NOT_FOUND"), { code: "NOT_FOUND" });
     return {
       content: [{ type: "text" as const, text: JSON.stringify(result) }],
       structuredContent: result as unknown as Record<string, unknown>,
@@ -916,6 +1073,19 @@ export function buildKnowledgeMcpApp(
       operationService: options.operationService,
       apiOrigin: options.apiOrigin,
       identity,
+      incomingRequest: {
+        headers: request.headers as Record<string, unknown>,
+        body: request.body,
+      },
+      ...(options.verificationOperations
+        ? { verificationOperations: options.verificationOperations }
+        : {}),
+      ...(options.resolveVerificationContext
+        ? { resolveVerificationContext: options.resolveVerificationContext }
+        : {}),
+      ...(options.verificationAdmission
+        ? { verificationAdmission: options.verificationAdmission }
+        : {}),
       apiClient: options.createApiClient?.(token!),
     });
     const transport = new StreamableHTTPServerTransport({
@@ -954,6 +1124,37 @@ export function apiPublicOrigin(
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
+function composeMcpVerificationHost(input: {
+  readonly database: PostgresCanonicalRepository;
+  readonly environment: Environment;
+  readonly production: boolean;
+  readonly apiOrigin: string;
+}): Pick<
+  KnowledgeMcpAppOptions,
+  | "verificationOperations"
+  | "resolveVerificationContext"
+  | "verificationAdmission"
+> {
+  const host = createVerificationHostRuntime(input.database, input.environment, {
+    production: input.production,
+  });
+  return {
+    ...(host.verificationOperationService
+      ? {
+          verificationOperations: new VerificationOperationApplicationService(
+            host.verificationOperationService,
+            input.apiOrigin,
+            host.verificationCaptureCatalog,
+          ),
+        }
+      : {}),
+    ...(host.resolveVerificationContext
+      ? { resolveVerificationContext: host.resolveVerificationContext }
+      : {}),
+    verificationAdmission: host,
+  };
+}
+
 export async function createMcpRuntime(environment: Environment = process.env) {
   const config = loadServerConfig({
     ...environment,
@@ -965,21 +1166,25 @@ export async function createMcpRuntime(environment: Environment = process.env) {
     connectionString,
     ...(environment.CANONICAL_LOCAL_ONLY === "1" ? { localOnly: true } : {}),
   });
+  const apiOrigin = apiPublicOrigin(
+    environment.KNOWLEDGE_API_URL,
+    config.NODE_ENV === "production",
+  );
   const app = buildKnowledgeMcpApp({
     operationService: new PostgresKnowledgeOperationService(database),
-    apiOrigin: apiPublicOrigin(
-      environment.KNOWLEDGE_API_URL,
-      config.NODE_ENV === "production",
-    ),
+    apiOrigin,
     resolveIdentity: createLocalIdentityResolver(
       environment.KNOWLEDGE_API_IDENTITIES,
     ),
+    ...composeMcpVerificationHost({
+      database,
+      environment,
+      production: config.NODE_ENV === "production",
+      apiOrigin,
+    }),
     createApiClient: (accessToken) =>
       new KnowledgeClient({
-        baseUrl: apiPublicOrigin(
-          environment.KNOWLEDGE_API_URL,
-          config.NODE_ENV === "production",
-        ),
+        baseUrl: apiOrigin,
         getAccessToken: () => accessToken,
       }),
   });

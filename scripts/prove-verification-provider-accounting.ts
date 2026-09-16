@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
 import { SupabaseArtifactStore } from "../packages/runtime/src/artifacts.js";
-import { VerificationProviderArtifactComposer } from "../packages/application/src/verification-provider.js";
+import { VerificationProviderArtifactComposer } from "../packages/application/src/verification/operations/verification-provider.js";
 import { canonicalizeJson, sha256Digest } from "../packages/verification/src/index.js";
 
 const connectionString = process.env.POSTGRES_URL;

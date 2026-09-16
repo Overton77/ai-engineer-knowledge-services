@@ -16,3 +16,12 @@ export interface AcquisitionAdapter { readonly adapterKey: string; readonly vers
 export interface RepositoryManifest { host: string; owner: string; repository: string; commitSha: string; archiveDigest: string; submodulePolicy: string; sparsePaths: readonly string[]; lfsObjects: readonly string[]; licenseFiles: readonly string[]; lockfiles: readonly string[]; excludedPaths: readonly string[]; languages: Readonly<Record<string, number>>; sourcePaths: readonly string[]; secretLikeFindings?: readonly { path: string; kind: string }[] }
 export interface PaperResolution { identifierKind: "doi" | "arxiv" | "openreview"; identifier: string; title: string; authors: readonly string[]; revision: string; publicationState: string; correctionState: string; representations: readonly { mediaType: string; url: string }[] }
 export interface ManualUploadAttestation { uploadId: string; origin: string; method: string; acquiredAt: string; accessAndRightsContext: string; automaticFailureReason: string }
+export interface RepositoryAcquisitionAdapter extends AcquisitionAdapter {
+  inspectManifest(plan: AdmittedAcquisitionPlan): Promise<RepositoryManifest>;
+}
+export interface PaperAcquisitionAdapter extends AcquisitionAdapter {
+  resolvePaper(request: AcquisitionRequest): Promise<PaperResolution>;
+}
+export interface UploadAcquisitionAdapter extends AcquisitionAdapter {
+  verifyAttestation(attestation: ManualUploadAttestation): Promise<AcquisitionVerification>;
+}

@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import {randomUUID,createHash,generateKeyPairSync} from "node:crypto";
 import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
-import {StructuredExtractionProfileAdmission,type StructuredExtractionRuntimeGrant} from "../packages/application/src/verification-structured-extraction-profile.js";
-import {StructuredExtractionCapturedReplayService} from "../packages/application/src/verification-structured-extraction-replay.js";
-import {StructuredExtractionCandidateBuilder} from "../packages/application/src/verification-structured-extraction-candidate.js";
-import {VerificationAdmissionService} from "../packages/application/src/verification-admission.js";
-import {AccountedVerificationProviderSink,VerificationProviderArtifactComposer} from "../packages/application/src/verification-provider.js";
+import {StructuredExtractionProfileAdmission,type StructuredExtractionRuntimeGrant} from "../packages/application/src/verification/operations/verification-structured-extraction-profile.js";
+import {StructuredExtractionCapturedReplayService} from "../packages/application/src/verification/operations/verification-structured-extraction-replay.js";
+import {StructuredExtractionCandidateBuilder} from "../packages/application/src/verification/operations/verification-structured-extraction-candidate.js";
+import {VerificationAdmissionService} from "../packages/application/src/verification/admission/verification-admission.js";
+import {AccountedVerificationProviderSink,VerificationProviderArtifactComposer} from "../packages/application/src/verification/operations/verification-provider.js";
 import {type TenantSqlClient,PostgresCanonicalRepository,PostgresVerificationRepository,PostgresKnowledgeOperationService} from "../packages/persistence/src/index.js";
 import {PostgresVerificationProviderResponseCaptureStore} from "../packages/persistence/src/verification-provider-response-capture.js";
 import {PostgresVerificationProviderAccounting} from "../packages/persistence/src/verification-provider-accounting.js";
@@ -15,17 +15,17 @@ import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
 import {SandboxedVerificationParser,VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-conversion";
 import {GatewayStructuredExtractionProvider,InterfazeStructuredExtractionProvider} from "@aiengineer/knowledge-verification";
 
-import {StructuredExtractionExecutionArtifactBuilder} from "../packages/application/src/verification-structured-extraction-publication.js";
-import {StructuredExtractionFailureArtifactBuilder} from "../packages/application/src/verification-structured-extraction-failure.js";
+import {StructuredExtractionExecutionArtifactBuilder} from "../packages/application/src/verification/operations/verification-structured-extraction-publication.js";
+import {StructuredExtractionFailureArtifactBuilder} from "../packages/application/src/verification/operations/verification-structured-extraction-failure.js";
 import {PostgresStructuredExtractionExecutionStore} from "../packages/persistence/src/verification-structured-extraction-execution.js";
 import {PostgresStructuredExtractionFailureStore} from "../packages/persistence/src/verification-structured-extraction-failure.js";
 import {StructuredExtractionFailureLifecycleSnapshotSchema,type StructuredExtractionProviderCallSnapshot} from "@aiengineer/knowledge-contracts";
 import {createEd25519Signer,createEd25519Verifier,canonicalizeJson} from "@aiengineer/knowledge-verification";
 
-import {createStructuredExtractionOperationResult} from "../packages/application/src/verification-structured-extraction-result.js";
+import {createStructuredExtractionOperationResult} from "../packages/application/src/verification/operations/verification-structured-extraction-result.js";
 import {digestCanonicalJson} from "@aiengineer/knowledge-verification";
 
-import {createStructuredExtractionFailureOperationResult} from "../packages/application/src/verification-structured-extraction-failure-result.js";
+import {createStructuredExtractionFailureOperationResult} from "../packages/application/src/verification/operations/verification-structured-extraction-failure-result.js";
 import {PostgresStructuredExtractionRecoveryStore} from "../packages/persistence/src/verification-structured-extraction-recovery.js";
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;
 for(const[value,port]of [[pgUrl,"54322"],[storageUrl,"54321"]]){const url=new URL(value!);if(!["localhost","127.0.0.1"].includes(url.hostname)||url.port!==port)throw new Error("LOCAL_ONLY_PROOF_REQUIRED");}
@@ -41,7 +41,7 @@ const signer=createEd25519Signer(keyPair.privateKey.export({type:"pkcs8",format:
 const executionStore=new PostgresStructuredExtractionExecutionStore(database),failureStore=new PostgresStructuredExtractionFailureStore(database,verifier);
 const publicationPort={async register(input:Parameters<ConstructorParameters<typeof StructuredExtractionExecutionArtifactBuilder>[0]["artifacts"]["register"]>[0]|Parameters<ConstructorParameters<typeof StructuredExtractionFailureArtifactBuilder>[1]["artifacts"]["register"]>[0]){return repository.registerContentAddressedArtifact({...input,producerActivityId:"structured-publication-proof",producerVersion:"v1",mediaType:"application/json",encryptionClass:"supabase-managed",retentionClass:"verification-audit",dataClassification:"restricted",bucketClass:"candidate",storageBucket:"ai-engineer-cloud-bucket"});}};
 const executionBuilder=new StructuredExtractionExecutionArtifactBuilder({artifacts:publicationPort,createResolver:()=>repository.createTrustedArtifactResolver()});
-const custodyPaths=["packages/contracts/src/verification/structured-extraction-failure.ts", "packages/application/src/verification-structured-extraction-failure.ts", "packages/application/src/verification-structured-extraction-profile.ts", "packages/application/src/verification-structured-extraction-replay.ts", "packages/application/src/verification-structured-extraction-publication.ts", "packages/persistence/src/verification-structured-extraction-execution.ts", "packages/persistence/src/verification-structured-extraction-failure.ts", "packages/persistence/src/verification-structured-extraction-lifecycle.ts", "../ai-engineer-db-contract/supabase/migrations/20260906032500_verification_structured_extraction_failure.sql", "packages/contracts/src/verification/structured-extraction-failure-result.ts","packages/application/src/verification-structured-extraction-failure-result.ts","packages/persistence/src/postgres.ts","../ai-engineer-db-contract/supabase/migrations/20260906032600_verification_structured_extraction_failure_terminal.sql","packages/persistence/src/verification-structured-extraction-recovery.ts","scripts/prove-verification-structured-extraction-failure-recovery.ts"];
+const custodyPaths=["packages/contracts/src/verification/structured-extraction-failure.ts", "packages/application/src/verification/operations/verification-structured-extraction-failure.ts", "packages/application/src/verification/operations/verification-structured-extraction-profile.ts", "packages/application/src/verification/operations/verification-structured-extraction-replay.ts", "packages/application/src/verification/operations/verification-structured-extraction-publication.ts", "packages/persistence/src/verification-structured-extraction-execution.ts", "packages/persistence/src/verification-structured-extraction-failure.ts", "packages/persistence/src/verification-structured-extraction-lifecycle.ts", "../ai-engineer-db-contract/supabase/migrations/20260906032500_verification_structured_extraction_failure.sql", "packages/contracts/src/verification/structured-extraction-failure-result.ts","packages/application/src/verification/operations/verification-structured-extraction-failure-result.ts","packages/persistence/src/postgres.ts","../ai-engineer-db-contract/supabase/migrations/20260906032600_verification_structured_extraction_failure_terminal.sql","packages/persistence/src/verification-structured-extraction-recovery.ts","scripts/prove-verification-structured-extraction-failure-recovery.ts"];
 const sourceFiles=await Promise.all(custodyPaths.map(async path=>{const bytes=await readFile(path);return {path,sha256:createHash("sha256").update(bytes).digest("hex"),byteLength:bytes.byteLength,bytesBase64:bytes.toString("base64")};}));
 const dirtyStateArtifact=await repository.registerContentAddressedArtifact({tenantId,producerAttemptId:fixture.attemptId,artifactType:"verification_structured_extraction_source_custody",bytes:new TextEncoder().encode(canonicalizeJson({schemaVersion:"verification-structured-extraction-source-custody.v1",tenantId,scope:"listed_files",totalByteLength:sourceFiles.reduce((sum,f)=>sum+f.byteLength,0),files:sourceFiles.map(f=>({...f,path:f.path.startsWith("../ai-engineer-db-contract/")?"DB/"+f.path.slice("../ai-engineer-db-contract/".length):"KS/"+f.path,sha256:`sha256:${f.sha256}`}))})),createdAt:new Date().toISOString(),parentArtifactIds:[],producerActivityId:"structured-publication-proof",producerVersion:"v1",mediaType:"application/json",encryptionClass:"supabase-managed",retentionClass:"verification-audit",dataClassification:"restricted",bucketClass:"candidate",storageBucket:"ai-engineer-cloud-bucket"});
 try{

@@ -48,7 +48,7 @@ The contract enforces distinct bounded entity anchors, unique vector spaces and 
 
 Some plan features may be expressed as optional, but that declaration is explicit. When a requested feature is absent, the service returns a typed `RETRIEVAL_CAPABILITY_UNSUPPORTED` response before calling a provider. If the caller marks that same capability optional, the omission is recorded in the packet instead of silently changing the query.
 
-The current API executor supports the tested world/K/entity scope and rejects required graph expansion, freshness upper bounds, observed-time upper bounds, soft boosts, context, concept anchors, and use-case anchors when they are not implemented. See capability preflight in [`apps/api/src/retrieval-executor.ts`](../apps/api/src/retrieval-executor.ts) and tests in [`apps/api/src/retrieval-executor.test.ts`](../apps/api/src/retrieval-executor.test.ts). This is a local-working-copy observation; configured providers and live endpoint behavior need separate operational proof.
+The current API executor supports the tested world/K/entity scope and rejects required graph expansion, freshness upper bounds, observed-time upper bounds, soft boosts, context, concept anchors, and use-case anchors when they are not implemented. See capability preflight in [`apps/api/src/retrieval-executor.ts`](../apps/api/src/retrieval-executor.ts) and tests in [`apps/api/src/tests/retrieval-executor.test.ts`](../apps/api/src/tests/retrieval-executor.test.ts). This is a local-working-copy observation; configured providers and live endpoint behavior need separate operational proof.
 
 ## From candidate to packet member
 

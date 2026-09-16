@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import {randomUUID,createHash} from "node:crypto";
 import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
-import {StructuredExtractionProfileAdmission,type StructuredExtractionRuntimeGrant} from "../packages/application/src/verification-structured-extraction-profile.js";
-import {StructuredExtractionCapturedReplayService} from "../packages/application/src/verification-structured-extraction-replay.js";
-import {StructuredExtractionCandidateBuilder} from "../packages/application/src/verification-structured-extraction-candidate.js";
-import {VerificationAdmissionService} from "../packages/application/src/verification-admission.js";
-import {AccountedVerificationProviderSink,VerificationProviderArtifactComposer} from "../packages/application/src/verification-provider.js";
+import {StructuredExtractionProfileAdmission,type StructuredExtractionRuntimeGrant} from "../packages/application/src/verification/operations/verification-structured-extraction-profile.js";
+import {StructuredExtractionCapturedReplayService} from "../packages/application/src/verification/operations/verification-structured-extraction-replay.js";
+import {StructuredExtractionCandidateBuilder} from "../packages/application/src/verification/operations/verification-structured-extraction-candidate.js";
+import {VerificationAdmissionService} from "../packages/application/src/verification/admission/verification-admission.js";
+import {AccountedVerificationProviderSink,VerificationProviderArtifactComposer} from "../packages/application/src/verification/operations/verification-provider.js";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresKnowledgeOperationService} from "../packages/persistence/src/index.js";
 import {PostgresVerificationProviderResponseCaptureStore} from "../packages/persistence/src/verification-provider-response-capture.js";
 import {PostgresVerificationProviderAccounting} from "../packages/persistence/src/verification-provider-accounting.js";
@@ -78,7 +78,7 @@ try{
   results.push({providerId:selected.providerId,identity,capture,initialized,retaining,completed,candidate,originalFence:lease.fencingToken,replacementFence:replacement.fencingToken});
  }
  assert.equal(syntheticFetches,2);
- const paths=["packages/persistence/src/verification-structured-extraction-lifecycle.ts","packages/application/src/verification-structured-extraction-candidate.ts","packages/application/src/verification-service.ts","../ai-engineer-db-contract/supabase/migrations/20260906031700_verification_structured_extraction_lifecycle.sql","scripts/prove-verification-structured-extraction-lifecycle.ts"];
+ const paths=["packages/persistence/src/verification-structured-extraction-lifecycle.ts","packages/application/src/verification/operations/verification-structured-extraction-candidate.ts","packages/application/src/verification/operations/verification-service.ts","../ai-engineer-db-contract/supabase/migrations/20260906031700_verification_structured_extraction_lifecycle.sql","scripts/prove-verification-structured-extraction-lifecycle.ts"];
  const sources=await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const output=resolve("../internal",`verification-structured-extraction-lifecycle-${namespace}.json`);await writeFile(output,JSON.stringify({passed:true,scope:"actual local canonical lifecycle/candidate checkpoint with actual adapters and injected synthetic transport; no terminal publication or supplier calls",tenantId,fixture:fixtureName,syntheticFetches,externalProviderRequests:0,checks,results,sources},null,2),{flag:"wx"});console.log(JSON.stringify({passed:true,output,checks:Object.keys(checks).length}));
 }finally{for(const operationId of operations)await database.cancelOperation(tenantId,operationId,{actorIdentity:namespace,correlationId:namespace});await database.close();}

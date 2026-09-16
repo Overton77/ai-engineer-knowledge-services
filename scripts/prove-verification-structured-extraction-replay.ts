@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { StructuredExtractionProfileAdmission, type StructuredExtractionRuntimeGrant } from "../packages/application/src/verification-structured-extraction-profile.js";
-import { StructuredExtractionCapturedReplayService } from "../packages/application/src/verification-structured-extraction-replay.js";
-import { VerificationAdmissionService } from "../packages/application/src/verification-admission.js";
-import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "../packages/application/src/verification-provider.js";
+import { StructuredExtractionProfileAdmission, type StructuredExtractionRuntimeGrant } from "../packages/application/src/verification/operations/verification-structured-extraction-profile.js";
+import { StructuredExtractionCapturedReplayService } from "../packages/application/src/verification/operations/verification-structured-extraction-replay.js";
+import { VerificationAdmissionService } from "../packages/application/src/verification/admission/verification-admission.js";
+import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "../packages/application/src/verification/operations/verification-provider.js";
 import { PostgresVerificationProviderResponseCaptureStore } from "../packages/persistence/src/verification-provider-response-capture.js";
 import { PostgresVerificationProviderAccounting } from "../packages/persistence/src/verification-provider-accounting.js";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
@@ -64,7 +64,7 @@ try{
   }
  }
  assert.equal(initialSyntheticFetches,8);
- const paths=["packages/application/src/verification-structured-extraction-profile.ts","packages/application/src/verification-structured-extraction-replay.ts","packages/application/src/verification-provider-transport.ts","scripts/prove-verification-structured-extraction-replay.ts"];
+ const paths=["packages/application/src/verification/operations/verification-structured-extraction-profile.ts","packages/application/src/verification/operations/verification-structured-extraction-replay.ts","packages/application/src/verification/operations/verification-provider-transport.ts","scripts/prove-verification-structured-extraction-replay.ts"];
  const sources=await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const output=resolve("../internal",`verification-structured-extraction-replay-${namespace}.json`);
  await writeFile(output,JSON.stringify({passed:true,scope:"real registered native projection/profile admission and actual Gateway/Interfaze captured-byte adapter replay; synthetic original transport; no supplier calls",tenantId,fixture:"verification-structured-extraction-preparation-c6085a8a-8c56-4923-a9ed-dd09666d223d.json",initialSyntheticFetches,externalProviderRequests:0,checks,results,sources},null,2),{flag:"wx"});console.log(JSON.stringify({passed:true,output,scenarios:results.length}));

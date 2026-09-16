@@ -232,9 +232,9 @@ try {
     "apps/worker/src/verification-benchmark-comparison-runtime.ts",
     "apps/worker/src/activity-registry.ts",
     "apps/worker/src/canonical-worker.ts",
-    "packages/application/src/verification-benchmark-comparison.ts",
-    "packages/application/src/verification-benchmark-comparison-publication.ts",
-    "packages/application/src/verification-benchmark-comparison-runtime-config.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison-publication.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison-runtime-config.ts",
     "packages/persistence/src/verification-benchmark-comparison.ts",
     "packages/verification/src/provenance/benchmark-comparison-publication.ts",
   ];

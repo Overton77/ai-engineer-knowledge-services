@@ -12,6 +12,15 @@ sources:
   - id: admission-implementation
     resource: ../packages/ingestion/src/evidence-admission.ts
     title: Evidence admission implementation
+  - id: verification-transport
+    resource: ../packages/application/src/verification/operations/verification-transport.ts
+    title: Verification context and admission ports
+  - id: verification-ownership
+    resource: ../packages/application/src/verification/operations/verification-ownership.ts
+    title: Ownership resolver and read authorizer
+  - id: verification-host
+    resource: ../packages/persistence/src/verification-host-runtime.ts
+    title: Shared verification host runtime
 ---
 
 # Verification and admission
@@ -36,9 +45,26 @@ downstream use is admitted.
 | Stage uncertain material for people | `candidate.stage` | A candidate only; no canonical knowledge effect |
 | Deal with changed or failed verification inputs | Durable recovery | A custody-bound recovery case; see [durable execution and recovery](durable-execution-and-recovery.md) |
 
-The transport is not an algorithm authority. Cross-service consumers use the
-published HTTP, CLI, or MCP contract rather than importing verification
-internals. The current operation and use-case catalog is in the authoritative
+The transport is not an algorithm authority. API and MCP compose the same
+application ports:
+[`verification-transport.ts`](../packages/application/src/verification/operations/verification-transport.ts)
+(`ResolveVerificationContext`, catalog/SQL admission factories, static context
+resolver) and
+[`verification-ownership.ts`](../packages/application/src/verification/operations/verification-ownership.ts)
+(ownership resolver and read authorizer). Persistence
+[`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts)
+wires those ports for both servers.
+
+MCP verification mutations, operation/status, and `retrieval.plan_validate`
+call application in-process. MCP does not always proxy HTTP. Remaining
+retrieval-evidence-eval reads, most verification reads, provider
+reconciliation, and record-decision without `isAdjudicationDecisionAdmitted`
+still do. Decision and most read runtimes remain API-local composition; that
+remainder is observed, not an accepted redesign.
+
+Cross-service consumers use the published HTTP, CLI, or MCP contract rather
+than importing verification internals. The current operation and use-case
+catalog is in the authoritative
 [verification module guide](../docs/verification/README.md#operation-kinds-and-use-cases).
 
 ## Ordered verification decision
@@ -133,6 +159,10 @@ human-labelled calibration, citation-completeness, and sealed quality
 benchmark work. It also documents surface deviations from the design
 specification. Read [current acceptance state](../docs/verification/README.md#current-acceptance-state)
 before treating a passing service result as proof of those broader claims.
+
+Most verification and retrieval-evidence-eval read ports are still composed
+only in the API. MCP still HTTP-shims those reads. That is an observed
+remainder, not a claim that MCP is HTTP-only for verification writes.
 
 For recovery, deployment, and operator actions, use the authoritative
 [operator runbook](../docs/verification/OPERATOR-RUNBOOK.md) and

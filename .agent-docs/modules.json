@@ -103,20 +103,26 @@
       "path": "apps/api",
       "kind": "app",
       "state": "implemented",
-      "summary": "Fastify HTTP transport, authentication, resource reads, and verification routes.",
+      "summary": "Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime before read runtimes.",
       "entrypoints": [
         "apps/api/src/index.ts",
-        "apps/api/src/server.ts"
+        "apps/api/src/server.ts",
+        "apps/api/src/verification-ownership.ts"
       ],
       "interface": [
-        "Versioned HTTP endpoints backed by application services."
+        "Versioned HTTP endpoints backed by application services. The shared verification host supplies ownership, admission, and the verification operation port; read, decision, and reconciliation runtimes stay API-local."
       ],
       "tests": [
-        "apps/api/src/server.test.ts",
-        "apps/api/src/verification-routes.test.ts"
+        "apps/api/src/tests/server.test.ts",
+        "apps/api/src/tests/verification-routes.test.ts",
+        "apps/api/src/tests/verification-ownership.test.ts"
       ],
-      "constraints": [],
-      "uses": [],
+      "constraints": [
+        "verification-ownership.ts is a thin Eve persistence adapter re-export of application ports. Do not treat API-local read or decision runtimes as the shared host."
+      ],
+      "uses": [
+        "persistence"
+      ],
       "packageJson": "apps/api/package.json"
     },
     {
@@ -124,18 +130,20 @@
       "path": "apps/cli",
       "kind": "app",
       "state": "implemented",
-      "summary": "Machine-readable knowledge operator/developer commands and selected local demos.",
+      "summary": "Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files.",
       "entrypoints": [
         "apps/cli/src/index.ts",
         "apps/cli/src/commands.ts"
       ],
       "interface": [
-        "knowledge command surface; check command-specific mutation and provider preconditions."
+        "Remote catalog requires API URL and token and dispatches through KnowledgeClient. Local commands stay outside the remote catalog and must not use HTTP."
       ],
       "tests": [
-        "apps/cli/src/commands.test.ts"
+        "apps/cli/src/tests/commands.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "Remote CLI must not import persistence or POSTGRES_URL. Do not fold local or mixed commands into dispatchCliCommand."
+      ],
       "uses": [],
       "packageJson": "apps/cli/package.json"
     },
@@ -144,20 +152,27 @@
       "path": "apps/mcp",
       "kind": "app",
       "state": "implemented",
-      "summary": "Stateless Streamable HTTP MCP tools over knowledge application behavior.",
+      "summary": "In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificationHostRuntime and VerificationOperationApplicationService.",
       "entrypoints": [
         "apps/mcp/src/index.ts",
         "apps/mcp/src/catalog.ts"
       ],
       "interface": [
-        "MCP catalog and tool handlers; not a second business-rule authority."
+        "MCP catalog and tool handlers; not a second business-rule authority. Twelve verification mutations call VerificationOperationApplicationService.submit* after ownership and is*RequestAdmitted. knowledge_get_verification_operation, embedding.run_status, and promotion.status use operationService.get. retrieval.plan_validate is RetrievalPlanSchema.parse. Pipeline catalog writes still use operationService.submit."
       ],
       "tests": [
-        "apps/mcp/src/adjudication-reads.test.ts",
-        "apps/mcp/src/adjudication.test.ts"
+        "apps/mcp/src/tests/index.test.ts",
+        "apps/mcp/src/tests/verification-surface-inventory.test.ts",
+        "apps/mcp/src/tests/adjudication.test.ts",
+        "apps/mcp/src/tests/verification-operation-read.test.ts"
       ],
-      "constraints": [],
-      "uses": [],
+      "constraints": [
+        "Do not add new apiClient methods. New use cases go through application. Remaining HTTP shims: retrieval.search/explain/read_run/evidence packet/citation replay, evaluation.inspect_failures, vector_store.ingestion_status, provider reconciliation apply/get, most verification reads, and record-decision when isAdjudicationDecisionAdmitted is absent."
+      ],
+      "uses": [
+        "application",
+        "persistence"
+      ],
       "packageJson": "apps/mcp/package.json"
     },
     {
@@ -217,16 +232,18 @@
       "path": "packages/acquisition",
       "kind": "package",
       "state": "implemented",
-      "summary": "Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, and paper adapters.",
+      "summary": "HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.",
       "entrypoints": [
         "packages/acquisition/src/index.ts"
       ],
       "interface": [
-        "Acquisition request/result types and source adapters."
+        "Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection."
       ],
       "tests": [
         "packages/acquisition/src/acquisition.test.ts",
-        "packages/acquisition/src/deadline.test.ts"
+        "packages/acquisition/src/deadline.test.ts",
+        "packages/acquisition/src/route.test.ts",
+        "packages/acquisition/src/inspect/inspect.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -237,18 +254,22 @@
       "path": "packages/application",
       "kind": "package",
       "state": "implemented",
-      "summary": "Composes knowledge use cases, capability admission, preparation, and verification surfaces.",
+      "summary": "Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports.",
       "entrypoints": [
-        "packages/application/src/index.ts"
+        "packages/application/src/index.ts",
+        "packages/application/src/verification/operations/verification-transport.ts",
+        "packages/application/src/verification/operations/verification-ownership.ts"
       ],
       "interface": [
-        "Application service facades and use-case functions; transports call these rather than implementing algorithms."
+        "Application service facades and use-case functions; transports call these rather than implementing algorithms. verification-transport.ts owns ResolveVerificationContext, catalog/SQL admission factories, and the static context resolver. verification-ownership.ts owns the ownership resolver and read authorizer as application ports."
       ],
       "tests": [
-        "packages/application/src/a2a-adapter.test.ts",
-        "packages/application/src/capability-admission.test.ts"
+        "packages/application/src/operations/a2a-adapter.test.ts",
+        "packages/application/src/operations/capability-admission.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "Transports compose these ports; they are not algorithm authority. Most verification and retrieval-evidence-eval read ports remain API-local."
+      ],
       "uses": [],
       "packageJson": "packages/application/package.json"
     },
@@ -276,18 +297,20 @@
       "path": "packages/client-typescript",
       "kind": "package",
       "state": "implemented",
-      "summary": "Typed HTTP client for cross-repository consumers of the Knowledge Services contract.",
+      "summary": "Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.",
       "entrypoints": [
         "packages/client-typescript/src/index.ts"
       ],
       "interface": [
-        "Client methods plus public contract types."
+        "KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application."
       ],
       "tests": [
         "packages/client-typescript/src/adjudication-decision-read.test.ts",
         "packages/client-typescript/src/adjudication.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "Do not use from in-process KS servers except the remaining MCP HTTP shim."
+      ],
       "uses": [],
       "packageJson": "packages/client-typescript/package.json"
     },
@@ -505,18 +528,21 @@
       "path": "packages/persistence",
       "kind": "package",
       "state": "implemented",
-      "summary": "Postgres, storage, operation ledger, verification records, and runtime wiring adapters.",
+      "summary": "Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host.",
       "entrypoints": [
-        "packages/persistence/src/index.ts"
+        "packages/persistence/src/index.ts",
+        "packages/persistence/src/verification-host-runtime.ts"
       ],
       "interface": [
-        "Persistence implementations; schema migrations remain in the database-contract repository."
+        "Persistence implementations; schema migrations remain in the database-contract repository. createVerificationHostRuntime is the shared API/MCP host for ownership, catalog/SQL admission, and the verification operation port."
       ],
       "tests": [
         "packages/persistence/src/eve-verification-binding.test.ts",
         "packages/persistence/src/operation-service.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "The host does not compose API-local decision, reconciliation, or verification/retrieval read runtimes."
+      ],
       "uses": [],
       "packageJson": "packages/persistence/package.json"
     },

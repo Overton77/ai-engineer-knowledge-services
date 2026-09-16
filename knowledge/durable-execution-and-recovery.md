@@ -236,9 +236,9 @@ cover that boundary.
   valid repair.
 
 The implementation for invalidation is in
-[`verification-recovery.ts`](../packages/application/src/verification-recovery.ts),
+[`verification-recovery.ts`](../packages/application/src/verification/recovery/verification-recovery.ts),
 with adverse-path coverage in
-[`verification-recovery.test.ts`](../packages/application/src/verification-recovery.test.ts).
+[`verification-recovery.test.ts`](../packages/application/src/verification/recovery/verification-recovery.test.ts).
 Provider budget enforcement is in
 [`verification-recovery-provider-budget.ts`](../packages/persistence/src/verification-recovery-provider-budget.ts).
 

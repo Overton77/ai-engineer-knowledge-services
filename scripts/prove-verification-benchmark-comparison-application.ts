@@ -151,7 +151,7 @@ try {
   const sourcePaths = [
     "packages/contracts/src/verification/benchmark-comparison.ts",
     "packages/evaluation/src/verification-benchmark-run-comparison.ts",
-    "packages/application/src/verification-benchmark-comparison.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison.ts",
     "scripts/prove-verification-benchmark-comparison-application.ts",
   ];
   const sources = await Promise.all(sourcePaths.map(async (path) => { const source = await readFile(path); return { path, digest: fileHash(source), bytesBase64: source.toString("base64") }; }));

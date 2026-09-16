@@ -69,7 +69,7 @@ Canonical ingestion is not a prerequisite for every vector publication. The publ
 
 Each successor publication records the prior active publication as its predecessor; the first activation has none. Rollback switches the active pointer to a prior retained version and records a reason-bearing event; it does not delete the newer version. Reconciliation can later report count, index, authorization, evaluation, or manifest drift. This preserves an audit trail and makes recovery reversible.
 
-Promotion-selection code is present in the working tree at [`packages/application/src/promotion-selection.ts`](../packages/application/src/promotion-selection.ts) and [`apps/verification-executor/src/knowledge/promotion-selection.ts`](../apps/verification-executor/src/knowledge/promotion-selection.ts). Its repository state is not, by itself, evidence that any external promotion authority or deployment is live.
+Promotion-selection code is present in the working tree at [`packages/application/src/promotion-selection/promotion-selection.ts`](../packages/application/src/promotion-selection/promotion-selection.ts) and [`apps/verification-executor/src/knowledge/promotion-selection.ts`](../apps/verification-executor/src/knowledge/promotion-selection.ts). Its repository state is not, by itself, evidence that any external promotion authority or deployment is live.
 
 ### Selected candidate publication
 

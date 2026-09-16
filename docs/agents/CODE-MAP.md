@@ -19,15 +19,15 @@ Paths below are repository-relative. Use the task routes, then search the module
 
 | Module | Source | Responsibility | State |
 |---|---|---|---|
-| [api](#api) | apps/api | Fastify HTTP transport, authentication, resource reads, and verification routes. | implemented |
-| [cli](#cli) | apps/cli | Machine-readable knowledge operator/developer commands and selected local demos. | implemented |
-| [mcp](#mcp) | apps/mcp | Stateless Streamable HTTP MCP tools over knowledge application behavior. | implemented |
+| [api](#api) | apps/api | Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime before read runtimes. | implemented |
+| [cli](#cli) | apps/cli | Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files. | implemented |
+| [mcp](#mcp) | apps/mcp | In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificationHostRuntime and VerificationOperationApplicationService. | implemented |
 | [verification-executor](#verification-executor) | apps/verification-executor | Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP. | implemented |
 | [worker](#worker) | apps/worker | Durable knowledge-operation execution, activity dispatch, and verification runtime wiring. | implemented |
-| [acquisition](#acquisition) | packages/acquisition | Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, and paper adapters. | implemented |
-| [application](#application) | packages/application | Composes knowledge use cases, capability admission, preparation, and verification surfaces. | implemented |
+| [acquisition](#acquisition) | packages/acquisition | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | implemented |
+| [application](#application) | packages/application | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | implemented |
 | [chunking](#chunking) | packages/chunking | Builds bounded chunks with strategy profiles, overlap controls, and source spans. | implemented |
-| [client-typescript](#client-typescript) | packages/client-typescript | Typed HTTP client for cross-repository consumers of the Knowledge Services contract. | implemented |
+| [client-typescript](#client-typescript) | packages/client-typescript | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
 | [config](#config) | packages/config | Validates server, authentication, and semantic-provider configuration. | implemented |
 | [contracts](#contracts) | packages/contracts | Versioned Zod schemas and types shared by transports, application composition, and clients. | implemented |
 | [conversion](#conversion) | packages/conversion | Converts captured inputs and wraps external Docling and isolated native parser routes. | implemented |
@@ -38,7 +38,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [ingestion](#ingestion) | packages/ingestion | Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling. | partial |
 | [evaluation](#evaluation) | packages/evaluation | Retrieval evaluations, benchmark statistics/comparisons, and human review structures. | implemented |
 | [observability](#observability) | packages/observability | In-memory operation telemetry, SLO summaries, and manifest reconciliation. | implemented |
-| [persistence](#persistence) | packages/persistence | Postgres, storage, operation ledger, verification records, and runtime wiring adapters. | implemented |
+| [persistence](#persistence) | packages/persistence | Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host. | implemented |
 | [policy](#policy) | packages/policy | Authorization, capability, retrieval, promotion, and verification admission decisions. | implemented |
 | [projections](#projections) | packages/projections | Produces domain projections whose assertions remain bound to source evidence. | implemented |
 | [retrieval](#retrieval) | packages/retrieval | Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval. | implemented |
@@ -69,16 +69,17 @@ Paths below are repository-relative. Use the task routes, then search the module
 
 **apps/api** · app · implemented
 
-Fastify HTTP transport, authentication, resource reads, and verification routes.
+Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime before read runtimes.
 
-**Enter:** [`apps/api/src/index.ts`](../../apps/api/src/index.ts), [`apps/api/src/server.ts`](../../apps/api/src/server.ts)
-**Interface:** Versioned HTTP endpoints backed by application services.
+**Enter:** [`apps/api/src/index.ts`](../../apps/api/src/index.ts), [`apps/api/src/server.ts`](../../apps/api/src/server.ts), [`apps/api/src/verification-ownership.ts`](../../apps/api/src/verification-ownership.ts)
+**Interface:** Versioned HTTP endpoints backed by application services. The shared verification host supplies ownership, admission, and the verification operation port; read, decision, and reconciliation runtimes stay API-local.
 **Package:** @aiengineer/knowledge-api ([`apps/api/package.json`](../../apps/api/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [config](#config), [contracts](#contracts), [domain](#domain), [embeddings](#embeddings), [persistence](#persistence), [runtime](#runtime), [testkit](#testkit)
 **Other runtime dependencies:** fastify, zod
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`apps/api/src/server.test.ts`](../../apps/api/src/server.test.ts), [`apps/api/src/verification-routes.test.ts`](../../apps/api/src/verification-routes.test.ts) Package script names: build, dev, start, test, typecheck.
+**Reviewed runtime/data relationships:** [persistence](#persistence)
+**Checks:** [`apps/api/src/tests/server.test.ts`](../../apps/api/src/tests/server.test.ts), [`apps/api/src/tests/verification-routes.test.ts`](../../apps/api/src/tests/verification-routes.test.ts), [`apps/api/src/tests/verification-ownership.test.ts`](../../apps/api/src/tests/verification-ownership.test.ts) Package script names: build, dev, start, test, typecheck.
+- verification-ownership.ts is a thin Eve persistence adapter re-export of application ports. Do not treat API-local read or decision runtimes as the shared host.
 
 **Architecture and detailed docs:**
 
@@ -87,6 +88,8 @@ Fastify HTTP transport, authentication, resource reads, and verification routes.
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
+- [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 
@@ -94,38 +97,42 @@ Fastify HTTP transport, authentication, resource reads, and verification routes.
 
 **apps/cli** · app · implemented
 
-Machine-readable knowledge operator/developer commands and selected local demos.
+Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files.
 
 **Enter:** [`apps/cli/src/index.ts`](../../apps/cli/src/index.ts), [`apps/cli/src/commands.ts`](../../apps/cli/src/commands.ts)
-**Interface:** knowledge command surface; check command-specific mutation and provider preconditions.
+**Interface:** Remote catalog requires API URL and token and dispatches through KnowledgeClient. Local commands stay outside the remote catalog and must not use HTTP.
 **Package:** @aiengineer/knowledge-cli ([`apps/cli/package.json`](../../apps/cli/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts), [verification](#verification)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`apps/cli/src/commands.test.ts`](../../apps/cli/src/commands.test.ts) Package script names: build, dev, test, typecheck.
+**Checks:** [`apps/cli/src/tests/commands.test.ts`](../../apps/cli/src/tests/commands.test.ts) Package script names: build, dev, test, typecheck.
+- Remote CLI must not import persistence or POSTGRES_URL. Do not fold local or mixed commands into dispatchCliCommand.
 
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
+- [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
 ## mcp
 
 **apps/mcp** · app · implemented
 
-Stateless Streamable HTTP MCP tools over knowledge application behavior.
+In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificationHostRuntime and VerificationOperationApplicationService.
 
 **Enter:** [`apps/mcp/src/index.ts`](../../apps/mcp/src/index.ts), [`apps/mcp/src/catalog.ts`](../../apps/mcp/src/catalog.ts)
-**Interface:** MCP catalog and tool handlers; not a second business-rule authority.
+**Interface:** MCP catalog and tool handlers; not a second business-rule authority. Twelve verification mutations call VerificationOperationApplicationService.submit* after ownership and is*RequestAdmitted. knowledge_get_verification_operation, embedding.run_status, and promotion.status use operationService.get. retrieval.plan_validate is RetrievalPlanSchema.parse. Pipeline catalog writes still use operationService.submit.
 **Package:** @aiengineer/knowledge-mcp ([`apps/mcp/package.json`](../../apps/mcp/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [client-typescript](#client-typescript), [config](#config), [contracts](#contracts), [persistence](#persistence)
 **Other runtime dependencies:** @modelcontextprotocol/sdk, fastify, zod
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`apps/mcp/src/adjudication-reads.test.ts`](../../apps/mcp/src/adjudication-reads.test.ts), [`apps/mcp/src/adjudication.test.ts`](../../apps/mcp/src/adjudication.test.ts) Package script names: build, dev, start, test, typecheck.
+**Reviewed runtime/data relationships:** [application](#application), [persistence](#persistence)
+**Checks:** [`apps/mcp/src/tests/index.test.ts`](../../apps/mcp/src/tests/index.test.ts), [`apps/mcp/src/tests/verification-surface-inventory.test.ts`](../../apps/mcp/src/tests/verification-surface-inventory.test.ts), [`apps/mcp/src/tests/adjudication.test.ts`](../../apps/mcp/src/tests/adjudication.test.ts), [`apps/mcp/src/tests/verification-operation-read.test.ts`](../../apps/mcp/src/tests/verification-operation-read.test.ts) Package script names: build, dev, start, test, typecheck.
+- Do not add new apiClient methods. New use cases go through application. Remaining HTTP shims: retrieval.search/explain/read_run/evidence packet/citation replay, evaluation.inspect_failures, vector_store.ingestion_status, provider reconciliation apply/get, most verification reads, and record-decision when isAdjudicationDecisionAdmitted is absent.
 
 **Architecture and detailed docs:**
 
@@ -133,6 +140,8 @@ Stateless Streamable HTTP MCP tools over knowledge application behavior.
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
+- [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
 ## verification-executor
@@ -178,9 +187,11 @@ Durable knowledge-operation execution, activity dispatch, and verification runti
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
@@ -189,36 +200,38 @@ Durable knowledge-operation execution, activity dispatch, and verification runti
 
 **packages/acquisition** · package · implemented
 
-Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, and paper adapters.
+HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.
 
 **Enter:** [`packages/acquisition/src/index.ts`](../../packages/acquisition/src/index.ts)
-**Interface:** Acquisition request/result types and source adapters.
+**Interface:** Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection.
 **Package:** @aiengineer/knowledge-acquisition ([`packages/acquisition/package.json`](../../packages/acquisition/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [domain](#domain), [runtime](#runtime)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/acquisition/src/acquisition.test.ts`](../../packages/acquisition/src/acquisition.test.ts), [`packages/acquisition/src/deadline.test.ts`](../../packages/acquisition/src/deadline.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/acquisition/src/acquisition.test.ts`](../../packages/acquisition/src/acquisition.test.ts), [`packages/acquisition/src/deadline.test.ts`](../../packages/acquisition/src/deadline.test.ts), [`packages/acquisition/src/route.test.ts`](../../packages/acquisition/src/route.test.ts), [`packages/acquisition/src/inspect/inspect.test.ts`](../../packages/acquisition/src/inspect/inspect.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
 ## application
 
 **packages/application** · package · implemented
 
-Composes knowledge use cases, capability admission, preparation, and verification surfaces.
+Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports.
 
-**Enter:** [`packages/application/src/index.ts`](../../packages/application/src/index.ts)
-**Interface:** Application service facades and use-case functions; transports call these rather than implementing algorithms.
+**Enter:** [`packages/application/src/index.ts`](../../packages/application/src/index.ts), [`packages/application/src/verification/operations/verification-transport.ts`](../../packages/application/src/verification/operations/verification-transport.ts), [`packages/application/src/verification/operations/verification-ownership.ts`](../../packages/application/src/verification/operations/verification-ownership.ts)
+**Interface:** Application service facades and use-case functions; transports call these rather than implementing algorithms. verification-transport.ts owns ResolveVerificationContext, catalog/SQL admission factories, and the static context resolver. verification-ownership.ts owns the ownership resolver and read authorizer as application ports.
 **Package:** @aiengineer/knowledge-application ([`packages/application/package.json`](../../packages/application/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [acquisition](#acquisition), [chunking](#chunking), [contracts](#contracts), [conversion](#conversion), [documents](#documents), [domain](#domain), [embeddings](#embeddings), [evaluation](#evaluation), [policy](#policy), [projections](#projections), [retrieval](#retrieval), [runtime](#runtime), [vector-backends](#vector-backends), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/application/src/a2a-adapter.test.ts`](../../packages/application/src/a2a-adapter.test.ts), [`packages/application/src/capability-admission.test.ts`](../../packages/application/src/capability-admission.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/application/src/operations/a2a-adapter.test.ts`](../../packages/application/src/operations/a2a-adapter.test.ts), [`packages/application/src/operations/capability-admission.test.ts`](../../packages/application/src/operations/capability-admission.test.ts) Package script names: build, test, typecheck.
+- Transports compose these ports; they are not algorithm authority. Most verification and retrieval-evidence-eval read ports remain API-local.
 
 **Architecture and detailed docs:**
 
@@ -230,6 +243,8 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
+- [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
 ## chunking
@@ -257,19 +272,22 @@ Builds bounded chunks with strategy profiles, overlap controls, and source spans
 
 **packages/client-typescript** · package · implemented
 
-Typed HTTP client for cross-repository consumers of the Knowledge Services contract.
+Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.
 
 **Enter:** [`packages/client-typescript/src/index.ts`](../../packages/client-typescript/src/index.ts)
-**Interface:** Client methods plus public contract types.
+**Interface:** KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application.
 **Package:** @aiengineer/knowledge-client ([`packages/client-typescript/package.json`](../../packages/client-typescript/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/client-typescript/src/adjudication-decision-read.test.ts`](../../packages/client-typescript/src/adjudication-decision-read.test.ts), [`packages/client-typescript/src/adjudication.test.ts`](../../packages/client-typescript/src/adjudication.test.ts) Package script names: build, test, typecheck.
+- Do not use from in-process KS servers except the remaining MCP HTTP shim.
 
 **Architecture and detailed docs:**
 
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
+- [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
 ## config
@@ -479,22 +497,26 @@ In-memory operation telemetry, SLO summaries, and manifest reconciliation.
 
 **packages/persistence** · package · implemented
 
-Postgres, storage, operation ledger, verification records, and runtime wiring adapters.
+Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host.
 
-**Enter:** [`packages/persistence/src/index.ts`](../../packages/persistence/src/index.ts)
-**Interface:** Persistence implementations; schema migrations remain in the database-contract repository.
+**Enter:** [`packages/persistence/src/index.ts`](../../packages/persistence/src/index.ts), [`packages/persistence/src/verification-host-runtime.ts`](../../packages/persistence/src/verification-host-runtime.ts)
+**Interface:** Persistence implementations; schema migrations remain in the database-contract repository. createVerificationHostRuntime is the shared API/MCP host for ownership, catalog/SQL admission, and the verification operation port.
 **Package:** @aiengineer/knowledge-persistence ([`packages/persistence/package.json`](../../packages/persistence/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [domain](#domain), [runtime](#runtime), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, pg, zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/persistence/src/eve-verification-binding.test.ts`](../../packages/persistence/src/eve-verification-binding.test.ts), [`packages/persistence/src/operation-service.test.ts`](../../packages/persistence/src/operation-service.test.ts) Package script names: build, test, typecheck.
+- The host does not compose API-local decision, reconciliation, or verification/retrieval read runtimes.
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
+- [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 

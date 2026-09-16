@@ -11,6 +11,12 @@ sources:
     title: Read executor
   - resource: ../packages/ingestion/src/executor.ts
     title: Ingestion executor
+  - resource: ../packages/persistence/src/verification-host-runtime.ts
+    title: Shared verification host
+  - resource: ../apps/api/src/index.ts
+    title: API runtime composition
+  - resource: ../apps/mcp/src/index.ts
+    title: MCP runtime composition
 ---
 
 # Purpose
@@ -32,7 +38,8 @@ authority. The accepted lifecycle design is
 | Need | Read first | Owner and result |
 | --- | --- | --- |
 | Change a service use case shared by transports | [`application`](../packages/application/src/index.ts) | Shared use-case composition; keep algorithms out of transport handlers. |
-| Change the main service HTTP, CLI, or MCP surface | [HTTP server](../apps/api/src/server.ts), [CLI commands](../apps/cli/src/commands.ts), [MCP catalog](../apps/mcp/src/catalog.ts) | Transport adaptation to published contracts and shared application behavior. |
+| Change the main service HTTP, CLI, or MCP surface | [API runtime](../apps/api/src/index.ts), [CLI commands](../apps/cli/src/commands.ts), [MCP runtime](../apps/mcp/src/index.ts) | Transport adaptation to published contracts and shared application behavior. |
+| Compose verification ownership and admission for API or MCP | [`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts) | Shared host; transports are not a second algorithm authority. |
 | Find schema meaning, a relation, vocabulary, rule, or named query | [`schema-workspace`](../packages/schema-workspace/src/index.ts) | Loads and searches the pinned workspace; it does not query tenant data. |
 | Read tenant knowledge reproducibly | [`ReadExecutor`](../packages/db-read/src/read-executor.ts) | Executes catalog queries in a read-only transaction and returns a digestible snapshot. |
 | Inspect a permitted query plan or bounded ad hoc read | [`sql-guard.ts`](../packages/db-read/src/sql-guard.ts) | Guards one read statement and uses the bounded `pipeline_agent` role. |
@@ -81,6 +88,29 @@ The catalog names operations once, so CLI, POST `/knowledge/<name>`, and MCP
 share input schemas and gates. The CLI behaviour is covered by
 [`cli.test.ts`](../apps/verification-executor/src/knowledge/cli.test.ts).
 
+The main API and MCP servers compose the same verification host.
+[`createApiRuntime`](../apps/api/src/index.ts) and
+[`createMcpRuntime`](../apps/mcp/src/index.ts) both call
+[`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts)
+before they attach read runtimes. That host wires application ownership and
+catalog/SQL admission ports; it is not a second algorithm authority.
+
+MCP verification mutations call application in-process after ownership and
+`is*RequestAdmitted`. `knowledge_get_verification_operation`,
+`embedding.run_status`, and `promotion.status` use `operationService.get`.
+`retrieval.plan_validate` is `RetrievalPlanSchema.parse`. Pipeline catalog
+writes still use `operationService.submit`.
+
+These MCP tools still HTTP-shim through `KnowledgeClient`: retrieval
+search/explain/read_run/evidence packet/citation replay,
+`evaluation.inspect_failures`, `vector_store.ingestion_status`, provider
+reconciliation apply/get, most verification reads (benchmark, extraction,
+audit, claims, adjudication subject/decision, cases), and
+`knowledge_record_adjudication_decision` when
+`isAdjudicationDecisionAdmitted` is absent. New MCP tools must not add
+`apiClient` methods. This is observed remainder, not a rewrite of accepted
+[ADR 0004](../docs/architecture/0004-transport-call-graph.md).
+
 # Retrieval is a separate read path
 
 Retrieval filters records by tenant, visibility, space, lifecycle, promotion,
@@ -116,6 +146,9 @@ implemented package and a catalog entry may describe a retrieval-shaped query.
   receipt/ledger records in its executor path. Those records are distinct from
   the service operation lifecycle; do not treat the absence of a
   `knowledge_service.operation` row as absence of an ingestion receipt.
+- Most verification and retrieval-evidence-eval read ports remain API-local.
+  MCP still proxies those tools. Decision admission is also API-local, so MCP
+  record-decision stays on HTTP unless that gate is injected.
 
 For authentication, capability admission, and parser isolation, read the
 owning [security guide](../docs/security.md) before changing a transport's trust

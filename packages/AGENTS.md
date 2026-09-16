@@ -7,10 +7,10 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 
 | Module | Responsibility | Enter |
 |---|---|---|
-| [acquisition](../docs/agents/CODE-MAP.md#acquisition) | Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, and paper adapters. | packages/acquisition/src/index.ts |
-| [application](../docs/agents/CODE-MAP.md#application) | Composes knowledge use cases, capability admission, preparation, and verification surfaces. | packages/application/src/index.ts |
+| [acquisition](../docs/agents/CODE-MAP.md#acquisition) | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | packages/acquisition/src/index.ts |
+| [application](../docs/agents/CODE-MAP.md#application) | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | packages/application/src/index.ts |
 | [chunking](../docs/agents/CODE-MAP.md#chunking) | Builds bounded chunks with strategy profiles, overlap controls, and source spans. | packages/chunking/src/index.ts |
-| [client-typescript](../docs/agents/CODE-MAP.md#client-typescript) | Typed HTTP client for cross-repository consumers of the Knowledge Services contract. | packages/client-typescript/src/index.ts |
+| [client-typescript](../docs/agents/CODE-MAP.md#client-typescript) | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | packages/client-typescript/src/index.ts |
 | [config](../docs/agents/CODE-MAP.md#config) | Validates server, authentication, and semantic-provider configuration. | packages/config/src/index.ts |
 | [contracts](../docs/agents/CODE-MAP.md#contracts) | Versioned Zod schemas and types shared by transports, application composition, and clients. | packages/contracts/src/index.ts |
 | [conversion](../docs/agents/CODE-MAP.md#conversion) | Converts captured inputs and wraps external Docling and isolated native parser routes. | packages/conversion/src/index.ts |
@@ -21,7 +21,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [ingestion](../docs/agents/CODE-MAP.md#ingestion) | Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling. | packages/ingestion/src/index.ts |
 | [evaluation](../docs/agents/CODE-MAP.md#evaluation) | Retrieval evaluations, benchmark statistics/comparisons, and human review structures. | packages/evaluation/src/index.ts |
 | [observability](../docs/agents/CODE-MAP.md#observability) | In-memory operation telemetry, SLO summaries, and manifest reconciliation. | packages/observability/src/index.ts |
-| [persistence](../docs/agents/CODE-MAP.md#persistence) | Postgres, storage, operation ledger, verification records, and runtime wiring adapters. | packages/persistence/src/index.ts |
+| [persistence](../docs/agents/CODE-MAP.md#persistence) | Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host. | packages/persistence/src/index.ts |
 | [policy](../docs/agents/CODE-MAP.md#policy) | Authorization, capability, retrieval, promotion, and verification admission decisions. | packages/policy/src/index.ts |
 | [projections](../docs/agents/CODE-MAP.md#projections) | Produces domain projections whose assertions remain bound to source evidence. | packages/projections/src/index.ts |
 | [retrieval](../docs/agents/CODE-MAP.md#retrieval) | Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval. | packages/retrieval/src/index.ts |

@@ -66,7 +66,7 @@ try{
   checks[`${receipt.providerId}:${item.scenario}:ledger_faults`]=true;
   results.push(result);
  }
- const sourceFiles=await Promise.all(["packages/application/src/verification-provider-reconciliation.ts","packages/persistence/src/verification-provider-reconciliation-reads.ts","scripts/prove-verification-provider-reconciliation-reads.ts"].map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
+ const sourceFiles=await Promise.all(["packages/application/src/verification/operations/verification-provider-reconciliation.ts","packages/persistence/src/verification-provider-reconciliation-reads.ts","scripts/prove-verification-provider-reconciliation-reads.ts"].map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const output=resolve(`../internal/verification-provider-reconciliation-reads-${randomUUID()}.json`);
  await writeFile(output,JSON.stringify({passed:true,fixtureName,checks,results,sourceFiles,supplierRequests:0,limitations:["Historical expiry uses an injected clock; actual ledger, signatures and Storage evidence are verified","Internal control-plane read only; actor-authorized runtime and HTTP remain pending"]},null,2)+"\n");console.log(JSON.stringify({output,checks}));
 }finally{await database.close();}

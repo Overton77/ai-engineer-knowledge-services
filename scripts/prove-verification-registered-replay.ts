@@ -6,16 +6,16 @@ import { DiagnosticsBenchmarkLiveCallCheckpointSchema, type VerificationArtifact
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
-import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification-benchmark-inputs.js";
-import { RegisteredBenchmarkProfileCatalog, RegisteredBenchmarkProfileAdmission } from "../packages/application/src/verification-benchmark-registered-profile.js";
-import { RegisteredBenchmarkReplayCatalog, RegisteredBenchmarkReplayAdmission } from "../packages/application/src/verification-benchmark-registered-replay.js";
-import { diagnosticsBenchmarkArms, composeDiagnosticsRecordedArm } from "../packages/application/src/verification-benchmark.js";
-import { RegisteredDiagnosticsOfflineBenchmark } from "../packages/application/src/verification-benchmark-offline-executor.js";
+import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-inputs.js";
+import { RegisteredBenchmarkProfileCatalog, RegisteredBenchmarkProfileAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-registered-profile.js";
+import { RegisteredBenchmarkReplayCatalog, RegisteredBenchmarkReplayAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-registered-replay.js";
+import { diagnosticsBenchmarkArms, composeDiagnosticsRecordedArm } from "../packages/application/src/verification/benchmark/verification-benchmark.js";
+import { RegisteredDiagnosticsOfflineBenchmark } from "../packages/application/src/verification/benchmark/verification-benchmark-offline-executor.js";
 import { runVerificationBenchmark, MemoryVerificationBenchmarkCheckpointStore, createVerificationBenchmarkCheckpointPlan } from "../packages/evaluation/src/verification-benchmark.js";
 import { PostgresVerificationBenchmarkRunStore } from "../packages/persistence/src/verification-benchmark-run.js";
 import { PostgresVerificationBenchmarkPublisher } from "../packages/persistence/src/verification-benchmark-publication.js";
-import { RegisteredBenchmarkPublicationBuilder } from "../packages/application/src/verification-benchmark-publication.js";
-import { VerificationSealPolicyCatalog } from "../packages/application/src/verification-seal-policy.js";
+import { RegisteredBenchmarkPublicationBuilder } from "../packages/application/src/verification/benchmark/verification-benchmark-publication.js";
+import { VerificationSealPolicyCatalog } from "../packages/application/src/verification/admission/verification-seal-policy.js";
 import { createEd25519Signer, createEd25519Verifier, verifyVerificationBenchmarkPublication } from "@aiengineer/knowledge-verification";
 
 const postgresUrl=process.env.POSTGRES_URL!,supabaseUrl=process.env.SUPABASE_URL!,secret=process.env.SUPABASE_SECRET_KEY!;
@@ -79,7 +79,7 @@ try{
   await expectFailure("cancelled_replay_denied",()=>replay.load(admitted,profile,tenantId,controller.signal),/BENCHMARK_CANCELLED/);
   let sourceImportEvidence:Record<string,unknown>|undefined;
   if(process.env.VERIFICATION_PROVE_SOURCE_IMPORT==="1"){
-    const {RegisteredBenchmarkSourceImportCatalog,RegisteredBenchmarkSourceImportAdmission}=await import("../packages/application/src/verification-benchmark-source-import.js");
+    const {RegisteredBenchmarkSourceImportCatalog,RegisteredBenchmarkSourceImportAdmission}=await import("../packages/application/src/verification/benchmark/verification-benchmark-source-import.js");
     const sourceDirectory=resolve(root,"verification-offline-source-preparation-9093b465-16c2-4cc1-b7f4-728d3958b0ed");
     const sourceManifestBytes=new Uint8Array(await readFile(resolve(sourceDirectory,"manifest.json")));
     if(sha256Digest(sourceManifestBytes)!==admitted.dataset.sourcePreparationDigest)throw new Error("SOURCE_IMPORT_MANIFEST_DRIFT");
@@ -164,7 +164,7 @@ try{
           const builder=new RegisteredBenchmarkPublicationBuilder({policies:new VerificationSealPolicyCatalog([{tenantId,policyVersion:"diagnostics-policy.v1",policyArtifact:ref(policy)}]),resolver:repository.createTrustedArtifactResolver(),signer,artifacts:{register:input=>repository.registerContentAddressedArtifact({...input,parentArtifactIds:[...input.parentArtifactIds],producerAttemptId:publicationContext!.attemptId,missionId:publicationContext!.missionId,mediaType:"application/json",producerActivityId:"benchmark-publication-proof",producerVersion:"1",encryptionClass:"supabase-managed",retentionClass:"verification-audit",dataClassification:"restricted",bucketClass:"ledger",storageBucket:bucket})}});
           const git=spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8",windowsHide:true});
           const gitSha=git.status===0?git.stdout.trim():"uncommitted";
-          const sourcePaths=["packages/contracts/src/verification/benchmark-publication.ts","packages/evaluation/src/verification-benchmark.ts","packages/application/src/verification-benchmark-offline-executor.ts","packages/application/src/verification-benchmark-publication.ts","packages/verification/src/provenance/benchmark-publication.ts","packages/persistence/src/verification-benchmark-run.ts","packages/persistence/src/verification-benchmark-publication.ts","scripts/prove-verification-registered-replay.ts","package.json","pnpm-lock.yaml"];
+          const sourcePaths=["packages/contracts/src/verification/benchmark-publication.ts","packages/evaluation/src/verification-benchmark.ts","packages/application/src/verification/benchmark/verification-benchmark-offline-executor.ts","packages/application/src/verification/benchmark/verification-benchmark-publication.ts","packages/verification/src/provenance/benchmark-publication.ts","packages/persistence/src/verification-benchmark-run.ts","packages/persistence/src/verification-benchmark-publication.ts","scripts/prove-verification-registered-replay.ts","package.json","pnpm-lock.yaml"];
           const sourceFiles=[];
           for(const path of sourcePaths){const bytes=await readFile(resolve(path));sourceFiles.push({path,digest:sha256Digest(bytes),bytesBase64:bytes.toString("base64")});}
           const codeSnapshot=await repository.registerContentAddressedArtifact({tenantId,producerAttemptId:publicationContext.attemptId,missionId:publicationContext.missionId,bytes:encode({schemaVersion:"verification-benchmark-runtime-source-snapshot.v1",gitSha,scope:"Scoped publication proof sources and lockfile; not a complete dependency or deployment image",files:sourceFiles}),mediaType:"application/json",createdAt:completed.completedAt,producerActivityId:"benchmark-publication-proof-code",producerVersion:"1",encryptionClass:"supabase-managed",retentionClass:"verification-audit",dataClassification:"restricted",artifactType:"verification_benchmark_provenance",bucketClass:"ledger",storageBucket:bucket,parentArtifactIds:[]});

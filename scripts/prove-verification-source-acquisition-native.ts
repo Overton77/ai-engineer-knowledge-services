@@ -98,7 +98,7 @@ try {
   }
   const ids = new Set(artifacts.map(item => item.artifactId));
   assert.ok(artifacts.length >= 6 && artifacts.every(item => item.parentArtifactIds.every(id => ids.has(id)))); checks.completeRegisteredByteClosure = true;
-  const sourceSnapshot = await Promise.all(["packages/application/src/verification-service.ts", "packages/application/src/verification-source-acquisition.ts", "apps/worker/src/verification-activities.ts", "scripts/prove-verification-source-acquisition-native.ts"].map(async path => ({ path, digest: sha256Digest(await readFile(path)) })));
+  const sourceSnapshot = await Promise.all(["packages/application/src/verification/operations/verification-service.ts", "packages/application/src/verification/source-acquisition/verification-source-acquisition.ts", "apps/worker/src/verification-activities.ts", "scripts/prove-verification-source-acquisition-native.ts"].map(async path => ({ path, digest: sha256Digest(await readFile(path)) })));
   await writeFile(outputPath, JSON.stringify({ proofId, passed: true, tenantId, operationId, acquisitionCalls, sourceUri: source.canonicalUri, checks, compactCapture, artifacts, terminal: completed?.receipt.body, sourceSnapshot, scope: "One live public HTML source through actual application/durable worker/PostgreSQL/Storage/sandboxed parser and authenticated Fastify capture read; no proposal-version or CLI completion claim" }, null, 2), { flag: "wx" });
   console.log(JSON.stringify({ outputPath, passed: true }));
 } catch (error) {

@@ -232,7 +232,14 @@ const captureInputSchema = z.strictObject({
   }),
   request: z.strictObject({
     purpose: z.string().trim().min(1),
-    target: z.strictObject({ kind:z.literal("http"), url:z.url() }),
+    target: z.discriminatedUnion("kind", [
+      z.strictObject({ kind:z.literal("http"), url:z.url() }),
+      z.strictObject({
+        kind:z.literal("upload"),
+        uploadId: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/),
+        declaredOrigin: z.string().trim().min(1),
+      }),
+    ]),
     expectedSourceClass: z.string().trim().min(1),
     preferredMediaTypes: z.array(z.string().trim().min(1)).min(1),
     egressProfile: z.literal("public-web-v1"),
@@ -243,7 +250,7 @@ const captureInputSchema = z.strictObject({
     expectedOutputs: z.array(z.string().trim().min(1)).min(1),
   }),
 }).superRefine((value, context) => {
-  if (new URL(value.source.canonicalUrl).href !== new URL(value.request.target.url).href) {
+  if (value.request.target.kind === "http" && new URL(value.source.canonicalUrl).href !== new URL(value.request.target.url).href) {
     context.addIssue({ code:"custom",message:"source canonical URL must equal the exact capture target",path:["source","canonicalUrl"] });
   }
   if (value.source.sensitivity !== value.request.classification) {
@@ -580,7 +587,7 @@ function preparationHandlers(
             operationId:operation.id,sourceId,captureId,sourceClass:input.source.sourceClass,canonicalUrl:input.source.canonicalUrl,
             ...(input.source.publisher?{publisher:input.source.publisher}:{}),sensitivity:input.source.sensitivity,
             artifact:persistedArtifact(artifact,dependencies.sourceStorageBucket,"source_capture","source_captures"),
-            captureMethod:result.captureMethod,captureMethodVersion:plan.adapterVersion,requestUrl:input.request.target.url,
+            captureMethod:result.captureMethod,captureMethodVersion:plan.adapterVersion,requestUrl:input.request.target.kind==="http"?input.request.target.url:input.source.canonicalUrl,
             ...(httpStatus===undefined?{}:{httpStatus}),observations:{plan:{normalizedTarget:plan.normalizedTarget,policyDigest:plan.policyDigest},verification,result:result.observations},
             capturedAt:new Date().toISOString(),
           });

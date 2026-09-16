@@ -3,7 +3,7 @@ import { mkdir, open, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { canonicalizeJson, GatewaySemanticJudgeAdapter, interpretCapturedGatewaySemanticResponse, prepareGatewaySemanticRequest, type GatewaySemanticResponseObservation, type ProviderArtifactSink, type SemanticJudgeAdapter } from "@aiengineer/knowledge-verification";
-import { executeDiagnosticsGeneratedReportSemantics, type DiagnosticsGeneratedReportSemanticDispatchGrant, type DiagnosticsGeneratedReportSemanticPlan, type DiagnosticsGeneratedReportSemanticPlanEntry } from "../packages/application/src/verification-diagnostics-generated-report-semantics.js";
+import { executeDiagnosticsGeneratedReportSemantics, type DiagnosticsGeneratedReportSemanticDispatchGrant, type DiagnosticsGeneratedReportSemanticPlan, type DiagnosticsGeneratedReportSemanticPlanEntry } from "../packages/application/src/diagnostics/verification-diagnostics-generated-report-semantics.js";
 import { prepareVerificationEv162ReportSemantics } from "./prepare-verification-ev162-report-semantics.js";
 
 type Digest = `sha256:${string}`;

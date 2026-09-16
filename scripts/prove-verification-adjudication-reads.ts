@@ -64,7 +64,7 @@ try{const before=await counts();
  const hung=new PostgresVerificationAdjudicationReadRepository(database,()=>repository.createTrustedArtifactResolver(),{replayPacket:()=>new Promise(()=>{})},{maximumReplayMs:100});
  const begun=Date.now();await assert.rejects(hung.loadVerifiedAdjudication(tenantId,native.results[0].operationId),{code:"INTEGRITY"});assert.ok(Date.now()-begun<5000);hostileChecks.push("noncooperative_replay_deadline");
  const after=await counts();assert.deepEqual(after,before);
- const paths=["packages/contracts/src/verification/adjudication-reads.ts","packages/application/src/verification-adjudication-reads.ts","packages/persistence/src/verification-adjudication-reads.ts","scripts/prove-verification-adjudication-reads.ts"];
+ const paths=["packages/contracts/src/verification/adjudication-reads.ts","packages/application/src/verification/operations/verification-adjudication-reads.ts","packages/persistence/src/verification-adjudication-reads.ts","scripts/prove-verification-adjudication-reads.ts"];
  const sourceFiles=await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const out=resolve("../internal",`verification-adjudication-native-reads-${randomUUID()}.json`);
  const receipt={schemaVersion:"verification-adjudication-native-reads-proof.v1",nativeProof:{path:nativePath,sha256:createHash("sha256").update(await readFile(nativePath)).digest("hex")},readOnly:true,results,hostileChecks,unchangedCounts:after,sourceFiles,limitations:["Repository and sanitized service only; public actor-authorized transport tested separately","Existing retained run targets; no human decision or admission mutation"]};

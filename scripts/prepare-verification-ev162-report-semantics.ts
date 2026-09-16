@@ -5,11 +5,11 @@ import { pathToFileURL } from "node:url";
 import type { VerificationArtifactHandle, VerificationSource, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-conversion";
 import { canonicalizeJson, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, sha256Digest } from "@aiengineer/knowledge-verification";
-import { VerificationAdmissionService, type VerificationAdmissionRepositoryPort } from "../packages/application/src/verification-admission.js";
-import { loadDiagnosticsOfflineCatalog } from "../packages/application/src/verification-diagnostics-offline-catalog.js";
-import { buildDiagnosticsOfflineLedgers } from "../packages/application/src/verification-diagnostics-offline-ledgers.js";
-import { prepareDiagnosticsGeneratedReportSemantics, type DiagnosticsReportSemanticSourceBinding } from "../packages/application/src/verification-diagnostics-generated-report-semantics.js";
-import type { DiagnosticsReportCoverage } from "../packages/application/src/verification-diagnostics-report-coverage.js";
+import { VerificationAdmissionService, type VerificationAdmissionRepositoryPort } from "../packages/application/src/verification/admission/verification-admission.js";
+import { loadDiagnosticsOfflineCatalog } from "../packages/application/src/diagnostics/verification-diagnostics-offline-catalog.js";
+import { buildDiagnosticsOfflineLedgers } from "../packages/application/src/diagnostics/verification-diagnostics-offline-ledgers.js";
+import { prepareDiagnosticsGeneratedReportSemantics, type DiagnosticsReportSemanticSourceBinding } from "../packages/application/src/diagnostics/verification-diagnostics-generated-report-semantics.js";
+import type { DiagnosticsReportCoverage } from "../packages/application/src/diagnostics/verification-diagnostics-report-coverage.js";
 
 type Digest = `sha256:${string}`;
 const workspace = resolve(import.meta.dirname, "../..");

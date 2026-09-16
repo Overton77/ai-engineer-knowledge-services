@@ -5,7 +5,7 @@ import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@ai
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { VerificationBenchmarkCaseResultSchema } from "@aiengineer/knowledge-contracts";
 import { createVerificationBenchmarkCheckpointPlan, verificationBenchmarkDigest } from "../packages/evaluation/src/verification-benchmark.js";
-import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification-benchmark-inputs.js";
+import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-inputs.js";
 import { PostgresVerificationBenchmarkRunStore, type DurableVerificationBenchmarkRunInput } from "../packages/persistence/src/verification-benchmark-run.js";
 
 const pgUrl = process.env.POSTGRES_URL!, storageUrl = process.env.SUPABASE_URL!;

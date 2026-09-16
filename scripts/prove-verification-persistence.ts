@@ -355,8 +355,8 @@ try {
   checks.storage_rls = storageRls.own===1&&storageRls.foreign===0;
 
   if(process.env.VERIFICATION_PROVE_BENCHMARK_INPUTS==="1"||process.env.VERIFICATION_PROVE_BENCHMARK_PROFILE==="1"){
-    const {OfflineBenchmarkInputCatalog,RegisteredBenchmarkInputAdmission}=await import("../packages/application/src/verification-benchmark-inputs.js");
-    const {diagnosticsBenchmarkArms}=await import("../packages/application/src/verification-benchmark.js");
+    const {OfflineBenchmarkInputCatalog,RegisteredBenchmarkInputAdmission}=await import("../packages/application/src/verification/benchmark/verification-benchmark-inputs.js");
+    const {diagnosticsBenchmarkArms}=await import("../packages/application/src/verification/benchmark/verification-benchmark.js");
     const proveProfile=process.env.VERIFICATION_PROVE_BENCHMARK_PROFILE==="1";
     const profileDirectory=new URL("../catalog/verification-benchmarks/diagnostics-companies-pilot-v4/",import.meta.url);
     const datasetBytes=new Uint8Array(await readFile(proveProfile?new URL("dataset.json",profileDirectory):new URL("../catalog/verification-benchmarks/diagnostics-companies-pilot-v3/dataset.json",import.meta.url)));
@@ -379,7 +379,7 @@ try {
     await expectFailure("benchmark_input_matrix_bound_enforced",()=>new RegisteredBenchmarkInputAdmission(catalog,repository.createTrustedArtifactResolver(),{maximumExecutions:1}).load(request,{tenantId}),/EXECUTION_LIMIT_EXCEEDED/);
     benchmarkInputEvidence={datasetArtifact:ref(datasetArtifact),experimentArtifact:ref(experimentArtifact),datasetManifestDigest:admitted.dataset.manifestDigest,caseCount:admitted.dataset.cases.length,armCount:admitted.experiment.arms.length,providerDispatches:0};
     if(proveProfile){
-      const {RegisteredBenchmarkProfileCatalog,RegisteredBenchmarkProfileAdmission}=await import("../packages/application/src/verification-benchmark-registered-profile.js");
+      const {RegisteredBenchmarkProfileCatalog,RegisteredBenchmarkProfileAdmission}=await import("../packages/application/src/verification/benchmark/verification-benchmark-registered-profile.js");
       const manifest=JSON.parse(await readFile(new URL("manifest.json",profileDirectory),"utf8")) as {files:Array<{name:string}>};
       const names=new Set(["dataset.json","derived-input-grant.json","manifest.json","case-artifact-registry.json","experiments/extraction-v1/manifest.json","experiments/extraction-v1/output-schema.json",...manifest.files.map(item=>item.name)]);
       const profileFiles:Array<{name:string;artifactId:string;digest:string}>=[];

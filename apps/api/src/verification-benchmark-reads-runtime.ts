@@ -1,31 +1,9 @@
 import { createPublicKey, verify } from "node:crypto";
-import { z } from "zod";
-import { VerificationBenchmarkReadService } from "@aiengineer/knowledge-application";
+import { parseBenchmarkReadPublicKeys, VerificationBenchmarkReadService } from "@aiengineer/knowledge-application";
 import { PostgresVerificationBenchmarkReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 
-const PublicKeysSchema = z.array(z.strictObject({
-  keyId: z.string().trim().min(1).max(255),
-  publicKeyPem: z.string().trim().min(1).max(4096),
-})).min(1).max(32);
-
-/** Only operator-configured public keys establish signing trust for reads. */
-export function parseBenchmarkReadPublicKeys(raw: string): Readonly<Record<string, string>> {
-  try {
-    if (Buffer.byteLength(raw, "utf8") > 131_072) throw new Error("KEYRING_TOO_LARGE");
-    const rows = PublicKeysSchema.parse(JSON.parse(raw));
-    const result: Record<string, string> = Object.create(null) as Record<string, string>;
-    for (const row of rows) {
-      if (Object.hasOwn(result, row.keyId) || !row.publicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----") || !row.publicKeyPem.endsWith("-----END PUBLIC KEY-----")) throw new Error("INVALID_PUBLIC_KEY");
-      const key = createPublicKey(row.publicKeyPem);
-      if (key.asymmetricKeyType !== "ed25519") throw new Error("INVALID_KEY_ALGORITHM");
-      result[row.keyId] = key.export({type:"spki",format:"pem"}).toString();
-    }
-    return Object.freeze(result);
-  } catch {
-    throw new Error("INVALID_VERIFICATION_BENCHMARK_READ_PUBLIC_KEYS");
-  }
-}
+export { parseBenchmarkReadPublicKeys };
 
 export function createVerificationBenchmarkReads(database: PostgresCanonicalRepository | undefined, environment: Readonly<Record<string,string|undefined>>) {
   const raw = environment.VERIFICATION_BENCHMARK_READ_PUBLIC_KEYS_JSON?.trim();

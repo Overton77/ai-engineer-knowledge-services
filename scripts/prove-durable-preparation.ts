@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { mkdir,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { ExactHttpAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
+import {
+  BoundedManualUploadAdapter,
+  ExactHttpAcquisitionAdapter,
+  FilesystemManualUploadSource,
+  RoutedAcquisitionAdapter,
+} from "@aiengineer/knowledge-acquisition";
 import type { OperationContext,OperationKind } from "@aiengineer/knowledge-contracts";
 import { DeterministicTextConversionProvider,DoclingServeProvider,HttpDoclingServeClient } from "@aiengineer/knowledge-conversion";
 import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-domain";
@@ -22,8 +27,15 @@ const sourceArtifacts=new SupabaseArtifactStore({projectUrl:persistenceConfig.su
 const derivativeArtifacts=new SupabaseArtifactStore({projectUrl:persistenceConfig.supabaseUrl,serviceRoleKey:persistenceConfig.supabaseSecretKey,
   bucket:"content-derivatives",maximumBytes:8_000_000});
 const preparationArtifacts:ArtifactStore={put:(input)=>derivativeArtifacts.put(input),get:(tenant,digest)=>sourceArtifacts.get(tenant,digest)};
-const acquisition=new ExactHttpAcquisitionAdapter(sourceArtifacts,{allowedProtocols:["https:"],allowedPorts:[443],allowedHosts:["httpbin.org"],
+const httpAcquisition=new ExactHttpAcquisitionAdapter(sourceArtifacts,{allowedProtocols:["https:"],allowedPorts:[443],allowedHosts:["httpbin.org"],
   maximumRedirects:2,timeoutMs:15_000,maximumBytes:1_000_000,maximumDecompressionRatio:10});
+const uploadRoot=process.env.ACQUISITION_UPLOAD_ROOT?.trim();
+const acquisition=new RoutedAcquisitionAdapter([
+  httpAcquisition,
+  ...(uploadRoot
+    ? [new BoundedManualUploadAdapter(sourceArtifacts,new FilesystemManualUploadSource(uploadRoot),{maximumBytes:1_000_000,maximumPathLength:240})]
+    : []),
+]);
 const providers=[
   new DoclingServeProvider("pinned-f8b324448e7c",new HttpDoclingServeClient({baseUrl:process.env.DOCLING_BASE_URL?.trim()||"http://127.0.0.1:5001",
     maximumResultBytes:8_000_000,requestTimeoutMs:2_000}),preparationArtifacts),

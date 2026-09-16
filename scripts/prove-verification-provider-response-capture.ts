@@ -6,11 +6,11 @@ import { PostgresCanonicalRepository, PostgresVerificationRepository } from "../
 import { PostgresVerificationProviderAccounting } from "../packages/persistence/src/verification-provider-accounting.js";
 import { PostgresVerificationProviderResponseCaptureStore } from "../packages/persistence/src/verification-provider-response-capture.js";
 import { SupabaseArtifactStore } from "../packages/runtime/src/artifacts.js";
-import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "../packages/application/src/verification-provider.js";
+import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "../packages/application/src/verification/operations/verification-provider.js";
 import { GatewayStructuredExtractionProvider } from "../packages/verification/src/providers/gateway.js";
 import { canonicalizeJson } from "../packages/verification/src/index.js";
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import type { VerificationProviderTransportResponse } from "../packages/application/src/verification-provider-transport.js";
+import type { VerificationProviderTransportResponse } from "../packages/application/src/verification/operations/verification-provider-transport.js";
 
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;
 for(const [value,port]of [[pgUrl,"54322"],[storageUrl,"54321"]]){const url=new URL(value!);if(!["localhost","127.0.0.1"].includes(url.hostname)||url.port!==port)throw new Error("LOCAL_ONLY_PROOF_REQUIRED");}
@@ -64,7 +64,7 @@ try{
  assert.equal(syntheticFetches,3);checks.no_adapter_redispatch_on_recovery=true;
  const rows=await database.transaction(tenantId,async c=>({captures:(await c.query("select * from orchestration.verification_provider_response_capture where tenant_id=$1 order by provider_attempt_id",[tenantId])).rows,budget:(await c.query("select reserved_cost_micros,settled_cost_micros from orchestration.verification_provider_budget where tenant_id=$1 and id=$2",[tenantId,budgetId])).rows[0]}));
  assert.equal(rows.captures.length,3);assert.equal(Number(rows.budget!.reserved_cost_micros),200);assert.equal(Number(rows.budget!.settled_cost_micros),10);
- const paths=["packages/application/src/verification-provider.ts","packages/application/src/verification-provider-transport.ts","packages/persistence/src/verification-provider-response-capture.ts","packages/verification/src/providers/gateway.ts","packages/verification/src/providers/interfaze.ts","../ai-engineer-db-contract/supabase/migrations/20260906031400_verification_provider_response_capture.sql","scripts/prove-verification-provider-response-capture.ts"];
+ const paths=["packages/application/src/verification/operations/verification-provider.ts","packages/application/src/verification/operations/verification-provider-transport.ts","packages/persistence/src/verification-provider-response-capture.ts","packages/verification/src/providers/gateway.ts","packages/verification/src/providers/interfaze.ts","../ai-engineer-db-contract/supabase/migrations/20260906031400_verification_provider_response_capture.sql","scripts/prove-verification-provider-response-capture.ts"];
  const sources=await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const output=resolve("../internal",`verification-provider-response-capture-${namespace}.json`);
  await writeFile(output,JSON.stringify({passed:true,schemaVersion:"verification-provider-response-capture-proof.v1",scope:"actual Gateway adapter and local canonical PostgreSQL/Storage; injected synthetic HTTP responses; no supplier calls or charges",tenantId,budgetId,syntheticFetches,externalProviderRequests:0,checks,results,rows,sources},null,2),{flag:"wx"});console.log(JSON.stringify({passed:true,output,scenarios:results.length,checks:Object.keys(checks).length}));

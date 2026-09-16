@@ -296,10 +296,10 @@ try {
 
   const sourceHashes: Record<string, string> = {};
   for(const file of ["scripts/verification-seal-crash-proof.ts","scripts/verification-seal-crash-child.ts"]){sourceHashes[file]=createHash("sha256").update(await readFile(file)).digest("hex");}
-  for(const file of ["apps/worker/src/verification-sealed-replay-activity.ts","apps/worker/src/verification-sealed-replay-runtime.ts","apps/worker/src/verification-metric-sealer.ts","packages/application/src/verification-seal-policy.ts","packages/persistence/src/verification.ts","packages/application/src/verification-replay.ts","packages/verification/src/provenance/replay.ts"]){
+  for(const file of ["apps/worker/src/verification-sealed-replay-activity.ts","apps/worker/src/verification-sealed-replay-runtime.ts","apps/worker/src/verification-metric-sealer.ts","packages/application/src/verification/admission/verification-seal-policy.ts","packages/persistence/src/verification.ts","packages/application/src/verification/operations/verification-replay.ts","packages/verification/src/provenance/replay.ts"]){
     sourceHashes[file]=createHash("sha256").update(await readFile(file)).digest("hex");
   }
-  for (const file of ["scripts/prove-verification-metric-service.ts", "scripts/verification-metric-runtime-proof.ts", "packages/application/src/verification-metrics.ts", "packages/persistence/src/verification-metric-principals.ts", "apps/api/src/index.ts", "apps/api/src/server.ts", "apps/worker/src/index.ts", "apps/worker/src/verification-metric-activity.ts", "apps/worker/src/activity-registry.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "packages/verification/src/deterministic/engine.ts"]) {
+  for (const file of ["scripts/prove-verification-metric-service.ts", "scripts/verification-metric-runtime-proof.ts", "packages/application/src/verification/operations/verification-metrics.ts", "packages/persistence/src/verification-metric-principals.ts", "apps/api/src/index.ts", "apps/api/src/server.ts", "apps/worker/src/index.ts", "apps/worker/src/verification-metric-activity.ts", "apps/worker/src/activity-registry.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "packages/verification/src/deterministic/engine.ts"]) {
     sourceHashes[file] = createHash("sha256").update(await readFile(file)).digest("hex");
   }
   const receipt = resolve("..", "internal", `${namespace}.json`);

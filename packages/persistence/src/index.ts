@@ -10,6 +10,7 @@ export * from "./preparation.js";
 export * from "./governance.js";
 export * from "./vector-store.js";
 export * from "./verification.js";
+export * from "./verification-host-runtime.js";
 export * from "./verification-case-reads.js";
 export * from "./verification-case-writer.js";
 export * from "./verification-metric-principals.js";

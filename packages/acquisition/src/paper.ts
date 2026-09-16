@@ -1,6 +1,6 @@
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
-import type { PaperAcquisitionAdapter as PaperAdapterContract } from "./fakes.js";
+import type { PaperAcquisitionAdapter as PaperAdapterContract } from "./types.js";
 import type {
   AcquisitionPlan,
   AcquisitionRequest,

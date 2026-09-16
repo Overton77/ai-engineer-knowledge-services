@@ -197,7 +197,7 @@ try {
 
   const sourcePaths = [
     "packages/contracts/src/verification/benchmark-comparison-reads.ts",
-    "packages/application/src/verification-benchmark-comparison-reads.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-comparison-reads.ts",
     "packages/persistence/src/verification-benchmark-comparison-reads.ts",
     "apps/api/src/verification-benchmark-comparison-reads-runtime.ts",
     "apps/api/src/server.ts",

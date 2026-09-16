@@ -474,7 +474,7 @@ assert.equal((await database.listReceipts(tenantId, cancellation.context.operati
 checks.cancelled_operation_denied_activity_artifact_and_receipt = true;
 
 const sourcePaths = [
-  "packages/application/src/verification-claims.ts",
+  "packages/application/src/verification/operations/verification-claims.ts",
   "packages/persistence/src/verification.ts",
   "packages/persistence/src/verification-claims-principals.ts",
   "apps/worker/src/verification-claims-activity.ts",
