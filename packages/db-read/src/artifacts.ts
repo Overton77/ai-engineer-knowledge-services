@@ -7,7 +7,10 @@ import { uuidv7 } from "./uuid.js";
 export type KnowledgeArtifactType =
   | "knowledge_read_intent" | "knowledge_read_snapshot" | "knowledge_ingestion_plan"
   | "knowledge_ingestion_receipt" | "schema_workspace_manifest" | "knowledge_report_markdown" | "ingestion_intent"
-  | "research_report_structure" | "research_report_manifest" | "research_report_verification";
+  | "research_report_structure" | "research_report_manifest" | "research_report_verification"
+  | "content_link_intent" | "content_link_plan" | "content_link_receipt"
+  | "content_summary_text" | "content_summary_preparation_receipt"
+  | "workspace_file";
 
 export interface ArtifactRecord {
   readonly artifactId: string;

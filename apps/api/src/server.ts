@@ -62,6 +62,7 @@ import {
   VerificationOperationContextHintsSchema,
   RetrievalPlanSchema,
   RetrievalRunInputSchema,
+  RetrievalCitationReplaySchema,
   RetrievalExplanationResourceSchema,
   RetrievalRunResourceSchema,
   VectorStoreResourceSchema,
@@ -83,6 +84,7 @@ import {
   VerificationCaseResourceSchema,
   VerificationEvidenceResourceSchema,
   type EvidencePacket,
+  type RetrievalCitationReplay,
   type OperationKind,
   type OperationContext,
   type ProblemDetails,
@@ -118,7 +120,7 @@ import {
   registerA2AHttpRoutes,
   type ResolveCallbackSigningSecret,
 } from "./a2a-http.js";
-import type { CanonicalRetrievalExecutorPort } from "./retrieval-executor.js";
+import { isRetrievalUnsupportedError, type CanonicalRetrievalExecutorPort } from "./retrieval-executor.js";
 
 export interface ServerOptions {
   service?: KnowledgeIntegrationService;
@@ -128,6 +130,10 @@ export interface ServerOptions {
   maximumResourceResponseBytes?: number;
   publicOrigin?: string;
   resolveIdentity?: ResolveApiIdentity;
+  replayEvidencePacketCitations?: (
+    tenantId: string,
+    packetId: string,
+  ) => Promise<RetrievalCitationReplay>;
   getEvidencePacket?: (
     tenantId: string,
     packetId: string,
@@ -495,6 +501,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             correlation,
           ),
         );
+    if (isRetrievalUnsupportedError(error))
+      return reply
+        .status(422)
+        .type("application/json")
+        .send(error.response);
     if (
       message.startsWith("RETRIEVAL_") ||
       message.startsWith("NO_ACTIVE_PUBLISHED_")
@@ -3061,6 +3072,50 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
                 correlationId(request),
               ),
             );
+    },
+  );
+  server.get<{ Params: Params }>(
+    "/v1/evidence-packets/:id/citations",
+    async (request, reply) => {
+      const access = await requireAccess(request, reply, "knowledge.read");
+      if (!access) return;
+      if (!options.replayEvidencePacketCitations)
+        return reply
+          .status(503)
+          .type("application/problem+json")
+          .send(
+            problem(
+              503,
+              "INTERNAL_ERROR",
+              "Citation replay custody unavailable",
+              correlationId(request),
+            ),
+          );
+      try {
+        return RetrievalCitationReplaySchema.parse(
+          await options.replayEvidencePacketCitations(
+            access.tenant,
+            UuidSchema.parse(request.params.id),
+          ),
+        );
+      } catch (error) {
+        if (
+          !(error instanceof Error) ||
+          error.message !== "EVIDENCE_PACKET_NOT_FOUND"
+        )
+          throw error;
+        return reply
+          .status(404)
+          .type("application/problem+json")
+          .send(
+            problem(
+              404,
+              "NOT_FOUND",
+              "Evidence packet not found",
+              correlationId(request),
+            ),
+          );
+      }
     },
   );
   server.get<{ Params: Params }>(

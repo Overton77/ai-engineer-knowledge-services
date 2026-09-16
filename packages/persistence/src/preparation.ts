@@ -30,6 +30,13 @@ function artifactFromRow(row: Row): PersistedPreparationArtifact {
 }
 
 async function persistArtifact(client: TenantSqlClient, tenantId: string, artifact: PersistedPreparationArtifact): Promise<void> {
+  const registered = (await client.query<Row>("select * from orchestration.artifact where tenant_id=$1 and id=$2", [tenantId, artifact.artifactId])).rows[0];
+  if (registered) {
+    if (registered.sha256 !== artifact.digest.slice(7) || registered.media_type !== artifact.mediaType || Number(registered.size_bytes) !== artifact.byteLength
+      || registered.storage_bucket !== artifact.storageBucket || registered.object_path !== artifact.storageKey || registered.artifact_type !== artifact.artifactType) throw new Error("ARTIFACT_METADATA_CONFLICT");
+    if (registered.verification_contract_version && registered.storage_state !== "available") throw new Error("ARTIFACT_NOT_AVAILABLE");
+    return;
+  }
   await client.query(`insert into orchestration.artifact
     (id,tenant_id,artifact_type,sha256,bucket_class,storage_bucket,object_path,media_type,size_bytes)
     values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(storage_bucket,object_path) where verification_contract_version is null do nothing`, [
@@ -74,41 +81,63 @@ export class PostgresPreparationRepository implements PreparationRepository {
   async persistCapture(tenantId: string, input: PersistCaptureInput): Promise<PersistedCapture> {
     const captureMethod = canonicalCaptureMethod(input.captureMethod);
     return this.database.transaction(tenantId, async (client) => {
+      await client.query("select id from knowledge_service.operation where tenant_id=$1 and id=$2 for update", [tenantId,input.operationId]);
       await persistArtifact(client, tenantId, input.artifact);
       await client.query(`insert into evidence.source(id,tenant_id,source_class,canonical_url,publisher,sensitivity)
-        values($1,$2,$3,$4,$5,$6) on conflict(id) do nothing`, [input.sourceId,tenantId,input.sourceClass,input.canonicalUrl,input.publisher??null,input.sensitivity]);
-      const source = (await client.query<Row>("select * from evidence.source where tenant_id=$1 and id=$2", [tenantId,input.sourceId])).rows[0];
+        values($1,$2,$3,$4,$5,$6) on conflict do nothing`, [input.sourceId,tenantId,input.sourceClass,input.canonicalUrl,input.publisher??null,input.sensitivity]);
+      const source = (await client.query<Row>("select * from evidence.source where tenant_id=$1 and (id=$2 or canonical_url=$3) order by id for update", [tenantId,input.sourceId,input.canonicalUrl])).rows[0];
       if (!source || String(source.canonical_url) !== input.canonicalUrl || String(source.source_class) !== input.sourceClass
         || String(source.sensitivity) !== input.sensitivity) throw new Error("SOURCE_IDENTITY_CONFLICT");
       const context = { operationId:input.operationId, observations:input.observations, captureMethod:input.captureMethod };
+      const matching = (await client.query<Row>(`select id from evidence.source_capture where tenant_id=$1 and source_id=$2 and artifact_id=$3
+        and content_sha256=$4 and captured_at=$5::timestamptz and capture_method=$6 and capture_method_version=$7
+        and coalesce(context->>'captureMethod',capture_method)=$8 order by id`,
+        [tenantId,source.id,input.artifact.artifactId,input.artifact.digest.slice(7),input.capturedAt,captureMethod,input.captureMethodVersion,input.captureMethod])).rows;
+      if (matching.length > 1) throw new Error("CAPTURE_IDENTITY_AMBIGUOUS");
+      const captureId = matching[0] ? String(matching[0].id) : input.captureId;
+      if (!matching[0]) {
       await client.query(`insert into evidence.source_capture
         (id,tenant_id,source_id,artifact_id,content_sha256,media_type,captured_at,capture_method,capture_method_version,request_url,http_status,context,knowledge_operation_id)
         values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13) on conflict(id) do nothing`, [
-        input.captureId,tenantId,input.sourceId,input.artifact.artifactId,input.artifact.digest.slice(7),input.artifact.mediaType,input.capturedAt,
+        input.captureId,tenantId,String(source.id),input.artifact.artifactId,input.artifact.digest.slice(7),input.artifact.mediaType,input.capturedAt,
         captureMethod,input.captureMethodVersion,input.requestUrl,input.httpStatus??null,JSON.stringify(context),input.operationId,
       ]);
+      }
       const row = (await client.query<Row>(`select c.*,s.source_class,s.canonical_url,s.publisher,s.sensitivity,
         a.id artifact_id,a.artifact_type,a.sha256,a.bucket_class,a.storage_bucket,a.object_path,a.media_type,a.size_bytes
         from evidence.source_capture c join evidence.source s on s.tenant_id=c.tenant_id and s.id=c.source_id
         join orchestration.artifact a on a.tenant_id=c.tenant_id and a.id=c.artifact_id
-        where c.tenant_id=$1 and c.id=$2`, [tenantId,input.captureId])).rows[0];
+        where c.tenant_id=$1 and c.id=$2`, [tenantId,captureId])).rows[0];
       if (!row || String(row.content_sha256) !== input.artifact.digest.slice(7)
-        || String(row.knowledge_operation_id)!==input.operationId
+        || String(row.source_id)!==String(source.id) || String(row.artifact_id)!==input.artifact.artifactId
+        || iso(row.captured_at)!==new Date(input.capturedAt).toISOString() || String(row.request_url)!==input.requestUrl
+        || (row.http_status === null ? undefined : Number(row.http_status))!==input.httpStatus
         || String(row.capture_method)!==captureMethod || String(row.capture_method_version)!==input.captureMethodVersion
-        || String((row.context as Record<string, unknown>).captureMethod ?? row.capture_method)!==input.captureMethod
-        || (row.context as Record<string, unknown>).operationId !== input.operationId) throw new Error("CAPTURE_IDEMPOTENCY_CONFLICT");
-      return captureFromRow(row);
+        || String((row.context as Record<string, unknown>).captureMethod ?? row.capture_method)!==input.captureMethod) throw new Error("CAPTURE_IDEMPOTENCY_CONFLICT");
+      const binding = { captureId, operationId:input.operationId, observations:input.observations };
+      await client.query(`insert into knowledge_service.receipt
+        (id,tenant_id,operation_id,receipt_kind,idempotency_key,executor_identity,input_sha256,output_sha256,outcome,body)
+        values($1,$2,$1,'capture.identity-bound',$3,'preparation-repository',$4,$5,'bound',$6::jsonb)
+        on conflict(tenant_id,idempotency_key) do nothing`,
+        [input.operationId,tenantId,`capture-identity:${input.operationId}`,digestHex(input),digestHex(binding),JSON.stringify(binding)]);
+      const receipt = (await client.query<Row>("select * from knowledge_service.receipt where tenant_id=$1 and idempotency_key=$2", [tenantId,`capture-identity:${input.operationId}`])).rows[0];
+      if (!receipt || receipt.input_sha256!==digestHex(input) || receipt.output_sha256!==digestHex(binding)) throw new Error("CAPTURE_IDEMPOTENCY_CONFLICT");
+      return {...captureFromRow(row),operationId:input.operationId,observations:input.observations};
     });
   }
 
   async getCaptureByOperation(tenantId: string, operationId: string): Promise<PersistedCapture | undefined> {
     return this.database.transaction(tenantId, async (client) => {
+      const binding = (await client.query<Row>("select body,output_sha256 from knowledge_service.receipt where tenant_id=$1 and idempotency_key=$2 and receipt_kind='capture.identity-bound'", [tenantId,`capture-identity:${operationId}`])).rows[0];
+      const body = binding?.body as {captureId:string;operationId:string;observations:unknown} | undefined;
+      if (body && (body.operationId!==operationId || binding!.output_sha256!==digestHex(body))) throw new Error("CAPTURE_IDEMPOTENCY_CONFLICT");
       const row = (await client.query<Row>(`select c.*,s.source_class,s.canonical_url,s.publisher,s.sensitivity,
         a.id artifact_id,a.artifact_type,a.sha256,a.bucket_class,a.storage_bucket,a.object_path,a.media_type,a.size_bytes
         from evidence.source_capture c join evidence.source s on s.tenant_id=c.tenant_id and s.id=c.source_id
         join orchestration.artifact a on a.tenant_id=c.tenant_id and a.id=c.artifact_id
-        where c.tenant_id=$1 and c.context->>'operationId'=$2 order by c.captured_at,c.id limit 1`, [tenantId,operationId])).rows[0];
-      return row ? captureFromRow(row) : undefined;
+        where c.tenant_id=$1 and (($3::uuid is not null and c.id=$3) or ($3::uuid is null and c.context->>'operationId'=$2)) order by c.captured_at,c.id limit 1`, [tenantId,operationId,body?.captureId??null])).rows[0];
+      if (body && !row) throw new Error("CAPTURE_IDENTITY_CONFLICT");
+      return row ? {...captureFromRow(row),...(body?{operationId,observations:body.observations}:{})} : undefined;
     });
   }
 
@@ -183,7 +212,7 @@ export class PostgresPreparationRepository implements PreparationRepository {
         [tenantId,input.transformationRunId,ordinal+1,artifact.artifactType,artifact.artifactId]);
       for (const artifact of input.outputArtifacts) await client.query(`insert into orchestration.artifact_lineage
         (tenant_id,from_artifact_id,to_artifact_id,relation_kind,transformation_run_id) values($1,$2,$3,'derived_from',$4) on conflict do nothing`,
-        [tenantId,input.sourceArtifact.artifactId,artifact.artifactId,input.transformationRunId]);
+        [tenantId,artifact.artifactId,input.sourceArtifact.artifactId,input.transformationRunId]);
       const transformationInput=(await client.query<Row>(`select * from content.transformation_input
         where tenant_id=$1 and transformation_run_id=$2 and ordinal=0`,[tenantId,input.transformationRunId])).rows[0];
       if (!transformationInput || String(transformationInput.source_capture_id)!==input.sourceCaptureId || String(transformationInput.role)!=="source_capture") {
@@ -197,11 +226,11 @@ export class PostgresPreparationRepository implements PreparationRepository {
         representationId:row.representation_id?String(row.representation_id):null}));
       if (digestHex(normalizedOutputs)!==digestHex(expectedOutputs)) throw new Error("TRANSFORMATION_OUTPUT_CONFLICT");
       const lineages=(await client.query<Row>(`select from_artifact_id,to_artifact_id,relation_kind,transformation_run_id from orchestration.artifact_lineage
-        where tenant_id=$1 and transformation_run_id=$2 order by to_artifact_id`,[tenantId,input.transformationRunId])).rows.map((row)=>({
+        where tenant_id=$1 and transformation_run_id=$2 order by from_artifact_id`,[tenantId,input.transformationRunId])).rows.map((row)=>({
           fromArtifactId:String(row.from_artifact_id),toArtifactId:String(row.to_artifact_id),relationKind:String(row.relation_kind),runId:String(row.transformation_run_id)}));
-      const expectedLineages=[...new Map(input.outputArtifacts.map((artifact)=>[artifact.artifactId,{fromArtifactId:input.sourceArtifact.artifactId,
-        toArtifactId:artifact.artifactId,relationKind:"derived_from",runId:input.transformationRunId}])).values()]
-        .sort((a,b)=>a.toArtifactId.localeCompare(b.toArtifactId));
+      const expectedLineages=[...new Map(input.outputArtifacts.map((artifact)=>[artifact.artifactId,{fromArtifactId:artifact.artifactId,
+        toArtifactId:input.sourceArtifact.artifactId,relationKind:"derived_from",runId:input.transformationRunId}])).values()]
+        .sort((a,b)=>a.fromArtifactId.localeCompare(b.fromArtifactId));
       if (digestHex(lineages)!==digestHex(expectedLineages)) throw new Error("ARTIFACT_LINEAGE_CONFLICT");
       for (const node of input.nodes) {
         const locator = node.locator as Record<string, unknown>;
@@ -266,11 +295,13 @@ export class PostgresPreparationRepository implements PreparationRepository {
         JSON.stringify({schemaVersion:"knowledge.chunk-set/v1"}),digestHex("packages/chunking"),JSON.stringify(input.profile),JSON.stringify({}),
       ]);
       const procedure = (await client.query<Row>("select * from retrieval.chunking_procedure_version where tenant_id=$1 and slug=$2 and version=$3",[tenantId,input.procedureSlug,input.procedureVersion])).rows[0];
-      if (!procedure || String(procedure.id)!==input.procedureVersionId || String(procedure.tokenizer)!==input.tokenizer) throw new Error("CHUNK_PROCEDURE_CONFLICT");
+      if (!procedure || String(procedure.tokenizer)!==input.tokenizer
+        || digestHex(procedure.defaults)!==digestHex(input.profile)
+        || String(procedure.code_sha256)!==digestHex("packages/chunking") || procedure.status!=="admitted") throw new Error("CHUNK_PROCEDURE_CONFLICT");
       await client.query(`insert into retrieval.chunk_set
         (id,tenant_id,representation_id,procedure_version_id,frozen_config,tokenizer,input_manifest_sha256,output_manifest_sha256,chunk_set_sha256,status)
         values($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$8,'succeeded') on conflict(tenant_id,chunk_set_sha256) do nothing`,[
-        input.chunkSetId,tenantId,input.representationId,input.procedureVersionId,JSON.stringify({operationId:input.operationId,profile:input.profile}),input.tokenizer,
+        input.chunkSetId,tenantId,input.representationId,String(procedure.id),JSON.stringify({operationId:input.operationId,profile:input.profile}),input.tokenizer,
         input.inputDigest.slice(7),input.outputDigest.slice(7),
       ]);
       const set = (await client.query<Row>("select * from retrieval.chunk_set where tenant_id=$1 and chunk_set_sha256=$2",[tenantId,input.outputDigest.slice(7)])).rows[0];

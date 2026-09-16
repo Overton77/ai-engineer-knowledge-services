@@ -90,6 +90,9 @@ export interface KnowledgeMcpServerOptions {
     | "getOperation"
     | "getVectorStoreOperation"
     | "getRetrievalExplanation"
+    | "getRetrievalRun"
+    | "getEvidencePacket"
+    | "replayEvidencePacketCitations"
     | "getEvaluationFailures"
     | "validateRetrievalPlan"
     | "createRetrievalRun"
@@ -476,6 +479,9 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       "chunk.strategy_list",
       "retrieval.plan_validate",
       "retrieval.explain_run",
+      "retrieval.read_run",
+      "retrieval.read_evidence_packet",
+      "retrieval.replay_citations",
       "evaluation.inspect_failures",
       "embedding.run_status",
       "promotion.status",
@@ -523,6 +529,16 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
       readResult = await client.getRetrievalExplanation(id, context);
+    } else if (name === "retrieval.read_run" && client) {
+      const id = uuid("runId");
+      if (!id || Object.keys(inputObject).some(key => key !== "runId")) return toolError("RESOURCE_ID_REQUIRED");
+      readResult = await client.getRetrievalRun(id, context);
+    } else if ((name === "retrieval.read_evidence_packet" || name === "retrieval.replay_citations") && client) {
+      const id = uuid("packetId");
+      if (!id || Object.keys(inputObject).some(key => key !== "packetId")) return toolError("RESOURCE_ID_REQUIRED");
+      readResult = name === "retrieval.read_evidence_packet"
+        ? await client.getEvidencePacket(id, context)
+        : await client.replayEvidencePacketCitations(id, context);
     } else if (name === "evaluation.inspect_failures" && client) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
@@ -555,6 +571,9 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
         "retrieval.plan_validate",
         "retrieval.search",
         "retrieval.explain_run",
+        "retrieval.read_run",
+        "retrieval.read_evidence_packet",
+        "retrieval.replay_citations",
         "evaluation.inspect_failures",
         "embedding.run_status",
         "promotion.status",

@@ -17,8 +17,80 @@
   ],
   "docs": [
     {
+      "path": "docs/operations/code-quality-and-delivery-process.md",
+      "task": "Post-sprint module review, exemplars, and developer-overridable delivery workflow",
+      "status": "proposed"
+    },
+    {
+      "path": "docs/operations/internal-fallbacks-and-application-order.md",
+      "task": "Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last",
+      "status": "proposed",
+      "modules": [
+        "acquisition",
+        "application",
+        "conversion",
+        "chunking",
+        "documents",
+        "skill-knowledge-ingest",
+        "api",
+        "mcp",
+        "cli",
+        "worker",
+        "verification-executor",
+        "docling"
+      ]
+    },
+    {
+      "path": "docs/operations/conversion-and-chunking.md",
+      "task": "Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters",
+      "status": "proposed",
+      "modules": [
+        "conversion",
+        "chunking",
+        "documents",
+        "application",
+        "docling"
+      ]
+    },
+    {
+      "path": "knowledge/service-boundaries.md",
+      "task": "Choose a transport and the owning module",
+      "status": "reference",
+      "modules": ["application", "api", "mcp", "cli", "verification-executor"]
+    },
+    {
+      "path": "knowledge/schema-read-and-ingestion.md",
+      "task": "Read a bounded knowledge snapshot or apply evidence-backed changes",
+      "status": "reference",
+      "modules": ["schema-workspace", "db-read", "ingestion", "verification-executor"]
+    },
+    {
+      "path": "knowledge/preparation-and-publication.md",
+      "task": "Prepare source material and publish a retrieval version",
+      "status": "reference",
+      "modules": ["application", "ingestion", "persistence", "vector-backends", "policy"]
+    },
+    {
+      "path": "knowledge/retrieval-and-evidence.md",
+      "task": "Retrieve supported results and replay citations",
+      "status": "reference",
+      "modules": ["retrieval", "contracts", "api", "persistence", "policy", "vector-backends"]
+    },
+    {
+      "path": "knowledge/verification-and-admission.md",
+      "task": "Verify claims and admit exact downstream effects",
+      "status": "reference",
+      "modules": ["verification", "ingestion", "application", "policy", "verification-executor"]
+    },
+    {
+      "path": "knowledge/durable-execution-and-recovery.md",
+      "task": "Understand fenced worker execution and bounded recovery",
+      "status": "reference",
+      "modules": ["worker", "runtime", "persistence", "application", "verification-executor"]
+    },
+    {
       "path": "README.md",
-      "task": "Service boundaries and startup",
+      "task": "Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills",
       "modules": [
         "api",
         "cli",
@@ -155,5 +227,16 @@
     "skills/ also contains knowledge-verification, vector-store-management, knowledge-evaluation, knowledge-retrieval-and-evidence, knowledge-preparation-and-promotion, and knowledge-acquisition-and-vetting; those were not registered in this update."
   ],
   "ciWorkflow": ".github/workflows/agent-docs.yml",
-  "codeMap": ".agent-docs/modules.json"
+  "codeMap": ".agent-docs/modules.json",
+  "knowledge": {
+    "root": "knowledge",
+    "routes": [
+      { "task": "Ownership and caller contracts", "concepts": ["service-boundaries"] },
+      { "task": "Schema, bounded reads, canonical writes", "concepts": ["schema-read-and-ingestion"] },
+      { "task": "Capture, prepare, publish", "concepts": ["preparation-and-publication"] },
+      { "task": "Search, evidence packets, citation replay", "concepts": ["retrieval-and-evidence"] },
+      { "task": "Claims, deterministic failures, admission", "concepts": ["verification-and-admission"] },
+      { "task": "Leases, retries, cancellation, repair", "concepts": ["durable-execution-and-recovery"] }
+    ]
+  }
 }

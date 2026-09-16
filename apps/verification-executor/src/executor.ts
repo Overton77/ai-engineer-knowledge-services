@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { beginExecutorStateMutation } from "./checkpoint-state-fence.js";
+import type { ExecutorRecoveryRouting } from "./knowledge/recovery-routing.js";
 import type {
   Assertion,
   DeterministicVerificationResult,
@@ -58,20 +59,36 @@ const ACTIVITY = "verification-executor";
 type JudgeModel = "openai/gpt-5.6-terra" | "openai/gpt-5.6-luna" | "anthropic/claude-haiku-4.5";
 const judgeModels = new Set<string>(["openai/gpt-5.6-terra", "openai/gpt-5.6-luna", "anthropic/claude-haiku-4.5"]);
 
+export interface SemanticExecutionContext {
+  readonly tenantId: string;
+  readonly runId: string;
+  readonly resultArtifactId: string;
+  readonly resultDigest: string;
+}
+
 export interface ExecutorConfig {
   readonly storeDir: string;
   readonly tenantId: string;
   readonly producerDeploymentId: string;
   readonly verifierDeploymentId: string;
+  readonly producerAttemptId?: string;
+  readonly verifierAttemptId?: string;
   readonly principalSalt: string;
   readonly judgeModel: JudgeModel;
   readonly crossFamilyJudgeModel?: JudgeModel;
   readonly aiGatewayApiKey?: string;
+  /** Host-only composition seam for accounted dispatch; never populated from tool payloads. */
+  readonly semanticJudgeAdapterFactory?: (config: ConstructorParameters<typeof GatewaySemanticJudgeAdapter>[0], context: SemanticExecutionContext) => SemanticJudgeAdapter;
   readonly gitSha: string;
   readonly env: Readonly<Record<string, string | undefined>>;
 }
 
 export function loadExecutorConfig(env: Readonly<Record<string, string | undefined>> = process.env): ExecutorConfig {
+  const producerAttemptId = env.VERIFY_PRODUCER_ATTEMPT_ID?.trim();
+  const verifierAttemptId = env.VERIFY_VERIFIER_ATTEMPT_ID?.trim();
+  if ((producerAttemptId || verifierAttemptId) && (!isCanonicalUuid(producerAttemptId) || !isCanonicalUuid(verifierAttemptId) || producerAttemptId === verifierAttemptId)) {
+    throw new Error("VERIFICATION_DISTINCT_CANONICAL_ATTEMPTS_REQUIRED");
+  }
   const judge = env.VERIFY_JUDGE_MODEL?.trim() || "openai/gpt-5.6-terra";
   const cross = env.VERIFY_CROSS_FAMILY_JUDGE_MODEL?.trim();
   if (!judgeModels.has(judge)) throw new Error(`VERIFY_JUDGE_MODEL_UNSUPPORTED:${judge}`);
@@ -85,6 +102,7 @@ export function loadExecutorConfig(env: Readonly<Record<string, string | undefin
     tenantId: env.VERIFY_TENANT_ID?.trim() || deterministicUuid("tenant", "verification-executor-local"),
     producerDeploymentId: env.VERIFY_PRODUCER_DEPLOYMENT_ID?.trim() || "eve-research-producer",
     verifierDeploymentId: env.VERIFY_VERIFIER_DEPLOYMENT_ID?.trim() || "knowledge-verification-executor",
+    ...(producerAttemptId ? { producerAttemptId } : {}), ...(verifierAttemptId ? { verifierAttemptId } : {}),
     principalSalt: env.VERIFY_PRINCIPAL_SALT?.trim() || "local-development-salt",
     judgeModel: judge as JudgeModel,
     ...(cross ? { crossFamilyJudgeModel: cross as JudgeModel } : {}),
@@ -95,6 +113,7 @@ export function loadExecutorConfig(env: Readonly<Record<string, string | undefin
 }
 
 const fail = (code: string): never => { throw new Error(code); };
+const isCanonicalUuid = (value: string | undefined): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const hostOf = (url: string): string => { try { return new URL(url).host || "unknown-host"; } catch { return "unknown-host"; } };
 
 function claimScope(claimType: Assertion["claimType"]): VerificationRecordedPolicyInputs["assertions"][number]["claimScope"] {
@@ -125,6 +144,12 @@ function compactChecks(checks: readonly { code: string; status: string; detail?:
 export class VerificationExecutor {
   readonly store: FilesystemStore;
   readonly config: ExecutorConfig;
+  private recoveryRouting?: ExecutorRecoveryRouting;
+
+  attachRecoveryRouting(routing: ExecutorRecoveryRouting): void {
+    if (this.recoveryRouting && this.recoveryRouting !== routing) throw new Error("RECOVERY_ROUTING_ALREADY_ATTACHED");
+    this.recoveryRouting = routing;
+  }
 
   private constructor(store: FilesystemStore, config: ExecutorConfig) {
     this.store = store;
@@ -132,6 +157,8 @@ export class VerificationExecutor {
   }
 
   static async create(config: ExecutorConfig = loadExecutorConfig()): Promise<VerificationExecutor> {
+    if ((config.producerAttemptId || config.verifierAttemptId) && (!isCanonicalUuid(config.producerAttemptId)
+      || !isCanonicalUuid(config.verifierAttemptId) || config.producerAttemptId === config.verifierAttemptId)) throw new Error("VERIFICATION_DISTINCT_CANONICAL_ATTEMPTS_REQUIRED");
     const store = new FilesystemStore(config.storeDir, config.tenantId);
     await store.init();
     return new VerificationExecutor(store, config);
@@ -140,6 +167,7 @@ export class VerificationExecutor {
   // ---- step receipts -----------------------------------------------------------
 
   private async step<T>(runId: string | undefined, operation: string, input: unknown, fn: () => Promise<T>, summarize: (output: T) => unknown = (output) => output): Promise<T> {
+    if (this.config.producerAttemptId && runId !== undefined && !isCanonicalUuid(runId)) throw new Error("VERIFICATION_CANONICAL_RUN_ID_REQUIRED");
     const releaseState = beginExecutorStateMutation(this.store, runId);
     const startedAt = new Date().toISOString();
     try {
@@ -261,6 +289,9 @@ export class VerificationExecutor {
   // ---- claims ------------------------------------------------------------------------
 
   async compileClaims(intent: ClaimsIntent, runId: string): Promise<{ bundle: VerificationBundle; captures: Map<string, CaptureRecord>; contents: Map<string, string> }> {
+    if (this.config.producerAttemptId && !isCanonicalUuid(runId)) throw new Error("VERIFICATION_CANONICAL_RUN_ID_REQUIRED");
+    if (this.config.producerAttemptId && intent.producer && (intent.producer.attemptId !== this.config.producerAttemptId
+      || intent.producer.deploymentId !== this.config.producerDeploymentId)) throw new Error("VERIFICATION_PRODUCER_PIN_MISMATCH");
     const captureIds = [...new Set(intent.claims.flatMap((claim) => claim.evidence.map((edge) => edge.captureId)))];
     const captures = new Map<string, CaptureRecord>();
     const contents = new Map<string, string>();
@@ -269,7 +300,9 @@ export class VerificationExecutor {
       captures.set(captureId, loaded.record);
       contents.set(captureId, loaded.content);
     }
-    const producer = intent.producer ?? { deploymentId: this.config.producerDeploymentId, attemptId: runId, capabilityVersion: "claims-intent.v1" };
+    const producer = this.config.producerAttemptId
+      ? { deploymentId: this.config.producerDeploymentId, attemptId: this.config.producerAttemptId, capabilityVersion: intent.producer?.capabilityVersion ?? "claims-intent.v1" }
+      : intent.producer ?? { deploymentId: this.config.producerDeploymentId, attemptId: runId, capabilityVersion: "claims-intent.v1" };
     const assertions: Assertion[] = intent.claims.map((claim) => ({
       assertionId: claim.claimId,
       kind: "claim",
@@ -319,7 +352,7 @@ export class VerificationExecutor {
       bundleId: `bundle-${intent.intentId}`,
       policyVersion: intent.policyVersion,
       producer,
-      verifier: { deploymentId: this.config.verifierDeploymentId, attemptId: runId, capabilityVersion: EXECUTOR_VERSION },
+      verifier: { deploymentId: this.config.verifierDeploymentId, attemptId: this.config.verifierAttemptId ?? runId, capabilityVersion: EXECUTOR_VERSION },
       sources: [...sourcesById.values()],
       captures: [...captures.values()].map((record) => ({
         captureId: record.captureId,
@@ -340,6 +373,17 @@ export class VerificationExecutor {
     return this.step(input.runId, "verify_claims", { intentArtifactId: input.intentArtifactId, inline: input.intent !== undefined }, async () => {
       const { intent, handle: intentArtifact } = await this.loadIntent(ClaimsIntentSchema, input, "CLAIMS");
       const { bundle, captures, contents } = await this.compileClaims(intent, input.runId);
+      const previous = await this.store.readRun(input.runId);
+      if ((previous.recoveryAuthorityArtifactId || this.config.env.VERIFY_RECOVERY_REQUIRED === "1") && !this.recoveryRouting) throw new Error("RECOVERY_HOST_REQUIRED");
+      if (this.recoveryRouting) {
+        if (previous.resultArtifactId && !previous.recoveryAuthorityArtifactId) throw new Error("RECOVERY_AUTHORIZATION_REQUIRED_BEFORE_VERIFICATION");
+        const authorization = await this.recoveryRouting.authorize({ runId: input.runId, intent, bundle });
+        if (previous.recoveryAuthorityArtifactId && previous.recoveryAuthorityArtifactId !== authorization.authorityArtifact.artifactId) throw new Error("RECOVERY_INITIAL_AUTHORITY_IMMUTABLE");
+        previous.recoveryAuthorityArtifactId = authorization.authorityArtifact.artifactId;
+        previous.recoveryBatchId = authorization.batchId;
+        previous.recoveryCaseId = authorization.caseId;
+        await this.store.writeRun(previous);
+      }
       const artifacts = [...captures.values()].map((record) => ({ artifactId: record.contentArtifact.artifactId, content: contents.get(record.captureId)! }));
       const result = verifyDeterministicBundle({ bundle, artifacts, runtimePrincipals: this.principals(bundle.producer.deploymentId) });
       const now = new Date().toISOString();
@@ -455,14 +499,14 @@ export class VerificationExecutor {
     };
   }
 
-  private judgeAdapter(model: JudgeModel, sink: ProviderArtifactSink, role: "primary" | "cross_family"): SemanticJudgeAdapter {
+  private judgeAdapter(model: JudgeModel, sink: ProviderArtifactSink, execution: { role: "primary" | "cross_family"; context: SemanticExecutionContext }): SemanticJudgeAdapter {
     const apiKey = this.config.aiGatewayApiKey ?? fail("AI_GATEWAY_API_KEY_REQUIRED");
     const family = model.split("/")[0]!;
-    return new GatewaySemanticJudgeAdapter({
+    const adapterConfig: ConstructorParameters<typeof GatewaySemanticJudgeAdapter>[0] = {
       apiKey,
       model,
       identity: {
-        deploymentId: `${this.config.verifierDeploymentId}:judge:${role}:${model.replace(/[^a-z0-9.-]/gi, "-")}`,
+        deploymentId: `${this.config.verifierDeploymentId}:judge:${execution.role}:${model.replace(/[^a-z0-9.-]/gi, "-")}`,
         provider: "vercel-ai-gateway",
         family,
         model,
@@ -473,7 +517,10 @@ export class VerificationExecutor {
         configurationDigest: gatewaySemanticConfigurationDigest(model),
       },
       artifactSink: sink,
-    });
+    };
+    return this.config.semanticJudgeAdapterFactory
+      ? this.config.semanticJudgeAdapterFactory(adapterConfig, execution.context)
+      : new GatewaySemanticJudgeAdapter(adapterConfig);
   }
 
   async judgeSemantics(input: { runId: string; assertionIds?: string[]; model?: string; crossFamilyModel?: string }) {
@@ -485,7 +532,10 @@ export class VerificationExecutor {
       const cross = (input.crossFamilyModel ?? this.config.crossFamilyJudgeModel) as JudgeModel | undefined;
       const providerArtifacts: VerificationArtifactHandle[] = [];
       const sink = this.providerSink(providerArtifacts);
-      const adapters = { primary: this.judgeAdapter(model, sink, "primary"), ...(cross && cross.split("/")[0] !== model.split("/")[0] ? { crossFamily: this.judgeAdapter(cross, sink, "cross_family") } : {}) };
+      const context: SemanticExecutionContext = { tenantId: this.config.tenantId, runId: input.runId,
+        resultArtifactId: resultArtifact.artifactId, resultDigest: resultArtifact.digest };
+      const adapters = { primary: this.judgeAdapter(model, sink, { role: "primary", context }),
+        ...(cross && cross.split("/")[0] !== model.split("/")[0] ? { crossFamily: this.judgeAdapter(cross, sink, { role: "cross_family", context }) } : {}) };
       const wanted = new Set(input.assertionIds ?? bundle.assertions.map((item) => item.assertionId));
       const contentCache = new Map<string, string>();
       const assessments: SemanticAssessmentRecord[] = [];
@@ -607,6 +657,7 @@ export class VerificationExecutor {
       state.decisionArtifactId = decisionArtifact.artifactId;
       delete state.auditArtifactId;
       await this.store.writeRun(state);
+      const recovery = await this.routeRecovery(state, policyArtifact, decisionArtifact);
       return {
         runId: input.runId,
         policyVersion: definition.policyVersion,
@@ -617,11 +668,24 @@ export class VerificationExecutor {
         reasonCodes: decision.reasonCodes,
         assertionOutcomes: decision.assertionOutcomes,
         semanticCoverage: { judged: semantic.size, total: bundle.assertions.length },
+        ...(recovery ? { recovery } : {}),
       };
     }, (output) => ({ runId: output.runId, outcome: output.outcome, reasonCodes: output.reasonCodes, semanticCoverage: output.semanticCoverage }));
   }
 
   // ---- seal -----------------------------------------------------------------------------
+
+  private async routeRecovery(state: RunState, policyArtifact: VerificationArtifactHandle, decisionArtifact: VerificationArtifactHandle) {
+    if (!state.recoveryAuthorityArtifactId) {
+      if (this.config.env.VERIFY_RECOVERY_REQUIRED === "1") throw new Error("RECOVERY_AUTHORIZATION_REQUIRED_BEFORE_VERIFICATION");
+      return undefined;
+    }
+    if (!this.recoveryRouting) throw new Error("RECOVERY_HOST_REQUIRED");
+    const routed = await this.recoveryRouting.notify({ runId: state.runId, authorityArtifactId: state.recoveryAuthorityArtifactId, policyArtifact, decisionArtifact });
+    state.recoveryNotificationArtifactId = decisionArtifact.artifactId;
+    await this.store.writeRun(state);
+    return routed;
+  }
 
   async sealRun(input: { runId: string }) {
     return this.step(input.runId, "seal_run", {}, async () => {
@@ -631,14 +695,24 @@ export class VerificationExecutor {
       const policyArtifact = await this.store.resolveHandle({ artifactId: policyArtifactId });
       const policyInputsArtifact = await this.store.resolveHandle({ artifactId: policyInputsArtifactId });
       const decisionArtifact = await this.store.resolveHandle({ artifactId: decisionArtifactId });
+      await this.routeRecovery(state, policyArtifact, decisionArtifact);
       const decision = await this.store.json<VerificationPolicyDecision>(decisionArtifact);
       const policyInputsBytes = await this.store.bytes(policyInputsArtifact);
       const semanticArtifact = state.semanticArtifactId ? await this.store.resolveHandle({ artifactId: state.semanticArtifactId }) : undefined;
       const providerArtifacts: VerificationArtifactHandle[] = [];
       for (const id of state.providerArtifactIds ?? []) providerArtifacts.push(await this.store.resolveHandle({ artifactId: id }));
       const captureArtifacts = bundle.captures.map((capture) => capture.contentArtifact);
+      const previousAuditArtifact = state.auditArtifactId
+        ? await this.store.resolveHandle({ artifactId: state.auditArtifactId }) : undefined;
+      const previousAudit = previousAuditArtifact
+        ? await this.store.json<VerificationAuditBundle>(previousAuditArtifact) : undefined;
+      if (previousAudit && ((await inspectAuditBundle(previousAudit)).errors.length > 0
+        || previousAuditArtifact!.producerActivityId !== `${ACTIVITY}:seal_run`
+        || previousAuditArtifact!.producerVersion !== EXECUTOR_VERSION)) fail("RUN_SEAL_REPLAY_INVALID");
+      if (previousAudit && (previousAudit.tenantId !== this.store.tenantId || previousAudit.manifest.runId !== input.runId))
+        fail("RUN_SEAL_REPLAY_CONFLICT");
       const startedAt = state.createdAt;
-      const completedAt = new Date().toISOString();
+      const completedAt = previousAudit?.manifest.completedAt ?? new Date().toISOString();
       const unique = (handles: VerificationArtifactHandle[]) => [...new Map(handles.map((item) => [item.artifactId, item])).values()].sort((a, b) => a.artifactId.localeCompare(b.artifactId));
       const inputArtifacts = unique([intentArtifact, ...captureArtifacts, policyArtifact, ...(semanticArtifact ? [semanticArtifact] : []), ...providerArtifacts, policyInputsArtifact]);
       const outputArtifacts = unique([bundleArtifact, resultArtifact, decisionArtifact]);
@@ -681,9 +755,10 @@ export class VerificationExecutor {
         recordedPolicyInputsBytes: policyInputsBytes,
         policyDecision: decision,
       });
+      if (previousAudit && digestCanonicalJson(previousAudit) !== digestCanonicalJson(audit)) fail("RUN_SEAL_REPLAY_CONFLICT");
       const inspection = await inspectAuditBundle(audit);
-      const auditArtifact = (await this.store.putJson(audit, {
-        mediaType: "application/vnd.aiengineer.verification-audit-bundle+json", producerActivityId: `${ACTIVITY}:seal_run`, producerVersion: EXECUTOR_VERSION,
+      const auditArtifact = previousAuditArtifact ?? (await this.store.putJson(audit, {
+        mediaType: this.config.producerAttemptId ? "application/vnd.aiengineer.verification-run-manifest+json" : "application/vnd.aiengineer.verification-audit-bundle+json", producerActivityId: `${ACTIVITY}:seal_run`, producerVersion: EXECUTOR_VERSION,
         parentArtifactIds: [...inputArtifacts, ...outputArtifacts].map((item) => item.artifactId), transformation: { kind: "audit_bundle_seal.v1", manifestDigest: manifest.canonicalization.manifestDigest },
       })).handle;
       state.auditArtifactId = auditArtifact.artifactId;

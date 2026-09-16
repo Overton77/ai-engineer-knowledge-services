@@ -138,7 +138,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   apps/cli:
     dependencies:
@@ -166,7 +166,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   apps/mcp:
     dependencies:
@@ -211,8 +211,8 @@ importers:
   apps/verification-executor:
     dependencies:
       '@aiengineer/database-contract':
-        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
-        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../../packages/application
@@ -250,6 +250,15 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-chunking':
+        specifier: workspace:*
+        version: link:../../packages/chunking
+      '@aiengineer/knowledge-documents':
+        specifier: workspace:*
+        version: link:../../packages/documents
+      '@aiengineer/knowledge-domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.0
@@ -608,9 +617,15 @@ importers:
 
   packages/ingestion:
     dependencies:
+      '@aiengineer/knowledge-contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@aiengineer/knowledge-db-read':
         specifier: workspace:*
         version: link:../db-read
+      '@aiengineer/knowledge-domain':
+        specifier: workspace:*
+        version: link:../domain
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../persistence
@@ -621,6 +636,12 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-chunking':
+        specifier: workspace:*
+        version: link:../chunking
+      '@aiengineer/knowledge-documents':
+        specifier: workspace:*
+        version: link:../documents
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.0
@@ -653,8 +674,8 @@ importers:
   packages/persistence:
     dependencies:
       '@aiengineer/database-contract':
-        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
-        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../application
@@ -778,8 +799,8 @@ importers:
   packages/schema-workspace:
     dependencies:
       '@aiengineer/database-contract':
-        specifier: file:../../vendor/aiengineer-database-contract-0.4.7.tgz
-        version: file:vendor/aiengineer-database-contract-0.4.7.tgz
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -869,9 +890,9 @@ packages:
     resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
     engines: {node: '>=18'}
 
-  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.7.tgz':
-    resolution: {integrity: sha512-VRnLXVXbsuRKH2Sg9l3rdrvRFOCB+EfZ79HUI0dSWZW3N2C5y+ehQ6jxVJYIM/ICZTWFvE2fvxnA3HYqTapFrw==, tarball: file:vendor/aiengineer-database-contract-0.4.7.tgz}
-    version: 0.4.7
+  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.16.tgz':
+    resolution: {integrity: sha512-nzCy2zf1xCMHGmyXmGbZ69cUxcbcSkeDiUwWBVaNsV6qF49YN/Aq0zCuYeF2hlVXlslpOUHazMggxeNiAAwpvQ==, tarball: file:vendor/aiengineer-database-contract-0.4.16.tgz}
+    version: 0.4.16
     engines: {node: '>=20'}
 
   '@esbuild/aix-ppc64@0.27.7':
@@ -2681,7 +2702,7 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.7.tgz': {}
+  '@aiengineer/database-contract@file:vendor/aiengineer-database-contract-0.4.16.tgz': {}
 
   '@esbuild/aix-ppc64@0.27.7':
     optional: true

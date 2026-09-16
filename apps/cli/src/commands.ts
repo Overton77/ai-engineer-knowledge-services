@@ -77,6 +77,9 @@ export type CliCommand =
         | "operation"
         | "operation_events"
         | "retrieval_explanation"
+        | "retrieval_run"
+        | "evidence_packet"
+        | "citation_replay"
         | "evaluation_failures";
     }
   | { readonly mode: "control"; readonly action: "retry" | "reconcile" }
@@ -151,6 +154,9 @@ export const CLI_COMMANDS = Object.freeze({
     plan: { mode: "validate_retrieval_plan" },
     search: { mode: "retrieval" },
     explain: { mode: "read", resource: "retrieval_explanation" },
+    run: { mode: "read", resource: "retrieval_run" },
+    packet: { mode: "read", resource: "evidence_packet" },
+    citations: { mode: "read", resource: "citation_replay" },
   },
   eval: {
     generate: submit("evaluation_dataset"),
@@ -239,6 +245,9 @@ export function resolveCommand(
 }
 
 export interface CliKnowledgeClient {
+  getRetrievalRun(id: string, context: Pick<OperationContext, "tenantId" | "correlationId">): Promise<unknown>;
+  getEvidencePacket(id: string, context: Pick<OperationContext, "tenantId" | "correlationId">): Promise<unknown>;
+  replayEvidencePacketCitations(id: string, context: Pick<OperationContext, "tenantId" | "correlationId">): Promise<unknown>;
   getProviderReconciliation(
     operationId: string,
     providerAttemptId: string,
@@ -701,6 +710,17 @@ export async function dispatchCliCommand(
         requiredId(input, "runId"),
         context,
       );
+    case "retrieval_run":
+      if (Object.keys(input).some(key => key !== "runId")) throw new Error("RETRIEVAL_RUN_READ_INPUT_INVALID");
+      return client.getRetrievalRun(requiredId(input, "runId"), context);
+    case "evidence_packet":
+    case "citation_replay": {
+      if (Object.keys(input).some(key => key !== "packetId")) throw new Error("RETRIEVAL_PACKET_READ_INPUT_INVALID");
+      const packetId = requiredId(input, "packetId");
+      return command.resource === "evidence_packet"
+        ? client.getEvidencePacket(packetId, context)
+        : client.replayEvidencePacketCitations(packetId, context);
+    }
     case "evaluation_failures":
       return client.getEvaluationFailures(requiredId(input, "runId"), context);
   }

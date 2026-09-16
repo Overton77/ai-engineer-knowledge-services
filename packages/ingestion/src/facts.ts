@@ -6,6 +6,8 @@ import { applyRules, type RuleSet } from "./rules.js";
 import { domainError } from "@aiengineer/knowledge-schema-workspace";
 import { eventExtent, extentTimestamp, normalizeTemporalUnit, priceSlotAliases } from "./temporal.js";
 import type { Vocabulary } from "./vocabulary.js";
+import { canonicalJson } from "@aiengineer/knowledge-db-read";
+import { existingRecord, recordKeys } from "./records.js";
 
 /** Eligibility is hydrated from authenticated registered verification artifacts by the host. */
 export interface EvidenceOracle {
@@ -31,11 +33,28 @@ export async function gatherFacts(client: TenantSqlClient, intent: IngestionInte
   const entityIds = new Map(intent.subjects.map((subject) => [subject.ref, entityIdFor(subject, subjects[subject.ref]!)]));
   const claims = await claimFacts(client, intent, deps.evidence);
   const existing = await existingFacts(client, intent.proposals, entityIds, deps, claims);
+  const records = await recordFacts(client, { intent, entityIds, claims });
   const reports: Record<string, ReportEvidence> = {};
   for (const proposal of intent.proposals) if (proposal.kind === "report.publish") reports[proposal.proposalId] = await deps.evidence.reportEligible?.(proposal) ?? { eligible: false };
   const expected = intent.expectedKnowledgeHead ?? intent.inputSnapshot?.knowledgeSeq;
   const whatChanged = expected !== undefined && expected !== currentHead ? await changedItems(client, intent, entityIds, [expected, currentHead]) : [];
-  return { currentHead, vocabulary: deps.vocabulary, subjects, existing, claims, reports, whatChanged, rules: deps.rules };
+  return { currentHead, vocabulary: deps.vocabulary, subjects, existing: { ...existing, records }, claims, reports, whatChanged, rules: deps.rules };
+}
+
+async function recordFacts(client: TenantSqlClient, input: { intent: IngestionIntent; entityIds: ReadonlyMap<string, string | null>; claims: readonly ClaimFacts[] }): Promise<Record<string, { recordId: string }>> {
+  const { intent, entityIds, claims } = input;
+  const records: Record<string, { recordId: string }> = {};
+  for (const proposal of intent.proposals) {
+    if (proposal.kind !== "record.materialize") continue;
+    const ref = proposal.evidence[0]!;
+    const claimId = claims.find(claim => claim.runId === ref.runId && claim.claimId === ref.claimId)?.claimRowId;
+    const entityId = entityIds.get(proposal.subjectRef);
+    if (!claimId || !entityId) continue;
+    const binding = { tenantId: intent.context.tenantId, claimId, entityId, proposal };
+    const recordId = await existingRecord(client, binding);
+    if (recordId) records[proposal.proposalId] = recordKeys(binding);
+  }
+  return records;
 }
 
 function entityIdFor(subject: Subject, facts: SubjectFacts): string | null {
@@ -145,7 +164,16 @@ async function claimFacts(client: TenantSqlClient, intent: IngestionIntent, orac
   for (const { runId, claimId } of [...cited.values()].sort((a, b) => `${a.runId}/${a.claimId}`.localeCompare(`${b.runId}/${b.claimId}`))) {
     const sealed = await oracle.runSealed(runId);
     const eligibility = sealed ? await oracle.claimEligible(runId, claimId) : { eligible: false };
-    const row = (await client.query<Row>("select id from evidence.claim where structured->'verification'->>'runId'=$1 and structured->'verification'->>'claimId'=$2 order by created_at limit 1", [runId, claimId])).rows[0];
+    const rows = (await client.query<Row>("select id,statement,claim_type,structured from evidence.claim where structured->'verification'->>'runId'=$1 and structured->'verification'->>'claimId'=$2 order by created_at", [runId, claimId])).rows;
+    if (rows.length > 1) throw domainError("CLAIM_IDENTITY_AMBIGUOUS", "More than one canonical claim has the same run-qualified identity");
+    const row = rows[0];
+    if (row && eligibility.authoritative) {
+      const authoritative = eligibility.authoritative;
+      const stored = (row.structured as { verification?: Record<string, unknown> })?.verification;
+      if (row.statement !== authoritative.statement || row.claim_type !== authoritative.claimType || stored?.manifestDigest !== authoritative.manifestDigest
+        || canonicalJson(stored?.qualifiers ?? []) !== canonicalJson(authoritative.qualifiers)
+        || canonicalJson(stored?.admission ?? null) !== canonicalJson(authoritative.provenance ?? null)) throw domainError("CLAIM_IDENTITY_CONFLICT", "Existing claim differs from authoritative sealed claim and admission lineage");
+    }
     facts.push({ runId, claimId, sealed, ...eligibility, ...(eligibility.verdict ? { verdict: eligibility.verdict } : {}), claimRowId: row ? String(row.id) : null });
   }
   return facts;

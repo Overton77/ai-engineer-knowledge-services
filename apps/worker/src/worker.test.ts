@@ -43,6 +43,37 @@ describe("worker bootstrap", () => {
   it("defaults to canonical persistence and fails closed when its tenant/config is absent", async () => {
     await expect(startWorker({ NODE_ENV:"production" })).rejects.toThrow("WORKER_TENANT_ID_REQUIRED");
   });
+
+  it("fails closed when selection is requested without a composed host authority", async () => {
+    const locator = JSON.stringify({ id: id(8), digest: `sha256:${"a".repeat(64)}` });
+    await expect(startWorker({
+      NODE_ENV: "test",
+      KNOWLEDGE_PERSISTENCE_MODE: "postgres",
+      PROMOTION_SELECTION_AUTHORITY_ARTIFACT_JSON: locator,
+    })).rejects.toThrow("PROMOTION_SELECTION_AUTHORITY_REQUIRED");
+    await expect(startWorker({
+      NODE_ENV: "test",
+      KNOWLEDGE_PERSISTENCE_MODE: "memory",
+      PROMOTION_SELECTION_AUTHORITY_ARTIFACT_JSON: locator,
+    })).rejects.toThrow("PROMOTION_SELECTION_REQUIRES_POSTGRES");
+  });
+
+  it("accepts a composed host and keeps startup scoped before persistence connects", async () => {
+    const tenantId = id(9);
+    const operationId = id(10);
+    const host = {
+      promotionSelection: {
+        selectionPorts: {} as never,
+        selectionAuthority: async () => { throw new Error("unused"); },
+      },
+    };
+    await expect(startWorker({
+      NODE_ENV: "test",
+      KNOWLEDGE_PERSISTENCE_MODE: "postgres",
+      WORKER_TENANT_ID: tenantId,
+      WORKER_OPERATION_ID: operationId,
+    }, host)).rejects.toThrow("POSTGRES_URL_REQUIRED");
+  });
 });
 
 describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")("worker process restart", () => {

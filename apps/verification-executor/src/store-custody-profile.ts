@@ -30,7 +30,7 @@ const MEDIA_TYPES: Readonly<Record<string, string>> = {
 };
 
 export function artifactDestination(handle: VerificationArtifactHandle) {
-  if (handle.producerActivityId === "verification-executor:capture" || handle.producerActivityId === "verification-executor:capture_original") {
+  if (/^verification-executor:capture(?:_original)?(?::[0-9a-f]{64})?$/.test(handle.producerActivityId)) {
     return { ...EXECUTOR_STORAGE_PROFILE.captures, artifactType: "source_capture" };
   }
   const kind = /^application\/vnd\.aiengineer\.([^+]+)\+json$/.exec(handle.mediaType)?.[1];

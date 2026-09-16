@@ -76,14 +76,14 @@ describe("authoritative filesystem evidence adapter (explicit synthetic service 
     const { executor, intent } = await fixture({ badQuote: true });
     expect(await verificationStoreOracle(executor, { tenantId, policyVersion: "executor-default.v1", policyDigest: policyDigest() })(intent).claimEligible("synthetic-run", "same-claim")).toEqual({ eligible: false });
   });
-  it("binds a genuine report check to exact bytes and the cited run (F10/F11)", async () => {
+  it("rejects legacy publication even with a genuine report check", async () => {
     const { executor, intent } = await fixture();
     const checked = await executor.checkReport({ runId: "synthetic-run", intent: { schemaVersion: "verification-report-intent.v1", intentId: "report-intent", claimsRunId: "synthetic-run", reportText: statement, assertions: [{ exactText: statement, claimIds: ["same-claim"], requiredQualifiers: ["in preview"] }] } });
     const handle = await executor.store.resolveHandle({ artifactId: checked.resultArtifactId });
     const proposal = IngestionIntentSchema.parse({ ...intent, proposals: [{ proposalId: "report", kind: "report.publish", title: "Synthetic report", asOf: "2026", markdown: statement, claimRefs: [{ runId: "synthetic-run", claimId: "same-claim" }], reportCheck: { artifactId: handle.artifactId, digest: handle.digest, runId: "synthetic-run" } }] }).proposals[0]!;
     if (proposal.kind !== "report.publish") throw new Error("fixture kind");
     const oracle = verificationStoreOracle(executor, { tenantId, policyVersion: "executor-default.v1", policyDigest: policyDigest() })(intent);
-    expect(await oracle.reportEligible!(proposal)).toEqual({ eligible: true });
+    expect(await oracle.reportEligible!(proposal)).toEqual({ eligible: false,reason:"LEGACY_REPORT_PUBLISH_UNSUPPORTED" });
     expect(await oracle.reportEligible!({ ...proposal, markdown: statement + " Changed." })).toMatchObject({ eligible: false });
     expect(await oracle.reportEligible!({ ...proposal, claimRefs: [{ runId: "other-run", claimId: "same-claim", role: "primary" }] })).toMatchObject({ eligible: false });
   });

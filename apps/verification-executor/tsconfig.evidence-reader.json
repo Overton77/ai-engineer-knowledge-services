@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "emitDeclarationOnly": true
+  },
+  "include": ["src/evidence-reader.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

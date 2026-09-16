@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { productionWorkerStepsByKind } from "@aiengineer/knowledge-application";
 import { FixtureAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
 import type { OperationContext, OperationKind } from "@aiengineer/knowledge-contracts";
+import { PromotionProposalInputSchema } from "@aiengineer/knowledge-contracts";
 import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-conversion";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type {
@@ -116,6 +117,167 @@ function stepClaim(run: ReturnType<typeof invocation>, stepName: string, ordinal
   const input={...(run.claim.input as Record<string,unknown>),step:{name:stepName,ordinal}};
   return {...run.claim,stepKey:stepName,stepKind:stepName,input,inputSha256:digestHex(input)};
 }
+
+function selectedPromotionFixture() {
+  const tenantId=uuid(),claimId=uuid(),chunkId=uuid(),digest=sha256Digest("qualified selection");
+  const input=PromotionProposalInputSchema.parse({schemaVersion:"knowledge.promotion-proposal/v1",
+    selectionArtifact:{id:uuid(),digest},chunkSetId:uuid(),representationDecisionId:uuid(),projectionProcedureId:uuid(),
+    purpose:"Selected engineering evidence",contextualPrefix:"",visibility:"internal",classification:"internal",
+    targetDomains:["engineering_claims"],expectedValue:"Retained qualification",risks:[],exclusions:[],reason:"Selected close-out",
+    selection:{schemaVersion:"promotion-selection.v1",tenantId,expectedKnowledgeHead:3,runPinDigest:digest,policyDigest:digest,
+      proposedBy:uuid(),requiredReviewer:uuid(),
+      budget:{maxMembers:1,maxBytes:1000,maxTokens:1000,maxCostMicros:0,deadline:"2099-01-01T00:00:00Z"},excluded:[],
+      selected:[{memberId:"qualified",content:{kind:"claim",id:claimId,digest},target:{kind:"claim",canonicalId:claimId,projectionTargetId:uuid()},
+        targetSpaces:["engineering_claims"],sourceChunks:[{chunkId,chunkDigest:digest,representationId:uuid(),representationDigest:digest,
+          representationClass:"structural_extraction",captureId:uuid(),sourceFamilyId:"primary"}],
+        admittedClaims:[{runId:uuid(),claimId:"native-claim",claimDigest:digest,admissionDigest:digest}],contentLinkReceiptIds:[uuid()],
+        reason:"Exact admitted claim",estimatedBytes:20,estimatedTokens:5,estimatedCostMicros:0}]}});
+  const proposed={proposalId:uuid(),proposalDigest:digest,projectionIds:[uuid()],projectionManifestDigest:digest,
+    chunkSetId:input.chunkSetId,representationId:input.selection.selected[0]!.sourceChunks[0]!.representationId,selectionDigest:digest};
+  const persistProjectionProposal=vi.fn(async()=>proposed);
+  const dependencies=productionDependencies();
+  const registry=createProductionActivityRegistry({...dependencies,governedIndex:{repository:{persistProjectionProposal} as never,
+    embeddingAdapter:{} as never,embeddingAdapterVersion:"selection-test"}});
+  const original=invocation("promotion_proposal","propose",input,tenantId);
+  const context:OperationContext={...original.context,actor:{kind:"service",id:input.selection.proposedBy,serviceIdentity:"content_curator_agent"}};
+  const activityInput={...(original.claim.input as Record<string,unknown>),context};
+  const run={context,operation:{...original.operation,actorIdentity:`service:${context.actor.id}`},
+    claim:{...original.claim,input:activityInput,inputSha256:digestHex(activityInput)}};
+  return {input,proposed,persistProjectionProposal,registry,run,review:dependencies.review};
+}
+
+describe("selected candidate evaluation identity", () => {
+  it.each(["different_actor", "wrong_service", "authenticated_evaluator", "prefixed_evaluator"])(
+    "enforces evaluation authority for %s", async mode => {
+      const fixture = selectedPromotionFixture();
+      const digest = sha256Digest("evaluation candidate"), evaluatorIdentity = uuid();
+      const candidate = {
+        schemaVersion: "knowledge.selected-candidate-index/v1",
+        selection: fixture.input.selection,
+        selectionArtifact: { id: uuid(), digest },
+        preparation: { operationId: uuid(), receiptId: uuid(), proposalId: uuid() },
+        review: { operationId: uuid(), receiptId: uuid(), decisionId: uuid() },
+        embeddings: [{ operationId: uuid(), receiptId: uuid(), embeddingRunId: uuid(),
+          vectorSpaceVersionId: uuid(), projectionIds: [uuid()] }],
+      };
+      const payload = { schemaVersion: "knowledge.selected-candidate-evaluation/v1", candidate,
+        candidateEvidenceDigest: digest,
+        evaluatorIdentity: mode === "prefixed_evaluator" ? `service:${evaluatorIdentity}` : evaluatorIdentity,
+        queries: [{ queryId: "candidate", embedding: Array.from({ length: 1536 }, () => 0.1) }],
+        resultLimit: 4, minimumRecallAtK: 1 };
+      const evaluateSelectedCandidate = vi.fn(async () => ({ passed: true }));
+      const registry = createProductionActivityRegistry({ ...productionDependencies(), governedIndex: {
+        repository: { evaluateSelectedCandidate } as never,
+        embeddingAdapter: {} as never, embeddingAdapterVersion: "evaluation-test",
+      } });
+      const original = invocation("vector_store_evaluation", "evaluate", payload);
+      const context: OperationContext = { ...original.context, actor: { kind: "service",
+        id: mode === "different_actor" ? uuid() : evaluatorIdentity,
+        serviceIdentity: mode === "wrong_service" ? "control_plane" : "evaluation_executor" } };
+      const input = { ...(original.claim.input as Record<string, unknown>), context };
+      const result = registry.execute({ ...original.operation, actorIdentity: `service:${context.actor.id}` },
+        { ...original.claim, input, inputSha256: digestHex(input) });
+      if (mode === "different_actor" || mode === "wrong_service") {
+        await expect(result).rejects.toMatchObject({ code: "EVALUATION_ACTOR_IDENTITY_MISMATCH", retryable: false });
+        expect(evaluateSelectedCandidate).not.toHaveBeenCalled();
+      } else {
+        await expect(result).resolves.toEqual({ passed: true });
+        expect(evaluateSelectedCandidate).toHaveBeenCalledOnce();
+      }
+    });
+});
+
+describe("selected rollback baseline admission", () => {
+  it.each(["missing", "subset", "wrong_space", "complete"])("checks %s baseline before accepting rollback plan", async mode => {
+    const guardedDigest = sha256Digest("rollback"), vectorStoreSpaceId = uuid();
+    const embedding = Array.from({ length: 1536 }, () => 0.1);
+    const queries = ["first", "second"].map(queryId => ({ queryId, embedding }));
+    const planRollback = vi.fn(async () => ({ guardedDigest, vectorStoreSpaceId,
+      frozenBaseline: queries.map(query => ({ queryId: query.queryId, embeddingDigest: sha256Digest(query.embedding) })) }));
+    const registry = createProductionActivityRegistry({ ...productionDependencies(), governedIndex: {
+      repository: { planRollback } as never, embeddingAdapter: {} as never, embeddingAdapterVersion: "rollback-test" } });
+    const original = invocation("publication_rollback", "rollback", { schemaVersion: "knowledge.publication-rollback/v1",
+      currentPublicationId: uuid(), targetPublicationId: uuid(), guardedDigest, reason: "Restore evaluated baseline",
+      ...(mode === "missing" ? {} : { vectorStoreSpaceId: mode === "wrong_space" ? uuid() : vectorStoreSpaceId,
+        baselineQueries: mode === "subset" ? queries.slice(0, 1) : queries }) });
+    const context: OperationContext = { ...original.context, actor: { kind: "service", id: uuid(), serviceIdentity: "control_plane" } };
+    const input = { ...(original.claim.input as Record<string, unknown>), context };
+    const result = registry.execute({ ...original.operation, actorIdentity: `service:${context.actor.id}` },
+      { ...original.claim, input, inputSha256: digestHex(input) });
+    if (mode === "complete") await expect(result).resolves.toMatchObject({ vectorStoreSpaceId, guardedDigest });
+    else await expect(result).rejects.toMatchObject({ code: "ROLLBACK_BASELINE_REQUIRED", retryable: false });
+  });
+});
+
+describe("selected embedding replay authority",()=>{
+  it.each(["embed","verify"])("reauthenticates before returning a retained run during %s",async(stepName)=>{
+    const loadEmbeddingContext=vi.fn(async()=>{throw new Error("CONTENT_SOURCE_BINDING_INVALID");});
+    const getEmbeddingRunByOperation=vi.fn(async()=>({status:"succeeded",itemCount:1}));
+    const embedMany=vi.fn();
+    const registry=createProductionActivityRegistry({...productionDependencies(),governedIndex:{
+      repository:{loadEmbeddingContext,getEmbeddingRunByOperation} as never,
+      embeddingAdapter:{embedMany} as never,embeddingAdapterVersion:"replay-test"}});
+    const original=invocation("embedding_run",stepName,{schemaVersion:"knowledge.embedding-run/v1",vectorSpaceVersionId:uuid(),
+      promotionDecisionId:uuid(),projectionIds:[uuid()],providerRoute:["deterministic-fake"],expectedDimensions:1536,modelSlug:"fake"});
+    const context:OperationContext={...original.context,actor:{kind:"service",id:uuid(),serviceIdentity:"embedding_executor"}};
+    const input={...(original.claim.input as Record<string,unknown>),context,step:{name:stepName,ordinal:stepName==="embed"?0:1}};
+    await expect(registry.execute({...original.operation,actorIdentity:`service:${context.actor.id}`},
+      {...original.claim,input,inputSha256:digestHex(input)})).rejects.toThrow("CONTENT_SOURCE_BINDING_INVALID");
+    expect(loadEmbeddingContext).toHaveBeenCalledOnce();
+    expect(getEmbeddingRunByOperation).not.toHaveBeenCalled();
+    expect(embedMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("selected promotion worker operation",()=>{
+  it.each(["prepare","embed","index"])("reconciles the selected candidate at %s only under executor authority",async(stepName)=>{
+    const f=selectedPromotionFixture();
+    const input={schemaVersion:"knowledge.selected-candidate-index/v1",selection:f.input.selection,selectionArtifact:f.input.selectionArtifact,
+      preparation:{operationId:uuid(),receiptId:uuid(),proposalId:uuid()},review:{operationId:uuid(),receiptId:uuid(),decisionId:uuid()},
+      embeddings:[{operationId:uuid(),receiptId:uuid(),embeddingRunId:uuid(),vectorSpaceVersionId:uuid(),projectionIds:[uuid()]}]};
+    const result={schemaVersion:"knowledge.selected-candidate-index-result/v1",selectionDigest:input.selectionArtifact.digest,
+      evidenceDigest:sha256Digest("candidate evidence"),indexed:true,publishable:false};
+    const verifySelectedCandidate=vi.fn(async()=>result);
+    const registry=createProductionActivityRegistry({...productionDependencies(),governedIndex:{
+      repository:{verifySelectedCandidate} as never,embeddingAdapter:{} as never,embeddingAdapterVersion:"index-test"}});
+    const original=invocation("vector_store_ingestion",stepName,input,f.input.selection.tenantId);
+    const step={name:stepName,ordinal:["prepare","embed","index"].indexOf(stepName)};
+    const deniedInput={...(original.claim.input as Record<string,unknown>),step};
+    await expect(registry.execute(original.operation,{...original.claim,input:deniedInput,inputSha256:digestHex(deniedInput)}))
+      .rejects.toMatchObject({code:"CANDIDATE_INDEX_AUTHORITY_REQUIRED",retryable:false});
+    expect(verifySelectedCandidate).not.toHaveBeenCalled();
+    const context:OperationContext={...original.context,actor:{kind:"service",id:uuid(),serviceIdentity:"embedding_executor"}};
+    const activityInput={...deniedInput,context};
+    await expect(registry.execute({...original.operation,actorIdentity:`service:${context.actor.id}`},
+      {...original.claim,input:activityInput,inputSha256:digestHex(activityInput)})).resolves.toEqual({...result,stage:stepName});
+    expect(verifySelectedCandidate).toHaveBeenCalledWith(context.tenantId,input);
+  });
+  it("passes exact selection custody through persistence and into the guarded review subject",async()=>{
+    const f=selectedPromotionFixture();
+    await expect(f.registry.execute(f.run.operation,f.run.claim)).resolves.toMatchObject({selectionDigest:f.input.selectionArtifact.digest,publishable:false,requiresIndependentDecision:true});
+    expect(f.persistProjectionProposal).toHaveBeenCalledWith(f.run.context.tenantId,expect.objectContaining({
+      selection:f.input.selection,selectionArtifact:f.input.selectionArtifact,proposedBy:f.input.selection.proposedBy}));
+    expect(f.review.createReviewSubject).toHaveBeenCalledWith(f.run.context.tenantId,expect.objectContaining({
+      guardedSha256:f.proposed.proposalDigest.slice(7),subjectRef:expect.objectContaining({selectionDigest:f.input.selectionArtifact.digest,
+        selectionArtifactId:f.input.selectionArtifact.id})}));
+  });
+  it("rejects legacy whole-chunk-set payloads before persistence or review",async()=>{
+    const f=selectedPromotionFixture();
+    const {selection,selectionArtifact,...legacy}=f.input;
+    const run=invocation("promotion_proposal","propose",legacy,f.run.context.tenantId);
+    await expect(f.registry.execute(run.operation,run.claim)).rejects.toMatchObject({code:"INVALID_ACTIVITY_INPUT",retryable:false,cause:{issues:expect.arrayContaining([
+      expect.objectContaining({path:["selection"]}),expect.objectContaining({path:["selectionArtifact"]}),
+    ])}});
+    expect(f.persistProjectionProposal).not.toHaveBeenCalled();
+    expect(f.review.createReviewSubject).not.toHaveBeenCalled();
+  });
+  it("refuses a persistence result bound to another selection before creating a review",async()=>{
+    const f=selectedPromotionFixture();
+    f.persistProjectionProposal.mockResolvedValue({...f.proposed,selectionDigest:sha256Digest("different selection")});
+    await expect(f.registry.execute(f.run.operation,f.run.claim)).rejects.toMatchObject({code:"PROMOTION_SELECTION_RESULT_MISMATCH",retryable:false});
+    expect(f.review.createReviewSubject).not.toHaveBeenCalled();
+  });
+});
 
 function documentNode(representationId:string,nodeId:string,text:string,ordinal=0){return{
   id:nodeId,tenantId:uuid(),digest:sha256Digest(text),schemaVersion:"v1" as const,createdAt:"2026-09-04T12:00:00.000Z",

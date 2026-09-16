@@ -64,6 +64,8 @@
       "task": "Change parsing and conversion",
       "modules": [
         "conversion",
+        "chunking",
+        "documents",
         "verification-parser",
         "docling"
       ]

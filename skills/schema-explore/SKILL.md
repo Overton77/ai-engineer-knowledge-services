@@ -61,6 +61,18 @@ Pages are capped (`--max-bytes`, default 24 KB); `truncated: true` means read th
 | How do I register a report or reuse a section? | `report registration` / `section reuse` | `dom:research` → `task:register-report` / `task:navigate-report` |
 | Is this exact report revision verified or ingested? | `report assessment` / `report ingestion lineage` | `dom:research` → `reports.assessments`, `reports.ingestion_links`; inspect authoritative result artifacts and receipts |
 | Why VOCABULARY_VIOLATION? | the field named in the error | the vocabulary page for that `stream_kind` / `relationship_kind` |
+| Where did this search result come from? | `source attempt receipt` | `dom:research` → source attempt/selection rows; read one with `knowledge source attempt <attemptId>` |
+| How is a chunk, summary or projection linked to canonical knowledge? | `content link` / `projection target` | `dom:research` → the seven `content-link-intent.v1` kinds; plan one with `knowledge content plan` |
+| What happened to a failed verification? | `recovery case` | the durable recovery case; read it with `knowledge recovery read <caseId>` |
+
+## Boundaries the workspace does not move
+
+A discovery or search receipt is preserved provenance, not evidence: rows that record a provider
+attempt or a lead selection explain how a source was found and never support a fact. Identity rows
+(entities, aliases, identifiers) and staged candidates are research staging; they create identities
+without admitting knowledge. Canonical content links, admission and publication are separate typed
+paths with their own receipts, and a structural report seal is custody rather than admission or
+verification.
 
 ## What not to do
 

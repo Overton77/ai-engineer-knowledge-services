@@ -4,7 +4,7 @@ import { defineConfig } from "tsup";
 // (Vercel Sandbox, Docker) and run with only the published runtime dependencies
 // (@modelcontextprotocol/sdk, zod, pg). Splitting is off so the two bins stay self-contained.
 export default defineConfig({
-  entry: ["src/index.ts", "src/knowledge.ts"],
+  entry: ["src/index.ts", "src/knowledge.ts", "src/scoped-host.ts", "src/evidence-reader.ts", "src/root-host.ts"],
   format: ["esm"],
   platform: "node",
   target: "node22",

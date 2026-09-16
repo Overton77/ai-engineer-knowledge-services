@@ -8,6 +8,11 @@ const CAPTURE_ADAPTER_METHODS: Readonly<Record<string, string>> = {
   "paper-resolver": "api",
   https_acquire: "http",
   registered_artifact: "manual",
+  file_text: "manual",
+  file_html: "manual",
+  https_get: "http",
+  firecrawl_parse: "firecrawl",
+  "https_get+firecrawl_parse": "http",
 };
 
 const DOCUMENT_TYPE_ALIASES: Readonly<Record<string, string>> = {

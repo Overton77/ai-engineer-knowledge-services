@@ -38,6 +38,7 @@ import {
   canonicalPersistenceConfigFromEnvironment,
   createCanonicalPersistence,
   PostgresGovernedIndexRepository,
+  type PromotionSelectionConfiguration,
   PostgresPreparationRepository,
   PostgresVectorStoreLifecycleRepository,
   PostgresVerificationRepository,
@@ -53,6 +54,10 @@ import {
   createCanonicalActivityExecutor,
   createProductionActivityRegistry,
 } from "./activity-registry.js";
+import {
+  parsePromotionSelectionAuthorityLocator,
+  resolvePromotionSelectionHost,
+} from "./promotion-selection.js";
 import { CanonicalDurableKnowledgeWorker } from "./canonical-worker.js";
 import { DurableKnowledgeWorker } from "./worker.js";
 import {
@@ -66,6 +71,7 @@ import {
   parseClaimsSemanticRuntimeConfiguration,
 } from "./verification-claims-semantic-stage.js";
 import { createVerificationClaimsAuditSealer } from "./verification-claims-sealer.js";
+import { claimsHostActivation, createClaimsSourceAuthorityStage, parseSourceAuthorityPins } from "./verification-claims-source-authority.js";
 import { createConfiguredVerificationAuditSigner } from "./verification-audit-signing-runtime.js";
 import { verificationClaimsActivityHandler } from "./verification-claims-activity.js";
 import { verificationSealedReplayActivityHandler } from "./verification-sealed-replay-activity.js";
@@ -98,6 +104,18 @@ import { z } from "zod";
 export { CanonicalDurableKnowledgeWorker } from "./canonical-worker.js";
 export { DurableKnowledgeWorker } from "./worker.js";
 export * from "./activity-registry.js";
+export {
+  composePromotionSelectionWorkerHost,
+  createCanonicalPromotionSelectionApplication,
+  createPromotionSelectionConfiguration,
+  parsePromotionSelectionAuthorityLocator,
+  PromotionSelectionAuthorityLocatorSchema,
+  resolvePromotionSelectionHost,
+} from "./promotion-selection.js";
+export type {
+  CanonicalPromotionSelectionConfiguration,
+  ComposedPromotionSelectionHost,
+} from "./promotion-selection.js";
 export * from "./verification-activities.js";
 export * from "./verification-audit-inspection-activity.js";
 export * from "./verification-audit-inspection-runtime.js";
@@ -259,12 +277,30 @@ export function runWorkerScope(
     : () => worker.runOnce();
 }
 
+/**
+ * Composition-root dependencies the worker process cannot build itself. The
+ * canonical promotion-selection ports live in the knowledge executor host,
+ * which owns ContentLink reconciliation and remote evidence; the worker only
+ * accepts an already-composed authority. Process `main()` cannot build that
+ * host: a locator without `promotionSelection` fails closed.
+ */
+export interface WorkerHostDependencies {
+  readonly promotionSelection?: PromotionSelectionConfiguration;
+}
+
 export async function startWorker(
   environment: Environment = process.env,
+  host: WorkerHostDependencies = {},
 ): Promise<RunningWorker> {
   const mode = environment.KNOWLEDGE_PERSISTENCE_MODE?.trim() || "postgres";
   if (mode !== "postgres" && mode !== "memory")
     throw new Error("INVALID_KNOWLEDGE_PERSISTENCE_MODE");
+  const selectionLocator = parsePromotionSelectionAuthorityLocator(environment);
+  const promotionSelection = resolvePromotionSelectionHost({
+    host,
+    ...(selectionLocator ? { locator: selectionLocator } : {}),
+    persistenceMode: mode,
+  });
   if (
     mode === "memory" &&
     environment.NODE_ENV !== "development" &&
@@ -275,6 +311,10 @@ export async function startWorker(
   if (scopedOperationId && mode !== "postgres")
     throw new Error("WORKER_OPERATION_SCOPE_REQUIRES_POSTGRES");
   const auditSigner = createConfiguredVerificationAuditSigner(environment);
+  const sourceAuthorityPins = parseSourceAuthorityPins(environment.VERIFICATION_SOURCE_AUTHORITY_PINS_JSON?.trim());
+  const claimsEnabled = claimsHostActivation({ mode: environment.VERIFICATION_CLAIMS_ENABLED?.trim(),
+    projectionConfigured: Boolean(environment.VERIFICATION_CLAIMS_PROJECTION_GRANTS_JSON?.trim()), sourceAuthorityConfigured: Boolean(sourceAuthorityPins),
+    policyConfigured: Boolean(environment.VERIFICATION_SEAL_POLICY_GRANTS_JSON?.trim()), signerConfigured: Boolean(auditSigner), nativePersistence: mode === "postgres" });
   const owner = environment.WORKER_ID?.trim() || `worker-${process.pid}`;
   const pollMs = positiveInteger(
     environment.WORKER_POLL_MS,
@@ -427,9 +467,9 @@ export async function startWorker(
       );
     const sealGrantsJson =
       environment.VERIFICATION_SEAL_POLICY_GRANTS_JSON?.trim();
-    if (sealGrantsJson && !metricCatalogJson && !claimsCatalogJson)
+    if (sealGrantsJson && !metricCatalogJson && !claimsEnabled)
       throw new Error("VERIFICATION_SEAL_USE_CASE_CONFIGURATION_REQUIRED");
-    if (claimsCatalogJson && !sealGrantsJson)
+    if (claimsEnabled && !sealGrantsJson)
       throw new Error("VERIFICATION_CLAIMS_SEAL_CONFIGURATION_REQUIRED");
     if (parseArtifactEnabled && !verificationCatalogJson)
       throw new Error("VERIFICATION_PARSE_ARTIFACT_CATALOG_REQUIRED");
@@ -439,7 +479,7 @@ export async function startWorker(
     if (
       verificationCatalogJson ||
       metricCatalogJson ||
-      claimsCatalogJson ||
+      claimsEnabled ||
       auditInspectionEnabled ||
       adjudicationRuntimeConfiguration
     ) {
@@ -734,19 +774,19 @@ export async function startWorker(
           }),
         ];
       }
-      if (claimsCatalogJson) {
-        if (claimsCatalogJson.length > 262_144)
+      if (claimsEnabled) {
+        if (claimsCatalogJson && claimsCatalogJson.length > 262_144)
           throw new Error("VERIFICATION_CLAIMS_PROJECTION_GRANTS_TOO_LARGE");
         let claimsGrants: unknown;
         try {
-          claimsGrants = JSON.parse(claimsCatalogJson);
+          claimsGrants = claimsCatalogJson ? JSON.parse(claimsCatalogJson) : undefined;
         } catch {
           throw new Error("VERIFICATION_CLAIMS_PROJECTION_GRANTS_INVALID");
         }
         if (
-          !Array.isArray(claimsGrants) ||
+          claimsCatalogJson && (!Array.isArray(claimsGrants) ||
           claimsGrants.length < 1 ||
-          claimsGrants.length > 256
+          claimsGrants.length > 256)
         )
           throw new Error("VERIFICATION_CLAIMS_PROJECTION_GRANTS_INVALID");
         if (!sealPolicyCatalog || !sealRuntime)
@@ -757,9 +797,9 @@ export async function startWorker(
           runtimePrincipals: new PostgresVerificationClaimsRuntimePrincipals(
             persistence.database,
           ),
-          projectionGrants: new VerificationClaimsProjectionGrantCatalog(
+          ...(Array.isArray(claimsGrants) ? { projectionGrants: new VerificationClaimsProjectionGrantCatalog(
             claimsGrants,
-          ),
+          ) } : {}),
           nativeProjectionAdmission: admission,
           selectorResolvers: [projectionSelectorResolver],
         });
@@ -786,6 +826,8 @@ export async function startWorker(
           runtime: sealRuntime,
           now: () => new Date().toISOString(),
           ...(semanticStage ? { semanticStage } : {}),
+          ...(sourceAuthorityPins ? { sourceAuthorityStage: createClaimsSourceAuthorityStage({ pins: sourceAuthorityPins,
+            database: persistence.database, repository }) } : {}),
           ...(auditSigner ? { signer: auditSigner } : {}),
         });
         const dependencies = {
@@ -1043,7 +1085,7 @@ export async function startWorker(
         conversionProviders,
       },
       governedIndex: {
-        repository: new PostgresGovernedIndexRepository(persistence.database),
+        repository: new PostgresGovernedIndexRepository(persistence.database, promotionSelection),
         embeddingAdapter: {
           discoverModel: (modelSlug) =>
             createGatewayEmbeddingAdapterFromEnvironment(
@@ -1124,6 +1166,7 @@ export async function startWorker(
   };
 }
 
+/** Generic process entry. Selection authority is host-composed; this path cannot supply ports. */
 async function main() {
   const running = await startWorker();
   const shutdown = (signal: string) => {

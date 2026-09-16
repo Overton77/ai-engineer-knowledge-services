@@ -147,7 +147,7 @@ export class IngestionExecutor {
     return this.config.db.transaction({ tenantId, role: "executor_service", statementTimeoutMs: APPLY_STATEMENT_TIMEOUT_MS }, async (client) => {
       const entry = { intent, plan, receiptArtifactId, outcome: plan.plannedOutcome, failure: null };
       const ids = await this.insertLedger(client, entry);
-      await client.query("set constraints corpus.entity_created_by_receipt_id_fkey, staging.resolution_decision_receipt_id_fkey, evidence.claim_created_by_receipt_id_fkey, corpus.entity_receipt_tenant deferred");
+      await client.query("set constraints corpus.entity_created_by_receipt_id_fkey, staging.resolution_decision_receipt_id_fkey, evidence.claim_created_by_receipt_id_fkey, corpus.entity_receipt_tenant, knowledge.record_created_by_receipt_id_fkey, knowledge.record_receipt_tenant deferred");
       const knowledgeSeq = needsBatch ? Number(await scalar(client, "select temporal.begin_batch($1::bigint)", [plan.head.effectiveExpectedHead])) : null;
       const applied = needsBatch ? await applyPlan({ client, tenantId, receiptId: ids.receiptId, intent, plan, vocabulary, artifacts: this.config.artifacts }) : outcomeWithoutBatch(plan);
       await this.insertReceipt(client, entry, { ...ids, affectedRefs: applied.affectedRefs });

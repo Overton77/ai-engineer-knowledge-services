@@ -43,6 +43,22 @@ function fixture() {
 }
 
 describe("durable recovery admission boundaries", () => {
+  it("permits custody reads but prevents mutation when execution and checkpoint ports are absent", async () => {
+    const fixtures = fixture();
+    const test = await fixtures.setup();
+    const service = new DurableVerificationRecoveryService(test.store as unknown as DurableRecoveryStore,
+      test.authority as unknown as DurableRecoveryEvidenceAuthority, fixtures.custody);
+    expect(await service.read(tenantId, "case")).toEqual(test.snapshot);
+    await expect(service.plan(tenantId, { caseId: "case", expectedRevision: 1, actions: [], probes: [],
+      reservation: { calls: 0, costMicros: 0 } })).rejects.toThrow("RECOVERY_RUNTIME_NOT_CONFIGURED");
+    await expect(service.claim(tenantId, { caseId: "case", planDigest: "digest", holderIdentity: "holder", leaseMs: 1000 }))
+      .rejects.toThrow("RECOVERY_RUNTIME_NOT_CONFIGURED");
+    await expect(service.reconcile(tenantId, { caseId: "case", planDigest: "digest" })).rejects.toThrow("RECOVERY_RUNTIME_NOT_CONFIGURED");
+    await expect(service.wait(tenantId, { caseId: "case", expectedRevision: 1, checkpointId: operationId, reason: "review" }))
+      .rejects.toThrow("RECOVERY_CHECKPOINTS_NOT_CONFIGURED");
+    expect(test.store.append).not.toHaveBeenCalled();
+    expect(test.runtime.ensureOperation).not.toHaveBeenCalled();
+  });
   it("does not release claims or mutate wait state before checkpoint verification", async () => {
     const test = await fixture().setup();
     await expect(test.service.wait(tenantId, { caseId: "case", expectedRevision: 1, checkpointId: operationId, reason: "review" })).rejects.toThrow("CHECKPOINT_NOT_VERIFIED");

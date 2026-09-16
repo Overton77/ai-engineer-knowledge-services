@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { SourceDiscoveryAttemptSchema, SourceDiscoveryAttemptReadSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
@@ -77,6 +78,15 @@ describe.skipIf(!databaseUrl || !storage)("public source discovery through real 
       const restored = await read(managed.attemptId);
       expect(restored.attempt).toEqual(managed);
       expect((await read(imported.attemptId)).results).toEqual(restored.results);
+      const { collectDiscoveryEvidence } = await import(pathToFileURL(resolve(import.meta.dirname,
+        "../../../../../research_ingestion_systems_agent/tools/team/t14-collection.mjs")).href);
+      const collectionScope = { attemptId: imported.attemptId, tenantId, sourceUri: sourceUrl, providerCode: "tavily",
+        request: async (name: string, input: Record<string, unknown>) => (await knowledgeOperations.invoke(name, input, services!)).output };
+      const collected = await collectDiscoveryEvidence(collectionScope);
+      expect(collected.read.attempt.trust).toBe("self_reported");
+      expect(collected.receipts.length).toBeGreaterThan(0);
+      await expect(collectDiscoveryEvidence({ ...collectionScope, sourceUri: "https://wrong.example/" })).rejects.toThrow("SOURCE_BINDING");
+      await expect(collectDiscoveryEvidence({ ...collectionScope, attemptId: managed.attemptId })).rejects.toThrow("DISCOVERY_BINDING");
       expect(new TextDecoder().decode(await consumer.verification.store.bytes(restored.attempt.rawOutputArtifact!))).toBe(raw);
       await expect(knowledgeOperations.invoke("source_attempt", { attemptId: managed.attemptId, tenantId: randomUUID() }, services)).rejects.toThrow("EVIDENCE_NOT_AUTHORIZED");
       expect(fetcher).toHaveBeenCalledOnce();

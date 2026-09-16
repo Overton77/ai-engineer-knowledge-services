@@ -92,14 +92,22 @@ generated from one operation registry (`src/knowledge/operations.ts`, `defineOpe
 
 | surface | shape |
 |---|---|
-| CLI | `knowledge schema search\|get\|manifest\|materialize`, `knowledge db head\|read-intent\|sql\|explain`, `knowledge ingest plan\|apply\|receipt`, `knowledge artifact get` (`knowledge help`) |
+| CLI | `knowledge schema search\|get\|manifest\|materialize`, `knowledge db head\|read-intent\|sql\|explain`, `knowledge ingest plan\|apply\|receipt`, `knowledge artifact get`, `knowledge report register\|get\|assess`, `knowledge source discover\|import\|attempt\|reconcile\|select`, `knowledge content plan\|apply\|receipt\|prepare-summary`, `knowledge checkpoint harness\|commit\|head\|read\|restore\|tombstone`, `knowledge recovery status\|submit\|observe\|read\|probe\|plan\|claim\|execute\|reconcile\|wait\|resume` (`knowledge help`) |
 | HTTP | `POST /knowledge/<operation>` (JSON in/out), `GET /knowledge/operations`, `/health` reports workspace and database heads |
-| MCP | `schema_search`, `schema_get`, `schema_manifest`, `schema_materialize`, `db_head`, `db_read_intent`, `db_sql_readonly`, `db_explain`, `ingest_plan`, `ingest_apply`, `ingest_receipt`, `artifact_get` beside the `verify_*` tools on `/mcp` |
+| MCP | every operation of the registry under its own name, beside the `verify_*` tools on `/mcp` |
+
+`knowledge ops` prints the complete catalog (tool name, CLI shape, title); `knowledge ops --schemas`
+adds each operation's JSON Schema input and its file-valued arguments. That output is the catalog
+source for skill conformance (`node skills/check.mjs`) and for generating a child's scoped tool
+catalog — never hand-write an operation list.
 
 Libraries: `packages/schema-workspace` (load/search/pages/head check/materialize),
 `packages/db-read` (catalog-driven `knowledge-read-intent.v1` → snapshot, guarded SQL, artifact ledger),
 `packages/ingestion` (`knowledge-ingestion-intent.v1` → plan → apply as `executor_service` → receipt).
-Skills: `skills/schema-explore`, `skills/knowledge-db`, `skills/knowledge-ingest`.
+Skills: the canonical tree is `../../skills` (`schema-explore`, `knowledge-db`, `knowledge-ingest`,
+`knowledge-verification-recovery` ship in the sandbox tarball); `skills/knowledge-verify` is canonical
+here. `pack:sandbox` fails when a required skill directory is missing or unregistered in
+`skills/manifest.json` instead of quietly staging a thinner tarball.
 
 Exit lattice for `knowledge`: 0 ok · 1 domain outcome (`PARAMS_INVALID`, `VOCABULARY_VIOLATION`, `REBASE_REQUIRED`, plan rejected, …) · 2 infrastructure (`WORKSPACE_MISSING`, `HEAD_MISMATCH`, `DB_UNAVAILABLE`, usage).
 
@@ -123,4 +131,5 @@ node apps/verification-executor/dist/index.js serve --port 4310     # or: node d
 ```
 
 `dist/index.js` + `dist/knowledge.js` plus `@modelcontextprotocol/sdk`, `zod`, and `pg` is everything a sandbox needs
-(`pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox` stages both bins and all four skills).
+(`pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox` stages both bins plus
+`knowledge-verify` and the four required canonical skills, and exits 2 when one is absent).

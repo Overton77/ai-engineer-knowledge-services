@@ -1,7 +1,7 @@
 import { proposalClaims, admissionIssues, type AuthoritativeClaim, type ReportEvidence } from "./evidence-admission.js";
 import { canonicalJson, digestOf, sha256Hex, type Digest } from "@aiengineer/knowledge-db-read";
 import { subjectRefsOf, type IngestionIntent, type NewSubject, type Proposal, type ProposalKind, type ProposalOf, type Subject } from "./intent.js";
-import { claimPlaceholder, subjectPlaceholder } from "./placeholders.js";
+import { claimPlaceholder, subjectPlaceholder, subjectRefOfPlaceholder } from "./placeholders.js";
 import { applyRules, type RuleCheck, type RuleFacts, type RuleSet, type Rewrite, type RuleApplication } from "./rules.js";
 import { validateProposal, type VocabularyIssue } from "./validate.js";
 import type { Vocabulary } from "./vocabulary.js";
@@ -28,6 +28,7 @@ export interface ExistingFacts {
   readonly occurrences: Readonly<Record<string, { occurrenceId: string }>>;
   /** `scope_key` of the subject's current series with the proposal's stream kind and unit, when one exists. */
   readonly seriesKeys: Readonly<Record<string, string>>;
+  readonly records?: Readonly<Record<string, { recordId: string }>>;
 }
 export interface ClaimFacts { readonly authoritative?: AuthoritativeClaim; readonly fixtureOnly?: boolean; readonly runId: string; readonly claimId: string; readonly sealed: boolean; readonly eligible: boolean; readonly verdict?: string; readonly claimRowId: string | null }
 export interface ChangedItem { readonly subjectRef: string; readonly entityId: string; readonly itemKind: "segment" | "event" | "relationship"; readonly itemId: string; readonly knowledgeSeq: number; readonly streamKind?: string; readonly scopeKey?: string; readonly relationshipKind?: string; readonly eventKind?: string }
@@ -91,7 +92,7 @@ export interface IngestionPlan {
   readonly errors: readonly PlanError[];
 }
 
-const GROUP_ORDER: readonly ProposalKind[] = ["claim.materialize", "candidate.stage", "entity.create", "entity.alias", "entity.identifier", "relationship.assert", "fact.assert_state", "event.assert", "support.admit", "metric.observe", "report.publish"];
+const GROUP_ORDER: readonly ProposalKind[] = ["claim.materialize", "candidate.stage", "entity.create", "entity.alias", "entity.identifier", "relationship.assert", "fact.assert_state", "event.assert", "support.admit", "metric.observe", "record.materialize", "report.publish"];
 /** A resolve/identifier score at or above this turns `entity.create` into review (or `use_existing`). */
 export const STRONG_MATCH = 0.98;
 const MAX_SLUG_LENGTH = 80;
@@ -192,6 +193,7 @@ class PlanBuilder {
   private planNewSubject(subject: NewSubject, known: SubjectFacts): PlannedSubject {
     const matches = known.matches ?? [];
     const strong = matches.find((match) => match.score >= STRONG_MATCH);
+    if (strong && strong.kind !== subject.kind) this.fail({ code: "VOCABULARY_VIOLATION", message: `subject ${subject.ref}: matched ${strong.kind} cannot be reused as ${subject.kind}`, details: { entityId: strong.entityId } });
     const kind = this.facts.vocabulary.entityKinds.get(subject.kind);
     const unknownColumns = kind ? Object.keys(subject.typedPayload).filter((column) => !kind.columns.includes(column)) : [];
     if (unknownColumns.length > 0) this.fail({ code: "VOCABULARY_VIOLATION", message: `subject ${subject.ref}: typedPayload keys are not columns of ${kind?.schema}.${kind?.table}`, details: { unknownColumns, allowed: kind?.columns } });
@@ -248,6 +250,10 @@ class PlanBuilder {
       ? [{ rule: "temporal.unit_spelling", field: "unit", from: proposal.unit, to: normalized.unit }] : [];
     const effective = ruling.proposal;
     const base = { proposalId: proposal.proposalId, ordinal, kind: proposal.kind, idempotencyKey: proposalIdempotencyKey(this.intent, ordinal, proposal), effective, rewrites: [...unitRewrites, ...ruling.rewrites], ruleChecks: ruling.checks, ...(candidate.synthesized ? { synthesized: true } : {}) };
+    if (proposal.kind === "report.publish") {
+      this.fail({code:"LEGACY_REPORT_PUBLISH_UNSUPPORTED",message:"Register research-report.v1 and assess its sealed final bytes before any separate graph apply",proposalId:proposal.proposalId});
+      return {...base,outcome:"rejected",reason:"LEGACY_REPORT_PUBLISH_UNSUPPORTED",actions:[]};
+    }
     this.checkReferences(effective, scope);
     const verdict = this.rulingOutcome(effective, ruling);
     if (verdict) return { ...base, ...verdict };
@@ -318,16 +324,22 @@ class PlanBuilder {
       }
       case "support.admit": return this.supportOutcome(proposal, claimArg);
       case "claim.materialize": return this.materializeOutcome(proposal);
+      case "record.materialize": {
+        const current = existing.records?.[proposal.proposalId];
+        if (current) return { outcome: "no_op_duplicate", existing: current, actions: [] };
+        return { outcome: "admitted", actions: ["knowledge.record", "knowledge.compatibility_constraint", "evidence.claim_record", "knowledge.record_entity_link"].map(table => ({ table, op: "insert", args: { subject: subject(proposal.subjectRef), claim: claimArg } })) };
+      }
       case "metric.observe": return { outcome: "admitted", actions: [{ table: "ranking.metric_observation", op: "insert", args: { subject: subject(proposal.subjectRef), metric_definition_version_id: proposal.metricDefinitionVersionId, value: proposal.value, observed_at: proposal.observedAt, claim: claimArg } }] };
       case "candidate.stage": return { outcome: "review_required", reason: proposal.reason, actions: [{ table: "staging.candidate", op: "insert", args: { proposed_kind: proposal.entityKind, display_name: proposal.displayName } }] };
-      case "report.publish": return reportPublishOutcome(proposal);
+      case "report.publish": return {outcome:"rejected",reason:"LEGACY_REPORT_PUBLISH_UNSUPPORTED",actions:[]};
     }
   }
 
   /** Support needs a locator and a claim row that exists now or will be materialized by this intent. */
   private supportOutcome(proposal: ProposalOf<"support.admit">, claimArg: string | null): OutcomeSlice {
-    if (!proposal.locatorId) return { outcome: "held", reason: "locator_required", actions: [] };
     const cited = proposal.evidence[0];
+    const sourceEvidence = cited ? this.claimFact(cited.runId, cited.claimId)?.authoritative?.provenance?.evidence : undefined;
+    if (!proposal.locatorId && sourceEvidence?.length !== 1) return { outcome: "held", reason: "locator_required", actions: [] };
     const claimRowExists = Boolean(cited && this.claimFact(cited.runId, cited.claimId)?.claimRowId);
     const materializedHere = Boolean(this.intent.context.attemptId) && cited !== undefined && this.intent.proposals.some((item) => item.kind === "claim.materialize" && item.runId === cited.runId && item.claimIds.includes(cited.claimId));
     if (!claimRowExists && !materializedHere) return { outcome: "held", reason: "claim_row_required", actions: [] };
@@ -355,7 +367,7 @@ class PlanBuilder {
           const fact = this.claimFact(ref.runId, ref.claimId);
           return !fact?.claimRowId && !fact?.fixtureOnly && !result.some(item => item.effective.kind === "claim.materialize" && item.effective.runId === ref.runId && item.effective.claimIds.includes(ref.claimId));
         });
-        const blocked = this.dependenciesOf(proposal, result).find(id => {
+        const blocked = [...this.dependenciesOf(proposal, result), ...this.claimSubjectCreators(proposal, result)].find(id => {
           const dependency = result.find(item => item.proposalId === id);
           return dependency && !["admitted", "superseded", "no_op_duplicate"].includes(dependency.outcome);
         });
@@ -367,15 +379,38 @@ class PlanBuilder {
     return result;
   }
 
+  /** Claim rows precede entities, but their deferred subject links require admitted entity creation. */
+  private claimSubjectCreators(proposal: PlannedProposal, proposals: readonly PlannedProposal[]): string[] {
+    if (proposal.effective.kind !== "claim.materialize") return [];
+    const materializer = proposal.effective;
+    const bindings = materializer.claimIds.flatMap(claimId => this.claimFact(materializer.runId, claimId)?.authoritative?.entityBindings ?? []);
+    const refs = this.intent.subjects.filter(subject => subject.mode === "new" && bindings.some(binding =>
+      binding.canonicalId === deterministicId("corpus.entity", [this.intent.context.tenantId, this.intent.intentId, subject.ref].join(NULL_SEPARATOR)))).map(subject => subject.ref);
+    return proposals.filter(item => item.effective.kind === "entity.create" && refs.includes(item.effective.subjectRef)).map(item => item.proposalId);
+  }
+
   private dependenciesOf(proposal: PlannedProposal, proposals: readonly PlannedProposal[]): string[] {
     const dependencies = new Set(proposal.effective.dependsOn);
+    if (proposal.effective.kind === "support.admit") {
+      const targetRef = proposal.effective.targetRef;
+      if (proposals.some(item => item.proposalId === targetRef)) dependencies.add(targetRef);
+    }
     if (proposal.kind !== "claim.materialize" && proposal.kind !== "candidate.stage") for (const ref of proposalClaims(proposal.effective)) {
       const fact = this.claimFact(ref.runId, ref.claimId);
       if (fact?.claimRowId || fact?.fixtureOnly) continue;
       const materializer = proposals.find(item => item.effective.kind === "claim.materialize" && item.effective.runId === ref.runId && item.effective.claimIds.includes(ref.claimId));
       if (materializer) dependencies.add(materializer.proposalId);
     }
-    for (const ref of subjectRefsOf(proposal.effective)) {
+    const subjectRefs = subjectRefsOf(proposal.effective);
+    if (proposal.effective.kind === "entity.create") {
+      const create = proposal.effective;
+      const subject = this.intent.subjects.find(item => item.ref === create.subjectRef);
+      if (subject?.mode === "new") for (const value of Object.values(subject.typedPayload)) {
+        const ref = subjectRefOfPlaceholder(value);
+        if (ref) subjectRefs.push(ref);
+      }
+    }
+    for (const ref of subjectRefs) {
       const creator = proposals.find(item => item.effective.kind === "entity.create" && item.effective.subjectRef === ref);
       if (creator && creator.proposalId !== proposal.proposalId) dependencies.add(creator.proposalId);
     }
@@ -396,6 +431,7 @@ class PlanBuilder {
         const target = byId.get(dependency);
         if (target) visit(target, trail);
       }
+      trail.delete(proposal.proposalId);
       placed.add(proposal.proposalId);
       ordered.push(proposal);
     };
@@ -409,11 +445,6 @@ class PlanBuilder {
 function entityCreateOutcome(planned: PlannedSubject | undefined): OutcomeSlice {
   if (planned?.resolution === "use_existing") return { outcome: "no_op_duplicate", reason: "use_existing", existing: { entityId: planned.entityId }, actions: [] };
   return { outcome: "admitted", actions: [{ table: "staging.candidate", op: "insert", args: { kind: planned?.kind } }, { table: "staging.resolution_decision", op: "insert", args: { decision: "create" } }, { table: "corpus.entity", op: "insert", args: { id: planned?.entityId, kind: planned?.kind, slug: planned?.slug } }, { fn: "temporal.assert_state", args: { stream_kind: "entity_name" } }] };
-}
-
-function reportPublishOutcome(proposal: ProposalOf<"report.publish">): OutcomeSlice {
-  if (!proposal.markdown && !proposal.reportArtifactId) return { outcome: "held", reason: "markdown_or_artifact_required", actions: [] };
-  return { outcome: "admitted", actions: [{ table: "orchestration.artifact", op: "insert", args: { artifact_type: "knowledge_report_markdown" } }, { table: "research.report", op: "upsert", args: { title: proposal.title } }, { table: "research.report_version", op: "insert", args: {} }] };
 }
 
 function touchedProposals(intent: IngestionIntent, changed: readonly ChangedItem[]): string[] {

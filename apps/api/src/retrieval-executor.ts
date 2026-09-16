@@ -2,15 +2,23 @@ import { z } from "zod";
 import {
   EvidencePacketSchema,
   RetrievalRunInputSchema,
+  RetrievalUnsupportedResponseSchema,
   type EvidencePacket,
   type JsonValue,
   type MutationEnvelope,
+  type RetrievalMemberSupport,
+  type RetrievalOptionalCapability,
+  type RetrievalPlan,
+  type RetrievalUnsupportedCapability,
+  type RetrievalUnsupportedResponse,
 } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
 import {
+  RETRIEVAL_SUPPORT_LIMITS,
   type HybridSearchResult,
   type PostgresCanonicalRepository,
+  type ResolvedRetrievalSupport,
   type RetrievalEvidenceRecord,
 } from "@aiengineer/knowledge-persistence";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
@@ -26,6 +34,43 @@ const RuntimePolicySchema = z.strictObject({
   maximumRerankCandidates:z.int().min(1).max(100).default(50),
   maxPerSource:z.int().min(1).max(100).default(3), contextRadius:z.int().min(0).max(10).default(0),
 });
+
+/** Carries the typed 422 body; a required unimplemented capability never reaches a provider. */
+export class RetrievalUnsupportedError extends Error {
+  readonly code = "RETRIEVAL_CAPABILITY_UNSUPPORTED";
+  readonly response: RetrievalUnsupportedResponse;
+  constructor(readonly unsupported: readonly RetrievalUnsupportedCapability[]) {
+    super(`RETRIEVAL_CAPABILITY_UNSUPPORTED:${unsupported.map(item => item.capability).join(",")}`);
+    this.response = RetrievalUnsupportedResponseSchema.parse({ schemaVersion: "knowledge.retrieval-unsupported/v1",
+      code: "RETRIEVAL_CAPABILITY_UNSUPPORTED", unsupported: [...unsupported] });
+  }
+}
+
+export function isRetrievalUnsupportedError(error: unknown): error is RetrievalUnsupportedError {
+  return error instanceof RetrievalUnsupportedError;
+}
+
+/**
+ * Splits a plan's requested-but-unimplemented capabilities into required and optional.
+ * Required ones abort before any embedding call; optional ones are returned so the packet
+ * records them as explicit omissions instead of silently dropping the request.
+ */
+export function unavailableRetrievalCapabilities(plan: RetrievalPlan, contextRadius: number): readonly RetrievalUnsupportedCapability[] {
+  const requested: RetrievalOptionalCapability[] = [
+    ...(plan.graph.maxDepth > 0 || plan.graph.allowedEdges.length ? ["graph" as const] : []),
+    ...(plan.anchors.concepts.length ? ["concept_anchors" as const] : []),
+    ...(plan.anchors.useCases.length ? ["use_case_anchors" as const] : []),
+    ...(plan.softBoosts.length ? ["soft_boosts" as const] : []),
+    ...(contextRadius > 0 ? ["context" as const] : []),
+    ...(plan.temporalScope.effectiveBefore ? ["freshness_upper_bound" as const] : []),
+    ...(plan.temporalScope.observedBefore ? ["observed_upper_bound" as const] : []),
+  ];
+  const optional = new Set<RetrievalOptionalCapability>(plan.optionalCapabilities ?? []);
+  const unsupported = requested.map(capability => ({ capability, reason: "not_implemented" as const }));
+  const required = unsupported.filter(item => !optional.has(item.capability));
+  if (required.length) throw new RetrievalUnsupportedError(required);
+  return unsupported;
+}
 
 export interface RetrievalReranker {
   readonly version: string;
@@ -78,11 +123,8 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
     if(forbiddenSpaces.length)throw new Error(`RETRIEVAL_SPACE_NOT_ADMITTED:${forbiddenSpaces.join(",")}`);
     if(plan.candidateK>policy.maxCandidateK||plan.finalK>policy.maxFinalK)throw new Error("RETRIEVAL_LIMIT_EXCEEDED");
     if(plan.abstention.minimumCoverage<policy.minimumCoverage)throw new Error("RETRIEVAL_ABSTENTION_POLICY_WEAKENED");
-    if(plan.graph.maxDepth>0||plan.graph.allowedEdges.length>0)throw new Error("RETRIEVAL_GRAPH_STAGE_NOT_BACKED");
-    if(plan.softBoosts.length>0)throw new Error("RETRIEVAL_SOFT_BOOST_STAGE_NOT_BACKED");
-    if(plan.anchors.entities.length||plan.anchors.concepts.length||plan.anchors.useCases.length)throw new Error("RETRIEVAL_ANCHOR_STAGE_NOT_BACKED");
-    if(plan.temporalScope.effectiveBefore||plan.temporalScope.observedBefore)throw new Error("RETRIEVAL_UPPER_TEMPORAL_FILTER_NOT_BACKED");
-    if(policy.contextRadius>0)throw new Error("RETRIEVAL_CONTEXT_STAGE_NOT_BACKED");
+    const unsupported = unavailableRetrievalCapabilities(plan, policy.contextRadius);
+    const knowledgeSeq = await this.database.retrievalKnowledgeClock(envelope.context.tenantId, plan.knowledgeScope?.atKnowledgeSeq);
     const filters:Record<string,string>={};
     for(const filter of plan.hardFilters){
       if(!(policy.allowedFilterFields as readonly string[]).includes(filter.field)||filter.op!=="eq"||typeof filter.value!=="string")throw new Error(`RETRIEVAL_FILTER_NOT_ADMITTED:${filter.field}:${filter.op}`);
@@ -91,6 +133,9 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
     }
     if(plan.temporalScope.effectiveAfter)filters.freshness_after=plan.temporalScope.effectiveAfter;
     if(!resolved.targets.length)throw new Error("NO_ACTIVE_PUBLISHED_VECTOR_SPACE");
+    const publications=await this.database.retrievalPublications(envelope.context.tenantId,resolved.targets.map(target=>target.vectorSpaceVersionId));
+    const unauthorized=resolved.targets.filter(target=>!publications.has(target.vectorSpaceVersionId));
+    if(unauthorized.length)throw new Error(`RETRIEVAL_PUBLICATION_NOT_AUTHORIZED:${unauthorized.map(target=>target.vectorSpace).join(",")}`);
 
     const stageStarted=performance.now();
     const searches=await Promise.all(resolved.targets.map(async(target)=>{
@@ -99,7 +144,9 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
         expectedDimensions:target.dimensions,providerRoute:policy.providerRoute,idempotencyKey:`${envelope.context.idempotencyKey}:query:${target.vectorSpaceVersionId}`,
         input:{projectionId:deterministicUuid("retrieval-query",`${envelope.context.operationId}:${target.vectorSpaceVersionId}`),text:plan.query}});
       const hits=await this.database.hybridSearch({tenantId:envelope.context.tenantId,vectorSpaceVersionId:target.vectorSpaceVersionId,
-        queryText:plan.query,queryEmbedding:receipt.item.embedding,filters,resultLimit:plan.candidateK,candidateLimit:plan.candidateK,rrfK:policy.rrfK});
+        queryText:plan.query,queryEmbedding:receipt.item.embedding,filters,resultLimit:plan.candidateK,candidateLimit:plan.candidateK,rrfK:policy.rrfK,
+        knowledgeSeq,publicationId:publications.get(target.vectorSpaceVersionId)!,
+        ...(plan.worldScope?{worldScope:plan.worldScope}:{}),...(plan.anchors.entities.length?{entityIds:plan.anchors.entities}:{})});
       return {target,hits};
     }));
     const searchMs=performance.now()-stageStarted;
@@ -110,7 +157,7 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
       fused.set(hit.vectorItemId,prior?{...prior,contributions:[...prior.contributions,detail],score:prior.score+contribution}:{hit,contributions:[detail],score:contribution});
     }
     let ordered=[...fused.values()].sort((a,b)=>b.score-a.score||a.hit.vectorItemId.localeCompare(b.hit.vectorItemId));
-    const omissions:{recordId?:string;reason:string}[]=[];let rerankMs=0;let rerankerId:string|undefined;
+    const omissions:{recordId?:string;reason:string}[]=unsupported.map(item => ({reason:`unsupported_optional:${item.capability}:${item.reason}`}));let rerankMs=0;let rerankerId:string|undefined;
     const evidence=await this.database.getRetrievalEvidenceRecords(envelope.context.tenantId,ordered.map(({hit})=>hit.vectorItemId));
     const byId=new Map(evidence.map((record)=>[record.vectorItemId,record]));
     if(plan.rerankerVersion){
@@ -123,8 +170,22 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
         rerankMs=performance.now()-started;
       }else omissions.push({reason:"requested reranker unavailable; deterministic fused ordering used"});
     }
-    const locatorBound=ordered.filter(({hit})=>{const record=byId.get(hit.vectorItemId);if(record?.locator&&record.artifactReference)return true;omissions.push({recordId:hit.vectorItemId,reason:"candidate omitted because no accepted representation locator is bound to its projection evidence"});return false;});
-    const selected:FusedHit[]=[];const sourceCounts=new Map<string,number>();for(const item of locatorBound){if(selected.length>=plan.finalK)break;const sourceId=byId.get(item.hit.vectorItemId)!.artifactReference!.artifactId,count=sourceCounts.get(sourceId)??0;if(count>=policy.maxPerSource){omissions.push({recordId:item.hit.vectorItemId,reason:"candidate omitted by per-source diversity cap"});continue;}sourceCounts.set(sourceId,count+1);selected.push(item);}
+    const support=new Map((await this.database.resolveRetrievalSupport({tenantId:envelope.context.tenantId,knowledgeSeq,
+      vectorItemIds:ordered.slice(0,RETRIEVAL_SUPPORT_LIMITS.maximumCandidates).map(({hit})=>hit.vectorItemId)}))
+      .map(item=>[item.vectorItemId,item]));
+    const admitted=ordered.filter(({hit})=>{
+      const record=byId.get(hit.vectorItemId);
+      if(!record?.locator||!record.artifactReference){omissions.push({recordId:hit.vectorItemId,reason:"candidate omitted because no authorized representation locator is bound to its projection evidence"});return false;}
+      if(!support.has(hit.vectorItemId)){omissions.push({recordId:hit.vectorItemId,reason:"candidate omitted because no currently admitted canonical claim supports it at the requested knowledge sequence"});return false;}
+      return true;});
+    const selected:FusedHit[]=[];const familyCounts=new Map<string,number>();
+    for(const item of admitted){
+      if(selected.length>=plan.finalK)break;
+      const families=support.get(item.hit.vectorItemId)!.sourceFamilyIds;
+      if(families.every(family=>(familyCounts.get(family)??0)>=policy.maxPerSource)){
+        omissions.push({recordId:item.hit.vectorItemId,reason:"candidate omitted by source-family diversity cap"});continue;}
+      for(const family of families)familyCounts.set(family,(familyCounts.get(family)??0)+1);
+      selected.push(item);}
     const termSet=(text:string)=>new Set(text.normalize("NFKC").toLowerCase().split(/[^a-z0-9_+.#/-]+/).filter(term=>term.length>1));
     const coverage=plan.subqueries.map(subquery=>{const terms=termSet(subquery.text);return{subqueryId:subquery.id,coverage:selected.some(({hit})=>{const candidate=termSet(byId.get(hit.vectorItemId)!.sourceText);return [...terms].some(term=>candidate.has(term));})?1:0};});
     const requiredCoverage=coverage.filter((_,index)=>plan.subqueries[index]!.coverageRole==="required");
@@ -137,9 +198,12 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
     const planId=deterministicUuid("retrieval-plan",`${envelope.context.operationId}:${requestDigest}`);
     const receiptIds=["retrieve","packet"].map(step=>deterministicUuid("canonical-retrieval-receipt",`${envelope.context.operationId}:${step}`));
     const createdAt=(this.options.now?.()??new Date()).toISOString();
-    const members=selected.map((item,index)=>this.member(envelope.context.tenantId,packetId,item,index+1,byId.get(item.hit.vectorItemId)!,plan.subqueries));
+    const members=selected.map((item)=>this.member(packetId,item,byId.get(item.hit.vectorItemId)!,support.get(item.hit.vectorItemId)!,plan.subqueries));
     const core={id:packetId,tenantId:envelope.context.tenantId,schemaVersion:"v1" as const,createdAt,retrievalRunId:envelope.context.operationId,
       normalizedQuery:plan.query.normalize("NFKC").replace(/\s+/g," ").trim(),plan,
+      queryClock: { atKnowledgeSeq: knowledgeSeq, ...(plan.worldScope ? { worldScope: plan.worldScope } : {}),
+        publications: resolved.targets.map(target=>({vectorSpace:target.vectorSpace,vectorSpaceVersionId:target.vectorSpaceVersionId,
+          publicationId:publications.get(target.vectorSpaceVersionId)!})) }, unsupportedCapabilities: unsupported,
       authorization:{decisionId:deterministicUuid("retrieval-authorization",`${envelope.context.operationId}:${identity.actor.id}`),tenantId:envelope.context.tenantId,
         actorId:identity.actor.id,action:"retrieval.execute",resource:`retrieval_run:${envelope.context.operationId}`,allowed:true,policyVersion:plan.policyVersion,reasonCodes:["authenticated_actor_match","tenant_scope_match","active_retrieval_policy"]},
       procedureVersionIds:[...new Set(resolved.targets.map(target=>target.projectionProcedureId))],members,omittedResults:omissions,coverage,
@@ -157,13 +221,26 @@ export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPor
     return {retrievalRunId:envelope.context.operationId,evidencePacketId:packet.id,resultCount:packet.members.length,abstained,replayed:false};
   }
 
-  private member(tenantId:string,packetId:string,item:FusedHit,rank:number,record:RetrievalEvidenceRecord,subqueries:EvidencePacket["plan"]["subqueries"]):EvidencePacket["members"][number]{
-    const channelScores=item.hit.channelScores as Record<string,{score?:number;rank?:number}>;const covered=subqueries.filter(query=>{const terms=new Set(query.text.toLowerCase().split(/\W+/).filter(Boolean));const text=new Set(record.sourceText.toLowerCase().split(/\W+/).filter(Boolean));return[...terms].some(term=>text.has(term));}).map(query=>query.id);
+  /** Every packet member reports its actual canonical support; nothing here is hard-coded. */
+  private member(packetId:string,item:FusedHit,record:RetrievalEvidenceRecord,support:ResolvedRetrievalSupport,subqueries:EvidencePacket["plan"]["subqueries"]):EvidencePacket["members"][number]{
+    const channelScores=item.hit.channelScores as Record<string,{score?:number;rank?:number}>;
+    const covered=subqueries.filter(query=>{const terms=new Set(query.text.toLowerCase().split(/\W+/).filter(Boolean));const text=new Set(record.sourceText.toLowerCase().split(/\W+/).filter(Boolean));return[...terms].some(term=>text.has(term));}).map(query=>query.id);
+    const memberSupport:RetrievalMemberSupport={target:support.target,sourceFamilyIds:[...support.sourceFamilyIds],
+      paths:support.paths.map(path=>({...path,qualifiers:[...path.qualifiers]})),truncated:support.truncated};
+    const admittedClaim=support.paths[0];
+    const subject=admittedClaim
+      ?{canonicalRecord:{kind:"claim" as const,schemaVersion:"v1" as const,recordId:admittedClaim.claimId,tenantId:record.canonicalRecord.tenantId}}
+      :record.authority==="canonical"&&CANONICAL_PACKET_MEMBER_KINDS.has(record.canonicalRecord.kind)
+        ?{canonicalRecord:record.canonicalRecord}
+        :{faithfulSectionRepresentationId:record.locator!.representationId};
     return {memberId:deterministicUuid("retrieval-packet-member",`${packetId}:${record.vectorItemId}`),
-      ...(record.authority==="canonical"&&CANONICAL_PACKET_MEMBER_KINDS.has(record.canonicalRecord.kind)?{canonicalRecord:record.canonicalRecord}:{faithfulSectionRepresentationId:record.locator!.representationId}),matchedProjectionId:record.searchProjectionId,
-      locators:[record.locator!],scores:{lexical:Math.max(0,...[channelScores.exact?.score,channelScores.fts?.score,channelScores.trigram?.score].filter((x):x is number=>typeof x==="number")),semantic:channelScores.ann?.score,fusion:item.score,final:item.score},
-      channelExplanations:Object.entries(channelScores).map(([channel,value])=>`${channel}: score=${value.score??0}, rank=${value.rank??0}`),graphPaths:[],authority:record.authority,assurance:record.assurance,
-      freshAt:record.freshnessAt,contradictionIds:[],supersedesIds:[],coveredSubqueryIds:covered,artifactReferences:[record.artifactReference!]};
+      ...subject,
+      matchedProjectionId:record.searchProjectionId,locators:[record.locator!],
+      scores:{lexical:Math.max(0,...[channelScores.exact?.score,channelScores.fts?.score,channelScores.trigram?.score].filter((x):x is number=>typeof x==="number")),semantic:channelScores.ann?.score,fusion:item.score,final:item.score},
+      channelExplanations:Object.entries(channelScores).map(([channel,value])=>`${channel}: score=${value.score??0}, rank=${value.rank??0}`),
+      graphPaths:support.graphPaths.map(path=>[...path]),authority:record.authority,assurance:record.assurance,
+      freshAt:record.freshnessAt,contradictionIds:[...support.contradictionIds],supersedesIds:[...support.supersedesIds],
+      coveredSubqueryIds:covered,artifactReferences:[record.artifactReference!],support:memberSupport};
   }
 
   private sources(operationId:string,item:FusedHit,projectionId:string){

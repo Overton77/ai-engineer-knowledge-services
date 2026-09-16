@@ -27,6 +27,7 @@ import {
   type VerificationAuditBundle,
 } from "@aiengineer/knowledge-verification";
 import type { VerificationMetricAuditSealerRepository, VerificationMetricAuditSealerRuntime } from "./verification-metric-sealer.js";
+import type { ClaimsSourceAuthorityStage } from "./verification-claims-source-authority.js";
 
 type Verified = ClaimsVerificationResult | ReportVerificationResult;
 export interface ClaimsSealInput { readonly verified: Verified; readonly context: OperationContext; readonly claim: VerificationRunLease; readonly runtimeLease?: import("@aiengineer/knowledge-persistence").LeasedStep; readonly startedAt: string; }
@@ -40,6 +41,7 @@ export interface ClaimsSealerOptions {
   readonly semanticStage?: {
     grade(input: ClaimsSealInput): Promise<{ readonly assessments: readonly SemanticAssessmentRecord[]; readonly evidenceArtifacts: readonly VerificationArtifactHandle[] }>;
   };
+  readonly sourceAuthorityStage?: ClaimsSourceAuthorityStage;
   readonly storageBucket: string;
   readonly runtime: VerificationMetricAuditSealerRuntime;
   readonly signer?: AuditBundleSigner;
@@ -73,7 +75,7 @@ function registerInput(options: ClaimsSealerOptions, input: {
   return { tenantId: input.tenantId, producerAttemptId: input.producerAttemptId, missionId: input.missionId, bytes: input.bytes,
     mediaType: input.mediaType, createdAt: input.createdAt, producerActivityId: "verification-worker:sealClaimsAudit",
     producerVersion: "verification-claims-sealer.v1", encryptionClass: "supabase-managed", retentionClass: "verification-audit",
-    dataClassification: "restricted", parentArtifactIds: [...input.parents].sort(), transformationSignature: digestCanonicalJson(input.transformation),
+    dataClassification: "restricted", parentArtifactIds: [...new Set(input.parents)].sort(), transformationSignature: digestCanonicalJson(input.transformation),
     artifactType: input.artifactType, bucketClass: "ledger", storageBucket: options.storageBucket };
 }
 
@@ -146,10 +148,13 @@ export function createVerificationClaimsAuditSealer(options: ClaimsSealerOptions
       fail("VERIFICATION_CLAIMS_SEAL_RUNTIME_IDENTITY_REQUIRED");
     }
     const policy = await options.policyCatalog.resolve({ tenantId: context.tenantId, policyVersion: bundle.policyVersion }, options.repository.createTrustedArtifactResolver());
+    const sourceAuthority = options.sourceAuthorityStage ? await options.sourceAuthorityStage.assess({ tenantId: context.tenantId,
+      bundle, policyArtifact: policy.artifact }) : undefined;
+    const sourceAuthorityArtifacts = sourceAuthority ? await completeInputs(options, context.tenantId, sourceAuthority.evidenceArtifacts) : [];
     const runId = deterministicUuid(report ? "verification-report-run" : "verification-claims-run", context.operationId);
     const runtimePrincipalBinding = runtimePrincipalBindingBody({ verified, context, claim: input.claim, assertionsArtifact: assertionsHydrated.handle, bundle });
     const runtimePrincipalBindingBytes = encoder.encode(canonicalizeJson(runtimePrincipalBinding));
-    const base = uniqueHandles([assertionsHydrated.handle, ...(report ? [verified.reportArtifact] : []), ...verified.sourceArtifacts, policy.artifact]);
+    const base = uniqueHandles([assertionsHydrated.handle, ...(report ? [verified.reportArtifact] : []), ...verified.sourceArtifacts, policy.artifact, ...sourceAuthorityArtifacts]);
     const inputsBase = await completeInputs(options, context.tenantId, base);
     const recovered = await options.repository.loadAuditBundleArtifactForOperationRecovery({ tenantId: context.tenantId, runId, operationId: context.operationId, verifierAttemptId: context.attemptId });
     if (recovered) return recover(recovered.auditBundle, recovered.manifestArtifact, { runId, bundle, verified, deterministicResult, policyArtifact: policy.artifact, required: inputsBase, runtimePrincipalBinding, runtimePrincipalBindingDigest: sha256Digest(runtimePrincipalBindingBytes) });
@@ -165,6 +170,10 @@ export function createVerificationClaimsAuditSealer(options: ClaimsSealerOptions
       }
       if (semanticAssessments.size !== bundle.assertions.length || (semanticAssessments.size > 0 && graded.evidenceArtifacts.length === 0)) fail("VERIFICATION_CLAIMS_SEMANTIC_COVERAGE_MISMATCH");
       semanticArtifacts = await completeInputs(options,context.tenantId,graded.evidenceArtifacts);
+    }
+    if (sourceAuthority) for (const [assertionId, semantic] of semanticAssessments) {
+      if (semantic.judgeIdentities.length && !semanticArtifacts.some(artifact => artifact.digest === sourceAuthority.semanticProfileDigests.get(assertionId)))
+        fail("SOURCE_AUTHORITY_SEMANTIC_PROFILE_MISMATCH");
     }
     const completedAt = canonicalTime(now(), "VERIFICATION_CLAIMS_SEAL_COMPLETED_AT_INVALID");
     if (Date.parse(completedAt) < Date.parse(startedAt)) fail("VERIFICATION_CLAIMS_SEAL_TIME_ORDER_INVALID");
@@ -189,19 +198,20 @@ export function createVerificationClaimsAuditSealer(options: ClaimsSealerOptions
       runId, recordedAt: completedAt, deterministicResult,
       assertions: bundle.assertions.map((assertion) => { const mechanical = deterministicResult.assertions.find((item) => item.assertionId === assertion.assertionId);
         return { assertionId: assertion.assertionId, riskClass: assertion.riskClass, downstreamUse: [...assertion.downstreamUse], claimScope: claimScope(assertion.claimType),
-          semantic: semanticAssessments.get(assertion.assertionId) ?? pendingSemantic(assertion.assertionId, !mechanical || mechanical.status !== "passed" || !mechanical.semanticEligibility), authorityStatus: "unknown",
-          independentCorroboration: false, conflictPresent: false, criticalFactsKnown: false }; }), metrics: [], sourceAssessments: [] };
+          semantic: semanticAssessments.get(assertion.assertionId) ?? pendingSemantic(assertion.assertionId, !mechanical || mechanical.status !== "passed" || !mechanical.semanticEligibility),
+          ...(sourceAuthority?.assertions.get(assertion.assertionId) ?? { authorityStatus: "unknown" as const,
+            independentCorroboration: false, conflictPresent: false, criticalFactsKnown: false }) }; }), metrics: [], sourceAssessments: sourceAuthority?.sourceAssessments ?? [] };
     const policyInputsBytes = encoder.encode(canonicalizeJson(recordedInputs));
     const policyInputsArtifact = await options.repository.registerContentAddressedArtifact(registerInput(options, { tenantId: context.tenantId,
       producerAttemptId: context.attemptId, missionId, bytes: policyInputsBytes, mediaType: "application/vnd.aiengineer.verification-policy-inputs+json",
-      createdAt: completedAt, parents: [resultArtifact.artifactId,...semanticArtifacts.map(artifact => artifact.artifactId)], transformation: { kind: "verification_claims_policy_inputs.v1", runId, resultDigest: resultArtifact.digest }, artifactType: "verification_policy_inputs" }));
+      createdAt: completedAt, parents: [resultArtifact.artifactId,...semanticArtifacts.map(artifact => artifact.artifactId), ...sourceAuthorityArtifacts.map(artifact => artifact.artifactId)], transformation: { kind: "verification_claims_policy_inputs.v1", runId, resultDigest: resultArtifact.digest }, artifactType: "verification_policy_inputs" }));
     const decision = evaluateVerificationPolicy(policy.definition, recordedInputs);
-    if (decision.outcome === "pass" || decision.outcome === "pass_with_warnings") fail("VERIFICATION_CLAIMS_SEAL_POLICY_PASS_FORBIDDEN");
+    if (!sourceAuthority && (decision.outcome === "pass" || decision.outcome === "pass_with_warnings")) fail("VERIFICATION_CLAIMS_SEAL_POLICY_PASS_FORBIDDEN");
     const decisionArtifact = await options.repository.registerContentAddressedArtifact(registerInput(options, { tenantId: context.tenantId,
       producerAttemptId: context.attemptId, missionId, bytes: encoder.encode(canonicalizeJson(decision)), mediaType: "application/vnd.aiengineer.verification-policy-decision+json",
       createdAt: completedAt, parents: [resultArtifact.artifactId, policy.artifact.artifactId, policyInputsArtifact.artifactId],
       transformation: { kind: "verification_claims_policy_decision.v1", runId, policyVersion: decision.policyVersion, policyInputsDigest: policyInputsArtifact.digest }, artifactType: "verification_policy_decision" }));
-    const inputArtifacts = uniqueHandles([...inputsBase, runtimePrincipalBindingArtifact, ...semanticArtifacts, policyInputsArtifact]);
+    const inputArtifacts = uniqueHandles([...inputsBase, runtimePrincipalBindingArtifact, ...semanticArtifacts, ...sourceAuthorityArtifacts, policyInputsArtifact]);
     const outputArtifacts = uniqueHandles([bundleArtifact, resultArtifact, decisionArtifact, ...(reportGateArtifact ? [reportGateArtifact] : [])]);
     const indexed = [...inputArtifacts, ...outputArtifacts];
     const known = new Set(indexed.map((item) => item.artifactId));

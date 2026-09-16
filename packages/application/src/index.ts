@@ -101,3 +101,4 @@ export * from "./checkpoints-ports.js";
 export * from "./checkpoints.js";
 export * from "./verification-recovery-durable-ports.js";
 export * from "./verification-recovery-durable.js";
+export * from "./promotion-selection.js";

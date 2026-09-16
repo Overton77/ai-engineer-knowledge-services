@@ -49,6 +49,12 @@ const metric = (period: { start?: string; end?: string } = {}) => ({
 });
 
 describe("verification.v1 selectors", () => {
+  it("preserves exact quote and context whitespace without normalizing Unicode", () => {
+    const selector = { kind: "text_quote", quote: "\n 🧪 Cafe\u0301\r\n", prefix: "\t ", suffix: "\n", normalization: "none" };
+    expect(VerificationSelectorSchema.parse(selector)).toEqual(selector);
+    expect(VerificationSelectorSchema.safeParse({ ...selector, quote: "" }).success).toBe(false);
+  });
+
   it("accepts RFC 6901 root, nested, empty-key, and escaped tokens", () => {
     for (const pointer of ["", "/", "/a/b", "/a//b", "/a~0b/~1slash"]) {
       expect(VerificationSelectorSchema.parse({ kind: "json_pointer", pointer })).toMatchObject({ pointer });

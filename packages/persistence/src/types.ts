@@ -1,4 +1,4 @@
-import type { JsonValue } from "@aiengineer/knowledge-contracts";
+import type { JsonValue, RetrievalWorldScope } from "@aiengineer/knowledge-contracts";
 
 export type OperationStatus = "proposed" | "queued" | "running" | "needs_review" | "succeeded" | "failed" | "cancelled" | "quarantined" | "superseded";
 
@@ -292,6 +292,8 @@ export interface ReviewDecisionInput {
 }
 
 export interface GovernedProjectionProposalInput {
+  readonly selection?: import("@aiengineer/knowledge-contracts").PromotionSelection;
+  readonly selectionArtifact?: import("./promotion-selection.js").PromotionSelectionArtifact;
   readonly operationId: string;
   readonly chunkSetId: string;
   readonly representationDecisionId: string;
@@ -310,6 +312,7 @@ export interface GovernedProjectionProposalInput {
 }
 
 export interface GovernedProjectionProposal {
+  readonly selectionDigest?: string;
   readonly proposalId: string;
   readonly proposalDigest: `sha256:${string}`;
   readonly projectionIds: readonly string[];
@@ -338,6 +341,9 @@ export interface GovernedEmbeddingInput {
 }
 
 export interface GovernedEmbeddingContext {
+  readonly knowledgeSeq?: number;
+  readonly selectionDigest?: string;
+  readonly selectionBudget?: import("@aiengineer/knowledge-contracts").PromotionSelection["budget"];
   readonly vectorSpaceVersionId: string;
   readonly modelSlug: string;
   readonly dimensions: number;
@@ -377,6 +383,77 @@ export interface GovernedEmbeddingRun {
   readonly status: "succeeded";
 }
 
+export type PublishedQueryMode = "exact" | "ann";
+
+export interface GovernedSelectedCandidateSpace {
+  readonly vectorSpaceVersionId: string;
+  readonly space: string;
+  readonly embeddingRunId: string;
+  readonly vectorIds: readonly string[];
+  readonly physicalDigests: readonly string[];
+}
+
+export interface GovernedSelectedCandidateResult {
+  readonly schemaVersion: "knowledge.selected-candidate-index-result/v1";
+  readonly selectionDigest: string;
+  readonly evidenceDigest: `sha256:${string}`;
+  readonly spaces: readonly GovernedSelectedCandidateSpace[];
+  readonly indexed: true;
+  readonly publishable: false;
+}
+
+export interface GovernedRankedItem {
+  readonly vectorItemId: string;
+  readonly searchProjectionId: string;
+  readonly score: number;
+}
+
+export interface GovernedCandidateAnswer {
+  readonly queryId: string;
+  readonly embeddingDigest: `sha256:${string}`;
+  readonly recallAtK: number;
+  readonly exact: readonly GovernedRankedItem[];
+  readonly ann: readonly GovernedRankedItem[];
+}
+
+export interface GovernedCandidateEvaluation {
+  readonly schemaVersion: "knowledge.selected-candidate-evaluation-result/v1";
+  readonly candidateEvidenceDigest: `sha256:${string}`;
+  readonly selectionDigest: string;
+  readonly evaluatorIdentity: string;
+  readonly passed: true;
+  readonly evaluationDigest: `sha256:${string}`;
+  readonly spaces: readonly {
+    readonly vectorSpaceVersionId: string;
+    readonly space: string;
+    readonly evalRunId: string;
+    readonly evaluationResultId: string;
+    readonly resultDigest: `sha256:${string}`;
+    readonly baselineId: string;
+    readonly itemCount: number;
+    readonly annPlan: string;
+    readonly recallAtK: number;
+    readonly answers: readonly GovernedCandidateAnswer[];
+  }[];
+}
+
+export interface GovernedPublishedAnswer {
+  readonly publicationId: string;
+  readonly vectorSpaceVersionId: string;
+  readonly mode: PublishedQueryMode;
+  readonly annPlan: string;
+  readonly items: readonly GovernedRankedItem[];
+  readonly gated: readonly { readonly vectorItemId: string; readonly revoked: readonly string[] }[];
+  readonly historical: readonly GovernedRankedItem[];
+}
+
+export interface GovernedPublicationBaselineComparison {
+  readonly publicationId: string;
+  readonly vectorSpaceVersionId: string;
+  readonly equivalent: boolean;
+  readonly differences: readonly string[];
+}
+
 export interface GovernedPublicationInput {
   readonly operationId: string;
   readonly publicationId: string;
@@ -386,6 +463,10 @@ export interface GovernedPublicationInput {
   readonly evaluationResultId: string;
   readonly expectedOwnerIdentity: string;
   readonly publisherIdentity: string;
+  /** Required whenever the repository holds selection authority: activation binds the exact evaluated candidate. */
+  readonly candidate?: import("@aiengineer/knowledge-contracts").SelectedCandidateIndexInput;
+  readonly candidateEvidenceDigest?: string;
+  readonly evaluationDigest?: string;
 }
 
 export interface GovernedPublication {
@@ -398,6 +479,10 @@ export interface GovernedPublication {
 }
 
 export interface GovernedIndexRepository {
+  verifySelectedCandidate(tenantId:string,input:import("@aiengineer/knowledge-contracts").SelectedCandidateIndexInput):Promise<GovernedSelectedCandidateResult>;
+  evaluateSelectedCandidate(tenantId:string,input:import("@aiengineer/knowledge-contracts").SelectedCandidateEvaluationInput):Promise<GovernedCandidateEvaluation>;
+  queryPublishedSpace(tenantId:string,input:{vectorStoreSpaceId:string;queryEmbedding:readonly number[];resultLimit?:number;mode:PublishedQueryMode}):Promise<GovernedPublishedAnswer>;
+  verifyPublicationBaseline(tenantId:string,input:{vectorStoreSpaceId:string;queries:readonly {queryId:string;embedding:readonly number[]}[]}):Promise<GovernedPublicationBaselineComparison>;
   persistRepresentationDecision(tenantId:string,input:{operationId:string;representationId:string;guardedDigest:`sha256:${string}`;knowledgeReviewDecisionId:string;reviewerIdentity:string;decision:"accept"|"reject"|"quarantine"|"defer"|"request_changes";policyVersion:string;rationale:string;expiresAt?:string}):Promise<string>;
   persistProjectionProposal(tenantId:string,input:GovernedProjectionProposalInput):Promise<GovernedProjectionProposal>;
   getProjectionProposal(tenantId:string,proposalId:string):Promise<GovernedProjectionProposal|undefined>;
@@ -408,7 +493,7 @@ export interface GovernedIndexRepository {
   stagePublication(tenantId:string,input:GovernedPublicationInput):Promise<GovernedPublication>;
   publishStaged(tenantId:string,publicationId:string,operationId:string,expectedGuardedDigest:`sha256:${string}`,reason:string,publisherIdentity:string,idempotencyKey:string):Promise<GovernedPublication>;
   verifyPublication(tenantId:string,publicationId:string):Promise<GovernedPublication>;
-  planRollback(tenantId:string,currentPublicationId:string,targetPublicationId:string,publisherIdentity:string):Promise<{guardedDigest:`sha256:${string}`;vectorStoreSpaceId:string}>;
+  planRollback(tenantId:string,currentPublicationId:string,targetPublicationId:string,publisherIdentity:string):Promise<{guardedDigest:`sha256:${string}`;vectorStoreSpaceId:string;frozenBaseline?:readonly {queryId:string;embeddingDigest:string}[]}>;
   executeRollback(tenantId:string,operationId:string,currentPublicationId:string,targetPublicationId:string,expectedGuardedDigest:`sha256:${string}`,reason:string,publisherIdentity:string,idempotencyKey:string):Promise<string>;
 }
 
@@ -421,6 +506,10 @@ export interface HybridSearchRequest {
   readonly resultLimit?: number;
   readonly candidateLimit?: number;
   readonly rrfK?: number;
+  readonly knowledgeSeq?: number;
+  readonly worldScope?: RetrievalWorldScope;
+  readonly entityIds?: readonly string[];
+  readonly publicationId?: string;
 }
 
 export interface HybridSearchResult {
@@ -556,7 +645,7 @@ export interface PersistedPreparationArtifact {
   readonly storageKey: string;
   readonly artifactType: string;
   readonly bucketClass: "source_captures" | "candidate" | "accepted" | "ledger" | "published";
-  readonly storageBucket: "source-captures" | "content-derivatives";
+  readonly storageBucket: "source-captures" | "content-derivatives" | "ai-engineer-cloud-bucket";
 }
 
 export interface PersistCaptureInput {

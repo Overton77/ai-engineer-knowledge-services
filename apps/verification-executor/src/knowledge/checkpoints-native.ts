@@ -25,7 +25,7 @@ const CAPTURE_TOOLS = new Set(["verify_capture_source", "verify_capture_file"]);
 const CAPTURE_READ_TOOLS = new Set(["verify_read_capture", "verify_search_capture", "verify_locate_quote"]);
 const SOURCE_TOOLS = new Set(["source_discover", "source_import", "source_attempt", "source_reconcile", "source_select"]);
 
-export interface NativeCheckpointEvent { readonly eventId: string; readonly eventType: string; readonly turnId?: string; readonly data: unknown }
+export interface NativeCheckpointEvent { readonly eventId: string; readonly eventType: string; readonly turnId?: string | undefined; readonly data: unknown }
 export interface NativeCheckpointInput {
   readonly scope: CheckpointScope;
   readonly store: FilesystemStore;

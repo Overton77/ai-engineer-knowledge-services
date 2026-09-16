@@ -54,6 +54,7 @@ export const ProposalSchema = z.discriminatedUnion("kind", [
   z.strictObject({ ...common, kind: z.literal("event.assert"), eventKind: Code, subjectRef: Ref, objectRef: Ref.optional(), occurredDuring: WorldIntervalSchema, precision: z.enum(["instant", "day", "month", "quarter", "year", "relative", "unknown"]).optional(), occurrenceKind: z.enum(["actual", "scheduled", "cancelled"]).default("actual"), dedupeKey: z.string().max(200).optional(), payload: z.record(z.string(), z.unknown()).default({}), extent: ExtentSchema.optional() }),
   z.strictObject({ ...common, kind: z.literal("support.admit"), targetRef: z.string().min(1).max(200), supportRole: z.enum(["supports", "challenges", "context"]).default("supports"), locatorId: Uuid.optional() }),
   z.strictObject({ ...common, kind: z.literal("claim.materialize"), claimIds: z.array(z.string().min(1).max(120)).min(1).max(256), runId: z.string().min(1).max(200) }),
+  z.strictObject({ ...common, kind: z.literal("record.materialize"), proposition: z.string().min(1).max(4000), recordKind: z.literal("compatibility_constraint"), subjectRef: Ref, title: z.string().min(1).max(400), constraintKind: z.literal("capability_restriction"), expression: z.string().min(1).max(4000), evidence: z.array(EvidenceRefSchema.extend({ role: z.literal("primary").default("primary") })).length(1), belief: z.literal("accepted").default("accepted") }),
   z.strictObject({ ...common, kind: z.literal("metric.observe"), subjectRef: Ref, metricDefinitionVersionId: Uuid, value: z.number(), unit: z.string().max(120).optional(), observedAt: Timestamp, benchmarkRunRef: Ref.optional() }),
   z.strictObject({ ...common, kind: z.literal("candidate.stage"), entityKind: Code, displayName: z.string().min(1).max(400), payload: z.record(z.string(), z.unknown()).default({}), reason: z.enum(["identity_ambiguous", "no_stream_kind", "needs_human"]) }),
   z.strictObject({ ...common, kind: z.literal("report.publish"), title: z.string().min(1).max(400), asOf: z.string().min(4).max(40), markdown: z.string().min(1).max(2_000_000).optional(), reportArtifactId: Uuid.optional(), reportCheck: z.strictObject({ artifactId: Uuid, digest: z.string().regex(/^sha256:[0-9a-f]{64}$/), runId: z.string().min(1).max(200) }).optional(), claimRefs: z.array(EvidenceRefSchema).optional(), claimIds: z.array(z.string().min(1).max(120)).default([]) }),
@@ -91,7 +92,7 @@ export const IngestionIntentSchema = z.strictObject({
 export type IngestionIntent = z.infer<typeof IngestionIntentSchema>;
 export type IngestionIntentInput = z.input<typeof IngestionIntentSchema>;
 
-export const ENTITY_REF_KINDS: ReadonlySet<ProposalKind> = new Set(["entity.create", "entity.alias", "entity.identifier", "fact.assert_state", "event.assert", "metric.observe"]);
+export const ENTITY_REF_KINDS: ReadonlySet<ProposalKind> = new Set(["entity.create", "entity.alias", "entity.identifier", "fact.assert_state", "event.assert", "metric.observe", "record.materialize"]);
 
 /** Every subject ref a proposal points at, in a stable order. */
 export function subjectRefsOf(proposal: Proposal): string[] {
@@ -99,7 +100,7 @@ export function subjectRefsOf(proposal: Proposal): string[] {
     case "relationship.assert": return [proposal.fromRef, proposal.toRef];
     case "fact.assert_state": return [proposal.subjectRef, proposal.refEntityRef].filter((ref): ref is string => Boolean(ref));
     case "event.assert": return [proposal.subjectRef, proposal.objectRef].filter((ref): ref is string => Boolean(ref));
-    case "entity.create": case "entity.alias": case "entity.identifier": case "metric.observe": return [proposal.subjectRef];
+    case "entity.create": case "entity.alias": case "entity.identifier": case "metric.observe": case "record.materialize": return [proposal.subjectRef];
     default: return [];
   }
 }

@@ -8,6 +8,8 @@ import { slugify, type IngestionPlan, type PlannedProposal } from "./plan.js";
 import type { AffectedRef, ProposalReceipt } from "./receipt.js";
 import type { EntityKind, Vocabulary } from "./vocabulary.js";
 import type { z } from "zod";
+import { materializeProvenance } from "./provenance.js";
+import { materializeRecord } from "./records.js";
 
 /**
  * Executes the admitted proposals of a plan inside the caller's `executor_service`
@@ -37,8 +39,8 @@ type CreatedIds = Record<string, string | string[]>;
 interface Written { ids: CreatedIds; supersedes?: string[]; noop?: boolean }
 
 const SQL_PREVIEW_CHARS = 80;
-const MAX_REPORT_SLUG_LENGTH = 120;
-const REPORT_CLAIM_ROLE = "supports";
+
+
 
 /** Ids resolved so far (from the plan, then from each write) and the affected refs the receipt reports. */
 class ApplyState {
@@ -47,6 +49,7 @@ class ApplyState {
   readonly #createdSubjects = new Set<string>();
   readonly #results = new Map<string, CreatedIds>();
   readonly affected: AffectedRef[] = [];
+  readonly pendingSubjects: { claimRowId: string; entityId: string; role: string }[] = [];
 
   constructor(plan: IngestionPlan) {
     for (const subject of plan.subjects) if (subject.entityId) this.#entityIds.set(subject.ref, subject.entityId);
@@ -92,10 +95,13 @@ export async function applyPlan(context: ApplyContext): Promise<ApplyOutcome> {
   const state = new ApplyState(context.plan);
   const receipts: ProposalReceipt[] = [];
   for (const proposalId of context.plan.order) receipts.push(await applyOne(context, plannedProposal(context.plan, proposalId), state));
+  for (const subject of state.pendingSubjects) {
+    await context.client.query("insert into evidence.claim_subject(claim_id, entity_id, role) values($1,$2,$3) on conflict do nothing", [subject.claimRowId, subject.entityId, subject.role]);
+  }
   return {
     proposals: receipts,
     affectedRefs: state.affected,
-    subjects: context.plan.subjects.map((subject) => ({ ref: subject.ref, entityId: state.entityIdOf(subject.ref), created: state.wasCreated(subject.ref) })),
+    subjects: context.plan.subjects.map((subject) => ({ ref: subject.ref, entityId: subject.resolution === "create" && !state.wasCreated(subject.ref) ? null : state.entityIdOf(subject.ref), created: state.wasCreated(subject.ref) })),
     claims: context.plan.evidence.claims.map((claim) => ({ runId: claim.runId, claimId: claim.claimId, claimRowId: state.claimRow(claim.runId, claim.claimId) })),
   };
 }
@@ -125,9 +131,17 @@ async function write(context: ApplyContext, proposal: Proposal, state: ApplyStat
     case "event.assert": return assertEvent(context, proposal, state);
     case "support.admit": return admitSupport(context, proposal, state);
     case "claim.materialize": return materializeClaims(context, proposal, state);
+    case "record.materialize": {
+      const claimId = state.claim(proposal);
+      if (!claimId) throw domainError("RECORD_VERIFIED_CLAIM_REQUIRED", "Record has no canonical claim");
+      const result = await materializeRecord({ client: context.client, tenantId: context.tenantId, receiptId: context.receiptId,
+        claimId, entityId: state.entity(proposal.subjectRef), proposal });
+      for (const ref of result.affected) state.touch(ref.schema, ref.table, ref.id);
+      return { ids: result.ids, ...(result.noop ? { noop: true } : {}) };
+    }
     case "metric.observe": return observeMetric(context, proposal, state);
     case "candidate.stage": return { ids: await stageCandidate(context, proposal, state) };
-    case "report.publish": return publishReport(context, proposal, state);
+    case "report.publish": throw domainError("LEGACY_REPORT_PUBLISH_UNSUPPORTED", "Register research-report.v1 and assess its sealed final bytes");
   }
 }
 
@@ -260,9 +274,16 @@ async function assertEvent(context: ApplyContext, proposal: ProposalOf<"event.as
 
 async function admitSupport(context: ApplyContext, proposal: ProposalOf<"support.admit">, state: ApplyState): Promise<Written> {
   const claimRowId = state.claim(proposal);
-  if (!claimRowId || !proposal.locatorId) throw domainError("SUPPORT_CLAIM_MISSING", `${proposal.proposalId}: no claim row or locator to admit support with`);
+  if (!claimRowId) throw domainError("SUPPORT_CLAIM_MISSING", `${proposal.proposalId}: no claim row to admit support with`);
+  const cited = proposal.evidence[0]!;
+  const authoritative = context.plan.evidence.claims.find(claim => claim.runId === cited.runId && claim.claimId === cited.claimId)?.authoritative;
+  // A challenge targets another fact; its own admitted assertion still needs supporting evidence.
+  const evidenceRole = proposal.supportRole === "challenges" ? "supports" : proposal.supportRole;
+  const locators = authoritative ? (await context.client.query<Row>("select locator_id from evidence.claim_evidence_link where tenant_id=$1 and claim_id=$2 and role=$3", [context.tenantId, claimRowId, evidenceRole])).rows.map(row => String(row.locator_id)) : [];
+  const locatorId = proposal.locatorId ?? (locators.length === 1 ? locators[0] : undefined);
+  if (!locatorId || (authoritative && !locators.includes(locatorId))) throw domainError("SUPPORT_LOCATOR_NOT_AUTHORIZED", "Support must use an authenticated claim evidence locator with the same role");
   const target = await resolveSupportTarget(context.client, proposal.targetRef, state);
-  const supportId = await scalar(context.client, "select temporal.admit_support($1,$2,$3,$4,$5)", [target.segmentId, target.occurrenceId, claimRowId, proposal.locatorId, proposal.supportRole]);
+  const supportId = await scalar(context.client, "select temporal.admit_support($1,$2,$3,$4,$5)", [target.segmentId, target.occurrenceId, claimRowId, locatorId, proposal.supportRole]);
   state.touch("evidence", "segment_support", supportId);
   return { ids: { supportId } };
 }
@@ -271,37 +292,49 @@ async function admitSupport(context: ApplyContext, proposal: ProposalOf<"support
 async function resolveSupportTarget(client: TenantSqlClient, targetRef: string, state: ApplyState): Promise<{ segmentId: string | null; occurrenceId: string | null }> {
   const result = state.resultOf(targetRef);
   if (result?.segmentId) return { segmentId: String(result.segmentId), occurrenceId: null };
+  if (result?.occurrenceId) return { segmentId: null, occurrenceId: String(result.occurrenceId) };
   const existingSegment = (await client.query<Row>("select id from temporal.segment where id=$1", [targetRef])).rows[0];
   if (existingSegment) return { segmentId: targetRef, occurrenceId: null };
-  return { segmentId: null, occurrenceId: result?.occurrenceId ? String(result.occurrenceId) : targetRef };
+  return { segmentId: null, occurrenceId: targetRef };
 }
 
 async function materializeClaims(context: ApplyContext, proposal: ProposalOf<"claim.materialize">, state: ApplyState): Promise<Written> {
   const attemptId = context.intent.context.attemptId;
   if (!attemptId) throw domainError("ATTEMPT_REQUIRED", "claim.materialize needs context.attemptId (evidence.claim.producer_attempt_id is not null)");
   const claimRowIds: string[] = [];
+  const locatorIds: string[] = [];
+  const claimSubjectKeys: string[] = [];
   for (const claimId of proposal.claimIds) {
     const existing = state.claimRow(proposal.runId, claimId);
     if (existing) { claimRowIds.push(existing); continue; }
     const fact = context.plan.evidence.claims.find(claim => claim.runId === proposal.runId && claim.claimId === claimId);
     const authoritative = fact?.authoritative;
     const inline = authoritative ? { statement: authoritative.statement, claimType: authoritative.claimType, verdict: authoritative.verdict,
-      subjects: authoritative.entityBindings.map(binding => ({ ref: context.intent.subjects.find(subject => subject.mode === "resolved" && subject.entityId === binding.canonicalId)?.ref, role: binding.role })) }
+      subjects: authoritative.entityBindings.map(binding => ({ ref: context.plan.subjects.find(subject => subject.entityId === binding.canonicalId)?.ref, role: binding.role })) }
       : fact?.fixtureOnly ? context.intent.evidence.claims.find((claim) => claim.runId === proposal.runId && claim.claimId === claimId) : undefined;
     if (!inline) throw domainError("CLAIM_TEXT_MISSING", `${proposal.proposalId}: no inline text for ${claimKey(proposal.runId, claimId)}`);
     const manifestDigest = authoritative?.manifestDigest ?? context.intent.evidence.verificationRuns.find((run) => run.runId === proposal.runId)?.manifestDigest ?? null;
-    const structured = { verification: { runId: proposal.runId, claimId, verdict: inline.verdict ?? null, manifestDigest, qualifiers: authoritative?.qualifiers ?? [], policyVersion: authoritative?.policyVersion ?? null } };
-    const claimRowId = await scalar(context.client, "insert into evidence.claim(claim_type, statement, structured, status, producer_attempt_id, created_by_receipt_id, tenant_id) values($1,$2,$3::jsonb,'proposed',$4,$5,$6) returning id", [inline.claimType, inline.statement, JSON.stringify(structured), attemptId, context.receiptId, context.tenantId]);
+    const structured = { verification: { runId: proposal.runId, claimId, verdict: inline.verdict ?? null, manifestDigest, qualifiers: authoritative?.qualifiers ?? [], policyVersion: authoritative?.policyVersion ?? null, downstreamUse: authoritative?.downstreamUse ?? [], value: authoritative?.value ?? null,
+      admission: authoritative?.provenance ?? null } };
+    const producerAttemptId = authoritative?.provenance?.run.producerAttemptId ?? attemptId;
+    const claimRowId = await scalar(context.client, "insert into evidence.claim(claim_type, statement, structured, status, producer_attempt_id, created_by_receipt_id, tenant_id) values($1,$2,$3::jsonb,'proposed',$4,$5,$6) returning id", [inline.claimType, inline.statement, JSON.stringify(structured), producerAttemptId, context.receiptId, context.tenantId]);
+    if (authoritative) {
+      const provenance = await materializeProvenance({ client: context.client, tenantId: context.tenantId, claimRowId }, authoritative);
+      locatorIds.push(...provenance.locatorIds);
+      state.affected.push(...provenance.affected);
+    }
     for (const subject of inline.subjects) {
       if (!subject.ref) throw domainError("CLAIM_SUBJECT_REVERIFICATION_REQUIRED", "Verified claim subject is unresolved");
       const entityId = state.entityIdOf(subject.ref);
-      if (entityId) await context.client.query("insert into evidence.claim_subject(claim_id, entity_id, role) values($1,$2,$3) on conflict do nothing", [claimRowId, entityId, subject.role]);
+      if (!entityId) throw domainError("CLAIM_SUBJECT_REVERIFICATION_REQUIRED", "Verified claim subject has no canonical identity");
+      state.pendingSubjects.push({ claimRowId, entityId, role: subject.role });
+      claimSubjectKeys.push(JSON.stringify([claimRowId, entityId, subject.role]));
     }
     state.rememberClaimRow(proposal.runId, claimId, claimRowId);
     state.touch("evidence", "claim", claimRowId);
     claimRowIds.push(claimRowId);
   }
-  return { ids: { claimRowIds } };
+  return { ids: { claimRowIds, locatorIds, claimSubjectKeys } };
 }
 
 async function observeMetric(context: ApplyContext, proposal: ProposalOf<"metric.observe">, state: ApplyState): Promise<Written> {
@@ -329,29 +362,3 @@ function candidateKind(plan: IngestionPlan, proposal: Proposal): string {
   return FALLBACK_CANDIDATE_KIND;
 }
 
-async function publishReport(context: ApplyContext, proposal: ProposalOf<"report.publish">, state: ApplyState): Promise<Written> {
-  const artifactId = await reportArtifactId(context, proposal);
-  const slug = `${context.intent.intentId}-${slugify(proposal.title)}`.slice(0, MAX_REPORT_SLUG_LENGTH);
-  const reportId = await scalar(context.client, "insert into research.report(mission_id, slug, title) values($1,$2,$3) on conflict (tenant_id, slug) do update set title=excluded.title returning id", [context.intent.context.missionId ?? null, slug, proposal.title]);
-  const version = Number(await scalar(context.client, "select coalesce(max(version),0)+1 from research.report_version where report_id=$1", [reportId]));
-  const versionId = await scalar(context.client, "insert into research.report_version(report_id, version, markdown_artifact_id, assurance_summary) values($1,$2,$3,$4::jsonb) returning id", [reportId, version, artifactId, JSON.stringify({ asOf: proposal.asOf, receiptId: context.receiptId })]);
-  const claimRowIds: string[] = [];
-  for (const reference of proposal.claimRefs ?? []) {
-    const claimRowId = state.claimRow(reference.runId, reference.claimId);
-    if (!claimRowId) throw domainError("REPORT_CLAIM_MISSING", "A bound report claim is not materialized");
-    await context.client.query("insert into research.report_claim(report_version_id, claim_id, role) values($1,$2,$3) on conflict do nothing", [versionId, claimRowId, REPORT_CLAIM_ROLE]);
-    claimRowIds.push(claimRowId);
-  }
-  state.touch("research", "report", reportId);
-  state.touch("research", "report_version", versionId);
-  return { ids: { reportId, reportVersionId: versionId, markdownArtifactId: artifactId, version: String(version), claimRowIds } };
-}
-
-/** The plan admits `report.publish` only with inline markdown or an existing artifact id. */
-async function reportArtifactId(context: ApplyContext, proposal: ProposalOf<"report.publish">): Promise<string> {
-  if (proposal.reportArtifactId) return proposal.reportArtifactId;
-  if (!proposal.markdown) throw domainError("EXECUTOR_INTERNAL", `${proposal.proposalId}: report.publish reached apply without markdown or reportArtifactId`);
-  const missionId = context.intent.context.missionId;
-  const stored = await context.artifacts.putWith(context.client, { tenantId: context.tenantId, artifactType: "knowledge_report_markdown", text: proposal.markdown, ...(missionId ? { missionId } : {}) });
-  return stored.artifactId;
-}

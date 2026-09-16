@@ -73,6 +73,10 @@ export interface RunState {
   extractionResultArtifactIds?: string[];
   reportCheckArtifactIds?: string[];
   captureIds?: string[];
+  recoveryAuthorityArtifactId?: string;
+  recoveryBatchId?: string;
+  recoveryCaseId?: string;
+  recoveryNotificationArtifactId?: string;
 }
 
 export class FilesystemStore {
@@ -100,7 +104,15 @@ export class FilesystemStore {
         if (!parent) throw new Error(`ARTIFACT_PARENT_NOT_FOUND:${parentId}`);
         await this.persist(parent, visiting);
       }
-      assertSameArtifact(handle, await this.custody.register(handle, await this.bytes(handle)));
+      const registered = await this.custody.resolve(handle.artifactId);
+      if (registered) {
+        // Native worker parents already have their own canonical type and producer binding.
+        // Retention verifies that identity; registering them as executor outputs would retype it.
+        assertSameArtifact(handle, validateStoredArtifact(this.tenantId, registered.handle, registered.bytes));
+        validateStoredArtifact(this.tenantId, handle, await this.bytes(handle));
+      } else {
+        assertSameArtifact(handle, await this.custody.register(handle, await this.bytes(handle)));
+      }
     } finally { visiting.delete(handle.artifactId); }
   }
 

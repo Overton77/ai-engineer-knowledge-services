@@ -1,5 +1,6 @@
 import type { CaptureRecord, FilesystemStore } from "./store.js";
 import { encoder, shortId } from "./store.js";
+import { sha256Digest } from "@aiengineer/knowledge-verification";
 
 export const CAPTURE_METHOD_VERSION = "verification-executor-capture.v2";
 
@@ -199,11 +200,26 @@ export function canonicalUrl(url: string): string {
 // ---- store write ------------------------------------------------------------------------
 
 async function persistCapture(store: FilesystemStore, fetched: Fetched, requestedUri: string, captureIdInput: string | undefined): Promise<CaptureOutcome> {
+  const contentBytes = encoder.encode(fetched.content);
+  const contentDigest = sha256Digest(contentBytes);
+  const captureId = captureIdInput?.trim() || `capture-${shortId(canonicalUrl(requestedUri), 10)}-${contentDigest.slice(7, 15)}`;
+  let previous: CaptureRecord | undefined;
+  try { previous = await store.readCapture(captureId); }
+  catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith("CAPTURE_NOT_FOUND:")) throw error;
+  }
+  if (previous) {
+    const originalDigest = fetched.originalBytes ? sha256Digest(fetched.originalBytes) : undefined;
+    if (previous.contentArtifact.digest !== contentDigest || canonicalUrl(previous.requestedUrl) !== canonicalUrl(requestedUri)
+      || previous.originalArtifact?.digest !== originalDigest) throw new Error(`CAPTURE_ID_CONFLICT:${captureId}:choose a new --capture-id`);
+    return { record: previous, content: fetched.content, reused: true };
+  }
+  const acquisitionIdentity = shortId(JSON.stringify([captureId, canonicalUrl(requestedUri)]), 64);
   const capturedAt = new Date().toISOString();
   const contentArtifact = await store.put({
-    bytes: encoder.encode(fetched.content),
+    bytes: contentBytes,
     mediaType: "text/markdown; charset=utf-8",
-    producerActivityId: "verification-executor:capture",
+    producerActivityId: `verification-executor:capture:${acquisitionIdentity}`,
     producerVersion: CAPTURE_METHOD_VERSION,
     dataClassification: "public",
     createdAt: capturedAt,
@@ -212,13 +228,12 @@ async function persistCapture(store: FilesystemStore, fetched: Fetched, requeste
     ? await store.put({
         bytes: fetched.originalBytes,
         mediaType: fetched.originalMediaType ?? "application/octet-stream",
-        producerActivityId: "verification-executor:capture_original",
+        producerActivityId: `verification-executor:capture_original:${acquisitionIdentity}`,
         producerVersion: CAPTURE_METHOD_VERSION,
         dataClassification: "public",
         createdAt: capturedAt,
       })
     : undefined;
-  const captureId = captureIdInput?.trim() || `capture-${shortId(canonicalUrl(requestedUri), 10)}-${contentArtifact.digest.slice(7, 15)}`;
   const record: CaptureRecord = {
     captureId,
     sourceId: sourceIdFor(requestedUri),
@@ -234,22 +249,6 @@ async function persistCapture(store: FilesystemStore, fetched: Fetched, requeste
     sourceKind: fetched.sourceKind,
     logicalIdentity: canonicalUrl(requestedUri),
   };
-  // A captureId names one immutable body of evidence. Re-capturing the same bytes under the
-  // same id is idempotent (the original record, with its original capturedAt, is kept so
-  // quotes located against it stay valid). Different bytes under an existing id is a conflict:
-  // silently overwriting would invalidate every quote and claim already bound to that id.
-  let previous: CaptureRecord | undefined;
-  try {
-    previous = await store.readCapture(captureId);
-  } catch {
-    /* new capture */
-  }
-  if (previous) {
-    if (previous.contentArtifact.digest !== contentArtifact.digest) {
-      throw new Error(`CAPTURE_ID_CONFLICT:${captureId}:existing=${previous.contentArtifact.digest}:new=${contentArtifact.digest}:choose a new --capture-id`);
-    }
-    return { record: previous, content: fetched.content, reused: true };
-  }
   await store.writeCapture(record);
   return { record, content: fetched.content, reused: false };
 }

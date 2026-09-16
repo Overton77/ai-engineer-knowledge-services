@@ -47,7 +47,33 @@ whether it succeeds or fails. Failures are instructions.
 
 Author `research-report.v1` and call `knowledge report register report.json` during research or after research from preserved inputs. Both modes use immutable revisions, reusable sections, exact block assertion ranges, run-qualified claim digests, evidence manifests and original-question coverage. Keep pending or conflicting findings explicit. `registration: sealed` means structural custody only; check `admission` separately and never publish it as verified knowledge on that basis.
 
+Verify the **final registered bytes** and then read the admission finding: `knowledge report assess <reportVersionId>` assesses fidelity against the host-pinned original requirements and sealed runs. Re-register and re-assess after every edit — a seal on an earlier revision says nothing about the bytes you are about to cite. The request cannot supply authority or a verdict.
+
 On each related ingestion proposal, add `reportBinding: { reportVersionId, assertionKey? }` to preserve report-to-proposal-to-receipt lineage. The binding supplements the normal evidence references. Use `knowledge report get <reportVersionId>` to reconcile its section, evidence, coverage, artifact and ingestion links. Read the returned artifacts with `knowledge artifact get <artifactId>`. Local `storage_pending` is not remote durability. See the service's `docs/REPORTS.md` for the v1 contract.
+
+### Preserved source receipts are inputs, not evidence
+
+Preserve provider work instead of hiding it. `knowledge source discover <request.json>` dispatches a configured provider under durable accounting; `knowledge source import <receipt.json>` accounts for an attempt you executed elsewhere from already preserved bytes; `knowledge source select <request.json>` records which leads you selected, omitted or treated as duplicates, with reasons. Read one back with `knowledge source attempt <attemptId>`, and recover an interrupted dispatch with `knowledge source reconcile <attemptId>` — that never calls the provider again.
+
+Imported metadata is self-reported and stays self-reported: a preserved search receipt is an untrusted discovery artifact. It can justify a `candidate.stage` reason or explain a coverage gap. It can never be the evidence behind `fact.assert_state`, and a failed or blocked attempt stays in the record rather than disappearing.
+
+### Research staging creates identities; close-out links content
+
+During research, stage what you cannot yet support: `candidate.stage` with a reason, plus `entity.create` / `entity.alias` / `entity.identifier` so later work has stable identities. Identity operations are not fact admission, and a staged candidate is not knowledge.
+
+Canonical close-out is a separate, typed step: `knowledge content plan <intent.json>` then `knowledge content apply <intent.json>` apply a `content-link-intent.v1` under an exact knowledge-head lock. Its seven operation kinds are `document.entity.link`, `chunk.entity.link`, `chunk.claim.link`, `chunk.relationship.link`, `summary.materialize`, `summary.source.link` and `projection.target.link`; the intent pins `contract.migrationHead`, `contract.workspaceFingerprint`, `contract.policyDigest`, the `inputSnapshot` artifact and `expectedKnowledgeHead`, and `onStale` is always `fail`. Prepare a summary representation with `knowledge content prepare-summary <operation.json>`; it lands **pending** and needs an independent representation review before `summary.materialize` can link it. Reconcile a receipt with `knowledge content receipt <receiptId>`, which re-authenticates retained bytes, intent authority, dependencies and the exact canonical row effects.
+
+### Correct a stale fact in its existing slot
+
+A correction supersedes the current segment of the existing series; it never opens a parallel series beside the stale one. Re-read the subject first (`entity.card`, `facts.history_for_stream`) and reuse the existing `scopeKey`: for prices the `price.scope_key_is_unit` rule reuses the key already in use for that unit (older data uses `input_tokens`), rewriting a conflicting `scopeKey` you supply with `reason: existing_series_reused`. Give the correction its own `worldInterval` and `temporalBasis`; adjacent intervals and controls must stay queryable at their old knowledge heads. Two live segments for one semantic slot is a defect, not a correction.
+
+### Bounded batches, receipts and accounting
+
+Keep one `intentId` to a coherent change set that you can diagnose as a unit: the pre-Mission-Control baseline is at most 16 evidence-bearing proposals per submitted batch. A partially admitted batch (`outcome: partial`) must still name every held and rejected proposal.
+
+Every apply has a receipt whether it succeeded or not, and the receipt — not the response you happened to receive — is authoritative. After a lost response, re-`apply` the same file: an identical intent returns `duplicateOf` with the original `receiptId` and an unchanged head. Never mint a new `intentId` to escape an uncertain outcome. Fetch a receipt later with `knowledge ingest receipt <receiptId>` and read its artifacts with `knowledge artifact get <artifactId>`.
+
+Write every large response to a file (`--out`) and carry handles — `receiptId`, `snapshotDigest`, `knowledgeSeq`, `artifactId` — instead of pasting whole documents. Charge planning, applying, reading back and recovery to the caller's budget, and report usage; unknown usage is unknown, never zero.
 
 | # | stage | command | quality gate (exit 0) | file |
 |---|---|---|---|---|
@@ -129,4 +155,4 @@ created ids, duplicate check result, what `entity.what_changed` reported, reject
 
 ## MCP equivalents
 
-`ingest_plan`, `ingest_apply`, `ingest_receipt`, `artifact_get` on the executor's `/mcp`.
+`ingest_plan`, `ingest_apply`, `ingest_receipt`, `artifact_get`, `report_register`, `report_get`, `report_assess`, `content_link_plan`, `content_link_apply`, `content_link_receipt`, `content_summary_prepare`, `source_discover`, `source_import`, `source_attempt`, `source_reconcile`, `source_select` on the executor's `/mcp`. Each tool takes the same input object as its CLI command.

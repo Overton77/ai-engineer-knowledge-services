@@ -58,6 +58,13 @@ live("PostgresPreparationRepository",()=>{
       await database.createOperation({id:representation.operationId,tenantId,operationKind:"transformation",idempotencyKey:`representation-test:${namespace}`,
         correlationId:randomUUID(),actorIdentity:"persistence-test",request:{schemaVersion:"test/v1"},steps:[]});
       const represented=await repository.persistRepresentation(tenantId,representation);
+      const lineage=await database.transaction(tenantId,async(client)=>(await client.query(
+        `select from_artifact_id,to_artifact_id,relation_kind from orchestration.artifact_lineage
+          where tenant_id=$1 and transformation_run_id=$2 order by from_artifact_id`,
+        [tenantId,representation.transformationRunId])).rows);
+      expect(lineage).toEqual(representation.outputArtifacts.map(output=>({
+        from_artifact_id:output.artifactId,to_artifact_id:sourceArtifact.artifactId,relation_kind:"derived_from",
+      })).sort((a,b)=>a.from_artifact_id.localeCompare(b.from_artifact_id)));
       const storedRepresentation=await database.transaction(tenantId,async(client)=>(await client.query(
         `select d.document_type_code,t.transformation_kind,t.provider_route,t.parameters from content.document d
           join content.document_version v on v.tenant_id=d.tenant_id and v.document_id=d.id
@@ -77,6 +84,9 @@ live("PostgresPreparationRepository",()=>{
           sourceTokenCount:2,embeddingTokenCount:2,role:"headings",spans:[{nodeId,startOffset:0,endOffset:16,selectedTextDigest:digest("Durable activity")}]}]};
       const chunked=await repository.persistChunkSet(tenantId,chunk);
       await expect(repository.persistChunkSet(tenantId,chunk)).resolves.toEqual(chunked);
+      await expect(repository.persistChunkSet(tenantId,{...chunk,procedureVersionId:randomUUID()})).resolves.toEqual(chunked);
+      await expect(repository.persistChunkSet(tenantId,{...chunk,procedureVersionId:randomUUID(),profile:{targetTokens:20}}))
+        .rejects.toThrow("CHUNK_PROCEDURE_CONFLICT");
       await expect(repository.persistChunkSet(tenantId,{...chunk,chunks:[{...chunk.chunks[0]!,spans:[{...chunk.chunks[0]!.spans[0]!,selectedTextDigest:digest("tampered-span")}]}]})).rejects.toThrow(/CHUNK_SPAN_CONFLICT/);
     } finally { await database.close(); }
   });

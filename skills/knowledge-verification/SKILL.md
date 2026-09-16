@@ -49,6 +49,24 @@ Do not mix them in one run: the executor writes its own run receipts and store; 
 - Exit `0` admitted, `1` completed quality failure, `2` infrastructure/config/auth.
 - Deterministic failures cannot be overridden by semantic judges.
 - MCP/CLI cannot grant capabilities.
+- Report registration and structural sealing are custody. A sealed report or bundle is **not**
+  admission and not publication; report admission comes from the separate report assessment
+  (`knowledge report assess` on the executor distribution) and canonical admission from ingestion.
+- Every unsuccessful outcome is routed to a durable recovery case, never to an ad-hoc retry: read
+  [knowledge-verification-recovery](../knowledge-verification-recovery/SKILL.md) before changing any
+  input. Resubmitting unchanged bytes is a duplicate, not a repair.
+
+## Bounded batches and accounting
+
+Submit assertions in coherent batches with an explicit ceiling — the pre-Mission-Control fixture
+baseline is at most 16 claims per semantic batch and at most 2 concurrent semantic batches — so one
+failure cohort stays diagnosable and a partial result stays useful. Keep each batch to one capture
+family or one question slice; do not merge unrelated claims to reduce round trips.
+
+Charge every submission, poll, replay and adjudication request to the caller's remaining budget and
+report usage with the result. Unknown usage is unknown, never zero. Read results as compact handles:
+write the JSON to a file with `--out` and cite `operationId`, `receiptId`, `runId` and digests rather
+than pasting whole receipts into the conversation.
 
 ## Preflight
 
@@ -91,7 +109,7 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 
 **Interpret.** `0` / `valid===true`: admitted. `1` / `valid===false` or `needs_review`: completed quality failure or held review. `2`: timeout, failed/cancelled/quarantined, missing receipt, auth/config.
 
-**Escalate.** Held review → `adjudication request`. Do not treat excerpts as selectors. Register only service-issued artifact handles.
+**Escalate.** Held review → `adjudication request`, then the recovery case. Do not treat excerpts as selectors. Register only service-issued artifact handles.
 
 ## verify-source-attribution
 
@@ -107,7 +125,7 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 
 **Interpret.** `--wait` `disposition` `admitted` (exit `0`): `mechanicalStatus==="passed"` and `policyOutcome` `pass` / `pass_with_warnings`. `held_for_review` (exit `1`): review/abstain policy or `review_required` mechanics — escalate, never retry or override. `quality_failed` (exit `1`). Authoritative result is the signed `claims-result` read. Submit/auth errors: infrastructure (`2`). Deterministic failures stay failed.
 
-**Escalate.** `adjudication request` with reason `ambiguous_evidence`, `conflicting_evidence`, `policy_review`, `quality_failure`, or `appeal`. Never override deterministic findings with a judge.
+**Escalate.** `adjudication request` with reason `ambiguous_evidence`, `conflicting_evidence`, `policy_review`, `quality_failure`, or `appeal`. Never override deterministic findings with a judge. Terminal quality failures go to `knowledge recovery observe` so each original claim keeps one accountable disposition.
 
 ## verify-report
 
@@ -122,6 +140,11 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 **Wait.** `--wait` admitted (`verification_report`). Completion uses `report` instead of `claims` and is not authoritative. Or `verify status`, then `knowledge verify report-result --input '{"operationId":"<uuid>"}'`. MCP: `knowledge_get_verification_operation` then `knowledge_get_verification_report_result`.
 
 **Interpret.** Same lattice as claims (`admitted` / `held_for_review` / `quality_failed`). Report-wide mechanical gates are deterministic. Authoritative result is the signed `report-result` read.
+
+Verify the **final registered bytes**. Re-register and re-verify whenever the report is edited: a
+report revision that was verified before an edit says nothing about the bytes you publish. Citations
+resolve against run-qualified claim identities, so the same claim id from two runs is two bindings.
+A passing report verification is still not admission — read the report assessment separately.
 
 **Escalate.** Same as claims. Do not retry on the producer deployment.
 

@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { z } from "zod";
 import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
 import { RemoteExecutor, RemoteExecutorError } from "../remote.js";
 import { UnknownOperationError, type AnyOperation } from "../operations/define.js";
@@ -18,7 +19,8 @@ Modes
 Serving
   serve [--port 4310] [--host 127.0.0.1]     same process as knowledge-verify serve: /mcp, /knowledge/:operation, /health
   health                                     GET /health (remote) or local heads
-  ops                                        list every operation with its CLI shape and MCP tool name
+  ops [--schemas]                            list every operation with its CLI shape and MCP tool name;
+                                             --schemas adds each operation's JSON Schema input
 
 Schema workspace (local files, no database)
   schema search <query> [--kinds '["table"]'] [--domain slug] [--limit 10]
@@ -38,9 +40,44 @@ Ingestion (executor_service, one transaction, temporal helpers)
   ingest receipt <receiptId>
   artifact get <artifactId>
 
-Research reports (registration is separate from verification and publication)
+Research reports (registration is custody; a seal is not admission)
   report register <report.json> [--tenant <uuid>]
   report get <reportVersionId> [--tenant <uuid>]
+  report assess <reportVersionId>            host-pinned requirement fidelity; admission is separate
+
+Source discovery receipts (preserved provider work; never evidence)
+  source discover <request.json> [--tenant <uuid>]
+  source import <receipt.json> [--tenant <uuid>]     account for an externally executed attempt
+  source attempt <attemptId> [--offset N] [--limit N]
+  source reconcile <attemptId>               recover an interrupted attempt without a new dispatch
+  source select <request.json>               selected / omitted / duplicate lead decisions
+
+Typed content links (canonical close-out; separate from ingestion proposals)
+  content plan <intent.json>                 read-only validation of content-link-intent.v1
+  content apply <intent.json>                applied under an exact knowledge-head lock
+  content receipt <receiptId>
+  content prepare-summary <operation.json>   renders a PENDING summary; independent review required
+
+Scoped checkpoints
+  checkpoint harness <request.json>
+  checkpoint commit <request.json>
+  checkpoint head <scope.json>
+  checkpoint read <request.json>
+  checkpoint restore <request.json>
+  checkpoint tombstone <request.json>
+
+Verification recovery (durable cases; requires KNOWLEDGE_RECOVERY_CONFIG_JSON)
+  recovery status
+  recovery submit <runId>                    submit a host-pinned original verification
+  recovery observe <runId>                   authenticated result; retains a case when unsuccessful
+  recovery read <caseId>
+  recovery probe <representatives.json> --case-id <id> --dependency-id <id> [--control-id <id>]
+  recovery plan <actions.json> --case-id <id> --expected-revision <n> --probes <f> --reservation <f>
+  recovery claim <caseId> <planDigest> [--lease-ms 30000]
+  recovery execute <claim.json> --original-id <id> --reservation <f>
+  recovery reconcile <caseId> <planDigest>
+  recovery wait <caseId> <checkpointId> --expected-revision <n> --reason "<text>"
+  recovery resume <authority.json> --case-id <id> --expected-revision <n>
 
 Output
   Every command prints exactly one JSON document to stdout.
@@ -138,7 +175,16 @@ export async function runKnowledgeCli(argv: readonly string[], env: Readonly<Rec
   const remoteUrl = typeof parsed.flags.remote === "string" ? parsed.flags.remote : env.KNOWLEDGE_EXECUTOR_URL?.trim() || env.VERIFY_EXECUTOR_URL?.trim();
   const token = typeof parsed.flags.token === "string" ? parsed.flags.token : env.KNOWLEDGE_EXECUTOR_TOKEN?.trim() || env.VERIFY_EXECUTOR_TOKEN?.trim();
 
-  if (group === "ops") { await emit(knowledgeOperations.list().map((operation) => ({ tool: operation.name, cli: `knowledge ${operation.cli.command.join(" ")} ${(operation.cli.positional ?? []).map((name) => `<${name}>`).join(" ")}`.trim(), title: operation.title }))); return; }
+  if (group === "ops") {
+    const schemas = parsed.flags.schemas === true;
+    await emit(knowledgeOperations.list().map((operation) => ({
+      tool: operation.name,
+      cli: `knowledge ${operation.cli.command.join(" ")} ${(operation.cli.positional ?? []).map((name) => `<${name}>`).join(" ")}`.trim(),
+      title: operation.title,
+      ...(schemas ? { jsonFiles: operation.cli.jsonFiles ?? [], inputSchema: z.toJSONSchema(operation.input, { io: "input", unrepresentable: "any" }) } : {}),
+    })));
+    return;
+  }
   if (group === "serve") {
     const port = typeof parsed.flags.port === "string" ? Number(parsed.flags.port) : Number(env.KNOWLEDGE_PORT ?? env.VERIFY_PORT ?? 4310);
     const host = typeof parsed.flags.host === "string" ? parsed.flags.host : env.KNOWLEDGE_HOST ?? env.VERIFY_HOST ?? "127.0.0.1";

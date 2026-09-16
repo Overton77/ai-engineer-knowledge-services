@@ -12,9 +12,9 @@ export const TextOffsetBasisSchema = z.enum(["utf8_bytes", "utf16_code_units", "
 
 export const TextQuoteSelectorSchema = z.strictObject({
   kind: z.literal("text_quote"),
-  quote: NonEmptyStringSchema,
-  prefix: NonEmptyStringSchema.optional(),
-  suffix: NonEmptyStringSchema.optional(),
+  quote: z.string().min(1),
+  prefix: z.string().min(1).optional(),
+  suffix: z.string().min(1).optional(),
   normalization: TextNormalizationSchema,
 });
 

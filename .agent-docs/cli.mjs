@@ -4,8 +4,9 @@ import { existsSync, lstatSync, mkdirSync, openSync, opendirSync, closeSync, rea
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planSemanticMaps } from './semantic-maps.mjs';
+import { planKnowledge, readKnowledge, searchKnowledge } from './knowledge.mjs';
 
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_INPUTS = 100;
 const MAX_REPOS = 40;
@@ -21,6 +22,8 @@ const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const normalize = (text) => text.replace(/\r\n/g, '\n');
 const sorted = (items) => [...items].sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
 const semanticGenerator = readFileSync(new URL('./semantic-maps.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const supportFiles = ['knowledge.mjs', 'vendor/js-yaml.mjs', 'vendor/js-yaml.LICENSE', 'vendor/README.md'];
+const supportSources = Object.fromEntries(supportFiles.map((path) => [path, normalize(readFileSync(new URL(path, import.meta.url), 'utf8'))]));
 
 function requireValue(condition, message) {
   if (!condition) throw new Error(message);
@@ -78,6 +81,21 @@ function childDirectories(root, path) {
   return sorted(names);
 }
 
+function childFiles(root, path) {
+  const handle = opendirSync(safePath(root, path));
+  const names = [];
+  let count = 0;
+  try {
+    for (let entry = handle.readSync(); entry; entry = handle.readSync()) {
+      requireValue(++count <= 512, `Knowledge directory exceeds 512 immediate entries: ${path}`);
+      requireValue(!entry.isSymbolicLink(), `Symlink in knowledge directory: ${path}/${entry.name}`);
+      requireValue(!entry.isDirectory(), `Knowledge navigation profile uses a flat directory: ${path}/${entry.name}`);
+      if (entry.isFile()) names.push(entry.name);
+    }
+  } finally { handle.closeSync(); }
+  return sorted(names);
+}
+
 function validateConfig(config) {
   requireValue(config.version === 1, 'Unsupported manifest version');
   requireValue(typeof config.id === 'string' && /^[a-z0-9_-]+$/.test(config.id), 'Invalid repository identity');
@@ -106,17 +124,19 @@ function compactIndex(docs) {
   return [...groups].map(([directory, files]) => `|${directory}:{${files.join(',')}}`).join('\n');
 }
 
-function renderRepository(config, semantic) {
+function renderRepository(config, semantic, knowledge) {
+  const routes = config.docs.filter((doc) => !knowledge.paths.includes(doc.path));
   return [
     '## Repository guide', '', config.purpose, '', `Lifecycle: ${config.lifecycle}`, '',
     'Read the relevant documents below before changing behavior. Inspect more-specific AGENTS.md files in the destination directory. Accepted docs record settled decisions; proposed, reference, and deprecated docs are labelled context. The map is navigation, not proof of implementation or deployment.', '',
     ...config.rules.map((rule) => `- ${rule}`), '',
+    knowledge.overview,
     semantic.overview,
-    '### Task routes', '', ...config.docs.map((doc) => `- ${doc.status ? `[${doc.status}] ` : ''}${doc.task}: \`${doc.path}\``), '',
+    '### Task routes', '', ...routes.map((doc) => `- ${doc.status ? `[${doc.status}] ` : ''}${doc.task}: \`${doc.path}\``), '',
     '### Validation', '', 'Run from this repository root; choose checks relevant to the change. Commands are documented here, never executed by the documentation updater.', '',
     ...config.commands.map((command) => `- \`${command}\``), '',
     'Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .agent-docs/cli.mjs build --repo .`. Edit `.agent-docs/config.json` to change this guide.', '',
-    '[Docs index]|root:.', compactIndex(config.docs), '',
+    '[Docs index]|root:.', compactIndex(routes), '',
   ].join('\n');
 }
 
@@ -148,7 +168,7 @@ function provenance(config, generator, readSource) {
   const paths = sorted(new Set([CONFIG, ...config.docs.map((doc) => doc.path), ...config.watch]));
   requireValue(paths.length <= MAX_INPUTS, 'Too many selected inputs');
   const inputs = Object.fromEntries(paths.map((path) => [path, hash(normalize(readSource(path)))]));
-  return { version: 1, generator: { version: VERSION, sha256: hash(generator), semanticSha256: hash(semanticGenerator) }, sourceState: 'Filesystem snapshot; may include uncommitted changes. No deployment or commit claim.', inputs };
+  return { version: 1, generator: { version: VERSION, sha256: hash(generator), semanticSha256: hash(semanticGenerator), supportSha256: Object.fromEntries(Object.entries(supportSources).map(([path, text]) => [path, hash(text)])) }, sourceState: 'Filesystem snapshot; may include uncommitted changes. No deployment or commit claim.', inputs };
 }
 
 function planRepository(root, generator, snapshots = []) {
@@ -156,17 +176,20 @@ function planRepository(root, generator, snapshots = []) {
   validateConfig(config);
   const readSource = (path) => snapshots.find((item) => item.path === path)?.content ?? read(root, path);
   const sources = provenance(config, generator, readSource);
+  const knowledge = planKnowledge(config, { read: readSource, directory: (path) => directory(root, path), files: (path) => childFiles(root, path) });
+  if (config.knowledge) sources.knowledge = { inputs: knowledge.inputs };
   const semantic = planSemanticMaps(config, { read: readSource, directory: (path) => directory(root, path), childDirectories: (path) => childDirectories(root, path) });
   if (config.codeMap) sources.semantic = { inputs: semantic.inputs, inventories: semantic.inventories };
-  const instructions = replaceBlock(readOptional(root, 'AGENTS.md'), renderRepository(config, semantic), 'agent-docs');
+  const instructions = replaceBlock(readOptional(root, 'AGENTS.md'), renderRepository(config, semantic, knowledge), 'agent-docs');
   ensureBudget(instructions, config.budgetBytes, `${config.id}/AGENTS.md`);
   const outputs = [makeOutput(root, 'AGENTS.md', instructions), makeOutput(root, PROVENANCE, json(sources)), makeOutput(root, '.agent-docs/.gitignore', 'update.lock\naudit-state.json\naudit-report.json\n*.tmp\n'), ...snapshots.map((item) => makeOutput(root, item.path, item.content))];
-  for (const file of semantic.files) {
+  for (const file of [...semantic.files, ...knowledge.files]) {
     const content = replaceBlock(readOptional(root, file.path), file.content, file.block);
     ensureBudget(content, file.budgetBytes, `${config.id}/${file.path}`);
     outputs.push(makeOutput(root, file.path, content));
   }
   outputs.push(makeOutput(root, '.agent-docs/semantic-maps.mjs', semanticGenerator));
+  for (const [path, text] of Object.entries(supportSources)) outputs.push(makeOutput(root, `.agent-docs/${path}`, text));
   if (normalize(readOptional(root, LOCAL_CLI)) !== generator) outputs.push(makeOutput(root, LOCAL_CLI, generator));
   const adapter = readOptional(root, 'CLAUDE.md');
   if (!adapter) outputs.push(makeOutput(root, 'CLAUDE.md', '@AGENTS.md\n'));
@@ -178,7 +201,7 @@ function planRepository(root, generator, snapshots = []) {
     requireValue(!previous || previous.startsWith('# Generated by agent-docs'), `Refusing to replace authored workflow: ${workflow}`);
     outputs.push(makeOutput(root, workflow, renderCI(config.id)));
   }
-  return { config, outputs, inputsRead: Object.keys(sources.inputs).length + Object.keys(semantic.inputs).length, bytes: Buffer.byteLength(instructions), semantic };
+  return { config, outputs, inputsRead: new Set([...Object.keys(sources.inputs), ...Object.keys(semantic.inputs), ...Object.keys(knowledge.inputs)]).size, bytes: Buffer.byteLength(instructions), semantic };
 }
 
 function renderCI(id) {
@@ -283,6 +306,7 @@ export function run(options) {
     return { plans: [plan], outputs: plan.outputs, unknown: [], rootBytes: 0 };
   })();
   const plan = getPlan();
+  requireValue(Date.now() - started < MAX_RUN_MS, 'Documentation planning exceeded time limit');
   const drift = plan.outputs.filter((output) => output.changed).map((output) => relative(root, resolve(output.root, output.path)).split(sep).join('/'));
   const decisions = plan.plans.flatMap(({ config }) => config.decisions.map((description) => ({ repository: config.id, description })));
   const unmappedModules = plan.plans.flatMap(({ config, semantic }) => semantic.unknown.map((path) => `${config.id}/${path}`));
@@ -307,6 +331,16 @@ export function run(options) {
   };
 }
 
+export function search(options) {
+  const root = resolve(options.root);
+  requireValue(lstatSync(root).isDirectory() && !lstatSync(root).isSymbolicLink(), 'Root must be a real directory');
+  const config = parse(root, CONFIG);
+  validateConfig(config);
+  requireValue(config.knowledge, 'No knowledge bundle registered for this repository');
+  const bundle = readKnowledge(config, { read: (path) => read(root, path), directory: (path) => directory(root, path) });
+  return searchKnowledge(bundle, options);
+}
+
 function parseArgs(args) {
   const [command, ...rest] = args;
   const options = { command, scope: undefined, root: undefined, format: 'text' };
@@ -317,6 +351,9 @@ function parseArgs(args) {
     if (flag === '--format') {
       requireValue(['json', 'text'].includes(value), 'Format must be json or text');
       options.format = value;
+    } else if (['--query', '--type', '--tag', '--limit'].includes(flag)) {
+      requireValue(command === 'search', `${flag} is only supported by search`);
+      options[flag.slice(2)] = flag === '--limit' ? Number(value) : value;
     } else {
       requireValue(['--repo', '--workspace'].includes(flag) && !options.scope, 'Specify exactly one --repo or --workspace');
       options.scope = flag.slice(2);
@@ -324,14 +361,22 @@ function parseArgs(args) {
     }
   }
   requireValue(options.root, 'Usage: node cli.mjs check|build|audit --repo PATH|--workspace PATH [--format json]');
+  requireValue(command !== 'search' || options.scope === 'repo', 'Search requires --repo');
   return options;
 }
 
 function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const result = run(options);
+    const result = options.command === 'search' ? search(options) : run(options);
     if (options.format === 'json') process.stdout.write(json(result));
+    else if (options.command === 'search') {
+      for (const item of result.results) {
+        process.stdout.write(`${item.path} — ${item.title} [${item.type}; ${item.status}]\n`);
+        for (const snippet of item.snippets) process.stdout.write(`  ${item.path}:${snippet.line}: ${snippet.text}\n`);
+      }
+      if (!result.results.length) process.stdout.write('No matching knowledge concepts. Try a shorter domain term or read knowledge/index.md.\n');
+    }
     else {
       process.stdout.write(`agent-docs ${result.command}: ${result.exitCode === 0 ? 'clean' : 'findings'}; ${result.inputsRead} selected inputs\n`);
       for (const path of result.changed) process.stdout.write(`updated: ${path}\n`);

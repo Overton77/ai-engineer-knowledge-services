@@ -5,6 +5,8 @@ import { defineOperation, OperationRegistry, type OperationDefinition } from "..
 import type { KnowledgeServices } from "./context.js";
 import { CheckpointCommitRequestSchema, CheckpointRestoreRequestSchema, CheckpointScopeSchema, CheckpointReceiptSchema, CheckpointRestoreResultSchema, CheckpointTombstoneRequestSchema } from "@aiengineer/knowledge-contracts";
 import { KnowledgeCheckpointHarnessRequestSchema } from "./checkpoints-harness.js";
+import { recoveryHostOperations } from "./recovery-host-operations.js";
+import { contentLinkOperations } from "./content-link-operations.js";
 
 const defineKnowledgeOperation = <TInput extends z.ZodObject, TOutput extends z.ZodType>(definition: OperationDefinition<TInput, TOutput, KnowledgeServices>) => defineOperation(definition);
 
@@ -250,6 +252,28 @@ export const checkpointOperations = [
 ];
 
 export const knowledgeOperations = new OperationRegistry<KnowledgeServices>([
+  defineKnowledgeOperation({
+    name: "source_prepare_captured", title: "Prepare a retained source",
+    description: "Convert and chunk exact remotely retained native text captures through durable preparation. Requires a trusted preparation host. Returns canonical receipts and pending independent review; does not publish.",
+    input: z.strictObject({ captureId: z.string().min(1).max(255), title: z.string().min(1).max(500), version: z.string().min(1).max(100) }),
+    output: Any, cli: { command: ["source", "prepare-captured"], positional: ["captureId"] },
+    run: async (input, services) => {
+      if (!services.prepareCapturedSource) throw new Error("PREPARATION_HOST_REQUIRED");
+      return services.prepareCapturedSource(input);
+    },
+  }),
+  defineKnowledgeOperation({
+    name: "report_assess", title: "Assess a sealed report against original requirements",
+    description: "Assess report fidelity using host-pinned original requirements and sealed verification runs. Returns durable admission findings; the request cannot supply authority or verdicts.",
+    input: z.strictObject({ reportVersionId: z.uuid() }), output: Any,
+    cli: { command: ["report", "assess"], positional: ["reportVersionId"] },
+    run: async (input, services) => {
+      if (!services.reportAssessment) throw new Error("REPORT_ASSESSMENT_AUTHORITY_REQUIRED");
+      return services.reportAssessment.assess(input);
+    },
+  }),
+  ...recoveryHostOperations,
+  ...contentLinkOperations,
   ...checkpointOperations,
   schemaSearch, schemaGet, schemaManifest, schemaMaterialize,
   dbHead, dbReadIntent, dbSqlReadonly, dbExplain,

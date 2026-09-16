@@ -60,6 +60,10 @@ const required = <T>(value: T | undefined, field: string): T => value === undefi
 const array = (value: unknown, field: string): any[] => Array.isArray(value) ? value : fail(`ARRAY_${field}`);
 const unique = (values: readonly string[], field: string): void => { if (new Set(values).size !== values.length) fail(`DUPLICATE_${field}`); };
 const MAX_BYTES = 1_000_000;
+// Native DOM and geometry projections can exceed 1MB while their combined
+// parser output remains within 4MB. Preserve that envelope at this boundary;
+// structural, depth, item and string limits still apply below.
+const MAX_NATIVE_PROJECTION_BYTES = 4_000_000;
 const MAX_ITEMS = 10_000;
 const MAX_STRING = 100_000;
 const MAX_EXPANDED_TABLE_CELLS = 100_000;
@@ -223,13 +227,14 @@ function parseApi(input: UnknownRecord): PaginatedApiProjection {
 
 /** Parses only canonical JSON projections. It does not assert they were safely produced or registered. */
 export function parseCanonicalProjection(content: Uint8Array): CanonicalProjection {
-  if (content.byteLength > MAX_BYTES) fail("BYTES");
+  if (content.byteLength > MAX_NATIVE_PROJECTION_BYTES) fail("BYTES");
   let text = "";
   let value: unknown = undefined;
   try { text = new TextDecoder("utf-8", { fatal: true }).decode(content); value = JSON.parse(text); } catch { fail("JSON_PARSE"); }
   if (canonicalizeJson(value) !== text) fail("JSON_NOT_CANONICAL");
   if (!isRecord(value) || !string(value.kind)) fail("KIND");
   const projection = value as UnknownRecord;
+  if (!["geometry", "html_dom"].includes(projection.kind) && content.byteLength > MAX_BYTES) fail("BYTES");
   switch (projection.kind) {
     case "html_dom": return parseHtml(projection);
     case "pdf_text": return parsePdf(projection);

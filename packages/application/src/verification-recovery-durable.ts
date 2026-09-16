@@ -19,8 +19,8 @@ function equal(left: unknown, right: unknown, reason: string): void {
 /** Durable admission and accounting around P1.4. This service never calls a semantic provider. */
 export class DurableVerificationRecoveryService {
   constructor(private readonly store: DurableRecoveryStore, private readonly evidence: DurableRecoveryEvidenceAuthority,
-    private readonly custody: DurableRecoveryCustody, private readonly runtime: DurableRecoveryRuntime,
-    private readonly checkpoints: DurableRecoveryCheckpoints) {}
+    private readonly custody: DurableRecoveryCustody, private readonly runtime?: DurableRecoveryRuntime,
+    private readonly checkpoints?: DurableRecoveryCheckpoints) {}
 
   async open(tenantId: string, request: { batchId: string; notificationId: string }): Promise<DurableRecoveryCase> {
     const initial = await this.evidence.readInitialBatch({ tenantId, batchId: request.batchId });
@@ -50,6 +50,7 @@ export class DurableVerificationRecoveryService {
 
   async plan(tenantId: string, request: { caseId: string; expectedRevision: number; actions: VerificationRecoveryAction[];
     probes: VerificationRecoveryPlan["probes"]; reservation: DurableRecoveryUsage }): Promise<DurableRecoveryCase> {
+    if (!this.runtime) throw new Error("RECOVERY_RUNTIME_NOT_CONFIGURED");
     const current = await this.read(tenantId, request.caseId);
     if (current.revision !== request.expectedRevision || current.state !== "ready") throw new Error("RECOVERY_PLAN_STATE_CONFLICT");
     await this.projectLatestCandidates(current);
@@ -58,7 +59,7 @@ export class DurableVerificationRecoveryService {
       for (const original of current.batch.items) {
         const initial = current.initialBatch.items.find(item => item.originalId === original.originalId)!;
         if (original.inputDigest !== initial.inputDigest) continue;
-        const observed = await this.evidence.readResult({ tenantId, inputDigest: original.inputDigest, operationId: original.observation.operationId });
+        const observed = await this.evidence.readResult({ tenantId, inputDigest: original.inputDigest, operationId: original.observation.operationId, originalId: original.originalId });
         if (!observed) continue;
         if (observed.tenantId !== tenantId || observed.inputDigest !== original.inputDigest || observed.observation.operationId !== original.observation.operationId) throw new Error("RECOVERY_RESUME_RESULT_BINDING");
         equal(observed.binding, original.binding, "RECOVERY_RESUME_RESULT_BINDING");
@@ -76,6 +77,7 @@ export class DurableVerificationRecoveryService {
   }
 
   async claim(tenantId: string, request: { caseId: string; planDigest: string; holderIdentity: string; leaseMs: number }): Promise<DurableRecoveryClaim> {
+    if (!this.runtime) throw new Error("RECOVERY_RUNTIME_NOT_CONFIGURED");
     const current = await this.read(tenantId, request.caseId);
     if (current.state !== "active" || current.activePlanDigest !== request.planDigest || !current.latestPlan) throw new Error("RECOVERY_PLAN_NOT_ACTIVE");
     const retainedFailureSet = current.revisions.find(row => row.kind === "failure_set" && row.idempotencyKey === current.latestPlan!.failureSetDigest);
@@ -89,6 +91,7 @@ export class DurableVerificationRecoveryService {
   }
 
   async execute(tenantId: string, request: { claim: DurableRecoveryClaim; originalId: string; reservation: DurableRecoveryUsage }): Promise<DurableRecoveryExecution> {
+    if (!this.runtime) throw new Error("RECOVERY_RUNTIME_NOT_CONFIGURED");
     const claim = DurableRecoveryClaimSchema.parse(request.claim);
     if (claim.tenantId !== tenantId) throw new Error("RECOVERY_TENANT_MISMATCH");
     const current = await this.read(tenantId, claim.caseId);
@@ -112,6 +115,7 @@ export class DurableVerificationRecoveryService {
   }
 
   async reconcile(tenantId: string, request: { caseId: string; planDigest: string }): Promise<DurableRecoveryCase> {
+    if (!this.runtime) throw new Error("RECOVERY_RUNTIME_NOT_CONFIGURED");
     const current = await this.read(tenantId, request.caseId);
     const planRevision = current.revisions.find(row => row.kind === "plan" && row.idempotencyKey === request.planDigest);
     if (!planRevision) throw new Error("RECOVERY_PLAN_NOT_FOUND");
@@ -145,6 +149,7 @@ export class DurableVerificationRecoveryService {
   }
 
   async wait(tenantId: string, request: { caseId: string; expectedRevision: number; checkpointId: string; reason: string }): Promise<DurableRecoveryCase> {
+    if (!this.checkpoints) throw new Error("RECOVERY_CHECKPOINTS_NOT_CONFIGURED");
     const current = await this.read(tenantId, request.caseId);
     if (!request.reason.trim()) throw new Error("RECOVERY_WAIT_REASON_REQUIRED");
     const checkpoint = await this.checkpoints.verify({ tenantId, caseId: request.caseId, checkpointId: request.checkpointId });
@@ -188,7 +193,7 @@ export class DurableVerificationRecoveryService {
       const action = plan.actions.find(item => item.originalId === original.originalId);
       if (!action?.newBinding || digestCanonicalJson(action.newBinding) !== latest.execution.inputDigest) throw new Error("RECOVERY_CANDIDATE_LINEAGE_MISMATCH");
       if (action.newBinding.policyDigest !== initial.binding.policyDigest || action.newBinding.profileDigest !== initial.binding.profileDigest) throw new Error("RECOVERY_CANDIDATE_POLICY_MISMATCH");
-      const result = await this.evidence.readResult({ tenantId: current.tenantId, inputDigest: latest.execution.inputDigest, operationId: latest.execution.operationId });
+      const result = await this.evidence.readResult({ tenantId: current.tenantId, inputDigest: latest.execution.inputDigest, operationId: latest.execution.operationId, originalId: original.originalId });
       if (!result) throw new Error("RECOVERY_CURRENT_CANDIDATE_PROOF_REQUIRED");
       const verified = VerificationRecoveryVerifiedResultSchema.parse(result);
       if (verified.tenantId !== current.tenantId || verified.inputDigest !== latest.execution.inputDigest
@@ -210,7 +215,8 @@ export class DurableVerificationRecoveryService {
       readPlan: async () => { if (!plan) throw new Error("RECOVERY_PLAN_NOT_FOUND"); return plan; },
       readInvalidation: input => invalidation ??= this.evidence.readInvalidation(input), readProbe: input => this.evidence.readProbe(input),
       readResult: async input => {
-        const candidates = current.executions.filter(row => row.inputDigest === input.inputDigest && (!input.operationId || row.operationId === input.operationId));
+        const candidates = current.executions.filter(row => row.inputDigest === input.inputDigest
+          && (!input.operationId || row.operationId === input.operationId) && (input.originalId === undefined || row.originalId === input.originalId));
         if (candidates.length > 1) throw new Error("RECOVERY_RESULT_OPERATION_AMBIGUOUS");
         const expected = candidates[0];
         if (!input.operationId && !expected?.operationId) return null;

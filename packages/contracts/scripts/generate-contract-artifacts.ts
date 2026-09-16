@@ -1,4 +1,7 @@
 import {VerificationExtractionFieldEvidenceResultSchema,ApplyProviderReconciliationRequestSchema,VerificationProviderReconciliationResourceSchema} from "../src/index.js";
+import { PromotionSelectionSchema, PromotionSelectionAuthoritySchema, PromotionProposalInputSchema } from "../src/promotion-selection.js";
+import { SelectedCandidateIndexInputSchema, SelectedCandidateEvaluationInputSchema, SelectedSpacePublicationInputSchema } from "../src/vector-store.js";
+import { ContentLinkIntentSchema } from "../src/content-links.js";
 import { VerificationProfileCaptureAcceptedSchema } from "../src/index.js";
 import { VerificationFailureSetSchema, VerificationRecoveryPlanSchema, VerificationRecoveryReceiptSchema, VerificationRecoveryInvalidationSchema } from "../src/index.js";
 import { ParseArtifactRequestSchema, VerificationParseArtifactResultSchema } from "../src/index.js";
@@ -19,6 +22,13 @@ import { A2AResultSchema, A2AStatusSchema, A2ATaskSchema, AcceptedOperationSchem
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const generatedRoot = resolve(packageRoot, "generated");
 const schemas = {
+  ContentLinkIntent: ContentLinkIntentSchema,
+  PromotionSelection: PromotionSelectionSchema,
+  PromotionProposalInput: PromotionProposalInputSchema,
+  SelectedCandidateIndexInput: SelectedCandidateIndexInputSchema,
+  SelectedCandidateEvaluationInput: SelectedCandidateEvaluationInputSchema,
+  SelectedSpacePublicationInput: SelectedSpacePublicationInputSchema,
+  PromotionSelectionAuthority: PromotionSelectionAuthoritySchema,
   VerificationExtractionFieldEvidenceResult: VerificationExtractionFieldEvidenceResultSchema,
   ParseArtifactRequest: ParseArtifactRequestSchema,
   VerificationParseArtifactResult: VerificationParseArtifactResultSchema,

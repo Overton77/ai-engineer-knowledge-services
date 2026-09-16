@@ -10,7 +10,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 - Change an HTTP/MCP/CLI verification surface: [contracts](#contracts) → [application](#application) → [api](#api) → [mcp](#mcp) → [cli](#cli)
 - Change locator or evidence verification: [verification](#verification) → [verification-selectors](#verification-selectors) → [verification-deterministic](#verification-deterministic) → [verification-semantic](#verification-semantic)
 - Debug worker retry or persistence: [worker](#worker) → [runtime](#runtime) → [persistence](#persistence)
-- Change parsing and conversion: [conversion](#conversion) → [verification-parser](#verification-parser) → [docling](#docling)
+- Change parsing and conversion: [conversion](#conversion) → [chunking](#chunking) → [documents](#documents) → [verification-parser](#verification-parser) → [docling](#docling)
 - Change retrieval or embedding: [retrieval](#retrieval) → [embeddings](#embeddings) → [vector-backends](#vector-backends) → [policy](#policy)
 - Find proof and evaluation commands: [script-proofs](#script-proofs) → [script-evaluation](#script-evaluation) → [script-reconciliation](#script-reconciliation)
 - Change schema workspace, knowledge read, or ingestion: [schema-workspace](#schema-workspace) → [db-read](#db-read) → [ingestion](#ingestion) → [verification-executor](#verification-executor)
@@ -82,7 +82,10 @@ Fastify HTTP transport, authentication, resource reads, and verification routes.
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
@@ -104,7 +107,9 @@ Machine-readable knowledge operator/developer commands and selected local demos.
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
 ## mcp
@@ -124,7 +129,9 @@ Stateless Streamable HTTP MCP tools over knowledge application behavior.
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
@@ -137,7 +144,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 **Enter:** [`apps/verification-executor/src/index.ts`](../../apps/verification-executor/src/index.ts), [`apps/verification-executor/src/executor.ts`](../../apps/verification-executor/src/executor.ts), [`apps/verification-executor/src/knowledge/operations.ts`](../../apps/verification-executor/src/knowledge/operations.ts), [`apps/verification-executor/src/knowledge/cli.ts`](../../apps/verification-executor/src/knowledge/cli.ts), [`apps/verification-executor/src/knowledge/context.ts`](../../apps/verification-executor/src/knowledge/context.ts), [`apps/verification-executor/src/operations/define.ts`](../../apps/verification-executor/src/operations/define.ts)
 **Interface:** knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP.
 **Package:** @aiengineer/knowledge-verification-executor ([`apps/verification-executor/package.json`](../../apps/verification-executor/package.json))
-**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Export subpaths:** ./evidence-reader/v1, ./root-host/v1, ./scoped-host/v1. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [db-read](#db-read), [ingestion](#ingestion), [persistence](#persistence), [policy](#policy), [runtime](#runtime), [schema-workspace](#schema-workspace), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, @modelcontextprotocol/sdk, pg, zod
 **Reviewed runtime/data relationships:** [schema-workspace](#schema-workspace), [db-read](#db-read), [ingestion](#ingestion)
@@ -146,7 +153,12 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
+- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 
 ## worker
 
@@ -165,7 +177,9 @@ Durable knowledge-operation execution, activity dispatch, and verification runti
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
@@ -188,6 +202,7 @@ Admitted source acquisition through HTTP, Firecrawl, manual upload, repository, 
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
 ## application
@@ -207,7 +222,13 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
+- [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
@@ -228,6 +249,8 @@ Builds bounded chunks with strategy profiles, overlap controls, and source spans
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
 ## client-typescript
@@ -286,6 +309,7 @@ Versioned Zod schemas and types shared by transports, application composition, a
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 
 ## conversion
@@ -305,6 +329,8 @@ Converts captured inputs and wraps external Docling and isolated native parser r
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
 ## db-read
@@ -325,7 +351,8 @@ Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-on
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 
 ## documents
 
@@ -344,6 +371,8 @@ Constructs immutable document nodes and source locators from structural blocks.
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
 ## domain
@@ -394,7 +423,7 @@ Deterministic planner and apply of knowledge-ingestion-intent.v1 through tempora
 **Interface:** IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf.
 **Package:** @aiengineer/knowledge-ingestion ([`packages/ingestion/package.json`](../../packages/ingestion/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [db-read](#db-read), [persistence](#persistence), [schema-workspace](#schema-workspace)
+**Declared internal package dependencies:** [contracts](#contracts), [db-read](#db-read), [domain](#domain), [persistence](#persistence), [schema-workspace](#schema-workspace)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** [db-read](#db-read), [schema-workspace](#schema-workspace)
 **Checks:** [`packages/ingestion/src/plan.test.ts`](../../packages/ingestion/src/plan.test.ts), [`packages/ingestion/src/duplicate.test.ts`](../../packages/ingestion/src/duplicate.test.ts), [`packages/ingestion/src/executor.integration.test.ts`](../../packages/ingestion/src/executor.integration.test.ts) Package script names: build, test, typecheck.
@@ -402,7 +431,10 @@ Deterministic planner and apply of knowledge-ingestion-intent.v1 through tempora
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 
 ## evaluation
 
@@ -460,6 +492,9 @@ Postgres, storage, operation ledger, verification records, and runtime wiring ad
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 
@@ -480,6 +515,9 @@ Authorization, capability, retrieval, promotion, and verification admission deci
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
@@ -520,6 +558,7 @@ Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 
 ## runtime
@@ -539,6 +578,7 @@ Content-addressed artifacts and operation/step/lease/event/receipt primitives.
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 
@@ -560,7 +600,8 @@ Loads and searches the pinned db-contract schema workspace, compares migration h
 
 **Architecture and detailed docs:**
 
-- [reference] [`README.md`](../../README.md) — Service boundaries and startup
+- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
+- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 
 ## testkit
 
@@ -598,6 +639,8 @@ Vector-store adapters and publication handling for exact and Postgres search.
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 
 ## verification
@@ -617,6 +660,7 @@ Evidence verification algorithms behind deterministic, selector, claim, semantic
 
 **Architecture and detailed docs:**
 
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
 ## verification-deterministic
@@ -798,6 +842,8 @@ Pinned Docling Serve conversion deployment boundary.
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 
@@ -958,5 +1004,5 @@ Procedure for composing, planning, applying, and verifying knowledge-ingestion i
 
 **Architecture and detailed docs:**
 
-No module-specific architecture document registered. Do not infer a design decision from the folder name.
+- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 <!-- END GENERATED: semantic-map -->

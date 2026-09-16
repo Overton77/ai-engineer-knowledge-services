@@ -52,6 +52,8 @@ export const ReportStructureSchema = z.strictObject({
     unique(section.blocks.map((block) => block.key), "block key");
     for (const block of section.blocks) for (const assertion of block.assertions) {
       if (assertion.end <= assertion.start || assertion.end > block.markdown.length) issue(`invalid UTF-16 range: ${assertion.key}`);
+      for (const offset of [assertion.start,assertion.end]) if (offset>0 && offset<block.markdown.length
+        && /[\uD800-\uDBFF]/.test(block.markdown[offset-1]!) && /[\uDC00-\uDFFF]/.test(block.markdown[offset]!)) issue(`UTF-16 range splits a surrogate pair: ${assertion.key}`);
       if (assertion.kind !== "illustrative" && !assertion.claims.some((claim) => ["supports", "premise"].includes(claim.role))) issue(`missing claim binding: ${assertion.key}`);
       if (["derived", "interpretation", "recommendation"].includes(assertion.kind) && Object.keys(assertion.derivation).length === 0) issue(`missing derivation or premises: ${assertion.key}`);
     }

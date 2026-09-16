@@ -6,6 +6,8 @@ import type { KnowledgeServices } from "./knowledge/context.js";
 import { knowledgeOperations } from "./knowledge/operations.js";
 import { createVerificationMcpServer, errorEnvelope } from "./mcp.js";
 import { UnknownOperationError } from "./operations/define.js";
+import { ScopedAccessError, type ScopedExecutorAccess } from "./access.js";
+import { z } from "zod";
 
 /**
  * Routes
@@ -43,7 +45,11 @@ function json(response: ServerResponse, status: number, value: unknown): void {
 export interface HttpServerOptions {
   readonly token?: string;
   readonly knowledge?: KnowledgeServices;
+  readonly scopedAccess?: ScopedExecutorAccess;
 }
+
+const scopedInvocation = z.strictObject({ assignment: z.unknown(), operation: z.string().min(1), payload: z.unknown() });
+const scopedCatalog = z.strictObject({ assignment: z.unknown() });
 
 async function healthPayload(executor: VerificationExecutor, knowledge: KnowledgeServices | undefined): Promise<Record<string, unknown>> {
   const base = { status: "ok", store: executor.store.rootDir, tenantId: executor.store.tenantId };
@@ -74,13 +80,26 @@ async function handleKnowledge(request: IncomingMessage, response: ServerRespons
 }
 
 export function createHttpServer(executor: VerificationExecutor, options: HttpServerOptions = {}): Server {
+  if (options.scopedAccess && !options.token) throw new ScopedAccessError("SCOPED_HOST_AUTH_REQUIRED");
   return createServer(async (request, response) => {
-    const url = new URL(request.url ?? "/", "http://localhost");
+    let url: URL;
+    try { url = new URL(request.url ?? "/", "http://localhost"); }
+    catch { return json(response, 400, { error: "INVALID_REQUEST_URL" }); }
     try {
       if (request.method === "GET" && url.pathname === "/health") return json(response, 200, await healthPayload(executor, options.knowledge));
       if (options.token) {
         const header = request.headers.authorization ?? "";
         if (header !== `Bearer ${options.token}`) return json(response, 401, { error: "UNAUTHORIZED" });
+      }
+      if (url.pathname === "/scoped/invoke" && request.method === "POST") {
+        if (!options.scopedAccess) return json(response, 503, { error: "SCOPED_ACCESS_UNAVAILABLE" });
+        const input = scopedInvocation.parse(JSON.parse(Buffer.from(await readBody(request)).toString("utf8")));
+        return json(response, 200, await options.scopedAccess.executeScoped(input));
+      }
+      if (url.pathname === "/scoped/catalog" && request.method === "POST") {
+        if (!options.scopedAccess) return json(response, 503, { error: "SCOPED_ACCESS_UNAVAILABLE" });
+        const input = scopedCatalog.parse(JSON.parse(Buffer.from(await readBody(request)).toString("utf8")));
+        return json(response, 200, options.scopedAccess.catalog(input.assignment));
       }
       if (url.pathname === "/mcp") {
         const body = request.method === "POST" ? JSON.parse(Buffer.from(await readBody(request)).toString("utf8") || "null") : undefined;
@@ -134,7 +153,9 @@ export function createHttpServer(executor: VerificationExecutor, options: HttpSe
       return json(response, 404, { error: "NOT_FOUND" });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (!response.headersSent) json(response, message.includes("NOT_FOUND") ? 404 : 500, { error: message });
+      const status = error instanceof ScopedAccessError ? 403 : error instanceof z.ZodError || error instanceof SyntaxError ? 400
+        : message === "BODY_TOO_LARGE" ? 413 : message.includes("NOT_FOUND") ? 404 : 500;
+      if (!response.headersSent) json(response, status, { error: message });
       else response.end();
     }
   });

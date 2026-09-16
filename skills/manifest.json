@@ -1,12 +1,319 @@
 {
-  "schemaVersion": "knowledge-skill-catalog/v1",
+  "schemaVersion": "knowledge-skill-catalog/v2",
   "contractVersion": "v1",
+  "distributions": {
+    "executor-cli": "@aiengineer/knowledge-verification-executor bin knowledge (sandbox executor; also knowledge-verify)",
+    "executor-mcp": "verification executor /mcp",
+    "platform-cli": "@aiengineer/knowledge-cli bin knowledge (platform API client)",
+    "platform-mcp": "@aiengineer/knowledge-mcp"
+  },
   "skills": [
-    { "id": "knowledge-acquisition-and-vetting", "version": "1.0.0", "path": "knowledge-acquisition-and-vetting/SKILL.md" },
-    { "id": "knowledge-preparation-and-promotion", "version": "1.0.0", "path": "knowledge-preparation-and-promotion/SKILL.md" },
-    { "id": "knowledge-retrieval-and-evidence", "version": "1.0.0", "path": "knowledge-retrieval-and-evidence/SKILL.md" },
-    { "id": "knowledge-evaluation", "version": "1.0.0", "path": "knowledge-evaluation/SKILL.md" },
-    { "id": "knowledge-verification", "version": "1.0.0", "path": "knowledge-verification/SKILL.md" },
-    { "id": "vector-store-management", "version": "1.0.0", "path": "vector-store-management/SKILL.md" }
+    {
+      "id": "schema-explore",
+      "version": "1.1.0",
+      "path": "schema-explore/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp",
+        "workspace-files"
+      ],
+      "operations": [
+        "schema_search",
+        "schema_get",
+        "schema_manifest",
+        "schema_materialize",
+        "report_get",
+        "artifact_get",
+        "source_attempt",
+        "content_link_plan",
+        "recovery_read"
+      ]
+    },
+    {
+      "id": "knowledge-db",
+      "version": "1.1.0",
+      "path": "knowledge-db/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp"
+      ],
+      "operations": [
+        "db_head",
+        "db_read_intent",
+        "db_sql_readonly",
+        "db_explain",
+        "schema_manifest",
+        "artifact_get",
+        "ingest_receipt"
+      ],
+      "artifactTypes": [
+        "knowledge_read_intent",
+        "knowledge_read_snapshot"
+      ]
+    },
+    {
+      "id": "knowledge-ingest",
+      "version": "1.1.0",
+      "path": "knowledge-ingest/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp"
+      ],
+      "operations": [
+        "ingest_plan",
+        "ingest_apply",
+        "ingest_receipt",
+        "db_read_intent",
+        "artifact_get",
+        "report_register",
+        "report_get",
+        "report_assess",
+        "content_link_plan",
+        "content_link_apply",
+        "content_link_receipt",
+        "content_summary_prepare",
+        "source_discover",
+        "source_import",
+        "source_select",
+        "source_attempt",
+        "source_reconcile"
+      ],
+      "artifactTypes": [
+        "knowledge_report_markdown",
+        "report_version",
+        "knowledge_read_intent",
+        "knowledge_read_snapshot"
+      ]
+    },
+    {
+      "id": "knowledge-acquisition-and-vetting",
+      "version": "1.1.0",
+      "path": "knowledge-acquisition-and-vetting/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp",
+        "platform-cli"
+      ],
+      "operations": [
+        "source_discover",
+        "source_import",
+        "source_attempt",
+        "source_reconcile",
+        "source_select",
+        "verify_capture_source",
+        "verify_capture_file",
+        "verify_read_capture",
+        "verify_search_capture",
+        "source discover",
+        "source fetch",
+        "source vet"
+      ],
+      "absentOperations": [
+        "source_resolve_identity"
+      ]
+    },
+    {
+      "id": "knowledge-preparation-and-promotion",
+      "version": "1.2.0",
+      "path": "knowledge-preparation-and-promotion/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp",
+        "platform-cli"
+      ],
+      "operations": [
+        "source_prepare_captured",
+        "content_link_plan",
+        "content_link_apply",
+        "content_link_receipt",
+        "content_summary_prepare",
+        "document convert",
+        "document compare",
+        "chunk preview",
+        "chunk build",
+        "promotion propose",
+        "promotion review",
+        "promotion status",
+        "embed run",
+        "embed verify",
+        "embed status"
+      ],
+      "absentOperations": [
+        "promotion_selection_select",
+        "promotion select"
+      ]
+    },
+    {
+      "id": "knowledge-retrieval-and-evidence",
+      "version": "1.1.0",
+      "path": "knowledge-retrieval-and-evidence/SKILL.md",
+      "surfaces": [
+        "platform-cli",
+        "platform-mcp"
+      ],
+      "operations": [
+        "retrieve plan",
+        "retrieve search",
+        "retrieve explain",
+        "operation status"
+      ]
+    },
+    {
+      "id": "knowledge-evaluation",
+      "version": "1.1.0",
+      "path": "knowledge-evaluation/SKILL.md",
+      "surfaces": [
+        "platform-cli"
+      ],
+      "operations": [
+        "eval generate",
+        "eval run",
+        "eval compare",
+        "eval failures",
+        "benchmark compare",
+        "benchmark comparison"
+      ]
+    },
+    {
+      "id": "knowledge-verification",
+      "version": "1.1.0",
+      "path": "knowledge-verification/SKILL.md",
+      "surfaces": [
+        "platform-cli",
+        "platform-mcp",
+        "executor-cli"
+      ],
+      "references": [
+        "cli-reference.md",
+        "mcp-reference.md",
+        "examples.md"
+      ],
+      "operations": [
+        "verify status",
+        "verify extract",
+        "verify citations",
+        "verify report",
+        "verify metric",
+        "verify claims-result",
+        "verify report-result",
+        "verify run",
+        "verify manifest",
+        "verify cases",
+        "verify case",
+        "verify evidence",
+        "benchmark run",
+        "benchmark compare",
+        "benchmark show",
+        "benchmark manifest",
+        "benchmark comparison",
+        "bundle replay",
+        "bundle inspect",
+        "bundle show",
+        "adjudication request",
+        "adjudication decision",
+        "adjudication get",
+        "adjudication get-decision",
+        "operation status",
+        "operation events",
+        "operation retry",
+        "operation reconcile",
+        "knowledge_verify_claims",
+        "knowledge_verify_report",
+        "knowledge_verify_extraction",
+        "knowledge_verify_metric",
+        "knowledge_get_verification_operation",
+        "knowledge_get_verification_claims_result",
+        "knowledge_get_verification_report_result",
+        "knowledge_run_benchmark",
+        "knowledge_compare_benchmark_runs",
+        "knowledge_get_benchmark_run",
+        "knowledge_get_benchmark_manifest",
+        "knowledge_get_benchmark_comparison",
+        "knowledge_replay_run",
+        "knowledge_inspect_audit_bundle",
+        "knowledge_get_audit_inspection",
+        "knowledge_request_adjudication",
+        "knowledge_record_adjudication_decision",
+        "knowledge_get_adjudication",
+        "knowledge_get_adjudication_decision",
+        "report_assess",
+        "recovery_observe"
+      ],
+      "absentOperations": [
+        "knowledge_extract_structured",
+        "knowledge_inspect_run",
+        "knowledge_get_operation",
+        "verify capture-show"
+      ]
+    },
+    {
+      "id": "knowledge-verification-recovery",
+      "version": "1.0.0",
+      "path": "knowledge-verification-recovery/SKILL.md",
+      "surfaces": [
+        "executor-cli",
+        "executor-mcp",
+        "platform-cli"
+      ],
+      "references": [
+        "operations.md",
+        "examples.md"
+      ],
+      "operations": [
+        "recovery_status",
+        "recovery_submit",
+        "recovery_observe",
+        "recovery_read",
+        "recovery_probe",
+        "recovery_plan",
+        "recovery_claim",
+        "recovery_execute",
+        "recovery_reconcile",
+        "recovery_wait",
+        "recovery_resume",
+        "checkpoint_commit",
+        "checkpoint_head",
+        "checkpoint_read",
+        "checkpoint_restore",
+        "verify_read_capture",
+        "verify_get_artifact",
+        "verify_register_artifact",
+        "report_assess",
+        "artifact_get",
+        "adjudication request",
+        "adjudication get"
+      ],
+      "absentOperations": [
+        "recovery_close",
+        "recovery_cancel",
+        "recovery_admit"
+      ],
+      "requireCatalogPrefix": [
+        "recovery_"
+      ]
+    },
+    {
+      "id": "vector-store-management",
+      "version": "1.1.0",
+      "path": "vector-store-management/SKILL.md",
+      "surfaces": [
+        "platform-cli"
+      ],
+      "operations": [
+        "store create",
+        "store show",
+        "store add-documents",
+        "store evaluate",
+        "store status",
+        "space publish",
+        "space rollback",
+        "operation status",
+        "operation reconcile"
+      ],
+      "absentOperations": [
+        "store search",
+        "space rebuild"
+      ]
+    }
   ]
 }

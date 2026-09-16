@@ -34,6 +34,7 @@ import {
 } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import type { PostgresCanonicalRepository } from "./postgres.js";
+import { assertSignedReportSourceDependencies } from "./report-source-dependencies.js";
 
 type Row = Record<string, unknown>;
 type TerminalResult = VerificationClaimsOperationResult | VerificationReportOperationResult;
@@ -127,6 +128,8 @@ export class PostgresClaimsReportReadRepository implements VerifiedClaimsReportR
         : undefined;
       const after = await this.#snapshot(tenantId, operationId);
       if (!same(after, snapshot)) throw new Error("TERMINAL_DRIFT");
+      if (snapshot.result.useCase === "verifyReport") await this.database.transaction(tenantId, client =>
+        assertSignedReportSourceDependencies(client, tenantId, snapshot.result.output.verified.sourceArtifacts));
       return deepFreeze({ state: "succeeded" as const, result: snapshot.result, ...(reportGateArtifact ? { reportGateArtifact } : {}), ...(policyDecision ? { policyDecision } : {}) });
     } catch (error) {
       if (error instanceof ClaimsReportReadError) throw error;

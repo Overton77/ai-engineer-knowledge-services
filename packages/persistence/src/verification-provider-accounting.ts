@@ -1,6 +1,7 @@
 import { verificationProviderHostTuple, type VerificationProviderHost } from "./verification-provider-host.js";
 import type { PostgresCanonicalRepository } from "./postgres.js";
 import type { LeasedStep } from "./types.js";
+import { assertRecoveryProviderBudget } from "./verification-recovery-provider-budget.js";
 
 export type ProviderAttemptState = "reserved" | "dispatched" | "settled" | "uncertain" | "cancelled";
 export interface ProviderBudgetSnapshot { readonly budgetId: string; readonly tenantId: string; readonly budgetKey: string; readonly ceilingCostMicros: number; readonly reservedCostMicros: number; readonly settledCostMicros: number; }
@@ -157,6 +158,8 @@ export class PostgresVerificationProviderAccounting {
       if (databaseNumber(budgetRow.reserved_cost_micros) + databaseNumber(budgetRow.settled_cost_micros) + input.reservationCostMicros > input.ceilingCostMicros) {
         throw new Error("PROVIDER_BUDGET_EXCEEDED");
       }
+      if (scope) await assertRecoveryProviderBudget(client, { tenantId: input.tenantId, operationId: scope.lease.operationId,
+        additionalCalls: 1, additionalCostMicros: input.reservationCostMicros });
       await client.query("update orchestration.verification_provider_budget set reserved_cost_micros=reserved_cost_micros+$3 where tenant_id=$1 and id=$2", [input.tenantId, input.budgetId, input.reservationCostMicros]);
       const attemptRow = (await client.query<Record<string, unknown>>(
         scope ? "insert into orchestration.verification_provider_attempt(id,tenant_id,budget_id,request_sha256,attempt_ordinal,provider_id,model,reservation_cost_micros,state,estimated_cost_micros,request_artifact_id,operation_id,operation_step_id,profile_artifact_id,profile_sha256,reserved_fencing_token) values($1,$2,$3,$4,$5,$6,$7,$8,'reserved',$9,$10,$11,$12,$13,$14,$15) returning *" : "insert into orchestration.verification_provider_attempt(id,tenant_id,budget_id,request_sha256,attempt_ordinal,provider_id,model,reservation_cost_micros,state,estimated_cost_micros,request_artifact_id) values($1,$2,$3,$4,$5,$6,$7,$8,'reserved',$9,$10) returning *",
@@ -180,6 +183,8 @@ export class PostgresVerificationProviderAccounting {
       const current = toAttempt(locked);
       this.#assertScopeRow(locked,scope);
       if (current.state !== "reserved") return { claimed: false, attempt: current };
+      if (scope) await assertRecoveryProviderBudget(client, { tenantId: input.tenantId, operationId: scope.lease.operationId,
+        additionalCalls: 0, additionalCostMicros: 0 });
       const updated = (await client.query<Record<string, unknown>>(
         scope ? "update orchestration.verification_provider_attempt set state='dispatched',dispatched_at=clock_timestamp(),dispatch_fence=$3,dispatch_fencing_token=$4 where tenant_id=$1 and id=$2 returning *" : "update orchestration.verification_provider_attempt set state='dispatched',dispatched_at=clock_timestamp(),dispatch_fence=$3 where tenant_id=$1 and id=$2 returning *",
         scope ? [input.tenantId,input.attemptId,input.dispatchFence,scope.lease.fencingToken] : [input.tenantId,input.attemptId,input.dispatchFence],

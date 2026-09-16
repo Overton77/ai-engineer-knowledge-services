@@ -11,6 +11,14 @@ import { classifyFailure } from "./executor.js";
 const executor = { version: "knowledge-executor/test", migrationHead: "20260912020000" };
 const parse = (input: unknown) => IngestionIntentSchema.parse(input);
 
+it("rejects legacy report.publish before artifact or graph writes",()=>{
+  const intent=parse({schemaVersion:"knowledge-ingestion-intent.v1",intentId:"legacy-report",context:{tenantId:"00000000-0000-7000-8000-000000000001"},
+    proposals:[{kind:"report.publish",proposalId:"report",title:"Legacy",asOf:"2026",markdown:"Legacy report text"}]});
+  const plan=buildPlan(intent,fixtureFacts(),executor);
+  expect(plan.proposals[0]).toMatchObject({outcome:"rejected",reason:"LEGACY_REPORT_PUBLISH_UNSUPPORTED",actions:[]});
+  expect(plan.errors.some(error=>error.code==="LEGACY_REPORT_PUBLISH_UNSUPPORTED")).toBe(true);
+});
+
 describe("temporal helper input preservation", () => {
   it("keeps an explicit qualified price scope despite another same-unit series", () => {
     const intent = parse(priceIntent());

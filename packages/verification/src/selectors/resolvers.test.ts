@@ -132,6 +132,28 @@ describe("synthetic canonical selector projections", () => {
     expect(() => parseCanonicalProjection(coordinateOverflow)).toThrow(/TABLE_COORDINATE_OVERFLOW/);
   });
 
+  it("accepts a bounded geometry projection up to the native parser output cap only", () => {
+    const geometry = (tokenCount: number) => bytes({
+      kind: "geometry",
+      pages: [{ physicalPageNumber: 1, widthPoints: 1, heightPoints: 1, tokens: Array.from({ length: tokenCount }, (_, order) => ({ text: "x".repeat(60_000), x: 0, y: 0, width: 1, height: 1, coordinateSpace: "pdf_points", order })) }],
+    });
+    const admitted = geometry(20);
+    expect(admitted.byteLength).toBeGreaterThan(1_000_000);
+    expect(admitted.byteLength).toBeLessThanOrEqual(4_000_000);
+    expect(parseCanonicalProjection(admitted).kind).toBe("geometry");
+    expect(() => parseCanonicalProjection(geometry(70))).toThrow(/PROJECTION_INVALID:BYTES/);
+  });
+
+  it("accepts native DOM output within 4MB while retaining string and other projection bounds", () => {
+    const dom = (count: number, textLength = 60_000) => bytes({ kind: "html_dom", document: { tag: "body", children: Array.from({ length: count }, () => ({ tag: "p", text: "x".repeat(textLength) })) } });
+    expect(dom(20).byteLength).toBeGreaterThan(1_000_000);
+    expect(parseCanonicalProjection(dom(20)).kind).toBe("html_dom");
+    expect(() => parseCanonicalProjection(dom(70))).toThrow(/PROJECTION_INVALID:BYTES/);
+    expect(() => parseCanonicalProjection(dom(11, 100_001))).toThrow(/PROJECTION_INVALID:DOM_TEXT/);
+    const dataset = bytes({ kind: "dataset", datasetVersionId: "v1", rows: Array.from({ length: 20 }, (_, index) => ({ key: String(index), value: "x".repeat(60_000) })) });
+    expect(() => parseCanonicalProjection(dataset)).toThrow(/PROJECTION_INVALID:BYTES/);
+  });
+
   it("is admitted by the core port only when its canonical selected bytes replay", () => {
     const projection = bytes({ kind: "dataset", datasetVersionId: "dataset-v1", rows: [{ key: "r1", value: { answer: 42 } }] });
     const selection = resolveWithAdmittedResolver(request(projection, { kind: "dataset", datasetVersionId: "dataset-v1", rowKey: "r1", column: "answer" }), [projectionSelectorResolver]);

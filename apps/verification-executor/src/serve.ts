@@ -1,13 +1,20 @@
 import type { Server } from "node:http";
-import { loadExecutorConfig, VerificationExecutor } from "./executor.js";
+import type { AddressInfo } from "node:net";
+import { loadExecutorConfig, VerificationExecutor, type ExecutorConfig } from "./executor.js";
 import { createHttpServer } from "./http.js";
-import { createKnowledgeServices, loadKnowledgeConfig, type KnowledgeServices } from "./knowledge/context.js";
+import type { ScopedExecutorAccess } from "./access.js";
+import { createKnowledgeServices, loadKnowledgeConfig, type KnowledgeServices, type KnowledgeServicesOptions } from "./knowledge/context.js";
 
 export interface ServeOptions {
   readonly port: number;
   readonly host: string;
   readonly token?: string;
   readonly env?: Readonly<Record<string, string | undefined>>;
+  readonly scopedAccess?: ScopedExecutorAccess;
+  /** Trusted host injection; never resolved from a request or environment value. */
+  readonly semanticJudgeAdapterFactory?: ExecutorConfig["semanticJudgeAdapterFactory"];
+  readonly reportAssessmentAuthority?: KnowledgeServicesOptions["reportAssessmentAuthority"];
+  readonly prepareCapturedSource?: KnowledgeServicesOptions["prepareCapturedSource"];
 }
 
 export interface RunningExecutor {
@@ -21,12 +28,28 @@ export interface RunningExecutor {
 /** One process, both tool families: verification always; knowledge when a database URL and workspace are configured. */
 export async function startExecutorServer(options: ServeOptions): Promise<RunningExecutor> {
   const env = options.env ?? process.env;
-  const executor = await VerificationExecutor.create(loadExecutorConfig(env));
+  const executor = await VerificationExecutor.create({ ...loadExecutorConfig(env),
+    ...(options.semanticJudgeAdapterFactory ? { semanticJudgeAdapterFactory: options.semanticJudgeAdapterFactory } : {}),
+  });
   const knowledgeConfig = loadKnowledgeConfig(env);
-  const knowledge = knowledgeConfig ? createKnowledgeServices(knowledgeConfig, { verification: executor }) : undefined;
-  const server = createHttpServer(executor, { ...(options.token ? { token: options.token } : {}), ...(knowledge ? { knowledge } : {}) });
-  await new Promise<void>((resolve) => server.listen(options.port, options.host, resolve));
-  const url = `http://${options.host}:${options.port}`;
+  const knowledge = knowledgeConfig ? createKnowledgeServices(knowledgeConfig, { verification: executor,
+    ...(options.reportAssessmentAuthority ? { reportAssessmentAuthority: options.reportAssessmentAuthority } : {}),
+    ...(options.prepareCapturedSource ? { prepareCapturedSource: options.prepareCapturedSource } : {}),
+  }) : undefined;
+  let server: Server;
+  try {
+    server = createHttpServer(executor, { ...(options.token ? { token: options.token } : {}), ...(knowledge ? { knowledge } : {}), ...(options.scopedAccess ? { scopedAccess: options.scopedAccess } : {}) });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(options.port, options.host, () => { server.off("error", reject); resolve(); });
+    });
+  } catch (error) {
+    await knowledge?.close();
+    throw error;
+  }
+  const address = server.address() as AddressInfo;
+  const host = options.host.includes(":") ? `[${options.host}]` : options.host;
+  const url = `http://${host}:${address.port}`;
   return {
     server, executor, knowledge, url,
     close: async () => { await new Promise<void>((resolve) => server.close(() => resolve())); await knowledge?.close(); },

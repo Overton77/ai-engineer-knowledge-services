@@ -7,6 +7,8 @@ export async function linkReportIngestion(client: TenantSqlClient, input: { inte
   for (const proposal of input.intent.proposals) {
     if (!proposal.reportBinding) continue;
     const binding = proposal.reportBinding;
+    const sealed=await client.query("select report_version_id from research.report_package_seal where tenant_id=$1 and report_version_id=$2",[input.intent.context.tenantId,binding.reportVersionId]);
+    if (!sealed.rows.length) throw domainError("REPORT_INGESTION_LINK_REQUIRES_SEAL","Receipt links require a sealed immutable report revision");
     const result = input.receipt.proposals.find((item) => item.proposalId === proposal.proposalId);
     if (!result) throw domainError("REPORT_PROPOSAL_RECEIPT_MISSING", "Report-bound proposal has no receipt outcome");
     let assertionId: string | null = null;

@@ -12,6 +12,7 @@ import { canonicalizeJson, sha256Digest, projectionSelectorResolver, digestCanon
 import {
   admitVerificationRecoveryPlan, composeVerificationFailureSet, reconcileVerificationRecoveryReceipt,
   evaluateVerificationRecoveryInvalidation,
+  triageVerificationRecovery,
   type VerificationRecoveryAuthority, type VerificationRecoveryVerifiedResult,
 } from "./verification-recovery.js";
 
@@ -21,6 +22,16 @@ const hash = (value: unknown) => sha256Digest(canonicalizeJson(value));
 const at = "2026-09-13T10:00:00.000Z";
 const artifact = (n: number) => ({ artifactId: id(n), tenantId, digest: hash(n), mediaType: "application/json", byteLength: 1, objectKey: `test/${n}`, createdAt: at, producerActivityId: "test", producerVersion: "1", encryptionClass: "managed" as const, retentionClass: "audit" as const, dataClassification: "internal" as const, parentArtifactIds: [] });
 const binding = (n: number): VerificationRecoveryBinding => ({ claim: { statement: `Metric ${n} is 10 for 2025`, qualifiers: ["2025"], value: 10 }, evidence: [{ representationDigest: hash("table"), contextDigest: hash("headers"), selector: { kind: "json_pointer", pointer: `/rows/${n}` } }], captureDigests: [hash("capture")], policyDigest: hash("policy"), profileDigest: hash("profile") });
+
+it("triages the complete denominator using the same routes as admission", async () => {
+  const originals = [item(1), item(2, "policy"), item(3, "contradicted"), item(4, "none")];
+  originals[3]!.observation = goodResult(originals[3]!).observation;
+  const h = harness(batch(originals));
+  const result = await triageVerificationRecovery({ tenantId, batchId: "batch", authority: h.authority });
+  expect(result.failureSet.counts.submitted).toBe(4);
+  expect(result.failureSet.questionDenominator).toBe(4);
+  expect(result.items.map(row => row.route)).toEqual(["repair", "operator", "reject", "preserve"]);
+});
 function item(n: number, family: VerificationRecoveryItem["observation"]["family"] = "selector"): VerificationRecoveryItem {
   const input = binding(n);
   return { originalId: `item-${n}`, questionIds: [`question-${n}`], inputDigest: hash(input), binding: input,

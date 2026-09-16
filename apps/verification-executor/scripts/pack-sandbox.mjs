@@ -61,11 +61,18 @@ const copyTree = (from, to) => {
   }
 };
 // knowledge-verify is canonical here; the knowledge skills are canonical in ../../skills.
+const REQUIRED_SKILLS = ["schema-explore", "knowledge-db", "knowledge-ingest", "knowledge-verification-recovery"];
 const skillSources = [
   [join(appDir, "skills", "knowledge-verify"), "knowledge-verify"],
-  ...["schema-explore", "knowledge-db", "knowledge-ingest"].map((name) => [resolve(appDir, "..", "..", "skills", name), name]),
+  ...REQUIRED_SKILLS.map((name) => [resolve(appDir, "..", "..", "skills", name), name]),
 ];
-for (const [from, name] of skillSources) if (existsSync(from)) copyTree(from, join(stage, "skills", name));
+const missingSkills = skillSources.filter(([from]) => !existsSync(join(from, "SKILL.md"))).map(([from, name]) => `${name} → ${from}`);
+if (missingSkills.length > 0) fail(`required sandbox skills are missing (a silently thinner tarball is not acceptable):\n  ${missingSkills.join("\n  ")}`);
+const manifestPath = resolve(appDir, "..", "..", "skills", "manifest.json");
+const manifestSkills = new Set(JSON.parse(readFileSync(manifestPath, "utf8")).skills.map((skill) => skill.id));
+const unregistered = REQUIRED_SKILLS.filter((name) => !manifestSkills.has(name));
+if (unregistered.length > 0) fail(`skills/manifest.json does not register ${unregistered.join(", ")}`);
+for (const [from, name] of skillSources) copyTree(from, join(stage, "skills", name));
 
 writeFileSync(
   join(stage, "package.json"),

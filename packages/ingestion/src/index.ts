@@ -12,3 +12,11 @@ export * from "./reports/structure.js";
 export * from "./reports/service.js";
 
 export * from "./evidence-admission.js";
+export type { ContentLinkAuthority, AuthenticatedContentEvidence } from "./content-links/types.js";
+export { authenticateCanonicalContentEvidence, contentEvidenceAssessmentDigest } from "./content-links/evidence.js";
+export { ContentLinkExecutor } from "./content-links/executor.js";
+export { contentLinkEffect } from "./content-links/operations.js";
+export { ContentSummaryPreparer, type ContentSummaryPreparationResult } from "./content-links/summary-preparation.js";
+export type { ContentLinkPlan, ContentLinkReceipt } from "./content-links/types.js";
+export { readContentLinkReceipt } from "./content-links/read-receipt.js";
+export { ContentSourceReader } from "./content-links/sources.js";

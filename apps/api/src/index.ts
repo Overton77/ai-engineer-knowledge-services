@@ -6,7 +6,7 @@ import {parseVerificationStructuredExtractionRuntimeConfig,createStructuredExtra
 import { createLocalIdentityResolver, loadServerConfig } from "@aiengineer/knowledge-config";
 import { EvidencePacketSchema, ExternalExecutionContextSchema, VerificationAdjudicationReviewRequirementsSchema, type InspectAuditBundleRequest, type ParseArtifactRequest, type RequestAdjudicationRequest, type VerificationOperationContextHints } from "@aiengineer/knowledge-contracts";
 import { parseVerificationBenchmarkComparisonRuntimeConfig,parseVerificationBenchmarkRuntimeConfig,apiOwnedOperationKinds,verificationServiceOperationKinds } from "@aiengineer/knowledge-application";
-import { PostgresCallbackReplayStore, PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationComponentDriftPublisher, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
+import { PostgresCallbackReplayStore, PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationComponentDriftPublisher, PostgresVerificationRepository, createRemoteRetrievalArtifactReader } from "@aiengineer/knowledge-persistence";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
@@ -26,6 +26,9 @@ import {createVerificationAdjudicationDecisionRuntime} from "./verification-adju
 import {createVerificationAdjudicationReads} from "./verification-adjudication-reads-runtime.js";
 import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";
 import { createVerificationDriftRevalidationRuntime } from "./verification-drift-revalidation-runtime.js";
+
+// Trusted host composition injects the same accounted adapter used by selected publication.
+export { buildServer, CanonicalRetrievalExecutor };
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -95,6 +98,14 @@ export async function createApiRuntime(environment: Environment = process.env) {
         database,
         createGatewayEmbeddingAdapterFromEnvironment(environment as NodeJS.ProcessEnv),
       )
+    : undefined;
+  // Citation replay reads sealed bytes from remote object custody, never from producer files.
+  const retrievalStorageUrl=environment.SUPABASE_URL?.trim(),retrievalStorageKey=environment.SUPABASE_SECRET_KEY?.trim();
+  const retrievalBuckets=(environment.KNOWLEDGE_RETRIEVAL_ARTIFACT_BUCKETS?.trim()||"ai-engineer-cloud-bucket")
+    .split(",").map(bucket=>bucket.trim()).filter(Boolean);
+  const replayEvidencePacketCitations=database&&retrievalStorageUrl&&retrievalStorageKey
+    ? (()=>{const read=createRemoteRetrievalArtifactReader(database,{projectUrl:retrievalStorageUrl,serviceRoleKey:retrievalStorageKey,buckets:retrievalBuckets});
+        return (tenantId:string,packetId:string)=>database.replayEvidencePacketCitations(tenantId,packetId,read);})()
     : undefined;
   const verificationAttemptId=environment.VERIFICATION_SERVICE_ATTEMPT_ID?.trim();
   const ownershipGrants=environment.VERIFICATION_SERVICE_OWNERSHIP_GRANTS_JSON?.trim();
@@ -253,13 +264,15 @@ export async function createApiRuntime(environment: Environment = process.env) {
         }),
       }:{}),
       ...(canonicalRetrievalExecutor ? { canonicalRetrievalExecutor } : {}),
+      ...(replayEvidencePacketCitations ? { replayEvidencePacketCitations } : {}),
       getEvidencePacket:async (tenantId:string, packetId:string) => {
         const packet = await database.getEvidencePacket(tenantId, packetId);
         return packet === undefined ? undefined : EvidencePacketSchema.parse(packet);
       },
     } : {}),
   });
-  return { config, database, server, retrievalConfigured: Boolean(canonicalRetrievalExecutor),verificationConfigured };
+  return { config, database, server, retrievalConfigured: Boolean(canonicalRetrievalExecutor),
+    citationReplayConfigured: Boolean(replayEvidencePacketCitations),verificationConfigured };
 }
 
 let serverlessRuntime: ReturnType<typeof createApiRuntime> | undefined;

@@ -4,6 +4,7 @@ import { createNativeSemanticGatewayCall, type PostgresCanonicalRepository, type
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
 import { digestCanonicalJson, prepareGatewaySemanticRequest, sha256Digest, type SemanticJudgeAdapter } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
+import { recoverySemanticProfiles } from "./verification-claims-recovery-profile.js";
 import type { ClaimsSealerOptions } from "./verification-claims-sealer.js";
 
 const modelSchema = z.enum(["openai/gpt-5.6-luna", "openai/gpt-5.6-terra", "anthropic/claude-haiku-4.5"]);
@@ -47,13 +48,15 @@ export function createVerificationClaimsSemanticStage(dependencies: {
     const stepKey = host === "claims" ? "verify_claims_and_register" : "verify_report_and_register";
     if (!lease || lease.tenantId !== context.tenantId || lease.operationId !== context.operationId || lease.stepKey !== stepKey || lease.stepKind !== stepKey
       || lease.id !== input.claim.stepId || lease.leaseToken !== input.claim.leaseToken || lease.fencingToken !== input.claim.fencingToken || lease.holderIdentity !== input.claim.holderIdentity) throw new Error("SEMANTIC_RUNTIME_LEASE_REQUIRED");
-    const grants = dependencies.profiles.resolve(context.tenantId,context.operationId,host);
+    const profiles = await recoverySemanticProfiles({ database: dependencies.database, repository: dependencies.repository,
+      profiles: dependencies.profiles, tenantId: context.tenantId, operationId: context.operationId, host });
+    const grants = profiles.resolve(context.tenantId,context.operationId,host);
     const artifacts = new Map<string, VerificationArtifactHandle>();
     const deadlineEpochMs = Date.now() + settings.deadlineMs;
     const budget = { budgetId: deterministicUuid("verification-semantic-budget",`${context.tenantId}:${context.operationId}`), budgetKey: `verification-semantic-${context.operationId}`, ceilingCostMicros: settings.ceilingCostMicros, reservationCostMicros: settings.reservationCostMicros };
     function adapter(grant: SemanticJudgeProfileGrant): SemanticJudgeAdapter {
       return { identity: grant.identity, maximumInputCharacters: 64_000, toolCatalog: [], async judge(value, execution) {
-        const profile = await dependencies.profiles.hydrate(grant,dependencies.repository.createTrustedArtifactResolver());
+        const profile = await profiles.hydrate(grant,dependencies.repository.createTrustedArtifactResolver());
         const { inputArtifactDigest: _digest, ...body } = value;
         const blindedInput = SemanticBlindedInputSchema.parse(body), model = modelSchema.parse(grant.identity.model);
         const call = await createNativeSemanticGatewayCall({ database: dependencies.database, artifacts: dependencies.repository, lease: lease!, host,

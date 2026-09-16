@@ -7,6 +7,7 @@ export * from "./identity.js";
 export * from "./integration.js";
 export * from "./primitives.js";
 export * from "./publication.js";
+export * from "./promotion-selection.js";
 export * from "./retrieval.js";
 export * from "./resources.js";
 export * from "./service.js";
@@ -18,3 +19,4 @@ export * from "./source-discovery.js";
 
 export * from "./checkpoints.js";
 export * from "./verification-recovery-durable.js";
+export * from "./content-links.js";

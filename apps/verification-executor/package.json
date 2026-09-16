@@ -4,6 +4,14 @@
   "description": "Knowledge executor host: deterministic verification (knowledge-verify), schema workspace + bounded database reads + deterministic ingestion (knowledge). One process, three surfaces: CLI, Streamable HTTP MCP (/mcp), and HTTP routes for sandbox handoff.",
   "private": true,
   "type": "module",
+  "exports": {
+    "./root-host/v1": "./dist/root-host.js",
+    "./scoped-host/v1": "./dist/scoped-host.js",
+    "./evidence-reader/v1": {
+      "types": "./dist/evidence-reader.d.ts",
+      "import": "./dist/evidence-reader.js"
+    }
+  },
   "bin": {
     "knowledge-verify": "./dist/index.js",
     "knowledge": "./dist/knowledge.js"
@@ -13,7 +21,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc -p tsconfig.evidence-reader.json",
     "dev": "tsx src/index.ts",
     "dev:knowledge": "tsx src/knowledge.ts",
     "typecheck": "tsc --noEmit",
@@ -22,7 +30,7 @@
   },
   "dependencies": {
     "@aiengineer/knowledge-application": "workspace:*",
-    "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.7.tgz",
+    "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-db-read": "workspace:*",
     "@aiengineer/knowledge-ingestion": "workspace:*",
@@ -36,6 +44,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aiengineer/knowledge-chunking": "workspace:*",
+    "@aiengineer/knowledge-documents": "workspace:*",
+    "@aiengineer/knowledge-domain": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "8.15.5",
     "tsup": "catalog:",
@@ -44,6 +55,3 @@
     "vitest": "catalog:"
   }
 }
-
-
-

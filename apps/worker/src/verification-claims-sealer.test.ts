@@ -72,3 +72,22 @@ it("records semantic assessments and evidence lineage only after the mechanical 
  const failed=await fixture();await createVerificationClaimsAuditSealer({...failed.options,semanticStage:{async grade(){throw new Error("MUST_NOT_GRADE_FAILED_MECHANICS");}}}).seal({verified:failed.verified,context:context(),claim:lease,startedAt:createdAt});
 });
 
+it("rejects a semantic profile outside the independently pinned source-authority receipt", async () => {
+  const test = await fixture(true), assertionId = test.bundle.assertions[0]!.assertionId;
+  const identity = { deploymentId: "independent-judge", provider: "fixture", family: "fixture", model: "fixture",
+    capability: "llm_evidence_rubric" as const, graderVersion: "v1", promptDigest: digestCanonicalJson("prompt"),
+    outputSchemaDigest: digestCanonicalJson("schema"), configurationDigest: digestCanonicalJson("configuration") };
+  const semantic = { assertionId, verdict: "directly_supported" as const, disposition: "admit" as const,
+    evidenceSupport: "satisfied" as const, worldCorrectness: "not_assessed" as const, attributionFaithfulness: "satisfied" as const,
+    sourceAuthority: "not_assessed" as const, provenanceIntegrity: "satisfied" as const, judgeIdentities: [identity],
+    supportingFragmentIds: [test.bundle.assertions[0]!.evidence[0]!.fragment.fragmentId], contradictingFragmentIds: [],
+    unsupportedFacets: [], reasonCodes: [], crossFamilySecondJudge: false, rawProviderConfidences: [] };
+  const sealer = createVerificationClaimsAuditSealer({ ...test.options,
+    semanticStage: { async grade() { return { assessments: [semantic], evidenceArtifacts: test.verified.sourceArtifacts }; } },
+    sourceAuthorityStage: { async assess() { return { sourceAssessments: [], assertions: new Map(),
+      semanticProfileDigests: new Map([[assertionId, digestCanonicalJson("different-profile")]]), evidenceArtifacts: test.verified.sourceArtifacts }; } },
+  });
+  await expect(sealer.seal({ verified: test.verified, context: context(), claim: lease, startedAt: createdAt }))
+    .rejects.toThrow("SOURCE_AUTHORITY_SEMANTIC_PROFILE_MISMATCH");
+});
+

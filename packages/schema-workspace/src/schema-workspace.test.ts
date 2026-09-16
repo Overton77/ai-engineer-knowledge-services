@@ -81,6 +81,13 @@ describe("head check", () => {
     expect(() => assertHeadMatches(workspace, "20260912019999")).toThrowError(expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }));
     expect(assertHeadMatches(workspace, undefined, true).matches).toBe(false);
   });
+
+  it("loads the pinned contract head 20260916020200 and fails closed on a stale database head", () => {
+    const pinned = loadWorkspace(resolveWorkspaceDir({ env: {} }));
+    expect(pinned.migrationHead).toBe("20260916020200");
+    expect(assertHeadMatches(pinned, "20260916020200").matches).toBe(true);
+    expect(() => assertHeadMatches(pinned, "20260914011100")).toThrowError(expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }));
+  });
 });
 
 describe("materializeScope", () => {

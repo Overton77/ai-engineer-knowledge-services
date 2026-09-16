@@ -30,7 +30,7 @@ export interface VerificationRecoveryAuthority {
   readBatch(input: BatchRef): Promise<VerificationRecoveryBatch>;
   readPlan(input: { tenantId: string; planDigest: string }): Promise<VerificationRecoveryPlan>;
   readInvalidation(input: { tenantId: string; caseId: string; planDigest: string }): Promise<VerificationRecoveryInvalidation>;
-  readResult(input: { tenantId: string; inputDigest: string; operationId?: string }): Promise<VerificationRecoveryVerifiedResult | null>;
+  readResult(input: { tenantId: string; inputDigest: string; operationId?: string; originalId?: string }): Promise<VerificationRecoveryVerifiedResult | null>;
   readProbe(input: { tenantId: string; artifact: Artifact }): Promise<{
     tenantId: string; dependencyId: string; originalId: string; inputDigest: string;
     signature: string; passed: boolean; artifactDigest: string;
@@ -105,6 +105,20 @@ function route(item: VerificationRecoveryItem, batch: VerificationRecoveryBatch,
     || batch.limits.remainingCalls === 0 || batch.limits.remainingCostMicros === 0) return "exhausted";
   if (item.observation.family === "unsupported") return "gap";
   return "repair";
+}
+
+/** Public diagnostic projection of the same rules used when admitting a recovery plan. */
+export async function triageVerificationRecovery(input: BatchRef & { authority: VerificationRecoveryAuthority }) {
+  const failureSet = await composeVerificationFailureSet(input);
+  const now = input.authority.now();
+  if (!Number.isFinite(Date.parse(now))) fail("CLOCK_INVALID");
+  return deepFreeze({ failureSet, items: failureSet.batch.items.map(item => ({
+    originalId: item.originalId, classification: classification(item.observation),
+    route: route(item, failureSet.batch, now), family: item.observation.family,
+    earliestStage: item.observation.earliestStage, signature: item.observation.signature,
+    dependencyIds: [...item.observation.dependencyIds],
+    diagnosticArtifactIds: item.observation.diagnosticArtifacts.map(artifact => artifact.artifactId),
+  })) });
 }
 
 function requiredStages(item: VerificationRecoveryItem, binding: VerificationRecoveryBinding): Stage[] {
@@ -276,11 +290,11 @@ export async function reconcileVerificationRecoveryReceipt(input: { failureSet: 
   const charged = new Map(plan.probeExecutions.filter(row => !row.previouslyAccounted).map(row => [row.operationId, { calls: row.calls, costMicros: row.costMicros }]));
   for (const item of batch.items) {
     const action = plan.actions.find(row => row.originalId === item.originalId)!;
-    const original = await authority.readResult({ tenantId: batch.tenantId, inputDigest: item.inputDigest, operationId: item.observation.operationId });
+    const original = await authority.readResult({ tenantId: batch.tenantId, inputDigest: item.inputDigest, operationId: item.observation.operationId, originalId: item.originalId });
     const before = original ? structuredClone(original) : null;
     if (before) validateResult({ result: before, tenantId: batch.tenantId, binding: item.binding, operationId: item.observation.operationId });
     if (classification(item.observation) === "passed") previousCoverage.push(...coveredRequirements({ result: before, item, batch }));
-    const loaded = action.newBinding ? await authority.readResult({ tenantId: batch.tenantId, inputDigest: digest(action.newBinding) }) : before;
+    const loaded = action.newBinding ? await authority.readResult({ tenantId: batch.tenantId, inputDigest: digest(action.newBinding), originalId: item.originalId }) : before;
     const result = loaded ? structuredClone(loaded) : null;
     if (result) {
       validateResult({ result, tenantId: batch.tenantId, binding: action.newBinding ?? item.binding });

@@ -16,12 +16,16 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-db-read": "workspace:*",
+    "@aiengineer/knowledge-domain": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-schema-workspace": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aiengineer/knowledge-chunking": "workspace:*",
+    "@aiengineer/knowledge-documents": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",

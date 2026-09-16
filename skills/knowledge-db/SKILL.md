@@ -75,6 +75,27 @@ If `health` reports `headMatches: false`, or any command returns `WORKSPACE_STAL
 **Conflicting** (`belief: disputed`, sources disagree), **Unsupported** (no `primary_claim_id`). Each line: subject, stream/relationship kind,
 current value, snapshot `opId`, what evidence would resolve it. This file is the research plan for `knowledge-verify`.
 
+## Compact reads and receipt reconciliation
+
+Large snapshots belong in files, not in the conversation: always pass `--out <file>` and carry the
+handles — `snapshotDigest`, `knowledgeHead.knowledgeSeq`, `storage.artifactId`, per-op `contentDigest`
+— forward. Read persisted bytes back with `knowledge artifact get <artifactId>` when you actually
+need them. Charge reads to the caller's budget and report usage; unknown usage is unknown, not zero.
+
+An uncertain write is settled by reading the authoritative receipt, never by re-reading rows and
+guessing: `knowledge ingest receipt <receiptId>` returns the stored receipt, and a repeated apply of
+the identical intent returns `duplicateOf` with an unchanged head. A read snapshot observes; it does
+not prove that a batch committed.
+
+## Corrections keep their existing slot
+
+When you check whether a stale fact was corrected, look at the **existing** series rather than at a
+new one. `facts.history_for_stream` shows the segments for one stream; a correction supersedes the
+current segment under the same `scope_key`, so two live segments for one semantic slot is a defect
+to report, not two competing facts to average. `entity.at` with `at=<date>` and `entity.what_changed`
+between two heads tell you what was believed when, and the original evidence stays readable at the
+old head.
+
 ## After an ingestion: read back
 
 ```bash
@@ -93,4 +114,4 @@ Add an `entity.what_changed` op with `k_from` = head before, `k_to` = head after
 
 ## MCP equivalents
 
-`db_head`, `db_read_intent`, `db_sql_readonly`, `db_explain`, `artifact_get` on the executor's `/mcp`.
+`db_head`, `db_read_intent`, `db_sql_readonly`, `db_explain`, `artifact_get`, `schema_manifest` on the executor's `/mcp`. Each tool takes the same input object as its CLI command.

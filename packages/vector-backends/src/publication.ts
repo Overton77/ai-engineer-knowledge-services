@@ -26,6 +26,9 @@ export interface PublicationInspection {
   readonly authorizationPassed: boolean;
   readonly evaluationPassed: boolean;
   readonly sampleSearchPassed: boolean;
+  /** Set for evaluated selected candidates; absent for the legacy counted chain. */
+  readonly candidateEvidenceDigest?: Digest;
+  readonly requiredDependenciesEligible?: boolean;
 }
 
 export interface PublicationInspector {
@@ -44,6 +47,7 @@ export interface ExploratoryPublication {
   readonly manifests: PublicationManifests;
   readonly promotionDecisionId: string;
   readonly evaluationGateResultId: string;
+  readonly candidateEvidenceDigest?: Digest;
   readonly predecessorId?: string;
   readonly state: PublicationState;
   readonly verificationDigest: Digest;
@@ -85,6 +89,8 @@ export interface PublishExploratoryRequest {
   readonly manifests: PublicationManifests;
   readonly promotionDecisionId: string;
   readonly evaluationGateResultId: string;
+  /** Binds activation to one immutable evaluated candidate; omission keeps the legacy counted chain. */
+  readonly candidateEvidenceDigest?: Digest;
   readonly reason: string;
 }
 
@@ -175,7 +181,7 @@ export class ExploratoryPublicationCoordinator {
   async publish(request: PublishExploratoryRequest): Promise<ExploratoryPublication> {
     validatePublishRequest(request);
     const inspection = await this.inspector.inspect(request.vectorSpaceVersionId);
-    const verificationDigest = verifyInspection(request.vectorSpaceVersionId, request.expectedItemCount, request.manifests, inspection);
+    const verificationDigest = verifyInspection(request.vectorSpaceVersionId, request.expectedItemCount, request.manifests, inspection, request.candidateEvidenceDigest);
     const publishedAt = this.now().toISOString();
 
     return this.repository.transaction((transaction) => {
@@ -199,6 +205,7 @@ export class ExploratoryPublicationCoordinator {
         manifests: request.manifests,
         promotionDecisionId: request.promotionDecisionId,
         evaluationGateResultId: request.evaluationGateResultId,
+        ...(request.candidateEvidenceDigest === undefined ? {} : { candidateEvidenceDigest: request.candidateEvidenceDigest }),
         ...(active === undefined ? {} : { predecessorId: active.publicationId }),
         state: "published",
         verificationDigest,
@@ -237,7 +244,7 @@ export class ExploratoryPublicationCoordinator {
       throw new VectorBackendError("INVALID_ROLLBACK_TARGET", "Rollback target is not an intact publication for this tenant and store space");
     }
     const inspection = await this.inspector.inspect(target.vectorSpaceVersionId);
-    verifyInspection(target.vectorSpaceVersionId, target.expectedItemCount, target.manifests, inspection);
+    verifyInspection(target.vectorSpaceVersionId, target.expectedItemCount, target.manifests, inspection, target.candidateEvidenceDigest);
     const occurredAt = this.now().toISOString();
     return this.repository.transaction((transaction) => {
       const active = transaction.getActivePointer(request.tenantId, request.vectorStoreSpaceId);
@@ -284,8 +291,12 @@ export class ExploratoryPublicationCoordinator {
   }
 }
 
-function verifyInspection(versionId: string, count: number, manifests: PublicationManifests, inspection: PublicationInspection): Digest {
+function verifyInspection(versionId: string, count: number, manifests: PublicationManifests, inspection: PublicationInspection, candidateEvidenceDigest?: Digest): Digest {
   const findings: string[] = [];
+  if (candidateEvidenceDigest !== undefined) {
+    if (inspection.candidateEvidenceDigest !== candidateEvidenceDigest) findings.push("candidate evidence digest mismatch");
+    if (inspection.requiredDependenciesEligible !== true) findings.push("required dependency revoked");
+  }
   if (inspection.vectorSpaceVersionId !== versionId) findings.push("vector-space version mismatch");
   if (inspection.itemCount !== count) findings.push(`item count ${inspection.itemCount}/${count}`);
   if (inspection.dimensions !== CANONICAL_EMBEDDING_DIMENSIONS) findings.push(`dimensions ${inspection.dimensions}/${CANONICAL_EMBEDDING_DIMENSIONS}`);
@@ -308,6 +319,10 @@ function collectInspectionFindings(publication: ExploratoryPublication, inspecti
   if (!inspection.authorizationPassed) findings.push({ code: "AUTHORIZATION_CHECK_FAILED", classification: "security_critical", detail: "Authorization verification failed" });
   if (!inspection.evaluationPassed) findings.push({ code: "EVALUATION_REGRESSION", classification: "review_required", detail: "Evaluation gate no longer passes" });
   if (!inspection.sampleSearchPassed) findings.push({ code: "SAMPLE_SEARCH_FAILED", classification: "repairable", detail: "Immediate sample search failed" });
+  if (publication.candidateEvidenceDigest !== undefined) {
+    if (inspection.candidateEvidenceDigest !== publication.candidateEvidenceDigest) findings.push({ code: "CANDIDATE_EVIDENCE_MISMATCH", classification: "security_critical", detail: "Published candidate evidence digest changed" });
+    if (inspection.requiredDependenciesEligible !== true) findings.push({ code: "REQUIRED_DEPENDENCY_REVOKED", classification: "review_required", detail: "A required publication dependency was revoked" });
+  }
 }
 
 const manifestKeys = ["source", "representation", "chunkSet", "projection", "vectorItem", "embedding", "index", "retrievalPolicy", "evaluation"] as const;

@@ -1,8 +1,12 @@
 import { Pool, type PoolConfig, type QueryResultRow } from "pg";
 import { randomUUID } from "node:crypto";
-import { EvidencePacketMemberSchema, EvidencePacketSchema, type EvidencePacket } from "@aiengineer/knowledge-contracts";
+import { EvidencePacketMemberSchema, EvidencePacketSchema, RetrievalCitationReplaySchema, RetrievalWorldScopeSchema,
+  type EvidencePacket, type RetrievalCitationReplay as RetrievalCitationReplayResult } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { operationActorIdentity } from "./actor-identity.js";
+import { RetrievalCitationReplay, RetrievalSupportResolver, type ReadRetrievalArtifact, type ResolvedRetrievalSupport,
+  type RetrievalSupportRequest } from "./retrieval-evidence.js";
 import type {
   CanonicalOperation, CanonicalOperationControl, CanonicalOperationEvent, CanonicalOperationRecord, CanonicalReceipt, CanonicalStep, CreateCanonicalOperation, HybridSearchRequest,
   HybridSearchResult, LeasedStep, OutboxRepository, PendingOutboxMessage, ReceiptRepository,
@@ -660,9 +664,10 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
     return this.transaction(tenantId, async (client) => {
       const subject = (await client.query<Row>("select * from knowledge_service.review_subject where tenant_id=$1 and id=$2", [tenantId,input.reviewSubjectId])).rows[0];
       if (!subject || subject.guarded_sha256 !== input.guardedSha256 || !(subject.eligible_roles as string[]).includes(input.reviewerRole)) throw new Error("REVIEW_AUTHORITY_OR_DIGEST_MISMATCH");
+      const reviewerIdentity = await operationActorIdentity({ client, tenantId, operationId: input.decisionOperationId, claimedIdentity: input.reviewerIdentity });
       await client.query(`insert into knowledge_service.review_decision(id,tenant_id,review_subject_id,guarded_sha256,reviewer_identity,reviewer_role,decision,rationale,decision_operation_id)
-        values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(tenant_id,review_subject_id,reviewer_identity) do nothing`, [input.id,tenantId,input.reviewSubjectId,input.guardedSha256,input.reviewerIdentity,input.reviewerRole,input.decision,input.rationale,input.decisionOperationId]);
-      const stored = (await client.query<Row>("select * from knowledge_service.review_decision where tenant_id=$1 and review_subject_id=$2 and reviewer_identity=$3", [tenantId,input.reviewSubjectId,input.reviewerIdentity])).rows[0];
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(tenant_id,review_subject_id,reviewer_identity) do nothing`, [input.id,tenantId,input.reviewSubjectId,input.guardedSha256,reviewerIdentity,input.reviewerRole,input.decision,input.rationale,input.decisionOperationId]);
+      const stored = (await client.query<Row>("select * from knowledge_service.review_decision where tenant_id=$1 and review_subject_id=$2 and reviewer_identity=$3", [tenantId,input.reviewSubjectId,reviewerIdentity])).rows[0];
       if (!stored || stored.guarded_sha256 !== input.guardedSha256 || stored.decision !== input.decision
         || String(stored.decision_operation_id)!==input.decisionOperationId) throw new Error("IDEMPOTENCY_CONFLICT");
       return String(stored.id);
@@ -710,10 +715,30 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
     });
   }
 
+  async retrievalKnowledgeClock(tenantId: string, requested?: number): Promise<number> {
+    if (requested !== undefined && (!Number.isSafeInteger(requested) || requested < 0)) throw new Error("INVALID_RETRIEVAL_KNOWLEDGE_CLOCK");
+    return this.transaction(tenantId, async client => {
+      const head = (await client.query<Row>("select knowledge_seq from temporal.knowledge_head where tenant_id=$1", [tenantId])).rows[0];
+      const current = Number(head?.knowledge_seq);
+      if (!Number.isSafeInteger(current) || current < 0) throw new Error("RETRIEVAL_KNOWLEDGE_HEAD_REQUIRED");
+      if (requested !== undefined && requested > current) throw new Error("RETRIEVAL_FUTURE_KNOWLEDGE_CLOCK");
+      return requested ?? current;
+    });
+  }
+
   async hybridSearch(input: HybridSearchRequest): Promise<readonly HybridSearchResult[]> {
-    if (input.queryEmbedding.length !== 1_536) throw new Error("INVALID_EMBEDDING_DIMENSIONS");
-    return this.transaction(input.tenantId, async (client) => (await client.query<Row>(`select * from api.hybrid_knowledge_search_1536($1,$2,$3::extensions.halfvec(1536),$4::jsonb,$5,$6,$7)`,
-      [input.vectorSpaceVersionId,input.queryText,halfvec(input.queryEmbedding),JSON.stringify(input.filters??{}),input.resultLimit??20,input.candidateLimit??100,input.rrfK??60])).rows.map((row) => ({ vectorItemId:String(row.vector_item_id),...(row.search_projection_id?{searchProjectionId:String(row.search_projection_id)}:{}),searchText:String(row.search_text),...(row.source_kind?{sourceKind:String(row.source_kind)}:{}),fusedScore:Number(row.fused_score),channelScores:row.channel_scores })));
+    if (input.queryEmbedding.length !== 1_536 || input.queryEmbedding.some(value => !Number.isFinite(value))) throw new Error("INVALID_EMBEDDING_DIMENSIONS");
+    const world = input.worldScope === undefined ? undefined : RetrievalWorldScopeSchema.parse(input.worldScope);
+    const historical = input.knowledgeSeq !== undefined;
+    if (!historical && (world || input.entityIds?.length || input.publicationId)) throw new Error("RETRIEVAL_KNOWLEDGE_CLOCK_REQUIRED");
+    if (historical && (!Number.isSafeInteger(input.knowledgeSeq) || input.knowledgeSeq! < 0)) throw new Error("INVALID_RETRIEVAL_KNOWLEDGE_CLOCK");
+    if (input.entityIds && (input.entityIds.length > 128 || new Set(input.entityIds).size !== input.entityIds.length)) throw new Error("INVALID_RETRIEVAL_ENTITY_SCOPE");
+    const sql = historical ? "select * from api.hybrid_knowledge_search_history_1536($1,$2,$3::extensions.halfvec(1536),$4::jsonb,$5,$6,$7,$8::bigint,$9::uuid[],$10::timestamptz,$11::timestamptz,$12::timestamptz,$13::uuid)"
+      : "select * from api.hybrid_knowledge_search_1536($1,$2,$3::extensions.halfvec(1536),$4::jsonb,$5,$6,$7)";
+    const parameters: unknown[] = [input.vectorSpaceVersionId, input.queryText, halfvec(input.queryEmbedding), JSON.stringify(input.filters ?? {}), input.resultLimit ?? 20, input.candidateLimit ?? 100, input.rrfK ?? 60];
+    if (historical) parameters.push(input.knowledgeSeq, input.entityIds?.length ? input.entityIds : null,
+      world?.kind === "at" ? world.at : null, world?.kind === "overlap" ? world.from : null, world?.kind === "overlap" ? world.to : null, input.publicationId ?? null);
+    return this.transaction(input.tenantId, async (client) => (await client.query<Row>(sql, parameters)).rows.map((row) => ({ vectorItemId:String(row.vector_item_id),...(row.search_projection_id?{searchProjectionId:String(row.search_projection_id)}:{}),searchText:String(row.search_text),...(row.source_kind?{sourceKind:String(row.source_kind)}:{}),fusedScore:Number(row.fused_score),channelScores:row.channel_scores })));
   }
 
   async getRetrievalEvidenceRecords(tenantId: string, vectorItemIds: readonly string[]): Promise<readonly RetrievalEvidenceRecord[]> {
@@ -721,31 +746,39 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
     if (vectorItemIds.length === 0) return [];
     return this.transaction(tenantId, async (client) => {
       const rows = (await client.query<Row>(`select vi.id vector_item_id,vi.search_projection_id,vi.search_text,vi.authority_level,
-          vi.verification_state,vi.freshness_at,pt.target_kind,pt.schema_version,pt.canonical_record_id,
-          sp.projection_procedure_id,locator.representation_id,locator.node_id,locator.start_offset,locator.end_offset,
-          locator.normalized_content_sha256,locator.artifact_id,locator.artifact_sha256,locator.media_type,locator.size_bytes
+          vi.verification_state,vi.freshness_at,vs.class::text space_class,
+          coalesce(kr.kind,pt.target_kind) canonical_kind,
+          coalesce(pt.entity_id,pt.record_id,pt.chunk_id,pt.claim_id,pt.summary_id) canonical_id,
+          sp.projection_procedure_id,support.representation_id,support.node_id,support.start_offset,support.end_offset,
+          support.normalized_content_sha256,support.artifact_id,support.artifact_sha256,support.media_type,support.size_bytes
         from retrieval.vector_item vi
         join retrieval.search_projection sp on sp.tenant_id=vi.tenant_id and sp.id=vi.search_projection_id
-        join retrieval.projection_target pt on pt.tenant_id=sp.tenant_id and pt.id=sp.projection_target_id
+        join retrieval.projection_target pt on pt.tenant_id=sp.tenant_id and pt.id=sp.projection_target_id and pt.retired_at is null
+        join retrieval.vector_space_version vsv on vsv.tenant_id=vi.tenant_id and vsv.id=vi.space_version_id
+        join retrieval.vector_space vs on vs.tenant_id=vsv.tenant_id and vs.id=vsv.vector_space_id
+        left join knowledge.record kr on kr.tenant_id=pt.tenant_id and kr.id=pt.record_id
         left join lateral (
-          select dr.id representation_id,dn.id node_id,dn.start_offset,dn.end_offset,dn.normalized_content_sha256,
+          select cs.representation_id,span.document_node_id node_id,span.start_offset,span.end_offset,
+            span.selected_text_sha256 normalized_content_sha256,
             a.id artifact_id,a.sha256 artifact_sha256,a.media_type,a.size_bytes
-          from jsonb_array_elements(sp.support_manifest) support
-          cross join lateral jsonb_array_elements_text(coalesce(support->'artifactIds','[]'::jsonb)) artifact_id(value)
-          join orchestration.artifact a on a.tenant_id=vi.tenant_id and a.id=artifact_id.value::uuid
-          join content.document_representation dr on dr.tenant_id=a.tenant_id and dr.artifact_id=a.id and dr.acceptance_state='accepted'
-          join content.document_node dn on dn.tenant_id=dr.tenant_id and dn.representation_id=dr.id
-            and dn.inline_text=vi.search_text
-          order by dr.created_at desc,dn.ordinal,dn.id limit 1
-        ) locator on true
+          from retrieval.search_projection_chunk_support s
+          join retrieval.retrieval_chunk rc on rc.tenant_id=s.tenant_id and rc.id=s.chunk_id and rc.lifecycle='active'
+          join retrieval.chunk_set cs on cs.tenant_id=rc.tenant_id and cs.id=rc.chunk_set_id and cs.status='succeeded'
+          join retrieval.chunk_span span on span.tenant_id=rc.tenant_id and span.chunk_id=rc.id
+          join content.document_representation dr on dr.tenant_id=cs.tenant_id and dr.id=cs.representation_id
+          join orchestration.artifact a on a.tenant_id=dr.tenant_id and a.id=dr.artifact_id and a.storage_state='available'
+          where s.tenant_id=vi.tenant_id and s.search_projection_id=vi.search_projection_id
+            and retrieval.history_representation_authorized(cs.representation_id)
+          order by s.ordinal,span.ordinal limit 1
+        ) support on true
         where vi.tenant_id=$1 and vi.id=any($2::uuid[]) and vi.lifecycle='active'
         order by array_position($2::uuid[],vi.id)`, [tenantId,vectorItemIds])).rows;
       return rows.map((row) => ({
         vectorItemId:String(row.vector_item_id), searchProjectionId:String(row.search_projection_id),
         projectionProcedureId:String(row.projection_procedure_id), sourceText:String(row.search_text),
-        canonicalRecord:{ kind:String(row.target_kind), schemaVersion:`v${Number(row.schema_version)}`, recordId:String(row.canonical_record_id), tenantId },
-        authority:String(row.authority_level)==="official" ? "canonical" : row.authority_level as "exploratory"|"user_managed",
-        assurance:String(row.verification_state)==="verified" ? (String(row.authority_level)==="official" ? "high" : "medium") : "low",
+        canonicalRecord:{ kind:String(row.canonical_kind), schemaVersion:"v1", recordId:String(row.canonical_id), tenantId },
+        authority:String(row.space_class)==="canonical" ? "canonical" : "exploratory",
+        assurance:String(row.verification_state)!=="verified" ? "low" : String(row.space_class)==="canonical" ? "high" : "medium",
         freshnessAt:iso(row.freshness_at ?? new Date(0)),
         ...(row.representation_id ? { locator:{ representationId:String(row.representation_id), nodeId:String(row.node_id),
           ...(row.start_offset === null ? {} : { startOffset:Number(row.start_offset) }), ...(row.end_offset === null ? {} : { endOffset:Number(row.end_offset) }),
@@ -754,6 +787,65 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
           digest:`sha256:${String(row.artifact_sha256)}` as const, mediaType:String(row.media_type), byteLength:Number(row.size_bytes) } } : {}),
       }));
     });
+  }
+
+  /**
+   * Resolves the publication each requested vector-space version is currently authorized to
+   * answer from. Historical queries read an authorized index of belief; they never waive
+   * present authorization, so a withdrawn publication simply has no entry here.
+   */
+  async retrievalPublications(tenantId: string, vectorSpaceVersionIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    if (vectorSpaceVersionIds.length === 0) return new Map();
+    if (vectorSpaceVersionIds.length > 8 || new Set(vectorSpaceVersionIds).size !== vectorSpaceVersionIds.length)
+      throw new Error("INVALID_RETRIEVAL_PUBLICATION_REQUEST");
+    return this.transaction(tenantId, async (client) => {
+      const rows = (await client.query<Row>(`select version_id,retrieval.history_publication_authorized(version_id,null) publication_id
+        from unnest($1::uuid[]) version_id`, [vectorSpaceVersionIds])).rows;
+      return new Map(rows.filter(row => row.publication_id !== null).map(row => [String(row.version_id), String(row.publication_id)]));
+    });
+  }
+
+  /** Bounded canonical support traversal for one retrieval answer. */
+  async resolveRetrievalSupport(input: RetrievalSupportRequest): Promise<readonly ResolvedRetrievalSupport[]> {
+    return this.transaction(input.tenantId, async (client) => new RetrievalSupportResolver(client).resolve(input));
+  }
+
+  /**
+   * Replays every citation a persisted packet carries from remote custody.
+   *
+   * The packet stays immutable: a dependency that has since been revoked, a missing
+   * object or altered bytes are reported as typed failures next to the citations that
+   * still reconstruct, instead of rewriting or hiding the recorded answer.
+   */
+  async replayEvidencePacketCitations(tenantId: string, packetId: string, readArtifact: ReadRetrievalArtifact): Promise<RetrievalCitationReplayResult> {
+    const packet = await this.transaction(tenantId, (client) => this.#getEvidencePacket(client, tenantId, packetId));
+    if (!packet) throw new Error("EVIDENCE_PACKET_NOT_FOUND");
+    const citations: unknown[] = [], failures: unknown[] = [];
+    await this.transaction(tenantId, async (client) => {
+      const replay = new RetrievalCitationReplay(client, readArtifact);
+      for (const member of packet.members) for (const path of member.support?.paths ?? []) {
+        try {
+          if (!await this.#supportStillAuthorized(client, path.claimId, path.representationId)) throw new Error("RETRIEVAL_SUPPORT_REVOKED");
+          const replayed = await replay.replay({ tenantId, locatorId: path.locatorId,
+            selectorDigest: path.selectorDigest, selectedContentDigest: path.selectedContentDigest });
+          if (replayed.captureId !== path.captureId || replayed.sourceFamilyId !== path.sourceFamilyId
+            || replayed.captureArtifactId !== path.captureArtifact.artifactId) throw new Error("RETRIEVAL_CITATION_LINEAGE_MISMATCH");
+          citations.push({ memberId: member.memberId, ...replayed });
+        } catch (error) {
+          failures.push({ memberId: member.memberId, locatorId: path.locatorId,
+            code: error instanceof Error ? error.message.split(":", 1)[0]! : "RETRIEVAL_CITATION_REPLAY_FAILED" });
+        }
+      }
+    });
+    return RetrievalCitationReplaySchema.parse({ schemaVersion: "knowledge.retrieval-citation-replay/v1",
+      evidencePacketId: packet.id, retrievalRunId: packet.retrievalRunId, packetDigest: packet.digest,
+      citations, failures, replayedAt: new Date().toISOString() });
+  }
+
+  async #supportStillAuthorized(client: TenantSqlClient, claimId: string, representationId: string): Promise<boolean> {
+    const row = (await client.query<Row>(`select retrieval.history_claim_authorized($1::uuid) claim,
+      retrieval.history_representation_authorized($2::uuid) representation`, [claimId, representationId])).rows[0];
+    return row?.claim === true && row.representation === true;
   }
 
   async storeRetrievalExecution(tenantId: string, input: PersistRetrievalExecutionInput): Promise<string> {
@@ -866,7 +958,16 @@ export class PostgresCanonicalRepository implements OperationsRepository, LeaseR
     if (member.canonicalRecord && canonicalReferenceColumn) {
       if (member.canonicalRecord.tenantId !== tenantId) throw new Error("EVIDENCE_PACKET_MEMBER_TENANT_MISMATCH");
       identity.push([canonicalReferenceColumn,member.canonicalRecord.recordId]);
-      vectorItem = (await client.query<Row>(`select id from retrieval.vector_item where tenant_id=$1 and search_projection_id=$2 and ${canonicalReferenceColumn}=$3 order by id limit 1`, [tenantId,member.matchedProjectionId,member.canonicalRecord.recordId])).rows[0];
+      const supportedClaim = canonicalReferenceColumn === "claim_id"
+        && (member.support?.paths.some(path => path.claimId === member.canonicalRecord!.recordId) ?? false);
+      vectorItem = supportedClaim
+        ? (await client.query<Row>("select id from retrieval.vector_item where tenant_id=$1 and search_projection_id=$2 order by id limit 1",
+          [tenantId,member.matchedProjectionId])).rows[0]
+        : (await client.query<Row>(`select vi.id from retrieval.vector_item vi
+        join retrieval.projection_target pt on pt.tenant_id=vi.tenant_id and pt.id=vi.projection_target_id
+        where vi.tenant_id=$1 and vi.search_projection_id=$2
+          and coalesce(pt.entity_id,pt.record_id,pt.chunk_id,pt.claim_id,pt.summary_id)=$3
+        order by vi.id limit 1`, [tenantId,member.matchedProjectionId,member.canonicalRecord.recordId])).rows[0];
       if (!vectorItem) throw new Error("EVIDENCE_PACKET_VECTOR_ITEM_NOT_FOUND");
     } else {
       const locator = member.locators[0];

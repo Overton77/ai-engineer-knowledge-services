@@ -17,6 +17,8 @@ const RunStateSchema = z.strictObject({
   policyInputsArtifactId: z.uuid().optional(), decisionArtifactId: z.uuid().optional(),
   auditArtifactId: z.uuid().optional(), extractionResultArtifactIds: ArtifactIds.optional(),
   reportCheckArtifactIds: ArtifactIds.optional(), captureIds: z.array(Identifier).max(2_048).optional(),
+  recoveryAuthorityArtifactId: z.uuid().optional(), recoveryNotificationArtifactId: z.uuid().optional(),
+  recoveryBatchId: z.string().min(1).max(256).optional(), recoveryCaseId: z.string().min(1).max(256).optional(),
 });
 const StepSchema = z.strictObject({
   runId: Identifier, sequence: z.int().positive(), operation: Identifier,

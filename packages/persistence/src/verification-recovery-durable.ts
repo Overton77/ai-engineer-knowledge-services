@@ -22,7 +22,8 @@ function execution(row: Row): DurableRecoveryExecution {
 }
 
 export class PostgresDurableVerificationRecoveryStore implements DurableRecoveryStore {
-  constructor(private readonly database: PostgresCanonicalRepository) {}
+  constructor(private readonly database: PostgresCanonicalRepository,
+    private readonly originalSource: "knowledge_service" | "orchestration" = "knowledge_service") {}
 
   async open(input: Parameters<DurableRecoveryStore["open"]>[0]): Promise<DurableRecoveryCase> {
     return this.database.transaction(input.tenantId, async client => {
@@ -32,9 +33,12 @@ export class PostgresDurableVerificationRecoveryStore implements DurableRecovery
       same(row.initial_batch, input.batch, "RECOVERY_ORIGINAL_DENOMINATOR_IMMUTABLE");
       same(row.authority_handle, input.authorityArtifact, "RECOVERY_INITIAL_AUTHORITY_IMMUTABLE");
       for (const item of [...input.batch.items].sort((a, b) => a.originalId.localeCompare(b.originalId))) {
-        await client.query(`insert into knowledge_service.recovery_original(tenant_id,case_id,original_id,original_operation_id,original_input_digest,used_rounds,attempted_input_digests,attempted_repair_digests)
-          values($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb) on conflict(tenant_id,case_id,original_id) do nothing`,
-        [input.tenantId, input.batch.caseId, item.originalId, item.observation.operationId, item.inputDigest, item.usedRounds, JSON.stringify(item.attemptedInputDigests), JSON.stringify(item.attemptedRepairDigests)]);
+        await client.query(`insert into knowledge_service.recovery_original(tenant_id,case_id,original_id,original_operation_id,original_intent_id,original_input_digest,used_rounds,attempted_input_digests,attempted_repair_digests)
+          values($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb) on conflict(tenant_id,case_id,original_id) do nothing`,
+        [input.tenantId, input.batch.caseId, item.originalId,
+          this.originalSource === "knowledge_service" ? item.observation.operationId : null,
+          this.originalSource === "orchestration" ? item.observation.operationId : null,
+          item.inputDigest, item.usedRounds, JSON.stringify(item.attemptedInputDigests), JSON.stringify(item.attemptedRepairDigests)]);
       }
       const existing = (await client.query("select revision from knowledge_service.recovery_revision where tenant_id=$1 and case_id=$2 limit 1", [input.tenantId, input.batch.caseId])).rows;
       if (!existing.length) await this.insertRevision(client, input.tenantId, input.batch.caseId, 1,
@@ -248,6 +252,10 @@ export class PostgresDurableVerificationRecoveryStore implements DurableRecovery
     batch.items = batch.items.map(item => {
       const stored = originals.find(original => original.original_id === item.originalId);
       if (!stored) throw new Error("RECOVERY_ORIGINAL_MISSING");
+      const expectedOperation = this.originalSource === "knowledge_service" ? item.observation.operationId : null;
+      const expectedIntent = this.originalSource === "orchestration" ? item.observation.operationId : null;
+      if (stored.original_operation_id !== expectedOperation || stored.original_intent_id !== expectedIntent
+        || stored.original_input_digest !== item.inputDigest) throw new Error("RECOVERY_ORIGINAL_AUTHORITY_MISMATCH");
       return { ...item, usedRounds: Number(stored.used_rounds), attemptedInputDigests: stored.attempted_input_digests as string[], attemptedRepairDigests: stored.attempted_repair_digests as string[] };
     });
     const revisions = (await client.query("select * from knowledge_service.recovery_revision where tenant_id=$1 and case_id=$2 order by revision", [tenantId, caseId])).rows.map(entry => ({ revision: Number(entry.revision), kind: entry.kind, idempotencyKey: entry.idempotency_key, artifact: entry.artifact_handle, value: entry.payload, ...(entry.checkpoint_id ? { checkpointId: entry.checkpoint_id } : {}) }));

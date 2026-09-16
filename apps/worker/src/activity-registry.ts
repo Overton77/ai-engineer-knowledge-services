@@ -14,6 +14,9 @@ import {
   JsonValueSchema,
   OperationContextSchema,
   OperationKindSchema,
+  PromotionProposalInputSchema,
+  SelectedCandidateEvaluationInputSchema,
+  SelectedCandidateIndexInputSchema,
   VectorStoreCreateInputSchema,
   VectorStoreDocumentsInputSchema,
   VectorStoreIngestionInputSchema,
@@ -43,6 +46,7 @@ import type {
   GovernedIndexRepository,
   VectorStoreLifecycleRepository,
 } from "@aiengineer/knowledge-persistence";
+import { sameActorIdentity } from "@aiengineer/knowledge-persistence";
 import { digestBytes, type ArtifactStore, type StoredArtifact } from "@aiengineer/knowledge-runtime";
 import { z, ZodError } from "zod";
 
@@ -332,10 +336,6 @@ const typedDigest=(value:string)=>value as `sha256:${string}`;
 const representationDecisionInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.representation-decision/v1"),representationId:z.uuid(),
   reviewSubjectId:z.uuid(),guardedDigest:digestSchema,decision:z.enum(["accept","reject","quarantine","defer","request_changes"]),
   policyVersion:z.string().trim().min(1),rationale:z.string().trim().min(1),expiresAt:z.iso.datetime().optional()});
-const promotionProposalInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.promotion-proposal/v1"),chunkSetId:z.uuid(),representationDecisionId:z.uuid(),
-  projectionProcedureId:z.uuid(),purpose:z.string().trim().min(1),contextualPrefix:z.string(),language:z.string().trim().min(1).optional(),
-  visibility:z.string().trim().min(1),classification:z.string().trim().min(1),targetDomains:z.array(z.string().trim().min(1)).min(1),
-  expectedValue:z.string().trim().min(1),risks:z.array(z.string().trim().min(1)),exclusions:z.array(z.string().trim().min(1)),reason:z.string().trim().min(1)});
 const promotionDecisionInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.promotion-decision/v1"),proposalId:z.uuid(),reviewSubjectId:z.uuid(),
   guardedDigest:digestSchema,decision:z.enum(["accept","reject","defer","request_changes"]),gates:JsonValueSchema,
   policyVersion:z.string().trim().min(1),rationale:z.string().trim().min(1),expiresAt:z.iso.datetime().optional()});
@@ -343,10 +343,13 @@ const reviewDecisionInputSchema=z.strictObject({schemaVersion:z.literal("knowled
   guardedDigest:digestSchema,decision:z.enum(["approve","reject","defer","request_changes"]),rationale:z.string().trim().min(1).max(8_000)});
 const embeddingRunInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.embedding-run/v1"),vectorSpaceVersionId:z.uuid(),promotionDecisionId:z.uuid(),
   projectionIds:z.array(z.uuid()).min(1),providerRoute:z.array(z.string().trim().min(1)).min(1),expectedDimensions:z.literal(1536),modelSlug:z.string().trim().min(1)});
+const baselineQuerySchema=z.strictObject({queryId:z.string().trim().min(1).max(256),embedding:z.array(z.number().finite()).length(1_536)});
 const spacePublicationInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.space-publication/v1"),vectorStoreSpaceId:z.uuid(),vectorSpaceVersionId:z.uuid(),
-  promotionDecisionId:z.uuid(),evaluationResultId:z.uuid(),expectedOwnerIdentity:z.string().trim().min(1),guardedDigest:digestSchema,reason:z.string().trim().min(1)});
+  promotionDecisionId:z.uuid(),evaluationResultId:z.uuid(),expectedOwnerIdentity:z.string().trim().min(1),guardedDigest:digestSchema,reason:z.string().trim().min(1),
+  /** Present whenever the space publishes an evaluated selected candidate rather than the legacy counted chain. */
+  candidate:SelectedCandidateIndexInputSchema.optional(),candidateEvidenceDigest:digestSchema.optional(),evaluationDigest:digestSchema.optional()});
 const publicationRollbackInputSchema=z.strictObject({schemaVersion:z.literal("knowledge.publication-rollback/v1"),currentPublicationId:z.uuid(),targetPublicationId:z.uuid(),
-  guardedDigest:digestSchema,reason:z.string().trim().min(1)});
+  guardedDigest:digestSchema,reason:z.string().trim().min(1),vectorStoreSpaceId:z.uuid().optional(),baselineQueries:z.array(baselineQuerySchema).min(1).max(16).optional()});
 
 export interface DurableStepInput extends z.infer<typeof durableStepInputSchema> {}
 
@@ -487,8 +490,8 @@ export interface ProductionActivityDependencies {
     readonly repository: PreparationRepository;
     readonly sourceArtifacts: ArtifactStore;
     readonly derivativeArtifacts: ArtifactStore;
-    readonly sourceStorageBucket: "source-captures";
-    readonly derivativeStorageBucket: "content-derivatives";
+    readonly sourceStorageBucket: "source-captures" | "ai-engineer-cloud-bucket";
+    readonly derivativeStorageBucket: "content-derivatives" | "ai-engineer-cloud-bucket";
     readonly acquisition: AcquisitionAdapter;
     readonly conversionProviders: readonly DocumentConversionProvider[];
   };
@@ -503,7 +506,7 @@ export interface ProductionActivityDependencies {
 
 function persistedArtifact(
   artifact: StoredArtifact,
-  storageBucket: "source-captures" | "content-derivatives",
+  storageBucket: "source-captures" | "content-derivatives" | "ai-engineer-cloud-bucket",
   artifactType: string,
   bucketClass: PersistedPreparationArtifact["bucketClass"],
 ): PersistedPreparationArtifact {
@@ -654,8 +657,8 @@ function preparationHandlers(
         const sourceNativeRepresentationId=deterministicUuid("source-native-representation",`${documentVersionId}:${capture.artifact.digest}`);
         const native=persistedArtifact(output.providerNativeArtifact,dependencies.derivativeStorageBucket,"report_json","candidate");
         const markdown=persistedArtifact(output.markdownArtifact,dependencies.derivativeStorageBucket,"report_markdown","candidate");
-        const plain=persistedArtifact(output.plainTextArtifact,dependencies.derivativeStorageBucket,
-          output.plainTextArtifact.artifactId===output.markdownArtifact.artifactId?"report_markdown":"report_json","candidate");
+        const plain=output.plainTextArtifact.artifactId===output.markdownArtifact.artifactId ? markdown
+          : persistedArtifact(output.plainTextArtifact,dependencies.derivativeStorageBucket,"report_json","candidate");
         const persisted=await dependencies.repository.persistRepresentation(activity.context.tenantId,{
           operationId:operation.id,transformationRunId,sourceCaptureId:capture.captureId,sourceArtifact:capture.artifact,
           documentId,documentKind:input.document.documentKind,canonicalTitle:input.document.canonicalTitle,canonicalSourceId:capture.sourceId,
@@ -709,7 +712,7 @@ function preparationHandlers(
         const profile=defaultChunkProfileRegistry.get(input.profileName,input.profileVersion);
         const result=chunkDocument(nodes,profile);
         if (!result.qa.valid) throw new CanonicalActivityError("CHUNK_QA_FAILED",result.qa.issues.join(";"),false);
-        const procedureVersionId=deterministicUuid("chunk-procedure",`${profile.name}@${profile.version}`);
+        const procedureVersionId=deterministicUuid("chunk-procedure",`${activity.context.tenantId}:${profile.name}@${profile.version}`);
         const chunkSetId=deterministicUuid("chunk-set",`${activity.context.tenantId}:${input.representationId}:${result.outputDigest}`);
         return dependencies.repository.persistChunkSet(activity.context.tenantId,{operationId:operation.id,representationId:input.representationId,
           procedureVersionId,procedureSlug:profile.name,procedureVersion:profile.version,tokenizer:profile.tokenizer,profile,
@@ -802,16 +805,20 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
         guardedDigest:input.guardedDigest,reviewDecisionId:knowledgeDecisionId};
     }},
     {operationKind:"promotion_proposal",stepName:"propose",async execute({activity,operation}){
-      const input=promotionProposalInputSchema.parse(activity.operationInput),actor=activity.context.actor;
+      const input=PromotionProposalInputSchema.parse(activity.operationInput),actor=activity.context.actor;
       if(!((actor.kind==="model"||actor.kind==="service")&&actor.serviceIdentity==="content_curator_agent"))
         throw new CanonicalActivityError("PROPOSAL_AUTHORITY_REQUIRED","Projection proposals require the bearer-bound content_curator_agent identity",false);
       const proposal=await dependencies.repository.persistProjectionProposal(activity.context.tenantId,{operationId:operation.id,chunkSetId:input.chunkSetId,
+        selection:input.selection,selectionArtifact:input.selectionArtifact,
         representationDecisionId:input.representationDecisionId,projectionProcedureId:input.projectionProcedureId,purpose:input.purpose,
         contextualPrefix:input.contextualPrefix,...(input.language?{language:input.language}:{}),visibility:input.visibility,classification:input.classification,
         targetDomains:input.targetDomains,expectedValue:input.expectedValue,risks:input.risks,exclusions:input.exclusions,reason:input.reason,proposedBy:actor.id});
+      if(proposal.selectionDigest!==input.selectionArtifact.digest)
+        throw new CanonicalActivityError("PROMOTION_SELECTION_RESULT_MISMATCH","Prepared proposal differs from the authenticated selection artifact",false);
       const reviewSubjectId=deterministicUuid("content-promotion-review",`${proposal.proposalId}:${proposal.proposalDigest}`);
       await review.createReviewSubject(activity.context.tenantId,{id:reviewSubjectId,operationId:operation.id,subjectKind:"content_promotion",
-        subjectRef:{proposalId:proposal.proposalId,projectionIds:proposal.projectionIds,projectionManifestDigest:proposal.projectionManifestDigest},
+        subjectRef:{proposalId:proposal.proposalId,projectionIds:proposal.projectionIds,projectionManifestDigest:proposal.projectionManifestDigest,
+          selectionDigest:proposal.selectionDigest,selectionArtifactId:input.selectionArtifact.id},
         guardedSha256:proposal.proposalDigest.slice(7),eligibleRoles:["human_reviewer"]});
       return {schemaVersion:"knowledge.promotion-proposal-result/v1",...proposal,reviewSubjectId,requiresIndependentDecision:true,publishable:false};
     }},
@@ -832,9 +839,9 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
       const input=embeddingRunInputSchema.parse(activity.operationInput),actor=activity.context.actor;
       if(actor.kind!=="service"||actor.serviceIdentity!=="embedding_executor")
         throw new CanonicalActivityError("EMBEDDING_EXECUTOR_AUTHORITY_REQUIRED","Embedding requires the bearer-bound embedding_executor identity",false);
-      const existing=await dependencies.repository.getEmbeddingRunByOperation(activity.context.tenantId,operation.id);if(existing)return existing;
       const context=await dependencies.repository.loadEmbeddingContext(activity.context.tenantId,input.vectorSpaceVersionId,input.promotionDecisionId,input.projectionIds);
       if(context.dimensions!==input.expectedDimensions||context.modelSlug!==input.modelSlug)throw new CanonicalActivityError("EMBEDDING_PROFILE_MISMATCH","Operation embedding profile does not match vector-space version",false);
+      const existing=await dependencies.repository.getEmbeddingRunByOperation(activity.context.tenantId,operation.id);if(existing)return existing;
       const embedded=await dependencies.embeddingAdapter.embedMany({vectorSpaceVersionId:input.vectorSpaceVersionId,idempotencyKey:activity.context.idempotencyKey,
         expectedDimensions:input.expectedDimensions,modelSlug:input.modelSlug,providerRoute:input.providerRoute,inputs:context.inputs.map((item)=>({projectionId:item.projectionId,text:item.text,textDigest:item.textDigest}))});
       return dependencies.repository.persistEmbeddingRun(activity.context.tenantId,{operationId:operation.id,embeddingRunId:deterministicUuid("embedding-run",operation.id),context,
@@ -845,7 +852,13 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
             cacheKey:item.cacheKey,embedding:item.embedding}))}});
     }},
     {operationKind:"embedding_run",stepName:"verify",async execute({activity,operation}){
-      embeddingRunInputSchema.parse(activity.operationInput);const run=await dependencies.repository.getEmbeddingRunByOperation(activity.context.tenantId,operation.id);
+      const input=embeddingRunInputSchema.parse(activity.operationInput),actor=activity.context.actor;
+      if(actor.kind!=="service"||actor.serviceIdentity!=="embedding_executor")
+        throw new CanonicalActivityError("EMBEDDING_EXECUTOR_AUTHORITY_REQUIRED","Embedding requires the bearer-bound embedding_executor identity",false);
+      const context=await dependencies.repository.loadEmbeddingContext(activity.context.tenantId,input.vectorSpaceVersionId,input.promotionDecisionId,input.projectionIds);
+      if(context.dimensions!==input.expectedDimensions||context.modelSlug!==input.modelSlug)
+        throw new CanonicalActivityError("EMBEDDING_PROFILE_MISMATCH","Operation embedding profile does not match vector-space version",false);
+      const run=await dependencies.repository.getEmbeddingRunByOperation(activity.context.tenantId,operation.id);
       if(!run||run.itemCount<1||run.status!=="succeeded")throw new CanonicalActivityError("EMBEDDING_RUN_VERIFICATION_FAILED","Canonical embedding run is incomplete",false);
       return {schemaVersion:"knowledge.embedding-verification/v1",...run,dimensionVerified:true,publishable:false};
     }},
@@ -853,7 +866,9 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
       const input=spacePublicationInputSchema.parse(activity.operationInput),identity=controlPlaneIdentity(activity);
       const staged=await dependencies.repository.stagePublication(activity.context.tenantId,{operationId:operation.id,
         publicationId:deterministicUuid("space-publication",operation.id),vectorStoreSpaceId:input.vectorStoreSpaceId,vectorSpaceVersionId:input.vectorSpaceVersionId,
-        promotionDecisionId:input.promotionDecisionId,evaluationResultId:input.evaluationResultId,expectedOwnerIdentity:input.expectedOwnerIdentity,publisherIdentity:identity});
+        promotionDecisionId:input.promotionDecisionId,evaluationResultId:input.evaluationResultId,expectedOwnerIdentity:input.expectedOwnerIdentity,publisherIdentity:identity,
+        ...(input.candidate?{candidate:input.candidate}:{}),...(input.candidateEvidenceDigest?{candidateEvidenceDigest:input.candidateEvidenceDigest}:{}),
+        ...(input.evaluationDigest?{evaluationDigest:input.evaluationDigest}:{})});
       if(staged.guardedDigest!==input.guardedDigest)throw new CanonicalActivityError("PUBLICATION_GUARDED_DIGEST_MISMATCH","Staged publication differs from admitted digest",false);
       return {schemaVersion:"knowledge.space-publication-stage/v1",...staged,publisherIdentity:identity};
     }},
@@ -868,13 +883,26 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
       const input=publicationRollbackInputSchema.parse(activity.operationInput),identity=controlPlaneIdentity(activity);
       const plan=await dependencies.repository.planRollback(activity.context.tenantId,input.currentPublicationId,input.targetPublicationId,identity);
       if(plan.guardedDigest!==input.guardedDigest)throw new CanonicalActivityError("ROLLBACK_GUARDED_DIGEST_MISMATCH","Rollback target differs from admitted digest",false);
+      if(plan.frozenBaseline && (input.vectorStoreSpaceId!==plan.vectorStoreSpaceId || !input.baselineQueries
+        || input.baselineQueries.length!==plan.frozenBaseline.length
+        || new Set(input.baselineQueries.map(query=>query.queryId)).size!==input.baselineQueries.length
+        || plan.frozenBaseline.some(answer=>!input.baselineQueries!.some(query=>query.queryId===answer.queryId
+          && sha256Digest([...query.embedding])===answer.embeddingDigest))))
+        throw new CanonicalActivityError("ROLLBACK_BASELINE_REQUIRED","Rollback requires every frozen baseline query for its target space",false);
       return {schemaVersion:"knowledge.publication-rollback-plan/v1",...plan,currentPublicationId:input.currentPublicationId,targetPublicationId:input.targetPublicationId};
     }},
     {operationKind:"publication_rollback",stepName:"verify",async execute({activity,operation}){
       const input=publicationRollbackInputSchema.parse(activity.operationInput),identity=controlPlaneIdentity(activity);
       const switchReceiptId=await dependencies.repository.executeRollback(activity.context.tenantId,operation.id,input.currentPublicationId,input.targetPublicationId,
         typedDigest(input.guardedDigest),input.reason,identity,`rollback:${activity.context.idempotencyKey}`);
-      return {schemaVersion:"knowledge.publication-rollback-result/v1",switchReceiptId,targetPublicationId:input.targetPublicationId,guardedDigest:input.guardedDigest,rebuilt:true};
+      const baseline=input.vectorStoreSpaceId&&input.baselineQueries?.length
+        ? await dependencies.repository.verifyPublicationBaseline(activity.context.tenantId,
+          {vectorStoreSpaceId:input.vectorStoreSpaceId,queries:input.baselineQueries})
+        : undefined;
+      if(baseline&&!baseline.equivalent)
+        throw new CanonicalActivityError("ROLLBACK_BASELINE_NOT_EQUIVALENT",`Restored pointer answers differ: ${baseline.differences.join(",")}`,false);
+      return {schemaVersion:"knowledge.publication-rollback-result/v1",switchReceiptId,targetPublicationId:input.targetPublicationId,
+        guardedDigest:input.guardedDigest,rebuilt:true,...(baseline?{baseline}:{})};
     }},
   ];
 }
@@ -882,11 +910,22 @@ function governedIndexHandlers(dependencies:NonNullable<ProductionActivityDepend
 function vectorVerificationHandler(
   operationKind: "vector_store_evaluation" | "publication_verification",
   retrieval: ProductionActivityDependencies["retrieval"],
+  governedIndex?: ProductionActivityDependencies["governedIndex"],
 ): CanonicalActivityHandler {
   return {
     operationKind,
     stepName: operationKind === "vector_store_evaluation" ? "evaluate" : "verify",
     async execute({ activity }) {
+      const candidate = SelectedCandidateEvaluationInputSchema.safeParse(activity.operationInput);
+      if (candidate.success) {
+        if (operationKind !== "vector_store_evaluation" || !governedIndex)
+          throw new CanonicalActivityError("CANDIDATE_EVALUATION_NOT_ADMITTED", "Selected-candidate evaluation requires the governed index dependency", false);
+        const actor = activity.context.actor;
+        if (actor.kind !== "service" || actor.serviceIdentity !== "evaluation_executor"
+          || !sameActorIdentity(actor.id, candidate.data.evaluatorIdentity))
+          throw new CanonicalActivityError("EVALUATION_ACTOR_IDENTITY_MISMATCH", "Candidate evaluation requires its authenticated evaluation executor", false);
+        return governedIndex.repository.evaluateSelectedCandidate(activity.context.tenantId, candidate.data);
+      }
       const input = vectorVerificationInputSchema.parse(activity.operationInput);
       const request = {
         tenantId: activity.context.tenantId,
@@ -981,9 +1020,18 @@ export function createProductionActivityRegistry(dependencies: ProductionActivit
         catch(error){const message=error instanceof Error?error.message:"VECTOR_STORE_DOCUMENT_PERSISTENCE_FAILED";
           if(message.startsWith("VECTOR_STORE_")||message==="CONTROL_PLANE_AUTHORITY_REQUIRED")throw new CanonicalActivityError(message,message,false,{cause:error});throw error;}
       },
-    },...(["prepare","embed","index"] as const).map((stepName):CanonicalActivityHandler=>({
+    }] : []),...((dependencies.vectorStore||dependencies.governedIndex) ? (["prepare","embed","index"] as const).map((stepName):CanonicalActivityHandler=>({
       operationKind:"vector_store_ingestion",stepName,
       async execute({activity,operation}){
+        if((activity.operationInput as Record<string,unknown>)?.schemaVersion==="knowledge.selected-candidate-index/v1"){
+          const input=SelectedCandidateIndexInputSchema.parse(activity.operationInput),actor=activity.context.actor;
+          if(actor.kind!=="service"||!["embedding_executor","control_plane"].includes(actor.serviceIdentity))
+            throw new CanonicalActivityError("CANDIDATE_INDEX_AUTHORITY_REQUIRED","Candidate indexing requires an embedding executor or control-plane service",false);
+          if(!dependencies.governedIndex)throw new CanonicalActivityError("CANDIDATE_INDEX_NOT_CONFIGURED","Selected candidate repository is required",false);
+          const candidate=await dependencies.governedIndex.repository.verifySelectedCandidate(activity.context.tenantId,input);
+          return {...candidate,stage:stepName};
+        }
+        if(!dependencies.vectorStore)throw new CanonicalActivityError("VECTOR_STORE_NOT_CONFIGURED","Vector-store lifecycle repository is required",false);
         const input=VectorStoreIngestionInputSchema.parse(activity.operationInput),actor=activity.context.actor;
         if(actor.kind==="model")throw new CanonicalActivityError("VECTOR_STORE_OWNER_AUTHORITY_REQUIRED","Models cannot execute vector-store ingestion",false);
         const stage=stepName==="prepare"?"prepared":stepName==="embed"?"embedded":"indexed";
@@ -996,7 +1044,7 @@ export function createProductionActivityRegistry(dependencies: ProductionActivit
             throw new CanonicalActivityError(message,message,message.endsWith("_INCOMPLETE"),{cause:error});
           throw error;}
       },
-    }))] : []),
+    })) : []),
     {
       operationKind:"source_discovery",stepName:"discover",
       execute({activity}) {
@@ -1139,7 +1187,7 @@ export function createProductionActivityRegistry(dependencies: ProductionActivit
     },
     evaluationHandler("evaluate"),
     evaluationHandler("report"),
-    vectorVerificationHandler("vector_store_evaluation", dependencies.retrieval),
+    vectorVerificationHandler("vector_store_evaluation", dependencies.retrieval, dependencies.governedIndex),
     vectorVerificationHandler("publication_verification", dependencies.retrieval),
     {
       operationKind: "evidence_packet",

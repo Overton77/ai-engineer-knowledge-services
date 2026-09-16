@@ -1,4 +1,5 @@
 export * from "./types.js";
+export * from "./actor-identity.js";
 export * from "./postgres.js";
 export * from "./role-transaction.js";
 export * from "./wiring.js";
@@ -62,3 +63,23 @@ export * from './source-discovery.js';
 
 export * from "./checkpoints.js";
 export * from "./verification-recovery-durable.js";
+export { persistPreparedContentSummary, type PreparedContentSummaryInput } from "./content-summary-preparation.js";
+export { readContentRepresentationAdmission } from "./content-representation-admission.js";
+export { readRepresentationDependencies, readRepresentationImpact } from "./representation-dependency.js";
+export { assertSignedReportSourceDependencies } from "./report-source-dependencies.js";
+export * from "./retrieval-evidence.js";
+export * from "./promotion-selection.js";
+export {
+  CANDIDATE_EVALUATION_GATE,
+  assertPublicationCandidateBinding,
+  assertPublicationDependenciesEligible,
+  evaluateSelectedCandidate,
+  queryPublishedSpace,
+  readGateObservations,
+  verifyPublicationBaseline,
+  type EvaluateSelectedCandidateInput,
+  type PublicationBaselineInput,
+  type PublicationCandidateBindingInput,
+  type PublishedItem,
+  type PublishedQueryInput,
+} from "./publication-evaluation.js";

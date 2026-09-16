@@ -31,20 +31,45 @@ test-results/
 playwright-report/
 blob-report/
 
-# OS
+# OS / editor
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+.idea/
+*.swp
+*.swo
+*~
 
 # Local agent / scraper caches
 .eve
+.eve-extension-build-*
 .firecrawl/
 .herenow/
+.vitest/
+.vite/
 
 # Runtime / local run outputs (catalog fixtures stay tracked)
 /artifacts/
 /outputs/
 /runs/
 /receipts/
+.verification-store/
+.knowledge-artifacts/
+**/.verification-store/
+**/.knowledge-artifacts/
+
+# Local dumps and key material dropped beside the repo
+*.sqlite
+*.sqlite3
+*.dump
+*.pem
+*.p12
+*.pfx
+
+# Fixture capture/replay receipts stay local. Scripts, manifests, and
+# candidate inventories remain trackable. Catalog fixtures stay tracked.
+fixtures/**/*.result.json
 
 # Experiment / local run outputs
 experiments/**/output/
