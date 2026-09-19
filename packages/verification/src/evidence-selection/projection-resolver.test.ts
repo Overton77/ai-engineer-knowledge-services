@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { VerificationSelectorSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
-import { parseCanonicalProjection } from "./projections.js";
+import { parseCanonicalProjection } from "./projections/index.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 
 const bytes = (value: unknown): Uint8Array =>

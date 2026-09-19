@@ -21,4 +21,4 @@ export {
   type RepositoryProjection,
   type TableProjection,
   type TranscriptProjection,
-} from "./projections.js";
+} from "./projections/index.js";

@@ -2,20 +2,16 @@ import type {
   ResolvedSelector,
   VerificationSelector,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { evaluateJsonPointer } from "./json-pointer.js";
 import {
   evidenceSelectionReporter,
   type EvidenceSelection,
   type EvidenceSelectionRequest,
 } from "./selection.js";
-import {
-  findAllOccurrences,
-  normalizeText,
-  type NormalizedText,
-} from "./text-normalization.js";
+import { findQuoteOccurrences } from "./quote-search.js";
+import { normalizeText, type NormalizedText } from "./text-normalization.js";
 import { resolveTextOffsetRange } from "./text-offsets.js";
-import { decodeUtf8, encodeUtf8 } from "./utf8.js";
+import { decodeUtf8 } from "./utf8.js";
 import { CORE_RESOLVER_VERSION } from "../versions.js";
 
 const report = evidenceSelectionReporter(CORE_RESOLVER_VERSION);
@@ -25,7 +21,9 @@ type CoreSelector<Kind extends VerificationSelector["kind"]> = Extract<
   { kind: Kind }
 >;
 type ResolvedRanges = ResolvedSelector["resolvedRanges"];
-type TextOutcome = Pick<ResolvedSelector, "resolvedRanges" | "normalization">;
+
+/** Core selections go straight to callers, so the selection object carries the text and value. */
+const EXPOSURE = "text_and_value" as const;
 
 /**
  * Resolves the locator kinds this package owns directly: text quotes, character positions,
@@ -79,35 +77,11 @@ function resolveTextQuote(
     normalizedQuote.length,
   );
   if (!range) return report.unresolved(request, "not_found");
-  return resolvedText(request, source.slice(range.start, range.end), {
+  return report.resolvedText(request, source.slice(range.start, range.end), {
     resolvedRanges: [{ ...range, coordinateSpace: "utf16_code_units" }],
     normalization: selector.normalization,
+    exposure: EXPOSURE,
   });
-}
-
-function findQuoteOccurrences(
-  normalizedSource: string,
-  normalizedQuote: string,
-  selector: CoreSelector<"text_quote">,
-): number[] {
-  let occurrences = findAllOccurrences(normalizedSource, normalizedQuote);
-  if (selector.prefix !== undefined) {
-    const prefix = normalizeText(selector.prefix, selector.normalization).text;
-    occurrences = occurrences.filter(
-      (at) =>
-        normalizedSource.slice(Math.max(0, at - prefix.length), at) === prefix,
-    );
-  }
-  if (selector.suffix !== undefined) {
-    const suffix = normalizeText(selector.suffix, selector.normalization).text;
-    const quoteEnd = (at: number) => at + normalizedQuote.length;
-    occurrences = occurrences.filter(
-      (at) =>
-        normalizedSource.slice(quoteEnd(at), quoteEnd(at) + suffix.length) ===
-        suffix,
-    );
-  }
-  return occurrences;
 }
 
 /** Maps a hit in the normalized text back onto the original source; `undefined` if the mapping is missing. */
@@ -132,16 +106,21 @@ function resolveCharacterPosition(
   const range = resolveTextOffsetRange(normalized, selector);
   if (!range) return report.unresolved(request, "invalid");
   // The report keeps the caller's declared coordinates, not the converted UTF-16 slice, so replay sees the same numbers.
-  return resolvedText(request, normalized.slice(range.start, range.end), {
-    resolvedRanges: [
-      {
-        start: selector.start,
-        end: selector.end,
-        coordinateSpace: selector.offsetBasis,
-      },
-    ],
-    normalization: selector.normalization,
-  });
+  return report.resolvedText(
+    request,
+    normalized.slice(range.start, range.end),
+    {
+      resolvedRanges: [
+        {
+          start: selector.start,
+          end: selector.end,
+          coordinateSpace: selector.offsetBasis,
+        },
+      ],
+      normalization: selector.normalization,
+      exposure: EXPOSURE,
+    },
+  );
 }
 
 /** The selection is the canonical JSON of the pointed node; a pointer is a path, so no character range is reported. */
@@ -157,21 +136,10 @@ function resolveJsonPointer(
   }
   const lookup = evaluateJsonPointer(selector.pointer, document);
   if (!lookup.found) return report.unresolved(request, "not_found");
-  const selectedText = canonicalizeJson(lookup.value);
-  const selectedContent = encodeUtf8(selectedText);
-  return {
-    resolution: report.report(request, {
-      status: "resolved",
-      occurrenceCount: 1,
-      selectedContentDigest: sha256Digest(selectedContent),
-      selectedValue: lookup.value as never,
-      resolvedRanges: [],
-      normalization: "none",
-    }),
-    selectedContent,
-    selectedText,
-    selectedValue: lookup.value,
-  };
+  return report.resolvedValue(request, lookup.value, {
+    resolvedRanges: [],
+    exposure: EXPOSURE,
+  });
 }
 
 /**
@@ -204,9 +172,10 @@ function resolveMultiFragmentText(
   const joined = fragments
     .map((fragment) => fragment.selectedText ?? "")
     .join(selector.joiner);
-  return resolvedText(request, joined, {
+  return report.resolvedText(request, joined, {
     resolvedRanges: ranges,
     normalization: selector.fragments[0]!.normalization,
+    exposure: EXPOSURE,
   });
 }
 
@@ -233,24 +202,4 @@ function decodeSource(
   } catch {
     return report.unresolved(request, "parse_error");
   }
-}
-
-function resolvedText(
-  request: EvidenceSelectionRequest,
-  selectedText: string,
-  outcome: TextOutcome,
-): EvidenceSelection {
-  const selectedContent = encodeUtf8(selectedText);
-  return {
-    resolution: report.report(request, {
-      status: "resolved",
-      occurrenceCount: 1,
-      selectedContentDigest: sha256Digest(selectedContent),
-      selectedValue: selectedText,
-      ...outcome,
-    }),
-    selectedContent,
-    selectedText,
-    selectedValue: selectedText,
-  };
 }
