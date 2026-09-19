@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveExample, selectorExamples } from "./selectors.js";
+import { resolveExample, selectorExamples } from "./02-resolve-selectors.js";
 
 describe("runnable selector capability examples", () => {
   it.each(selectorExamples)(

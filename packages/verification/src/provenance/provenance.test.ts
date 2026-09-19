@@ -18,165 +18,16 @@ import {
   sealAuditBundle,
   verificationManifestDigest,
 } from "./seal.js";
+import { auditBundleFixture, policyBytes } from "./audit-bundle.fixture.js";
 import { replayAuditBundle } from "./replay.js";
 import type { VerificationAuditBundle } from "./model.js";
 
-const createdAt = "2026-09-05T02:00:00.000Z";
-const policyBytes = new TextEncoder().encode(
-  '{"policy":"pass mechanically valid fixtures","version":"verification-policy-0.1.0"}',
-);
-
-function policyHandle(tenantId: string): VerificationArtifactHandle {
-  const digest = sha256Digest(policyBytes);
-  return {
-    artifactId: "44444444-4444-4444-8444-444444444444",
-    tenantId,
-    digest,
-    mediaType: "application/json",
-    byteLength: policyBytes.byteLength,
-    objectKey: `${tenantId}/${digest.slice(7, 9)}/${digest.slice(7)}`,
-    createdAt,
-    producerActivityId: "policy-publisher",
-    producerVersion: "1",
-    encryptionClass: "managed",
-    retentionClass: "audit",
-    dataClassification: "internal",
-    parentArtifactIds: [],
-  };
-}
-
-function fixture(judged = false) {
-  const deterministicInput = prototypeClaimInput();
-  const deterministicResult = verifyDeterministicBundle(deterministicInput);
-  const sourceHandle = deterministicInput.bundle.captures[0]!.contentArtifact;
-  const policyArtifact = policyHandle(sourceHandle.tenantId);
-  const recordedPolicyInputsBytes = new TextEncoder().encode(
-    JSON.stringify({
-      schemaVersion: "verification-policy-inputs.v1",
-      policyVersion: deterministicInput.bundle.policyVersion,
-      runId: "run-1",
-      recordedAt: createdAt,
-      deterministicResult,
-      assertions: [
-        {
-          assertionId: "claim-1",
-          riskClass: "medium",
-          downstreamUse: ["semantic_verification"],
-          claimScope: "source_summary",
-          semantic: {
-            assertionId: "claim-1",
-            verdict: judged ? "directly_supported" : "pending_semantic_review",
-            disposition: judged ? "admit" : "review",
-            evidenceSupport: judged ? "satisfied" : "not_assessed",
-            worldCorrectness: "not_assessed",
-            attributionFaithfulness: "not_assessed",
-            sourceAuthority: "not_assessed",
-            provenanceIntegrity: "satisfied",
-            judgeIdentities: [],
-            supportingFragmentIds: ["fragment-evidence-1"],
-            contradictingFragmentIds: [],
-            unsupportedFacets: [],
-            reasonCodes: [],
-            crossFamilySecondJudge: false,
-            rawProviderConfidences: [],
-          },
-          authorityStatus: "unknown",
-          independentCorroboration: false,
-          conflictPresent: false,
-          criticalFactsKnown: true,
-        },
-      ],
-      metrics: [],
-      sourceAssessments: [],
-    }),
-  );
-  const recordedPolicyInputsDigest = sha256Digest(recordedPolicyInputsBytes);
-  const recordedPolicyInputsArtifact: VerificationArtifactHandle = {
-    ...policyArtifact,
-    artifactId: "55555555-5555-4555-8555-555555555555",
-    digest: recordedPolicyInputsDigest,
-    byteLength: recordedPolicyInputsBytes.byteLength,
-    objectKey: `${sourceHandle.tenantId}/${recordedPolicyInputsDigest.slice(7, 9)}/${recordedPolicyInputsDigest.slice(7)}`,
-    producerActivityId: "verification-policy-input-recorder",
-  };
-  const policyDecision = {
-    outcome: "pass",
-    tokenUsage: 34,
-    inputTokens: 21,
-    outputTokens: 13,
-  };
-  const manifest: VerificationRunManifest = {
-    verificationContractVersion: "verification.v1",
-    manifestId: "manifest-1",
-    runId: "run-1",
-    versions: {
-      policy: deterministicInput.bundle.policyVersion,
-      schema: "verification.v1",
-      normalizer: "text.v1",
-    },
-    code: { gitSha: "fixture-sha", dirty: false },
-    runtime: {
-      platform: "test",
-      deploymentId: deterministicInput.bundle.verifier.deploymentId,
-    },
-    provider: {
-      endpointIdentity: "fixture-provider",
-      model: "fixture-model",
-      nativeConfiguration: {
-        tokenUsage: 34,
-        inputTokens: 21,
-        outputTokens: 13,
-      },
-      pricingSnapshotArtifactId: policyArtifact.artifactId,
-    },
-    inputArtifacts: [
-      sourceHandle,
-      policyArtifact,
-      recordedPolicyInputsArtifact,
-    ],
-    outputArtifacts: [],
-    stages: [
-      {
-        name: "deterministic",
-        status: "succeeded",
-        startedAt: createdAt,
-        endedAt: createdAt,
-      },
-    ],
-    calls: [],
-    toolPolicy: [],
-    networkPolicy: "disabled",
-    deterministicResult,
-    judgments: [],
-    policyOutcome: "pass",
-    resultDigest: digestCanonicalJson(deterministicResult),
-    lineage: [],
-    canonicalization: {
-      algorithm: "RFC8785",
-      implementationVersion: "knowledge-verification.v1",
-      manifestDigest: sha256Digest(""),
-    },
-    startedAt: createdAt,
-    completedAt: createdAt,
-  };
-  manifest.canonicalization.manifestDigest =
-    verificationManifestDigest(manifest);
-  return {
-    deterministicInput,
-    deterministicResult,
-    sourceHandle,
-    policyArtifact,
-    recordedPolicyInputsArtifact,
-    recordedPolicyInputsBytes,
-    policyDecision,
-    manifest,
-  };
-}
-
 async function sealedFixture(
   judged = false,
-): Promise<ReturnType<typeof fixture> & { audit: VerificationAuditBundle }> {
-  const value = fixture(judged);
+): Promise<
+  ReturnType<typeof auditBundleFixture> & { audit: VerificationAuditBundle }
+> {
+  const value = auditBundleFixture({ judged });
   const audit = await sealAuditBundle({
     tenantId: value.sourceHandle.tenantId,
     verificationBundle: value.deterministicInput.bundle,
@@ -268,7 +119,7 @@ describe("audit bundle sealing and replay", () => {
       "access_token",
       "Authorization",
     ]) {
-      const value = fixture();
+      const value = auditBundleFixture();
       value.manifest.provider!.nativeConfiguration = {
         inputTokens: 4,
         outputTokens: 2,
@@ -295,7 +146,7 @@ describe("audit bundle sealing and replay", () => {
   });
 
   it("detects complete handle substitution and cycles in both lineage representations", async () => {
-    const value = fixture();
+    const value = auditBundleFixture();
     const signature = sha256Digest("cycle-transform");
     value.sourceHandle.parentArtifactIds = [value.policyArtifact.artifactId];
     value.sourceHandle.transformationSignature = signature;
@@ -432,7 +283,7 @@ describe("audit bundle sealing and replay", () => {
   });
 
   it("verifies signed bundles and detects signed payload tampering", async () => {
-    const value = fixture();
+    const value = auditBundleFixture();
     const { privateKey, publicKey } = generateKeyPairSync("ed25519");
     const privatePem = privateKey
       .export({ type: "pkcs8", format: "pem" })
@@ -471,7 +322,7 @@ describe("recorded policy input coverage", () => {
   it.each(["duplicate-assertion", "semantic-assertion", "duplicate-metric"])(
     "rejects %s even with valid artifact hashes",
     (kind) => {
-      const value = fixture(),
+      const value = auditBundleFixture(),
         bundle = structuredClone(value.deterministicInput.bundle),
         body = JSON.parse(
           new TextDecoder().decode(value.recordedPolicyInputsBytes),
