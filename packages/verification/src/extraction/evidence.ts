@@ -6,13 +6,13 @@ import {
   EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
   EXTRACTION_FIELD_FRAGMENT_SCHEMA_VERSION,
 } from "../versions.js";
-import {
-  type CrossFieldTotalRule,
-  type ExtractionFieldRule,
-  type ExtractionFieldVerificationInput,
-  type ExtractionFieldVerificationResult,
-  verifyExtractionFieldsWithAcceptedSelections,
-} from "./verification.js";
+import type {
+  CrossFieldTotalRule,
+  ExtractionFieldRule,
+  ExtractionFieldVerificationInput,
+  ExtractionFieldVerificationResult,
+} from "./field-rules.js";
+import { verifyExtractionFieldsWithAcceptedSelections } from "./field-verification.js";
 
 export type ExtractionEvidenceJsonScalar = string | number | boolean | null;
 export type ExtractionNormalizationOperation =

@@ -1,6 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { isPlainRecord } from "../internal/guards.js";
-import type { ExtractionFieldRule } from "./verification.js";
+import type { ExtractionFieldRule } from "./field-rules.js";
 
 /** Shared scalar selection; malformed declared components never fall back to raw bytes. */
 export function sourceComponentValue(

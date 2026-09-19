@@ -66,11 +66,18 @@ export interface AdmittedExtractionSchema {
   readonly canonicalSchema: unknown;
 }
 
-export interface ExtractionSchemaAdmission {
-  readonly admitted: boolean;
-  readonly checks: readonly ExtractionSchemaCheck[];
-  readonly schema?: AdmittedExtractionSchema;
-}
+/** Admission either yields a frozen schema handle or only the rejecting checks; the runtime shape is unchanged. */
+export type ExtractionSchemaAdmission =
+  | {
+      readonly admitted: true;
+      readonly checks: readonly ExtractionSchemaCheck[];
+      readonly schema: AdmittedExtractionSchema;
+    }
+  | {
+      readonly admitted: false;
+      readonly checks: readonly ExtractionSchemaCheck[];
+      readonly schema?: undefined;
+    };
 
 export interface ExtractionSchemaCheck {
   readonly code: string;
@@ -146,7 +153,8 @@ const jsonScalar = (value: unknown): value is JsonScalar =>
 const nonNegativeInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 
-function boundedText(value: unknown, field: string): string | undefined {
+/** A trimmed, control-character-free identifier of at most 255 characters. */
+function boundedText(value: unknown): string | undefined {
   if (typeof value !== "string" || value.length === 0 || value.length > 255)
     return undefined;
   if (value !== value.trim() || /[\u0000-\u001f]/u.test(value))
@@ -242,14 +250,40 @@ function rejectInapplicableKeywords(
   return valid;
 }
 
+/** Mutable admission-wide budget and check list shared by one `admitExtractionSchema` call. */
+interface SchemaParseContext {
+  readonly state: { properties: number; enumValues: number };
+  readonly limits: ExtractionSchemaAdmissionLimits;
+  readonly checks: ExtractionSchemaCheck[];
+}
+
+interface SchemaLocation {
+  readonly path: string;
+  readonly depth: number;
+}
+
+const MAX_DESCRIPTION_LENGTH = 1_024;
+const MAX_PROPERTY_NAME_LENGTH = 255;
+const MAX_ARRAY_ITEMS = 10_000;
+const MAX_STRING_LENGTH_BOUND = 16_384;
+
+const isBoundedDescription = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value.trim().length > 0 &&
+  value.length <= MAX_DESCRIPTION_LENGTH;
+
+/**
+ * Parses one schema node. Every check is recorded even after the node is known
+ * to be invalid, so an author sees all problems; a node is admitted only when
+ * the whole admission so far has produced no checks.
+ */
 function parseNode(
   schema: unknown,
-  path: string,
-  depth: number,
-  state: { properties: number; enumValues: number },
-  limits: ExtractionSchemaAdmissionLimits,
-  checks: ExtractionSchemaCheck[],
+  location: SchemaLocation,
+  context: SchemaParseContext,
 ): SchemaNode | undefined {
+  const { path, depth } = location;
+  const { checks, limits } = context;
   if (!isPlainObject(schema)) {
     checks.push({
       code: "SCHEMA_NODE_INVALID",
@@ -265,12 +299,8 @@ function parseNode(
     return undefined;
   }
   const keywordsValid = rejectUnknownKeywords(schema, path, checks);
-  const description = schema.description;
-  if (
-    typeof description !== "string" ||
-    description.trim().length === 0 ||
-    description.length > 1_024
-  )
+  const descriptionValid = isBoundedDescription(schema.description);
+  if (!descriptionValid)
     checks.push({
       code: "SCHEMA_DESCRIPTION_REQUIRED",
       detail: `${path} requires a bounded non-empty description.`,
@@ -279,150 +309,159 @@ function parseNode(
   const typeKeywordsValid = types
     ? rejectInapplicableKeywords(schema, types, path, checks)
     : false;
+  if (!keywordsValid || !typeKeywordsValid || !types || !descriptionValid)
+    return undefined;
+  if (!types.has("object") && !types.has("array"))
+    return parseScalarNode(schema, types, path, context);
+  if (types.size !== 1) {
+    checks.push({
+      code: "SCHEMA_CONTAINER_NULL_UNSUPPORTED",
+      detail: `${path} containers cannot be nullable in the admitted subset.`,
+    });
+    return undefined;
+  }
+  return types.has("object")
+    ? parseObjectNode(schema, location, context)
+    : parseArrayNode(schema, location, context);
+}
+
+function parseObjectNode(
+  schema: Record<string, unknown>,
+  { path, depth }: SchemaLocation,
+  context: SchemaParseContext,
+): ObjectNode | undefined {
+  const { checks, limits, state } = context;
   if (
-    !keywordsValid ||
-    !typeKeywordsValid ||
-    !types ||
-    typeof description !== "string" ||
-    description.trim().length === 0 ||
-    description.length > 1_024
+    !isPlainObject(schema.properties) ||
+    !Array.isArray(schema.required) ||
+    typeof schema.additionalProperties !== "boolean"
+  ) {
+    checks.push({
+      code: "SCHEMA_OBJECT_POLICY_REQUIRED",
+      detail: `${path} must explicitly declare properties, required, and boolean additionalProperties.`,
+    });
+    return undefined;
+  }
+  const propertyNames = Object.keys(schema.properties);
+  if (
+    propertyNames.some(
+      (name) =>
+        name.length === 0 ||
+        name.length > MAX_PROPERTY_NAME_LENGTH ||
+        /[\u0000-\u001f]/u.test(name),
+    )
+  )
+    checks.push({
+      code: "SCHEMA_PROPERTY_NAME_INVALID",
+      detail: `${path} has an invalid property name.`,
+    });
+  state.properties += propertyNames.length;
+  if (state.properties > limits.maxProperties)
+    checks.push({
+      code: "SCHEMA_PROPERTY_LIMIT_EXCEEDED",
+      detail: `${path} exceeds the property limit.`,
+    });
+  const required = schema.required;
+  if (
+    required.some((item) => typeof item !== "string") ||
+    new Set(required).size !== required.length ||
+    required.some((item) => !Object.hasOwn(schema.properties as object, item))
+  )
+    checks.push({
+      code: "SCHEMA_REQUIRED_INVALID",
+      detail: `${path}.required must be unique declared property names.`,
+    });
+  const children = new Map<string, SchemaNode>();
+  for (const name of propertyNames) {
+    const child = parseNode(
+      schema.properties[name],
+      { path: `${path}/properties/${name}`, depth: depth + 1 },
+      context,
+    );
+    if (child) children.set(name, child);
+  }
+  if (
+    checks.length > 0 &&
+    (state.properties > limits.maxProperties ||
+      children.size !== propertyNames.length ||
+      (!propertyNames.length &&
+        schema.minProperties === undefined &&
+        schema.maxProperties === undefined))
   )
     return undefined;
-  if (types.has("object") || types.has("array")) {
-    if (types.size !== 1) {
+  for (const key of ["minProperties", "maxProperties"] as const)
+    if (schema[key] !== undefined && !nonNegativeInteger(schema[key]))
       checks.push({
-        code: "SCHEMA_CONTAINER_NULL_UNSUPPORTED",
-        detail: `${path} containers cannot be nullable in the admitted subset.`,
+        code: "SCHEMA_BOUND_INVALID",
+        detail: `${path}.${key} must be a non-negative safe integer.`,
       });
-      return undefined;
-    }
-    if (types.has("object")) {
-      if (
-        !isPlainObject(schema.properties) ||
-        !Array.isArray(schema.required) ||
-        typeof schema.additionalProperties !== "boolean"
-      ) {
-        checks.push({
-          code: "SCHEMA_OBJECT_POLICY_REQUIRED",
-          detail: `${path} must explicitly declare properties, required, and boolean additionalProperties.`,
-        });
-        return undefined;
+  if (
+    typeof schema.minProperties === "number" &&
+    typeof schema.maxProperties === "number" &&
+    schema.minProperties > schema.maxProperties
+  )
+    checks.push({
+      code: "SCHEMA_BOUND_INVALID",
+      detail: `${path} property bounds are reversed.`,
+    });
+  return checks.length === 0
+    ? {
+        kind: "object",
+        properties: children,
+        required: new Set(required as string[]),
+        additionalProperties: schema.additionalProperties,
+        ...(schema.minProperties === undefined
+          ? {}
+          : { minProperties: schema.minProperties as number }),
+        ...(schema.maxProperties === undefined
+          ? {}
+          : { maxProperties: schema.maxProperties as number }),
       }
-      const propertyNames = Object.keys(schema.properties);
-      if (
-        propertyNames.some(
-          (name) =>
-            name.length === 0 ||
-            name.length > 255 ||
-            /[\u0000-\u001f]/u.test(name),
-        )
-      )
-        checks.push({
-          code: "SCHEMA_PROPERTY_NAME_INVALID",
-          detail: `${path} has an invalid property name.`,
-        });
-      state.properties += propertyNames.length;
-      if (state.properties > limits.maxProperties)
-        checks.push({
-          code: "SCHEMA_PROPERTY_LIMIT_EXCEEDED",
-          detail: `${path} exceeds the property limit.`,
-        });
-      const required = schema.required;
-      if (
-        required.some((item) => typeof item !== "string") ||
-        new Set(required).size !== required.length ||
-        required.some(
-          (item) => !Object.hasOwn(schema.properties as object, item),
-        )
-      )
-        checks.push({
-          code: "SCHEMA_REQUIRED_INVALID",
-          detail: `${path}.required must be unique declared property names.`,
-        });
-      const children = new Map<string, SchemaNode>();
-      for (const name of propertyNames) {
-        const child = parseNode(
-          schema.properties[name],
-          `${path}/properties/${name}`,
-          depth + 1,
-          state,
-          limits,
-          checks,
-        );
-        if (child) children.set(name, child);
-      }
-      if (
-        checks.length > 0 &&
-        (state.properties > limits.maxProperties ||
-          children.size !== propertyNames.length ||
-          (!propertyNames.length &&
-            schema.minProperties === undefined &&
-            schema.maxProperties === undefined))
-      )
-        return undefined;
-      for (const key of ["minProperties", "maxProperties"] as const)
-        if (schema[key] !== undefined && !nonNegativeInteger(schema[key]))
-          checks.push({
-            code: "SCHEMA_BOUND_INVALID",
-            detail: `${path}.${key} must be a non-negative safe integer.`,
-          });
-      if (
-        typeof schema.minProperties === "number" &&
-        typeof schema.maxProperties === "number" &&
-        schema.minProperties > schema.maxProperties
-      )
-        checks.push({
-          code: "SCHEMA_BOUND_INVALID",
-          detail: `${path} property bounds are reversed.`,
-        });
-      return checks.length === 0
-        ? {
-            kind: "object",
-            properties: children,
-            required: new Set(required as string[]),
-            additionalProperties: schema.additionalProperties,
-            ...(schema.minProperties === undefined
-              ? {}
-              : { minProperties: schema.minProperties as number }),
-            ...(schema.maxProperties === undefined
-              ? {}
-              : { maxProperties: schema.maxProperties as number }),
-          }
-        : undefined;
-    }
-    if (
-      schema.items === undefined ||
-      !nonNegativeInteger(schema.maxItems) ||
-      (schema.minItems !== undefined && !nonNegativeInteger(schema.minItems)) ||
-      (typeof schema.minItems === "number" &&
-        schema.minItems > schema.maxItems) ||
-      schema.maxItems > 10_000
-    ) {
-      checks.push({
-        code: "SCHEMA_ARRAY_BOUND_REQUIRED",
-        detail: `${path} requires bounded items and maxItems no greater than 10000.`,
-      });
-      return undefined;
-    }
-    const items = parseNode(
-      schema.items,
-      `${path}/items`,
-      depth + 1,
-      state,
-      limits,
-      checks,
-    );
-    return items && checks.length === 0
-      ? {
-          kind: "array",
-          items,
-          ...(schema.minItems === undefined
-            ? {}
-            : { minItems: schema.minItems }),
-          maxItems: schema.maxItems,
-        }
-      : undefined;
+    : undefined;
+}
+
+function parseArrayNode(
+  schema: Record<string, unknown>,
+  { path, depth }: SchemaLocation,
+  context: SchemaParseContext,
+): ArrayNode | undefined {
+  const { checks } = context;
+  if (
+    schema.items === undefined ||
+    !nonNegativeInteger(schema.maxItems) ||
+    (schema.minItems !== undefined && !nonNegativeInteger(schema.minItems)) ||
+    (typeof schema.minItems === "number" &&
+      schema.minItems > schema.maxItems) ||
+    schema.maxItems > MAX_ARRAY_ITEMS
+  ) {
+    checks.push({
+      code: "SCHEMA_ARRAY_BOUND_REQUIRED",
+      detail: `${path} requires bounded items and maxItems no greater than 10000.`,
+    });
+    return undefined;
   }
+  const items = parseNode(
+    schema.items,
+    { path: `${path}/items`, depth: depth + 1 },
+    context,
+  );
+  return items && checks.length === 0
+    ? {
+        kind: "array",
+        items,
+        ...(schema.minItems === undefined ? {} : { minItems: schema.minItems }),
+        maxItems: schema.maxItems,
+      }
+    : undefined;
+}
+
+function parseScalarNode(
+  schema: Record<string, unknown>,
+  types: ReadonlySet<SchemaType>,
+  path: string,
+  context: SchemaParseContext,
+): ScalarNode | undefined {
+  const { checks, limits, state } = context;
   const scalarTypes = new Set(
     [...types].filter(
       (type): type is Exclude<SchemaType, "object" | "array"> =>
@@ -458,7 +497,8 @@ function parseNode(
   for (const key of ["minLength", "maxLength"] as const)
     if (
       schema[key] !== undefined &&
-      (!nonNegativeInteger(schema[key]) || schema[key] > 16_384)
+      (!nonNegativeInteger(schema[key]) ||
+        schema[key] > MAX_STRING_LENGTH_BOUND)
     )
       checks.push({
         code: "SCHEMA_BOUND_INVALID",
@@ -530,8 +570,8 @@ export function admitExtractionSchema(input: {
   readonly limits?: Partial<ExtractionSchemaAdmissionLimits>;
 }): ExtractionSchemaAdmission {
   const checks: ExtractionSchemaCheck[] = [];
-  const schemaId = boundedText(input.schemaId, "schemaId");
-  const schemaVersion = boundedText(input.schemaVersion, "schemaVersion");
+  const schemaId = boundedText(input.schemaId);
+  const schemaVersion = boundedText(input.schemaVersion);
   if (!schemaId || !schemaVersion)
     checks.push({
       code: "SCHEMA_ID_VERSION_INVALID",
@@ -587,11 +627,8 @@ export function admitExtractionSchema(input: {
     checks.length === 0 && snapshot !== undefined
       ? parseNode(
           snapshot,
-          "#",
-          0,
-          { properties: 0, enumValues: 0 },
-          limits,
-          checks,
+          { path: "#", depth: 0 },
+          { state: { properties: 0, enumValues: 0 }, limits, checks },
         )
       : undefined;
   if (!root || root.kind !== "object") {
