@@ -3,42 +3,37 @@ import {
   type VerificationBenchmarkComparisonPublication,
 } from "@aiengineer/knowledge-contracts";
 import { deepFreeze } from "../internal/deep-freeze.js";
-import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
+import {
+  sealDetachedManifest,
+  verifyDetachedManifest,
+  type DetachedSealBody,
+  type DetachedSealErrorCodes,
+} from "./detached-seal.js";
 import type {
   AuditBundleSigner,
   AuditBundleSignatureVerifier,
 } from "./model.js";
 
-type Body = Omit<VerificationBenchmarkComparisonPublication, "seal">;
-function signable(manifest: VerificationBenchmarkComparisonPublication): Body {
-  const { seal: _seal, ...body } = manifest;
-  return body;
-}
-export async function sealVerificationBenchmarkComparisonPublication(
-  body: Body,
+const codes: DetachedSealErrorCodes = {
+  digestMismatch: "BENCHMARK_COMPARISON_PUBLICATION_DIGEST_MISMATCH",
+  signatureRequired: "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_REQUIRED",
+  verifierRequired:
+    "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_VERIFIER_REQUIRED",
+  signatureInvalid: "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_INVALID",
+};
+
+/** Comparison publications are always signed; there is no unsigned form. */
+export function sealVerificationBenchmarkComparisonPublication(
+  body: DetachedSealBody<VerificationBenchmarkComparisonPublication>,
   signer: AuditBundleSigner,
 ): Promise<VerificationBenchmarkComparisonPublication> {
-  const parsed = VerificationBenchmarkComparisonPublicationSchema.parse({
-    ...body,
-    seal: { payloadDigest: `sha256:${"0".repeat(64)}` },
-  });
-  const payload = deepFreeze(signable(parsed)),
-    bytes = new TextEncoder().encode(canonicalizeJson(payload));
-  const seal = {
-    payloadDigest: digestCanonicalJson(payload),
-    signature: {
-      algorithm: signer.algorithm,
-      keyId: signer.keyId,
-      signatureBase64: await signer.sign(bytes),
-    },
-  };
-  return deepFreeze(
-    VerificationBenchmarkComparisonPublicationSchema.parse({
-      ...payload,
-      seal,
-    }),
+  return sealDetachedManifest(
+    VerificationBenchmarkComparisonPublicationSchema,
+    body,
+    signer,
   );
 }
+
 export async function verifyVerificationBenchmarkComparisonPublication(
   value: unknown,
   verifier: AuditBundleSignatureVerifier,
@@ -46,24 +41,10 @@ export async function verifyVerificationBenchmarkComparisonPublication(
   readonly manifest: VerificationBenchmarkComparisonPublication;
   readonly signatureStatus: "verified";
 }> {
-  const manifest = deepFreeze(
-      VerificationBenchmarkComparisonPublicationSchema.parse(value),
-    ),
-    payload = signable(manifest);
-  if (digestCanonicalJson(payload) !== manifest.seal.payloadDigest)
-    throw new Error("BENCHMARK_COMPARISON_PUBLICATION_DIGEST_MISMATCH");
-  const signature = manifest.seal.signature;
-  if (!signature)
-    throw new Error("BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_REQUIRED");
-  if (
-    Buffer.from(signature.signatureBase64, "base64").toString("base64") !==
-      signature.signatureBase64 ||
-    !(await verifier.verify({
-      keyId: signature.keyId,
-      payload: new TextEncoder().encode(canonicalizeJson(payload)),
-      signatureBase64: signature.signatureBase64,
-    }))
-  )
-    throw new Error("BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_INVALID");
+  const { manifest } = await verifyDetachedManifest(
+    VerificationBenchmarkComparisonPublicationSchema,
+    value,
+    { verifier, requireSignature: true, codes },
+  );
   return deepFreeze({ manifest, signatureStatus: "verified" as const });
 }

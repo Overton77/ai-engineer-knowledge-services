@@ -3,9 +3,11 @@ import {
   VerificationBundleSchema,
   VerificationArtifactHandleSchema,
   VerificationRunManifestSchema,
+  type VerificationBundle,
   type VerificationRunManifest,
 } from "@aiengineer/knowledge-contracts";
 import {
+  ZERO_SHA256_DIGEST,
   canonicalizeJson,
   digestCanonicalJson,
   isSha256Digest,
@@ -120,8 +122,18 @@ export function auditBundleSignablePayload(
   return payload;
 }
 
-function assertLineage(bundle: VerificationAuditBundle): void {
-  const handles = [
+type ArtifactHandle = VerificationRunManifest["inputArtifacts"][number];
+type LineageEdge = VerificationRunManifest["lineage"][number];
+
+/** Relations that assert a parent link, and therefore must agree with `parentArtifactIds`. */
+const DERIVATION_RELATIONS: readonly string[] = [
+  "derived_from",
+  "generated",
+  "quoted_from",
+];
+
+function lineageHandles(bundle: VerificationAuditBundle): ArtifactHandle[] {
+  return [
     ...bundle.manifest.inputArtifacts,
     ...bundle.manifest.outputArtifacts,
     bundle.policyBinding.policyArtifact,
@@ -133,7 +145,14 @@ function assertLineage(bundle: VerificationAuditBundle): void {
         : []),
     ]),
   ];
-  const byId = new Map<string, (typeof handles)[number]>();
+}
+
+/** Same id must mean the same handle everywhere, and every handle belongs to the bundle tenant. */
+function indexHandles(
+  handles: readonly ArtifactHandle[],
+  tenantId: string,
+): Map<string, ArtifactHandle> {
+  const byId = new Map<string, ArtifactHandle>();
   for (const handle of handles) {
     const existing = byId.get(handle.artifactId);
     if (
@@ -142,10 +161,19 @@ function assertLineage(bundle: VerificationAuditBundle): void {
     )
       throw new Error("ARTIFACT_IDENTITY_COLLISION");
     byId.set(handle.artifactId, handle);
-    if (handle.tenantId !== bundle.tenantId)
+    if (handle.tenantId !== tenantId)
       throw new Error(`ARTIFACT_TENANT_MISMATCH:${handle.artifactId}`);
   }
-  for (const handle of handles) {
+  return byId;
+}
+
+/** Every declared parent exists, is signed for, and is backed by a derivation edge. */
+function assertParentsDeclared(
+  handles: readonly ArtifactHandle[],
+  byId: ReadonlyMap<string, ArtifactHandle>,
+  lineage: readonly LineageEdge[],
+): void {
+  for (const handle of handles)
     for (const parentId of handle.parentArtifactIds) {
       if (!byId.has(parentId))
         throw new Error(
@@ -155,47 +183,48 @@ function assertLineage(bundle: VerificationAuditBundle): void {
         throw new Error(
           `LINEAGE_TRANSFORMATION_SIGNATURE_MISSING:${handle.artifactId}`,
         );
-      if (
-        !bundle.manifest.lineage.some(
-          (edge) =>
-            edge.fromArtifactId === handle.artifactId &&
-            edge.toArtifactId === parentId &&
-            ["derived_from", "generated", "quoted_from"].includes(
-              edge.relation,
-            ),
-        )
-      ) {
+      const backed = lineage.some(
+        (edge) =>
+          edge.fromArtifactId === handle.artifactId &&
+          edge.toArtifactId === parentId &&
+          DERIVATION_RELATIONS.includes(edge.relation),
+      );
+      if (!backed)
         throw new Error(
           `LINEAGE_EDGE_MISSING:${handle.artifactId}:${parentId}`,
         );
-      }
     }
-  }
-  for (const edge of bundle.manifest.lineage) {
-    if (!byId.has(edge.fromArtifactId) || !byId.has(edge.toArtifactId))
+}
+
+/** Every edge joins known handles, and derivation edges are mirrored by a parent declaration. */
+function assertEdgesDeclared(
+  lineage: readonly LineageEdge[],
+  byId: ReadonlyMap<string, ArtifactHandle>,
+): void {
+  for (const edge of lineage) {
+    const from = byId.get(edge.fromArtifactId);
+    if (!from || !byId.has(edge.toArtifactId))
       throw new Error(`LINEAGE_ENDPOINT_MISSING:${edge.edgeId}`);
     if (
-      ["derived_from", "generated", "quoted_from"].includes(edge.relation) &&
-      !byId
-        .get(edge.fromArtifactId)!
-        .parentArtifactIds.includes(edge.toArtifactId)
-    ) {
+      DERIVATION_RELATIONS.includes(edge.relation) &&
+      !from.parentArtifactIds.includes(edge.toArtifactId)
+    )
       throw new Error(`LINEAGE_PARENT_DECLARATION_MISSING:${edge.edgeId}`);
-    }
   }
+}
+
+function assertAcyclic(
+  handles: readonly ArtifactHandle[],
+  lineage: readonly LineageEdge[],
+  byId: ReadonlyMap<string, ArtifactHandle>,
+): void {
   const children = new Map<string, string[]>();
+  const link = (from: string, to: string) =>
+    children.set(from, [...(children.get(from) ?? []), to]);
   for (const handle of handles)
-    for (const parentId of handle.parentArtifactIds) {
-      children.set(handle.artifactId, [
-        ...(children.get(handle.artifactId) ?? []),
-        parentId,
-      ]);
-    }
-  for (const edge of bundle.manifest.lineage)
-    children.set(edge.fromArtifactId, [
-      ...(children.get(edge.fromArtifactId) ?? []),
-      edge.toArtifactId,
-    ]);
+    for (const parentId of handle.parentArtifactIds)
+      link(handle.artifactId, parentId);
+  for (const edge of lineage) link(edge.fromArtifactId, edge.toArtifactId);
   const visiting = new Set<string>();
   const visited = new Set<string>();
   const visit = (id: string): void => {
@@ -207,6 +236,15 @@ function assertLineage(bundle: VerificationAuditBundle): void {
     visited.add(id);
   };
   for (const id of byId.keys()) visit(id);
+}
+
+function assertLineage(bundle: VerificationAuditBundle): void {
+  const handles = lineageHandles(bundle);
+  const byId = indexHandles(handles, bundle.tenantId);
+  const { lineage } = bundle.manifest;
+  assertParentsDeclared(handles, byId, lineage);
+  assertEdgesDeclared(lineage, byId);
+  assertAcyclic(handles, lineage, byId);
 }
 
 function assertExactKeys(
@@ -260,37 +298,40 @@ function assertAuditEnvelope(bundle: VerificationAuditBundle): void {
     !isSha256Digest(bundle.seal.payloadDigest)
   )
     throw new Error("AUDIT_BUNDLE_DIGEST_INVALID");
+  assertPolicyBindingConsistent(
+    bundle.verificationBundle,
+    bundle.manifest,
+    bundle.policyBinding,
+  );
+}
+
+/**
+ * One policy version across bundle, manifest and binding; both policy
+ * artifacts present in the manifest under distinct identities.
+ */
+function assertPolicyBindingConsistent(
+  bundle: Pick<VerificationBundle, "policyVersion">,
+  manifest: VerificationRunManifest,
+  binding: VerificationPolicyBinding,
+): void {
   if (
-    bundle.verificationBundle.policyVersion !==
-      bundle.policyBinding.policyVersion ||
-    bundle.manifest.versions.policy !== bundle.policyBinding.policyVersion
+    bundle.policyVersion !== binding.policyVersion ||
+    manifest.versions.policy !== binding.policyVersion
   )
     throw new Error("POLICY_VERSION_BINDING_MISMATCH");
-  if (
-    ![
-      ...bundle.manifest.inputArtifacts,
-      ...bundle.manifest.outputArtifacts,
-    ].some(
+  const declared = [...manifest.inputArtifacts, ...manifest.outputArtifacts];
+  const declares = (handle: ArtifactHandle) =>
+    declared.some(
       (artifact) =>
-        digestCanonicalJson(artifact) ===
-        digestCanonicalJson(bundle.policyBinding.policyArtifact),
-    )
-  )
+        digestCanonicalJson(artifact) === digestCanonicalJson(handle),
+    );
+  if (!declares(binding.policyArtifact))
     throw new Error("POLICY_ARTIFACT_NOT_IN_MANIFEST");
-  if (
-    ![
-      ...bundle.manifest.inputArtifacts,
-      ...bundle.manifest.outputArtifacts,
-    ].some(
-      (artifact) =>
-        digestCanonicalJson(artifact) ===
-        digestCanonicalJson(bundle.policyBinding.recordedPolicyInputsArtifact),
-    )
-  )
+  if (!declares(binding.recordedPolicyInputsArtifact))
     throw new Error("POLICY_INPUTS_ARTIFACT_NOT_IN_MANIFEST");
   if (
-    bundle.policyBinding.policyArtifact.artifactId ===
-    bundle.policyBinding.recordedPolicyInputsArtifact.artifactId
+    binding.policyArtifact.artifactId ===
+    binding.recordedPolicyInputsArtifact.artifactId
   )
     throw new Error("POLICY_ARTIFACT_ROLES_NOT_DISTINCT");
 }
@@ -322,35 +363,7 @@ export async function sealAuditBundle(input: {
     ["policyVersion", "policyArtifact", "recordedPolicyInputsArtifact"],
     "POLICY_BINDING_FIELDS_INVALID",
   );
-  if (
-    verificationBundle.policyVersion !== policyBinding.policyVersion ||
-    manifest.versions.policy !== policyBinding.policyVersion
-  ) {
-    throw new Error("POLICY_VERSION_BINDING_MISMATCH");
-  }
-  if (
-    ![...manifest.inputArtifacts, ...manifest.outputArtifacts].some(
-      (artifact) =>
-        digestCanonicalJson(artifact) ===
-        digestCanonicalJson(policyBinding.policyArtifact),
-    )
-  ) {
-    throw new Error("POLICY_ARTIFACT_NOT_IN_MANIFEST");
-  }
-  if (
-    ![...manifest.inputArtifacts, ...manifest.outputArtifacts].some(
-      (artifact) =>
-        digestCanonicalJson(artifact) ===
-        digestCanonicalJson(policyBinding.recordedPolicyInputsArtifact),
-    )
-  ) {
-    throw new Error("POLICY_INPUTS_ARTIFACT_NOT_IN_MANIFEST");
-  }
-  if (
-    policyBinding.policyArtifact.artifactId ===
-    policyBinding.recordedPolicyInputsArtifact.artifactId
-  )
-    throw new Error("POLICY_ARTIFACT_ROLES_NOT_DISTINCT");
+  assertPolicyBindingConsistent(verificationBundle, manifest, policyBinding);
   if (
     verificationManifestDigest(manifest) !==
     manifest.canonicalization.manifestDigest
@@ -390,7 +403,7 @@ export async function sealAuditBundle(input: {
   assertPublicValue(unsigned);
   const candidate = {
     ...unsigned,
-    seal: { payloadDigest: "sha256:" + "0".repeat(64) } as DetachedAuditSeal,
+    seal: { payloadDigest: ZERO_SHA256_DIGEST } as DetachedAuditSeal,
   };
   assertLineage(candidate);
   const payload = new TextEncoder().encode(
@@ -415,10 +428,8 @@ export async function inspectAuditBundle(
   verifier?: AuditBundleSignatureVerifier,
 ): Promise<AuditBundleInspection> {
   const errors: string[] = [];
-  let manifestDigest: `sha256:${string}` = ("sha256:" +
-    "0".repeat(64)) as `sha256:${string}`;
-  let payloadDigest: `sha256:${string}` = ("sha256:" +
-    "0".repeat(64)) as `sha256:${string}`;
+  let manifestDigest: `sha256:${string}` = ZERO_SHA256_DIGEST;
+  let payloadDigest: `sha256:${string}` = ZERO_SHA256_DIGEST;
   try {
     assertAuditEnvelope(bundle);
     VerificationBundleSchema.parse(bundle.verificationBundle);
@@ -444,7 +455,72 @@ export async function inspectAuditBundle(
       error instanceof Error ? error.message : "INVALID_AUDIT_BUNDLE",
     );
   }
-  let signatureStatus: AuditBundleInspection["signatureStatus"] = "unsigned";
+  const seal = await inspectSeal(bundle, verifier);
+  for (const code of seal.errors) if (!errors.includes(code)) errors.push(code);
+  return {
+    valid: errors.length === 0,
+    payloadDigest,
+    manifestDigest,
+    signatureStatus: seal.signatureStatus,
+    errors,
+  };
+}
+
+interface SealInspection {
+  readonly signatureStatus: AuditBundleInspection["signatureStatus"];
+  readonly errors: readonly string[];
+}
+
+const sealInspection = (
+  signatureStatus: SealInspection["signatureStatus"],
+  ...errors: string[]
+): SealInspection => ({ signatureStatus, errors });
+
+const BASE64 =
+  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const ED25519_SIGNATURE_BYTES = 64;
+
+interface SignedSeal extends DetachedAuditSeal {
+  readonly keyId: string;
+  readonly signatureBase64: string;
+}
+
+const isSignedSeal = (seal: DetachedAuditSeal): seal is SignedSeal =>
+  seal.signatureAlgorithm === "Ed25519" &&
+  Boolean(seal.keyId) &&
+  Boolean(seal.signatureBase64);
+
+const isPartiallySigned = (seal: DetachedAuditSeal): boolean =>
+  Boolean(seal.signatureAlgorithm || seal.keyId || seal.signatureBase64);
+
+const isWellFormedSignature = (signatureBase64: string): boolean =>
+  BASE64.test(signatureBase64) &&
+  Buffer.from(signatureBase64, "base64").byteLength === ED25519_SIGNATURE_BYTES;
+
+/** A verifier that throws is treated as a failed verification, never as a crash. */
+async function verifySealSignature(
+  bundle: VerificationAuditBundle,
+  seal: SignedSeal,
+  verifier: AuditBundleSignatureVerifier,
+): Promise<boolean> {
+  try {
+    return await verifier.verify({
+      keyId: seal.keyId,
+      payload: new TextEncoder().encode(
+        canonicalizeJson(auditBundleSignablePayload(bundle)),
+      ),
+      signatureBase64: seal.signatureBase64,
+    });
+  } catch {
+    return false;
+  }
+}
+
+/** Unsigned seals are valid; partially signed or malformed ones are not. */
+async function inspectSeal(
+  bundle: VerificationAuditBundle,
+  verifier: AuditBundleSignatureVerifier | undefined,
+): Promise<SealInspection> {
   try {
     const seal =
       bundle !== null &&
@@ -453,63 +529,20 @@ export async function inspectAuditBundle(
       typeof bundle.seal === "object"
         ? bundle.seal
         : undefined;
-    if (!seal) {
-      signatureStatus = "invalid";
-      if (!errors.includes("AUDIT_SEAL_FIELDS_INVALID"))
-        errors.push("AUDIT_SEAL_FIELDS_INVALID");
-    } else {
-      const signed =
-        seal.signatureAlgorithm === "Ed25519" &&
-        seal.keyId &&
-        seal.signatureBase64;
-      if (signed) {
-        if (
-          !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-            seal.signatureBase64!,
-          ) ||
-          Buffer.from(seal.signatureBase64!, "base64").byteLength !== 64
-        ) {
-          signatureStatus = "invalid";
-          errors.push("AUDIT_BUNDLE_SIGNATURE_INVALID");
-        } else if (!verifier) signatureStatus = "unverified";
-        else {
-          const payload = new TextEncoder().encode(
-            canonicalizeJson(auditBundleSignablePayload(bundle)),
-          );
-          try {
-            signatureStatus = (await verifier.verify({
-              keyId: seal.keyId!,
-              payload,
-              signatureBase64: seal.signatureBase64!,
-            }))
-              ? "verified"
-              : "invalid";
-          } catch {
-            signatureStatus = "invalid";
-          }
-          if (signatureStatus === "invalid")
-            errors.push("AUDIT_BUNDLE_SIGNATURE_INVALID");
-        }
-      } else if (
-        seal.signatureAlgorithm ||
-        seal.keyId ||
-        seal.signatureBase64
-      ) {
-        signatureStatus = "invalid";
-        errors.push("AUDIT_BUNDLE_SIGNATURE_INCOMPLETE");
-      }
-    }
+    if (!seal) return sealInspection("invalid", "AUDIT_SEAL_FIELDS_INVALID");
+    if (!isSignedSeal(seal))
+      return isPartiallySigned(seal)
+        ? sealInspection("invalid", "AUDIT_BUNDLE_SIGNATURE_INCOMPLETE")
+        : sealInspection("unsigned");
+    if (!isWellFormedSignature(seal.signatureBase64))
+      return sealInspection("invalid", "AUDIT_BUNDLE_SIGNATURE_INVALID");
+    if (!verifier) return sealInspection("unverified");
+    return (await verifySealSignature(bundle, seal, verifier))
+      ? sealInspection("verified")
+      : sealInspection("invalid", "AUDIT_BUNDLE_SIGNATURE_INVALID");
   } catch {
-    signatureStatus = "invalid";
-    errors.push("AUDIT_BUNDLE_SIGNATURE_INVALID");
+    return sealInspection("invalid", "AUDIT_BUNDLE_SIGNATURE_INVALID");
   }
-  return {
-    valid: errors.length === 0,
-    payloadDigest,
-    manifestDigest,
-    signatureStatus,
-    errors,
-  };
 }
 
 export function createEd25519Signer(
