@@ -20,7 +20,7 @@ import type { EvidenceSelectorResolver } from "../evidence-selection/index.js";
 import {
   applyReportWideMechanicalGates,
   verifyReportWideFromLedger,
-} from "../claims/report.js";
+} from "../report/report-wide.js";
 import { inspectAuditBundle } from "./seal.js";
 import type {
   AuditBundleSignatureVerifier,

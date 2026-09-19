@@ -7,7 +7,7 @@ export * from "./prototype-bundle-compat.js";
 export * from "./evidence-selection/index.js";
 export * from "./extraction/index.js";
 export * from "./provenance/index.js";
-export * from "./claims/index.js";
+export * from "./report/index.js";
 export * from "./authority/index.js";
 export * from "./semantic/index.js";
 export * from "./providers/index.js";
