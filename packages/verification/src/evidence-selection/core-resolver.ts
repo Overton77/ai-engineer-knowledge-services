@@ -2,7 +2,7 @@ import type {
   ResolvedSelector,
   VerificationSelector,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { evaluateJsonPointer } from "./json-pointer.js";
 import {
   evidenceSelectionReporter,
@@ -16,9 +16,7 @@ import {
 } from "./text-normalization.js";
 import { resolveTextOffsetRange } from "./text-offsets.js";
 import { decodeUtf8, encodeUtf8 } from "./utf8.js";
-
-export const CORE_RESOLVER_VERSION = "verification-core.v1";
-// TODO ! Turn this into an environment variable.
+import { CORE_RESOLVER_VERSION } from "../versions.js";
 
 const report = evidenceSelectionReporter(CORE_RESOLVER_VERSION);
 
@@ -33,7 +31,6 @@ type TextOutcome = Pick<ResolvedSelector, "resolvedRanges" | "normalization">;
  * Resolves the locator kinds this package owns directly: text quotes, character positions,
  * JSON pointers, and ordered multi-fragment text. `undefined` means the kind belongs to another resolver.
  */
-// TODO: We want to add more evidence selector kinds
 export function resolveCoreEvidenceSelector(
   request: EvidenceSelectionRequest,
 ): EvidenceSelection | undefined {

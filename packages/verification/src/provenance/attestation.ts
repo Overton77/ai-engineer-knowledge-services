@@ -1,4 +1,5 @@
-import { canonicalizeJson, sha256Digest } from "../deterministic/index.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
 import { auditBundleSignablePayload, inspectAuditBundle } from "./seal.js";
 import type {
   AuditBundleSignatureVerifier,
@@ -94,15 +95,6 @@ function exactKeys(
     actual.some((key, index) => key !== expected[index])
   )
     fail(code);
-}
-
-function freeze<T>(value: T): T {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>))
-      freeze(child);
-    Object.freeze(value);
-  }
-  return value;
 }
 
 function clone<T>(value: T): T {
@@ -236,7 +228,7 @@ function statementFor(
   const decision = sha256.exec(bundle.policyDecisionDigest);
   if (!policy || !policyInputs || !manifest || !deterministic || !decision)
     fail("DSSE_AUDIT_DIGEST_INVALID");
-  return freeze<VerificationDsseSlsaStatement>({
+  return deepFreeze<VerificationDsseSlsaStatement>({
     _type: IN_TOTO_STATEMENT_TYPE,
     subject: [
       {
@@ -281,8 +273,8 @@ export async function createVerificationDsseSlsaAttestation(input: {
   readonly signer: AuditBundleSigner;
   readonly trustedBinding: VerificationDsseTrustedBinding;
 }): Promise<VerificationDsseSlsaAttestation> {
-  const bundle = freeze(clone(input.auditBundle));
-  const trustedBinding = freeze(clone(input.trustedBinding));
+  const bundle = deepFreeze(clone(input.auditBundle));
+  const trustedBinding = deepFreeze(clone(input.trustedBinding));
   const signer = {
     algorithm: input.signer.algorithm,
     keyId: input.signer.keyId,
@@ -300,12 +292,12 @@ export async function createVerificationDsseSlsaAttestation(input: {
   );
   const signature = decodeBase64(signatureBase64, 64, "DSSE_SIGNATURE_INVALID");
   if (signature.byteLength !== 64) fail("DSSE_SIGNATURE_INVALID");
-  const envelope = freeze<VerificationDsseEnvelope>({
+  const envelope = deepFreeze<VerificationDsseEnvelope>({
     payloadType: VERIFICATION_DSSE_PAYLOAD_TYPE,
     payload: Buffer.from(payload).toString("base64"),
     signatures: [{ keyid: signer.keyId, sig: signatureBase64 }],
   });
-  return freeze({
+  return deepFreeze({
     envelope,
     statement,
     subjectDigest: bundle.seal.payloadDigest,
@@ -385,7 +377,7 @@ function parseEnvelope(value: unknown): {
   const signature = decodeBase64(sig, 64, "DSSE_SIGNATURE_INVALID");
   if (signature.byteLength !== 64) fail("DSSE_SIGNATURE_INVALID");
   return {
-    envelope: freeze({
+    envelope: deepFreeze({
       payloadType: VERIFICATION_DSSE_PAYLOAD_TYPE,
       payload: envelope.payload as string,
       signatures: [{ keyid, sig: sig as string }],
@@ -427,9 +419,9 @@ export async function inspectVerificationDsseSlsaAttestation(input: {
   readonly expectedBinding: VerificationDsseTrustedBinding;
 }): Promise<VerificationDsseSlsaInspection> {
   try {
-    const bundle = freeze(clone(input.auditBundle));
+    const bundle = deepFreeze(clone(input.auditBundle));
     const envelopeInput = clone(input.envelope);
-    const expectedBinding = freeze(clone(input.expectedBinding));
+    const expectedBinding = deepFreeze(clone(input.expectedBinding));
     await assertVerifiedAudit(bundle, input.auditBundleVerifier);
     const parsed = parseEnvelope(envelopeInput);
     const keyId = parsed.envelope.signatures[0].keyid;
@@ -452,7 +444,7 @@ export async function inspectVerificationDsseSlsaAttestation(input: {
       fail("DSSE_PAYLOAD_JSON_INVALID");
     }
     const statement = assertStatement(value, bundle, expectedBinding);
-    return freeze({
+    return deepFreeze({
       verified: true,
       payloadType: parsed.envelope.payloadType,
       predicateType: statement.predicateType,
@@ -465,6 +457,6 @@ export async function inspectVerificationDsseSlsaAttestation(input: {
       error instanceof Error && /^DSSE_[A-Z0-9_]{1,100}$/.test(error.message)
         ? error.message
         : "DSSE_INSPECTION_INVALID";
-    return freeze({ verified: false, reason });
+    return deepFreeze({ verified: false, reason });
   }
 }

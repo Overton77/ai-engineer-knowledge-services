@@ -1,6 +1,7 @@
 import { gatewaySemanticConfigurationDigest } from "./gateway.js";
 import { providerDigest, type JsonSchema } from "./bounds.js";
 import { INTERFAZE_MODEL, interfazeConfigurationDigest } from "./interfaze.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
 
 export type ProviderPromotionState =
   "lab" | "offline" | "shadow" | "admitted" | "suspended" | "retired";
@@ -28,19 +29,11 @@ export interface ProviderRegistration {
   readonly configurationDigest: `sha256:${string}`;
 }
 
-const freeze = <T>(value: T): Readonly<T> => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>))
-      freeze(child);
-    Object.freeze(value);
-  }
-  return value as Readonly<T>;
-};
 const testedLab = (
   capability: string,
   modality: "text" | "image" | "audio",
 ): ProviderModalityRegistration =>
-  freeze({
+  deepFreeze({
     capability,
     modality,
     promotionState: "lab",
@@ -54,7 +47,7 @@ const lab = (
   capability: string,
   modality: "text" | "image" | "audio",
 ): ProviderModalityRegistration =>
-  freeze({
+  deepFreeze({
     capability,
     modality,
     promotionState: "lab",
@@ -66,7 +59,7 @@ const lab = (
     ],
   });
 
-export const providerRegistry: readonly ProviderRegistration[] = freeze([
+export const providerRegistry: readonly ProviderRegistration[] = deepFreeze([
   {
     providerId: "gateway-structured-extraction.v1",
     provider: "vercel-ai-gateway",

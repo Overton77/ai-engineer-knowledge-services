@@ -1,8 +1,11 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
+import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
 import {
-  canonicalizeJson,
-  digestCanonicalJson,
-} from "../deterministic/canonical.js";
+  CROSS_FIELD_TOTAL_SCHEMA_VERSION,
+  EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
+  EXTRACTION_FIELD_FRAGMENT_SCHEMA_VERSION,
+} from "../versions.js";
 import {
   type CrossFieldTotalRule,
   type ExtractionFieldRule,
@@ -49,7 +52,7 @@ export interface AcceptedExtractionLeaf {
   };
   /** Declared deterministic replay metadata. This does not claim that source evidence generated the value. */
   readonly computation?: {
-    readonly schemaVersion: "verification-cross-field-total.v1";
+    readonly schemaVersion: typeof CROSS_FIELD_TOTAL_SCHEMA_VERSION;
     readonly operation: CrossFieldTotalRule["operation"];
     readonly operandPaths: readonly string[];
     readonly tolerance: string;
@@ -57,7 +60,7 @@ export interface AcceptedExtractionLeaf {
 }
 /** Core evidence only. Persistence requires the admission layer's registered parser lineage. */
 export interface ExtractionFieldEvidenceResult extends ExtractionFieldVerificationResult {
-  readonly schemaVersion: "verification-extraction-field-evidence.v1";
+  readonly schemaVersion: typeof EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION;
   readonly acceptedLeaves: readonly AcceptedExtractionLeaf[];
 }
 
@@ -85,28 +88,20 @@ function operation(
   if (rule.comparison === "identifier") return "identifier_format";
   return "checksum";
 }
-function freeze<T>(value: T): T {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const item of Object.values(value as Record<string, unknown>))
-      freeze(item);
-    Object.freeze(value);
-  }
-  return value;
-}
 function copiedChecks(result: ExtractionFieldVerificationResult) {
-  return result.checks.map((item) => freeze({ ...item }));
+  return result.checks.map((item) => deepFreeze({ ...item }));
 }
 function failed(
   result: ExtractionFieldVerificationResult,
   code: string,
 ): ExtractionFieldEvidenceResult {
-  return freeze({
-    schemaVersion: "verification-extraction-field-evidence.v1" as const,
+  return deepFreeze({
+    schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
     valid: false,
     candidateValid: result.candidateValid,
     checks: [
       ...copiedChecks(result),
-      freeze({
+      deepFreeze({
         code,
         path: "",
         status: "failed" as const,
@@ -128,8 +123,8 @@ export function verifyExtractionFieldsWithEvidence(
   const { result, selections } =
     verifyExtractionFieldsWithAcceptedSelections(input);
   if (!result.valid)
-    return freeze({
-      schemaVersion: "verification-extraction-field-evidence.v1" as const,
+    return deepFreeze({
+      schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
       valid: false,
       candidateValid: result.candidateValid,
       checks: copiedChecks(result),
@@ -161,7 +156,7 @@ export function verifyExtractionFieldsWithEvidence(
             operation: operation(rule, input),
           };
     const fragmentDigest = digestCanonicalJson({
-      schemaVersion: "verification-extraction-field-fragment.v1",
+      schemaVersion: EXTRACTION_FIELD_FRAGMENT_SCHEMA_VERSION,
       captureId: edge.captureId,
       representationArtifactId: edge.representationArtifactId,
       representationDigest: edge.representationDigest,
@@ -170,12 +165,12 @@ export function verifyExtractionFieldsWithEvidence(
     });
     const total = totals.get(path);
     leaves.push(
-      freeze({
+      deepFreeze({
         path,
         value: selected.value,
         rawValue: selected.rawValue,
         derivation,
-        source: freeze({
+        source: deepFreeze({
           captureId: edge.captureId,
           representationArtifactId: edge.representationArtifactId,
           representationDigest: edge.representationDigest,
@@ -186,8 +181,8 @@ export function verifyExtractionFieldsWithEvidence(
         }),
         ...(total
           ? {
-              computation: freeze({
-                schemaVersion: "verification-cross-field-total.v1" as const,
+              computation: deepFreeze({
+                schemaVersion: CROSS_FIELD_TOTAL_SCHEMA_VERSION,
                 operation: total.operation,
                 operandPaths: [...total.operandPaths],
                 tolerance: total.tolerance ?? "0",
@@ -202,8 +197,8 @@ export function verifyExtractionFieldsWithEvidence(
     selectedByPath.size !== input.fields.length
   )
     return failed(result, "ACCEPTED_LEAF_INPUT_MISSING");
-  return freeze({
-    schemaVersion: "verification-extraction-field-evidence.v1" as const,
+  return deepFreeze({
+    schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
     valid: true,
     candidateValid: true,
     checks: copiedChecks(result),

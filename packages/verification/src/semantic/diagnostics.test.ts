@@ -6,7 +6,7 @@ import {
   evaluateDecompositionProposal,
 } from "../claims/decomposition.js";
 import { verifyReportWide } from "../claims/report.js";
-import { sha256Digest } from "../deterministic/index.js";
+import { sha256Digest } from "../canonical/index.js";
 import { summarizeAttributionPerturbations } from "./attribution.js";
 import { proposeUncitedEvidenceRescue } from "./rescue.js";
 

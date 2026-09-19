@@ -2,11 +2,8 @@ import {
   VerificationBenchmarkComparisonPublicationSchema,
   type VerificationBenchmarkComparisonPublication,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-} from "../deterministic/index.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
+import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
 import type {
   AuditBundleSigner,
   AuditBundleSignatureVerifier,

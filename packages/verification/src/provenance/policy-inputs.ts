@@ -6,7 +6,7 @@ import {
   type VerificationBundle,
   type VerificationRecordedPolicyInputs,
 } from "@aiengineer/knowledge-contracts";
-import { digestCanonicalJson, sha256Digest } from "../deterministic/index.js";
+import { digestCanonicalJson, sha256Digest } from "../canonical/index.js";
 
 export function validateRecordedPolicyInputsArtifact(input: {
   readonly handle: VerificationArtifactHandle;

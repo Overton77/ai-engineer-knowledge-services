@@ -8,8 +8,10 @@ import {
 import {
   canonicalizeJson,
   digestCanonicalJson,
+  isSha256Digest,
   sha256Digest,
-} from "../deterministic/index.js";
+} from "../canonical/index.js";
+import { VERIFICATION_CONTRACT_VERSION } from "../versions.js";
 import type {
   AuditBundleInspection,
   AuditBundleSignatureVerifier,
@@ -250,12 +252,12 @@ function assertAuditEnvelope(bundle: VerificationAuditBundle): void {
     ...(bundle.seal.signatureBase64 === undefined ? [] : ["signatureBase64"]),
   ];
   assertExactKeys(bundle.seal, sealKeys, "AUDIT_SEAL_FIELDS_INVALID");
-  if (bundle.verificationContractVersion !== "verification.v1")
+  if (bundle.verificationContractVersion !== VERIFICATION_CONTRACT_VERSION)
     throw new Error("AUDIT_BUNDLE_VERSION_INVALID");
   if (
-    !/^sha256:[a-f0-9]{64}$/.test(bundle.deterministicResultDigest) ||
-    !/^sha256:[a-f0-9]{64}$/.test(bundle.policyDecisionDigest) ||
-    !/^sha256:[a-f0-9]{64}$/.test(bundle.seal.payloadDigest)
+    !isSha256Digest(bundle.deterministicResultDigest) ||
+    !isSha256Digest(bundle.policyDecisionDigest) ||
+    !isSha256Digest(bundle.seal.payloadDigest)
   )
     throw new Error("AUDIT_BUNDLE_DIGEST_INVALID");
   if (
@@ -367,7 +369,7 @@ export async function sealAuditBundle(input: {
   );
   const policyDecisionDigest = digestCanonicalJson(input.policyDecision);
   const unsigned = {
-    verificationContractVersion: "verification.v1" as const,
+    verificationContractVersion: VERIFICATION_CONTRACT_VERSION,
     tenantId: input.tenantId,
     verificationBundle,
     manifest,

@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  digestCanonicalJson,
-  sha256Digest,
-  verifyDeterministicBundle,
-} from "../deterministic/index.js";
+import { digestCanonicalJson, sha256Digest } from "../canonical/index.js";
+import { verifyDeterministicBundle } from "../deterministic/index.js";
 import { prototypeClaimInput } from "../deterministic/testing/prototype-parity.fixture.js";
 import {
   authorizeSemanticCase,

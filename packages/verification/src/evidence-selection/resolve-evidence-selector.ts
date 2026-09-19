@@ -2,11 +2,9 @@ import {
   canonicalizeJson,
   digestCanonicalJson,
   sha256Digest,
-} from "../deterministic/canonical.js";
-import {
-  CORE_RESOLVER_VERSION,
-  resolveCoreEvidenceSelector,
-} from "./core-resolver.js";
+} from "../canonical/index.js";
+import { CORE_RESOLVER_VERSION } from "../versions.js";
+import { resolveCoreEvidenceSelector } from "./core-resolver.js";
 import {
   evidenceSelectionReporter,
   type EvidenceSelection,

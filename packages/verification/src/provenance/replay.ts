@@ -9,10 +9,13 @@ import {
   canonicalizeJson,
   digestCanonicalJson,
   sha256Digest,
+} from "../canonical/index.js";
+import {
   verifyDeterministicBundle,
   type DeterministicVerificationOptions,
   type RuntimePrincipalBinding,
 } from "../deterministic/index.js";
+import { REPORT_RESULT_SCHEMA_VERSION } from "../versions.js";
 import type { EvidenceSelectorResolver } from "../evidence-selection/index.js";
 import {
   applyReportWideMechanicalGates,
@@ -201,7 +204,7 @@ async function replayReportGate(
     reportWide,
   );
   const expectedGate = VerificationReportGateArtifactSchema.parse({
-    schemaVersion: "verification-report-result.v1",
+    schemaVersion: REPORT_RESULT_SCHEMA_VERSION,
     coverageScope: "producer_declared_assertions_only",
     deterministicResultDigest: digestCanonicalJson(deterministicResult),
     reportWide,

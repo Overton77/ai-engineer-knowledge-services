@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 const compareUtf16 = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
 
@@ -44,28 +42,4 @@ export function canonicalizeJson(value: unknown): string {
       .join(",")}}`;
   }
   throw new TypeError(`canonical JSON cannot encode ${typeof value}`);
-}
-
-export function sha256Digest(value: string | Uint8Array): `sha256:${string}` {
-  const hash = createHash("sha256");
-  if (typeof value === "string") hash.update(value, "utf8");
-  else hash.update(value);
-  return `sha256:${hash.digest("hex")}`;
-}
-
-export function digestCanonicalJson(value: unknown): `sha256:${string}` {
-  return sha256Digest(canonicalizeJson(value));
-}
-
-/** Compatibility boundary for the prototype's unprefixed digest representation. */
-export function fromPrototypeSha256(value: string): `sha256:${string}` {
-  if (!/^[a-f0-9]{64}$/.test(value))
-    throw new TypeError(
-      "prototype SHA-256 must be 64 lowercase hexadecimal characters",
-    );
-  return `sha256:${value}`;
-}
-
-export function toPrototypeSha256(value: `sha256:${string}`): string {
-  return value.slice("sha256:".length);
 }

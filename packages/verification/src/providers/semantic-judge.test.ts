@@ -3,7 +3,7 @@ import {
   RecordedSemanticJudgeAdapter,
   ThreeWayNliSemanticJudgeAdapter,
 } from "./semantic-judge.js";
-import { digestCanonicalJson } from "../deterministic/index.js";
+import { digestCanonicalJson } from "../canonical/index.js";
 
 const digest = ("sha256:" + "a".repeat(64)) as `sha256:${string}`;
 const output = {

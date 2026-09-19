@@ -1,12 +1,10 @@
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-} from "../deterministic/index.js";
+import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
 import {
   admitExtractionSchema,
   validateExtractionCandidate,
   type AdmittedExtractionSchema,
 } from "../extraction/index.js";
+import { walkBoundedJson } from "../internal/bounded-json.js";
 
 export type JsonObject = Readonly<Record<string, unknown>>;
 export type JsonSchema = Readonly<Record<string, unknown>>;
@@ -70,6 +68,10 @@ export function boundedJsonBytes(
   return bytes;
 }
 
+const utf8ByteLength = (value: string): number =>
+  encoder.encode(value).byteLength;
+
+/** Strings and keys are measured in UTF-8 bytes; only the aggregate string budget is a size failure. */
 export function preflightJson(
   value: unknown,
   limits: {
@@ -79,54 +81,20 @@ export function preflightJson(
     readonly maximumStringBytes: number;
   },
 ): void {
-  const stack: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
-  const seen = new Set<object>();
-  let nodes = 0;
-  let strings = 0;
-  while (stack.length) {
-    const current = stack.pop()!;
-    nodes += 1;
-    if (nodes > limits.maximumNodes || current.depth > limits.maximumDepth)
-      throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-    if (typeof current.value === "string") {
-      strings += encoder.encode(current.value).byteLength;
-      if (strings > limits.maximumStringBytes)
-        throw new ProviderFailure("PROVIDER_RESPONSE_TOO_LARGE", false);
-      continue;
-    }
-    if (current.value === null || typeof current.value === "boolean") continue;
-    if (typeof current.value === "number") {
-      if (!Number.isFinite(current.value))
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      continue;
-    }
-    if (typeof current.value !== "object" || seen.has(current.value))
-      throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-    seen.add(current.value);
-    if (Array.isArray(current.value)) {
-      if (current.value.length > limits.maximumCollection)
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      for (const child of current.value)
-        stack.push({ value: child, depth: current.depth + 1 });
-    } else {
-      const entries = Object.entries(current.value);
-      if (entries.length > limits.maximumCollection)
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      for (const [key, child] of entries) {
-        strings += encoder.encode(key).byteLength;
-        if (strings > limits.maximumStringBytes)
-          throw new ProviderFailure("PROVIDER_RESPONSE_TOO_LARGE", false);
-        stack.push({ value: child, depth: current.depth + 1 });
-      }
-    }
-  }
-}
-
-function object(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function integer(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value);
+  const violation = walkBoundedJson(value, {
+    limits: { ...limits, maximumStringBudget: limits.maximumStringBytes },
+    measure: { string: utf8ByteLength, key: utf8ByteLength },
+    rejectNonFiniteNumbers: true,
+    rejectNonJsonValues: true,
+    plainObjectsOnly: false,
+  });
+  if (!violation) return;
+  throw new ProviderFailure(
+    violation.kind === "string_budget"
+      ? "PROVIDER_RESPONSE_TOO_LARGE"
+      : "PROVIDER_RESPONSE_INVALID",
+    false,
+  );
 }
 
 /** Reuses the reviewed extraction schema gate; provider adapters never maintain a second grammar. */

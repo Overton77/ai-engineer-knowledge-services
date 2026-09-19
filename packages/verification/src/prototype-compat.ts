@@ -1,5 +1,5 @@
 import { resolveEvidenceSelector } from "./evidence-selection/index.js";
-import { sha256Digest, toPrototypeSha256 } from "./deterministic/canonical.js";
+import { sha256Digest, toPrototypeSha256 } from "./canonical/index.js";
 
 /**
  * Compatibility contract for the pre-KS verification prototype.

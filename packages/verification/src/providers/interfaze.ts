@@ -12,7 +12,7 @@ import {
   validateOutputAgainstSchema,
 } from "./bounds.js";
 import type { AdmittedExtractionSchema } from "../extraction/index.js";
-import { createHash } from "node:crypto";
+import { sha256Digest } from "../canonical/index.js";
 
 export const INTERFAZE_ENDPOINT =
   "https://api.interfaze.ai/v1/chat/completions";
@@ -412,19 +412,16 @@ export class InterfazeStructuredExtractionProvider {
         precontext: context.map((entry) =>
           Object.freeze({
             name: entry.name,
-            resultDigest: `sha256:${createHash("sha256")
-              .update(
-                entry.result === undefined
-                  ? "undefined"
-                  : JSON.stringify(entry.result),
-              )
-              .digest("hex")}` as `sha256:${string}`,
+            resultDigest: sha256Digest(
+              entry.result === undefined
+                ? "undefined"
+                : JSON.stringify(entry.result),
+            ),
           }),
         ),
         call: Object.freeze({
           requestDigest,
-          rawResponseDigest:
-            `sha256:${createHash("sha256").update(raw.bytes).digest("hex")}` as `sha256:${string}`,
+          rawResponseDigest: sha256Digest(raw.bytes),
           precontextDigest: providerDigest(context),
           ...(typeof payload.id === "string" && payload.id.length <= 256
             ? { providerResponseId: payload.id }

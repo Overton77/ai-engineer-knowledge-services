@@ -2,7 +2,7 @@ import type {
   ResolvedSelector,
   VerificationSelector,
 } from "@aiengineer/knowledge-contracts";
-import { digestCanonicalJson } from "../deterministic/canonical.js";
+import { digestCanonicalJson } from "../canonical/index.js";
 
 /**
  * Bytes the caller already holds, the capture they belong to, and the locator to apply to them.

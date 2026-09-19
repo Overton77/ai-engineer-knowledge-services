@@ -1,7 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
+import { isPlainRecord } from "../internal/guards.js";
 import type { ExtractionFieldRule } from "./verification.js";
-const record = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
 
 /** Shared scalar selection; malformed declared components never fall back to raw bytes. */
 export function sourceComponentValue(
@@ -13,7 +12,7 @@ export function sourceComponentValue(
   if (rule.sourceComponent === "table_cell_value") {
     if (
       selector.kind !== "table" ||
-      !record(selectedValue) ||
+      !isPlainRecord(selectedValue) ||
       typeof selectedValue.value !== "string"
     )
       return {
@@ -29,7 +28,7 @@ export function sourceComponentValue(
   if (
     selector.kind !== expectedKind ||
     (rule.sourceJoiner !== "space" && rule.sourceJoiner !== "none") ||
-    !record(selectedValue)
+    !isPlainRecord(selectedValue)
   )
     return {
       detail: `${rule.sourceComponent} requires its matching selector and explicit sourceJoiner.`,
@@ -41,7 +40,7 @@ export function sourceComponentValue(
   if (
     !Array.isArray(items) ||
     items.length === 0 ||
-    items.some((item) => !record(item) || typeof item.text !== "string")
+    items.some((item) => !isPlainRecord(item) || typeof item.text !== "string")
   )
     return {
       detail: `${rule.sourceComponent} requires ordered source tokens/segments with text.`,

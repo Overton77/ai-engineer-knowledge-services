@@ -1,4 +1,8 @@
-import { createHash } from "node:crypto";
+import {
+  SEMANTIC_JUDGE_SCHEMA_VERSION,
+  SEMANTIC_RESPONSE_OBSERVATION_SCHEMA_VERSION,
+} from "../versions.js";
+import { isSha256Digest, sha256Digest } from "../canonical/index.js";
 import type {
   SemanticJudgeAdapter,
   SemanticJudgeExecution,
@@ -45,7 +49,7 @@ const semanticOutputSchema = {
   properties: {
     schemaVersion: {
       ...string("Schema version.", 64),
-      enum: ["verification-semantic-judge.v1"],
+      enum: [SEMANTIC_JUDGE_SCHEMA_VERSION],
     },
     assertionId: string("Authorized assertion identity.", 160),
     verdict: {
@@ -205,10 +209,6 @@ function usage(payload: GatewayPayload) {
   });
 }
 
-function rawDigest(bytes: Uint8Array): `sha256:${string}` {
-  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-}
-
 export function prepareGatewaySemanticRequest(
   input: Parameters<SemanticJudgeAdapter["judge"]>[0],
   model: string,
@@ -349,7 +349,7 @@ export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
       );
       return await interpretCapturedGatewaySemanticResponse({
         rawResponseBytes,
-        rawResponseDigest: rawDigest(rawResponseBytes),
+        rawResponseDigest: sha256Digest(rawResponseBytes),
         httpStatus: response.status,
         requestDigest,
         identity: this.identity,
@@ -405,10 +405,10 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
     !Number.isInteger(httpStatus) ||
     httpStatus < 100 ||
     httpStatus > 599 ||
-    !/^sha256:[a-f0-9]{64}$/u.test(requestDigest) ||
+    !isSha256Digest(requestDigest) ||
     (inputArtifactDigest !== undefined &&
-      !/^sha256:[a-f0-9]{64}$/u.test(inputArtifactDigest)) ||
-    rawDigest(bytes) !== rawResponseDigest
+      !isSha256Digest(inputArtifactDigest)) ||
+    sha256Digest(bytes) !== rawResponseDigest
   )
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   if (httpStatus < 200 || httpStatus >= 300)
@@ -434,7 +434,7 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
     try {
       await recordObservation(
         Object.freeze({
-          schemaVersion: "verification-semantic-response-observation.v1",
+          schemaVersion: SEMANTIC_RESPONSE_OBSERVATION_SCHEMA_VERSION,
           requestDigest,
           rawResponseDigest,
           ...(inputArtifactDigest ? { inputArtifactDigest } : {}),
@@ -472,7 +472,7 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
 }
 
 export interface GatewaySemanticResponseObservation {
-  readonly schemaVersion: "verification-semantic-response-observation.v1";
+  readonly schemaVersion: typeof SEMANTIC_RESPONSE_OBSERVATION_SCHEMA_VERSION;
   readonly requestDigest: `sha256:${string}`;
   readonly rawResponseDigest: `sha256:${string}`;
   readonly inputArtifactDigest?: `sha256:${string}`;
@@ -613,7 +613,7 @@ export class GatewayStructuredExtractionProvider {
       return Object.freeze({
         output: output as Record<string, unknown>,
         requestDigest,
-        rawResponseDigest: rawDigest(rawResponseBytes),
+        rawResponseDigest: sha256Digest(rawResponseBytes),
         ...(typeof payload.id === "string"
           ? { providerResponseId: payload.id }
           : {}),

@@ -4,12 +4,16 @@ export type JsonPointerLookup =
 const POINTER_SYNTAX = /^(?:\/(?:[^~/]|~[01])*)*$/;
 const ARRAY_INDEX = /^(?:0|[1-9]\d*)$/;
 
+export function isJsonPointerSyntax(pointer: string): boolean {
+  return POINTER_SYNTAX.test(pointer);
+}
+
 /** RFC 6901 lookup. Malformed pointers and missing paths are both "not found"; the pointer is a locator, not a query. */
 export function evaluateJsonPointer(
   pointer: string,
   document: unknown,
 ): JsonPointerLookup {
-  if (!POINTER_SYNTAX.test(pointer)) return { found: false };
+  if (!isJsonPointerSyntax(pointer)) return { found: false };
   if (pointer === "") return { found: true, value: document };
   let current = document;
   for (const token of pointer.slice(1).split("/").map(unescapeToken)) {

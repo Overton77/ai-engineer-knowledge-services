@@ -8,7 +8,7 @@ import {
   type ExtractionEvidence,
   type ExtractionFieldRule,
 } from "./index.js";
-import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { ProjectionSelectorResolver } from "../evidence-selection/index.js";
 
 const encoder = new TextEncoder();

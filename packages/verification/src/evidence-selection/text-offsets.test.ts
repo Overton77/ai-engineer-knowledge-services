@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 

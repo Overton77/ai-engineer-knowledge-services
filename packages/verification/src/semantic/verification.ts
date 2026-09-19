@@ -13,7 +13,10 @@ import {
   canonicalizeJson,
   digestCanonicalJson,
   sha256Digest,
-} from "../deterministic/index.js";
+} from "../canonical/index.js";
+import { walkBoundedJson } from "../internal/bounded-json.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
+import { SEMANTIC_RUBRIC_VERSION } from "../versions.js";
 
 const MAX_FRAGMENTS = 16;
 const MAX_FRAGMENT_CHARS = 16_000;
@@ -59,7 +62,7 @@ export interface SemanticJudgeAdapter {
   readonly toolCatalog?: readonly [];
   judge(
     input: {
-      readonly rubricVersion: "evidence-only.v1";
+      readonly rubricVersion: typeof SEMANTIC_RUBRIC_VERSION;
       /** Digest of the blinded, authorized input envelope. */
       readonly inputArtifactDigest?: `sha256:${string}`;
       readonly assertionId: string;
@@ -183,7 +186,7 @@ export function authorizeSemanticCase(
     assertionId,
     proposition: assertion.proposition,
     ...(assertion.value !== undefined
-      ? { value: freezeValue(structuredClone(assertion.value)) }
+      ? { value: deepFreeze(structuredClone(assertion.value)) }
       : {}),
     qualifiers: Object.freeze([...assertion.qualifiers]),
     entityBindings: Object.freeze(
@@ -496,41 +499,34 @@ function assertExecutionActive(execution: SemanticJudgeExecution): void {
   }
 }
 
+const JUDGE_OUTPUT_LIMITS = {
+  maximumNodes: 256,
+  maximumDepth: 8,
+  maximumCollection: 64,
+  maximumObjectEntries: 32,
+  maximumStringBudget: 16_000,
+  maximumKeyLength: 160,
+} as const;
+const characterLength = (value: string): number => value.length;
+
+/** Judge output is measured in UTF-16 units; numbers and non-JSON values are left to schema validation. */
 function preflightJudgeOutput(root: unknown): void {
-  const stack: { value: unknown; depth: number }[] = [
-    { value: root, depth: 0 },
-  ];
-  const seen = new Set<object>();
-  let nodes = 0;
-  let characters = 0;
-  while (stack.length > 0) {
-    const { value, depth } = stack.pop()!;
-    nodes += 1;
-    if (nodes > 256 || depth > 8)
+  const violation = walkBoundedJson(root, {
+    limits: JUDGE_OUTPUT_LIMITS,
+    measure: { string: characterLength, key: characterLength },
+    rejectNonFiniteNumbers: false,
+    rejectNonJsonValues: false,
+    plainObjectsOnly: false,
+  });
+  if (!violation) return;
+  switch (violation.kind) {
+    case "aliased_node":
+      throw new Error("JUDGE_OUTPUT_NOT_SERIALIZABLE");
+    case "string_budget":
+    case "key_length":
+      throw new Error("JUDGE_OUTPUT_CAPACITY_EXCEEDED");
+    default:
       throw new Error("JUDGE_OUTPUT_STRUCTURE_EXCEEDED");
-    if (typeof value === "string") {
-      characters += value.length;
-      if (characters > 16_000)
-        throw new Error("JUDGE_OUTPUT_CAPACITY_EXCEEDED");
-    } else if (value !== null && typeof value === "object") {
-      if (seen.has(value)) throw new Error("JUDGE_OUTPUT_NOT_SERIALIZABLE");
-      seen.add(value);
-      if (Array.isArray(value)) {
-        if (value.length > 64)
-          throw new Error("JUDGE_OUTPUT_STRUCTURE_EXCEEDED");
-        for (const item of value) stack.push({ value: item, depth: depth + 1 });
-      } else {
-        const entries = Object.entries(value);
-        if (entries.length > 32)
-          throw new Error("JUDGE_OUTPUT_STRUCTURE_EXCEEDED");
-        for (const [key, item] of entries) {
-          characters += key.length;
-          if (key.length > 160 || characters > 16_000)
-            throw new Error("JUDGE_OUTPUT_CAPACITY_EXCEEDED");
-          stack.push({ value: item, depth: depth + 1 });
-        }
-      }
-    }
   }
 }
 
@@ -616,7 +612,7 @@ export function semanticJudgeInput(semanticCase: AuthorizedSemanticCase) {
   if (!authorizedSemanticCases.has(semanticCase))
     throw new Error("SEMANTIC_CASE_NOT_AUTHORIZED");
   return {
-    rubricVersion: "evidence-only.v1" as const,
+    rubricVersion: SEMANTIC_RUBRIC_VERSION,
     assertionId: semanticCase.assertionId,
     proposition: semanticCase.proposition,
     ...(semanticCase.value !== undefined
@@ -631,12 +627,4 @@ export function semanticJudgeInput(semanticCase: AuthorizedSemanticCase) {
       exactText,
     })),
   };
-}
-
-function freezeValue<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
-    for (const child of Object.values(value)) freezeValue(child);
-    Object.freeze(value);
-  }
-  return value;
 }

@@ -1,4 +1,5 @@
-import { canonicalizeJson } from "../deterministic/canonical.js";
+import { canonicalizeJson, isSha256Digest } from "../canonical/index.js";
+import { isSafeRepositoryPath } from "./repository-path.js";
 
 /**
  * Selector-only projection input. Admission, raw parsing, sandboxing, and
@@ -135,8 +136,7 @@ const positive = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
 const nonNegative = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
-const digest = (value: unknown): value is `sha256:${string}` =>
-  string(value) && /^sha256:[a-f0-9]{64}$/.test(value);
+const digest = isSha256Digest;
 const fail = (message: string): never => {
   throw new Error(`PROJECTION_INVALID:${message}`);
 };
@@ -578,13 +578,6 @@ function parseTranscript(input: UnknownRecord): TranscriptProjection {
   return { kind: "transcript", durationMs: input.durationMs, segments };
 }
 
-function safePath(path: string): boolean {
-  return (
-    /^(?!\/)(?!.*\\)(?!.*\0)(?!.*(?:^|\/)\.?(?:\/|$))[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(
-      path,
-    ) && !path.split("/").some((part) => part === "." || part === "..")
-  );
-}
 function parseRepository(input: UnknownRecord): RepositoryProjection {
   if (
     Object.keys(input).some(
@@ -606,7 +599,7 @@ function parseRepository(input: UnknownRecord): RepositoryProjection {
     if (
       !isRecord(item) ||
       !boundedString(item.path, "REPOSITORY_PATH") ||
-      !safePath(item.path) ||
+      !isSafeRepositoryPath(item.path) ||
       !boundedString(item.content, "REPOSITORY_CONTENT")
     )
       fail("REPOSITORY_FILE");

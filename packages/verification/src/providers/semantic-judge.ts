@@ -7,6 +7,8 @@ import {
   type SemanticJudgeIdentity,
   type SemanticJudgeOutput,
 } from "@aiengineer/knowledge-contracts";
+import { deepFreeze } from "../internal/deep-freeze.js";
+import { SEMANTIC_JUDGE_SCHEMA_VERSION } from "../versions.js";
 
 /** Offline recorded fixture adapter. It never reads files, calls a network, or exposes tools. */
 export class RecordedSemanticJudgeAdapter implements SemanticJudgeAdapter {
@@ -21,18 +23,10 @@ export class RecordedSemanticJudgeAdapter implements SemanticJudgeAdapter {
     readonly maximumInputCharacters?: number;
   }) {
     this.identity = Object.freeze({ ...config.identity });
-    const frozen = (value: unknown): unknown => {
-      if (value && typeof value === "object" && !Object.isFrozen(value)) {
-        for (const child of Object.values(value as Record<string, unknown>))
-          frozen(child);
-        Object.freeze(value);
-      }
-      return value;
-    };
     this.#outputs = new Map(
       [...config.outputs].map(([key, value]) => [
         key,
-        frozen(structuredClone(value)) as SemanticJudgeOutput,
+        deepFreeze(structuredClone(value)),
       ]),
     );
     this.maximumInputCharacters = config.maximumInputCharacters ?? 64_000;
@@ -113,7 +107,7 @@ export class ThreeWayNliSemanticJudgeAdapter implements SemanticJudgeAdapter {
       execution,
     });
     return SemanticJudgeOutputSchema.parse({
-      schemaVersion: "verification-semantic-judge.v1",
+      schemaVersion: SEMANTIC_JUDGE_SCHEMA_VERSION,
       assertionId: input.assertionId,
       ...classified,
     });

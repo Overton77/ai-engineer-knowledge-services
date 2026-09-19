@@ -1,3 +1,4 @@
+import type { VERIFICATION_CONTRACT_VERSION } from "../versions.js";
 import type {
   DeterministicVerificationResult,
   SemanticAssessmentRecord,
@@ -22,7 +23,7 @@ export interface DetachedAuditSeal {
 }
 
 export interface VerificationAuditBundle {
-  readonly verificationContractVersion: "verification.v1";
+  readonly verificationContractVersion: typeof VERIFICATION_CONTRACT_VERSION;
   readonly tenantId: string;
   readonly verificationBundle: VerificationBundle;
   readonly manifest: VerificationRunManifest;

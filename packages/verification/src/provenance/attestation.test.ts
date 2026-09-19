@@ -8,8 +8,8 @@ import {
   canonicalizeJson,
   digestCanonicalJson,
   sha256Digest,
-  verifyDeterministicBundle,
-} from "../deterministic/index.js";
+} from "../canonical/index.js";
+import { verifyDeterministicBundle } from "../deterministic/index.js";
 import { prototypeClaimInput } from "../deterministic/testing/prototype-parity.fixture.js";
 import {
   createEd25519Signer,

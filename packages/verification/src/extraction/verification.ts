@@ -1,15 +1,19 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import {
   compareFractions,
   parseDecimal,
   replayDecimalOperation,
   withinTolerance,
-} from "../deterministic/decimal.js";
+} from "../decimal/index.js";
 import {
   resolveEvidenceSelector,
   type EvidenceSelectorResolver,
 } from "../evidence-selection/index.js";
+import {
+  evaluateJsonPointer,
+  isJsonPointerSyntax,
+} from "../evidence-selection/json-pointer.js";
 import {
   type AdmittedExtractionSchema,
   validateExtractionCandidate,
@@ -107,47 +111,21 @@ export interface ExtractionFieldVerificationInput {
 }
 
 const utf8 = new TextDecoder("utf-8", { fatal: true });
-const jsonPointerTokens = (path: string): string[] | undefined => {
-  if (path === "") return [];
-  if (!path.startsWith("/") || path.length > 4_096) return undefined;
-  let depth = 0;
-  for (let index = 0; index < path.length; index += 1) {
-    if (path[index] === "/") {
-      depth += 1;
-      if (depth > 64) return undefined;
-    }
-  }
-  const tokens: string[] = [];
-  for (const token of path.slice(1).split("/")) {
-    if (/~(?:[^01]|$)/u.test(token)) return undefined;
-    tokens.push(token.replace(/~1/gu, "/").replace(/~0/gu, "~"));
-  }
-  return tokens;
-};
+const MAX_POINTER_LENGTH = 4_096;
+const MAX_POINTER_DEPTH = 64;
+const pointerDepth = (path: string): number => path.split("/").length - 1;
+/** RFC 6901 syntax plus this verifier's work bounds on pointer length and depth. */
+const isBoundedJsonPointer = (path: string): boolean =>
+  path.length <= MAX_POINTER_LENGTH &&
+  pointerDepth(path) <= MAX_POINTER_DEPTH &&
+  isJsonPointerSyntax(path);
 const getAtPointer = (
   value: unknown,
   path: string,
-): { found: boolean; value?: unknown } => {
-  const tokens = jsonPointerTokens(path);
-  if (!tokens) return { found: false };
-  let current: unknown = value;
-  for (const token of tokens) {
-    if (Array.isArray(current)) {
-      if (!/^(0|[1-9]\d*)$/u.test(token)) return { found: false };
-      const index = Number(token);
-      if (!Number.isSafeInteger(index) || index >= current.length)
-        return { found: false };
-      current = current[index];
-    } else if (
-      current !== null &&
-      typeof current === "object" &&
-      Object.hasOwn(current, token)
-    )
-      current = (current as Record<string, unknown>)[token];
-    else return { found: false };
-  }
-  return { found: true, value: current };
-};
+): { found: boolean; value?: unknown } =>
+  isBoundedJsonPointer(path)
+    ? evaluateJsonPointer(path, value)
+    : { found: false };
 const check = (
   checks: ExtractionVerificationCheck[],
   code: string,
@@ -327,8 +305,6 @@ const MAX_DUPLICATE_KEY_PATHS = 16;
 const MAX_DUPLICATE_WORK = 100_000;
 const MAX_TOTAL_OPERANDS = 64;
 const MAX_TOTAL_OPERAND_WORK = 10_000;
-const record = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
 
 function compareValue(
   rule: ExtractionFieldRule,
@@ -612,7 +588,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
     ImmutableExtractionRepresentation
   >();
   for (const rule of input.fields) {
-    const pointer = jsonPointerTokens(rule.path);
+    const pointerValid = isBoundedJsonPointer(rule.path);
     const decimalBoundsValid =
       rule.comparison === "decimal"
         ? (rule.minimum === undefined ||
@@ -637,7 +613,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
         rule.comparison === "normalized_text") &&
       (rule.checksum === undefined || rule.comparison === "checksum");
     if (
-      !pointer ||
+      !pointerValid ||
       ruleByPath.has(rule.path) ||
       !comparisonKinds.has(rule.comparison) ||
       !boundedAllowedValues(rule.allowedValues) ||
@@ -655,7 +631,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
     else ruleByPath.set(rule.path, rule);
   }
   for (const item of input.evidence) {
-    if (!jsonPointerTokens(item.path) || evidenceByPath.has(item.path))
+    if (!isBoundedJsonPointer(item.path) || evidenceByPath.has(item.path))
       check(
         checks,
         "FIELD_EVIDENCE_INVALID",
@@ -860,7 +836,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
       !Array.isArray(array.value) ||
       rule.keyPaths.length === 0 ||
       rule.keyPaths.length > MAX_DUPLICATE_KEY_PATHS ||
-      rule.keyPaths.some((path) => jsonPointerTokens(path) === undefined)
+      rule.keyPaths.some((path) => !isBoundedJsonPointer(path))
     ) {
       check(
         checks,
@@ -917,8 +893,8 @@ export function verifyExtractionFieldsWithAcceptedSelections(
     if (
       rule.operandPaths.length === 0 ||
       rule.operandPaths.length > MAX_TOTAL_OPERANDS ||
-      rule.operandPaths.some((path) => jsonPointerTokens(path) === undefined) ||
-      jsonPointerTokens(rule.resultPath) === undefined
+      rule.operandPaths.some((path) => !isBoundedJsonPointer(path)) ||
+      !isBoundedJsonPointer(rule.resultPath)
     ) {
       check(
         checks,

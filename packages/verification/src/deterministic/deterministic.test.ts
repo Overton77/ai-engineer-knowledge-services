@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canonicalizeJson, sha256Digest } from "./canonical.js";
-import { formatRoundedDecimal, replayDecimalOperation } from "./decimal.js";
+import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
+import {
+  formatRoundedDecimal,
+  replayDecimalOperation,
+} from "../decimal/index.js";
 import {
   verifyDeterministicBundle,
   type DeterministicVerificationInput,
-} from "./engine.js";
+} from "./bundle-verification.js";
 import {
   prototypeClaimInput,
   prototypeMetricInput,

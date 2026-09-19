@@ -1,4 +1,5 @@
-import { sha256Digest } from "../deterministic/index.js";
+import { sha256Digest } from "../canonical/index.js";
+import { CLAIM_DECOMPOSITION_SCHEMA_VERSION } from "../versions.js";
 
 export const claimClassifications = [
   "externally_verifiable_fact",
@@ -23,7 +24,7 @@ export interface DecompositionSegmentProposal {
 }
 
 export interface ClaimDecompositionProposal {
-  readonly schemaVersion: "verification-claim-decomposition.v1";
+  readonly schemaVersion: typeof CLAIM_DECOMPOSITION_SCHEMA_VERSION;
   readonly annotationVersion: string;
   readonly offsetUnit: "utf16_code_unit";
   readonly reportDigest: `sha256:${string}`;
@@ -45,7 +46,7 @@ export function acceptClaimDecomposition(
 ): AcceptedClaimDecomposition {
   if (report.length > MAX_REPORT_CHARS)
     throw new Error("DECOMPOSITION_REPORT_TOO_LARGE");
-  if (proposal.schemaVersion !== "verification-claim-decomposition.v1")
+  if (proposal.schemaVersion !== CLAIM_DECOMPOSITION_SCHEMA_VERSION)
     throw new Error("DECOMPOSITION_VERSION_UNSUPPORTED");
   if (proposal.offsetUnit !== "utf16_code_unit")
     throw new Error("DECOMPOSITION_OFFSET_UNIT_INVALID");

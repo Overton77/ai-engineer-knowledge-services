@@ -1,10 +1,13 @@
+import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
+import { deepFreeze } from "../internal/deep-freeze.js";
+import { isPlainObject } from "../internal/guards.js";
 import {
-  canonicalizeJson,
-  digestCanonicalJson,
-} from "../deterministic/canonical.js";
+  walkBoundedJson,
+  type BoundedJsonViolation,
+} from "../internal/bounded-json.js";
+import { EXTRACTION_SCHEMA_GATE_VERSION } from "../versions.js";
 
-export const EXTRACTION_SCHEMA_GATE_VERSION =
-  "verification-extraction-schema.v1";
+export { EXTRACTION_SCHEMA_GATE_VERSION };
 
 export interface ExtractionSchemaAdmissionLimits {
   readonly maxSchemaBytes: number;
@@ -135,11 +138,6 @@ const numericKeywords = new Set([
 ]);
 const scalarKeywords = new Set(["type", "description", "enum", "const"]);
 const admittedNodes = new WeakMap<object, SchemaNode>();
-const plainObject = (value: unknown): value is Record<string, unknown> =>
-  value !== null &&
-  typeof value === "object" &&
-  !Array.isArray(value) &&
-  Object.getPrototypeOf(value) === Object.prototype;
 const jsonScalar = (value: unknown): value is JsonScalar =>
   value === null ||
   typeof value === "string" ||
@@ -252,7 +250,7 @@ function parseNode(
   limits: ExtractionSchemaAdmissionLimits,
   checks: ExtractionSchemaCheck[],
 ): SchemaNode | undefined {
-  if (!plainObject(schema)) {
+  if (!isPlainObject(schema)) {
     checks.push({
       code: "SCHEMA_NODE_INVALID",
       detail: `${path} must be a plain JSON object.`,
@@ -300,7 +298,7 @@ function parseNode(
     }
     if (types.has("object")) {
       if (
-        !plainObject(schema.properties) ||
+        !isPlainObject(schema.properties) ||
         !Array.isArray(schema.required) ||
         typeof schema.additionalProperties !== "boolean"
       ) {
@@ -628,16 +626,6 @@ export interface CandidateValidationResult {
 
 const escapePointer = (value: string): string =>
   value.replace(/~/gu, "~0").replace(/\//gu, "~1");
-const deepFreeze = <T>(value: T): T => {
-  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Array.isArray(value)
-      ? value
-      : Object.values(value as Record<string, unknown>))
-      deepFreeze(child);
-    Object.freeze(value);
-  }
-  return value;
-};
 const nodeMatches = (node: ScalarNode, value: unknown): boolean =>
   (value === null && node.types.has("null")) ||
   (typeof value === "string" && node.types.has("string")) ||
@@ -647,102 +635,97 @@ const nodeMatches = (node: ScalarNode, value: unknown): boolean =>
     (node.types.has("number") ||
       (node.types.has("integer") && Number.isInteger(value))));
 
+const CANDIDATE_PREFLIGHT_LIMITS = {
+  maximumNodes: 50_000,
+  maximumDepth: 64,
+  maximumCollection: 10_000,
+} as const;
+
+/** Conservative worst-case JSON byte estimate: every character may escape to `\uXXXX`. */
+const candidatePreflightMeasure = {
+  string: (value: string) => value.length * 6 + 2,
+  key: (key: string) => key.length * 6 + 3,
+  scalar: (value: null | boolean | number) =>
+    typeof value === "number" ? 32 : 5,
+};
+
+const preflightCheck = (
+  code: CandidateValidationCheck["code"],
+  detail: string,
+): CandidateValidationCheck => ({ code, path: "#", detail });
+
+function candidatePreflightViolation(
+  violation: BoundedJsonViolation,
+): CandidateValidationCheck {
+  switch (violation.kind) {
+    case "node_limit":
+    case "depth_limit":
+      return preflightCheck(
+        "CANDIDATE_PREFLIGHT_EXCEEDED",
+        "Candidate exceeds preflight node or depth bounds.",
+      );
+    case "non_finite_number":
+      return preflightCheck(
+        "CANDIDATE_NOT_JSON",
+        "Candidate contains a non-finite number.",
+      );
+    case "non_json_value":
+      return preflightCheck(
+        "CANDIDATE_NOT_JSON",
+        "Candidate contains a non-JSON value.",
+      );
+    case "aliased_node":
+      return preflightCheck(
+        "CANDIDATE_NOT_JSON",
+        "Candidate object graph is cyclic or aliases a prior node.",
+      );
+    case "collection_limit":
+      return violation.container === "array"
+        ? preflightCheck(
+            "CANDIDATE_PREFLIGHT_EXCEEDED",
+            "Candidate container exceeds preflight item bounds.",
+          )
+        : preflightCheck(
+            "CANDIDATE_PREFLIGHT_EXCEEDED",
+            "Candidate object exceeds conservative aggregate preflight bounds.",
+          );
+    case "string_budget":
+      return violation.at === "string"
+        ? preflightCheck(
+            "CANDIDATE_PREFLIGHT_EXCEEDED",
+            "Candidate strings exceed conservative aggregate byte bounds.",
+          )
+        : preflightCheck(
+            "CANDIDATE_PREFLIGHT_EXCEEDED",
+            "Candidate object exceeds conservative aggregate preflight bounds.",
+          );
+    case "key_length":
+      return preflightCheck(
+        "CANDIDATE_PREFLIGHT_EXCEEDED",
+        "Candidate object exceeds conservative aggregate preflight bounds.",
+      );
+  }
+}
+
 function preflightCandidate(
   value: unknown,
   maxBytes: number,
 ): CandidateValidationCheck | undefined {
-  const stack: { value: unknown; depth: number }[] = [{ value, depth: 0 }];
-  const seen = new WeakSet<object>();
-  let nodes = 0;
-  let estimatedBytes = 0;
   try {
-    while (stack.length > 0) {
-      const current = stack.pop()!;
-      nodes += 1;
-      if (nodes > 50_000 || current.depth > 64)
-        return {
-          code: "CANDIDATE_PREFLIGHT_EXCEEDED",
-          path: "#",
-          detail: "Candidate exceeds preflight node or depth bounds.",
-        };
-      if (current.value === null || typeof current.value === "boolean") {
-        estimatedBytes += 5;
-        continue;
-      }
-      if (typeof current.value === "number") {
-        if (!Number.isFinite(current.value))
-          return {
-            code: "CANDIDATE_NOT_JSON",
-            path: "#",
-            detail: "Candidate contains a non-finite number.",
-          };
-        estimatedBytes += 32;
-        continue;
-      }
-      if (typeof current.value === "string") {
-        estimatedBytes += current.value.length * 6 + 2;
-        if (estimatedBytes > maxBytes)
-          return {
-            code: "CANDIDATE_PREFLIGHT_EXCEEDED",
-            path: "#",
-            detail:
-              "Candidate strings exceed conservative aggregate byte bounds.",
-          };
-        continue;
-      }
-      if (
-        typeof current.value !== "object" ||
-        (!Array.isArray(current.value) && !plainObject(current.value))
-      )
-        return {
-          code: "CANDIDATE_NOT_JSON",
-          path: "#",
-          detail: "Candidate contains a non-JSON value.",
-        };
-      if (seen.has(current.value))
-        return {
-          code: "CANDIDATE_NOT_JSON",
-          path: "#",
-          detail: "Candidate object graph is cyclic or aliases a prior node.",
-        };
-      seen.add(current.value);
-      if (Array.isArray(current.value)) {
-        if (current.value.length > 10_000)
-          return {
-            code: "CANDIDATE_PREFLIGHT_EXCEEDED",
-            path: "#",
-            detail: "Candidate container exceeds preflight item bounds.",
-          };
-        for (const child of current.value)
-          stack.push({ value: child, depth: current.depth + 1 });
-      } else {
-        let keys = 0;
-        for (const key in current.value)
-          if (Object.hasOwn(current.value, key)) {
-            keys += 1;
-            estimatedBytes += key.length * 6 + 3;
-            if (keys > 10_000 || estimatedBytes > maxBytes)
-              return {
-                code: "CANDIDATE_PREFLIGHT_EXCEEDED",
-                path: "#",
-                detail:
-                  "Candidate object exceeds conservative aggregate preflight bounds.",
-              };
-            stack.push({
-              value: (current.value as Record<string, unknown>)[key],
-              depth: current.depth + 1,
-            });
-          }
-      }
-    }
+    const violation = walkBoundedJson(value, {
+      limits: { ...CANDIDATE_PREFLIGHT_LIMITS, maximumStringBudget: maxBytes },
+      measure: candidatePreflightMeasure,
+      rejectNonFiniteNumbers: true,
+      rejectNonJsonValues: true,
+      plainObjectsOnly: true,
+    });
+    return violation ? candidatePreflightViolation(violation) : undefined;
   } catch {
-    return {
-      code: "CANDIDATE_NOT_JSON",
-      path: "#",
-      detail: "Candidate cannot be safely inspected as JSON.",
-    };
+    return preflightCheck(
+      "CANDIDATE_NOT_JSON",
+      "Candidate cannot be safely inspected as JSON.",
+    );
   }
-  return undefined;
 }
 
 /** Validates the provider candidate independently; provider confidence is deliberately absent. */
@@ -817,7 +800,7 @@ export function validateExtractionCandidate(
       );
       return;
     }
-    if (plainObject(value)) {
+    if (isPlainObject(value)) {
       for (const key of Object.keys(value))
         visitUnknown(value[key], `${path}/${escapePointer(key)}`, depth + 1);
       return;
@@ -826,7 +809,7 @@ export function validateExtractionCandidate(
   };
   const visit = (node: SchemaNode, value: unknown, path: string): void => {
     if (node.kind === "object") {
-      if (!plainObject(value)) {
+      if (!isPlainObject(value)) {
         checks.push({
           code: "CANDIDATE_TYPE",
           path,

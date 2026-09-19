@@ -2,7 +2,11 @@ import type {
   ResolvedSelector,
   VerificationSelector,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
+import {
+  canonicalizeJson,
+  isSha256Digest,
+  sha256Digest,
+} from "../canonical/index.js";
 import { evaluateJsonPointer } from "./json-pointer.js";
 import {
   parseCanonicalProjection,
@@ -17,8 +21,8 @@ import {
 } from "./selection.js";
 import { resolveTextOffsetRange } from "./text-offsets.js";
 import { encodeUtf8 } from "./utf8.js";
-
-export const PROJECTION_RESOLVER_VERSION = "verification-projections.v1";
+import { isSafeRepositoryPath } from "./repository-path.js";
+import { PROJECTION_RESOLVER_VERSION } from "../versions.js";
 
 const report = evidenceSelectionReporter(PROJECTION_RESOLVER_VERSION);
 const unresolved = report.unresolved;
@@ -73,7 +77,7 @@ function requireProjection(
   request: EvidenceSelectionRequest,
 ): CanonicalProjection | EvidenceSelection {
   if (
-    !/^sha256:[a-f0-9]{64}$/.test(request.representationDigest) ||
+    !isSha256Digest(request.representationDigest) ||
     sha256Digest(request.content) !== request.representationDigest
   )
     return unresolved(request, "invalid");
@@ -464,10 +468,7 @@ function resolveRepository(
 ): EvidenceSelection {
   if (
     projection.commit !== selector.commit ||
-    !/^(?!\/)(?!.*\\)(?!.*\0)(?!.*(?:^|\/)\.?(?:\/|$))[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(
-      selector.path,
-    ) ||
-    selector.path.split("/").some((part) => part === "." || part === "..")
+    !isSafeRepositoryPath(selector.path)
   )
     return unresolved(request, "invalid");
   const files = projection.files.filter((file) => file.path === selector.path);

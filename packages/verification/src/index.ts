@@ -1,3 +1,6 @@
+export * from "./canonical/index.js";
+export * from "./decimal/index.js";
+export * from "./versions.js";
 export * from "./deterministic/index.js";
 export * from "./prototype-compat.js";
 export * from "./prototype-bundle-compat.js";

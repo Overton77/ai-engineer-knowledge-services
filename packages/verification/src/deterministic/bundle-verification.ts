@@ -10,14 +10,22 @@ import {
   type VerificationMetricObservation,
   type VerificationArtifactHandle,
 } from "@aiengineer/knowledge-contracts";
-import { digestCanonicalJson, sha256Digest } from "./canonical.js";
+import {
+  digestCanonicalJson,
+  isSha256Digest,
+  sha256Digest,
+} from "../canonical/index.js";
+import {
+  CORE_RESOLVER_VERSION,
+  VERIFICATION_CONTRACT_VERSION,
+} from "../versions.js";
 import {
   compareFractions,
   formatRoundedDecimal,
   parseDecimal,
   replayDecimalOperation,
   withinTolerance,
-} from "./decimal.js";
+} from "../decimal/index.js";
 import {
   resolveEvidenceSelector,
   type EvidenceSelection,
@@ -109,7 +117,7 @@ function unresolvedEvidence(
         occurrenceCount: 0,
         resolvedRanges: [],
         normalization: "none",
-        resolverVersion: "verification-core.v1",
+        resolverVersion: CORE_RESOLVER_VERSION,
       },
       checks: [check(code, "failed", "hard", detail, edge.evidenceId)],
     },
@@ -295,10 +303,10 @@ export function verifyDeterministicBundle(
   const verifierMatches =
     input.runtimePrincipals.verifierDeploymentId ===
     bundle.verifier.deploymentId;
-  const digestPattern = /^sha256:[a-f0-9]{64}$/;
+
   const principalDigestsWellFormed =
-    digestPattern.test(input.runtimePrincipals.producerPrincipalDigest) &&
-    digestPattern.test(input.runtimePrincipals.verifierPrincipalDigest);
+    isSha256Digest(input.runtimePrincipals.producerPrincipalDigest) &&
+    isSha256Digest(input.runtimePrincipals.verifierPrincipalDigest);
   const principalsAttested =
     principalDigestsWellFormed &&
     input.runtimePrincipals.producerPrincipalDigest !==
@@ -628,7 +636,7 @@ export function verifyDeterministicBundle(
     ),
   ].sort();
   return DeterministicVerificationResultSchema.parse({
-    verificationContractVersion: "verification.v1",
+    verificationContractVersion: VERIFICATION_CONTRACT_VERSION,
     status,
     semanticEligibility,
     deploymentSeparation: {
