@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
-import { ExactHttpAcquisitionAdapter } from "./http.js";
+import { ExactHttpAcquisitionAdapter } from "./http/index.js";
 import { RoutedAcquisitionAdapter } from "./route.js";
-import { BoundedManualUploadAdapter } from "./manual-upload.js";
+import { BoundedManualUploadAdapter } from "./upload/index.js";
 import type { AcquisitionRequest } from "./types.js";
 
 const policy = {

@@ -8,7 +8,7 @@ import {
   type DnsResolver,
   type HttpFetch,
   type HttpPolicy,
-} from "./http.js";
+} from "../http/index.js";
 import type {
   AcquisitionAdapter,
   AcquisitionPlan,
@@ -17,7 +17,7 @@ import type {
   AcquisitionVerification,
   AdmittedAcquisitionPlan,
   SupportDecision,
-} from "./types.js";
+} from "../types.js";
 
 export interface SecretResolver {
   resolve(reference: string): Promise<string>;
@@ -96,6 +96,8 @@ function dataRecord(value: JsonRecord): JsonRecord {
     : value;
 }
 
+// Library only; do not grow it. Agents use the Firecrawl skill and import the
+// receipt through source_import (docs/operations/reviews/acquisition.md).
 export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
   readonly adapterKey = "firecrawl-scrape";
   readonly version: string;

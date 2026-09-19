@@ -18,8 +18,8 @@ import {
   runLocalDiagnosticsDemo,
 } from "../diagnostics-demo.js";
 
-const cli = resolve(import.meta.dirname, "../dist/index.js");
-const assets = resolve(import.meta.dirname, "../dist/demo-assets");
+const cli = resolve(import.meta.dirname, "../../dist/index.js");
+const assets = resolve(import.meta.dirname, "../../dist/demo-assets");
 const args = (output: string) => [
   "demo",
   "diagnostics-companies",

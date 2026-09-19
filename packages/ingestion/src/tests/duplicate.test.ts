@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { awaitWinnerReceipt, isIdempotencyKeyCollision, type DuplicateWaitPolicy } from "./duplicate.js";
+import { awaitWinnerReceipt, isIdempotencyKeyCollision, type DuplicateWaitPolicy } from "../duplicate.js";
 
 /** A policy whose clock advances only when the poller sleeps, so tests never wait. */
 function fakeClockPolicy(timeoutMs: number, backoffMs: number): DuplicateWaitPolicy & { readonly sleeps: number[] } {

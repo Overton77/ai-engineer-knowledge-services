@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
-import { ExactHttpAcquisitionAdapter } from "./http.js";
+import { ExactHttpAcquisitionAdapter } from "./adapter.js";
 
 const request = {
   tenantId: "deadline-test", purpose: "capture", target: { kind: "http" as const, url: "https://example.com/a" },

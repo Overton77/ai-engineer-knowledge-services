@@ -2,11 +2,11 @@ import { resolve } from "node:path";
 import { canonicalJson } from "@aiengineer/knowledge-db-read";
 import { loadWorkspace } from "@aiengineer/knowledge-schema-workspace";
 import { describe, expect, it } from "vitest";
-import { IngestionIntentSchema } from "./intent.js";
-import { buildPlan, intentDigestOf, intentIdempotencyKey, proposalIdempotencyKey } from "./plan.js";
-import { applyRules, loadRules, type RuleSet } from "./rules.js";
+import { IngestionIntentSchema } from "../intent.js";
+import { buildPlan, intentDigestOf, intentIdempotencyKey, proposalIdempotencyKey } from "../plan.js";
+import { applyRules, loadRules, type RuleSet } from "../rules.js";
 import { fixtureFacts, priceIntent } from "./test-fixtures.js";
-import { classifyFailure } from "./executor.js";
+import { classifyFailure } from "../executor.js";
 
 const executor = { version: "knowledge-executor/test", migrationHead: "20260912020000" };
 const parse = (input: unknown) => IngestionIntentSchema.parse(input);
@@ -154,7 +154,7 @@ describe("price.scope_key_is_unit reuses an existing same-unit series", () => {
   });
 
   it("applies the built-in rewriter to a loaded rule authored with `missing`/`set`", () => {
-    const loaded = loadRules(loadWorkspace(resolve(import.meta.dirname, "../../schema-workspace/test/fixtures/workspace")));
+    const loaded = loadRules(loadWorkspace(resolve(import.meta.dirname, "../../../schema-workspace/test/fixtures/workspace")));
     const plan = buildPlan(priceWithScopeKey("per_1m_input_tokens"), withSeries("input_tokens", loaded), executor);
     expect(priceProposal(plan).rewrites).toEqual([{ rule: "price.scope_key_is_unit", field: "scopeKey", from: "per_1m_input_tokens", to: "input_tokens", reason: "existing_series_reused" }]);
   });

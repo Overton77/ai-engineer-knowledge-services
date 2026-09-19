@@ -12,7 +12,7 @@ import { writeBenchmarkRefreshProposal } from "../benchmark-refresh-writer.js";
 
 const catalogRoot = resolve(
   import.meta.dirname,
-  "../../../catalog/verification-benchmarks",
+  "../../../../catalog/verification-benchmarks",
 );
 const command = (previous: string, proposed: string) => [
   "benchmark",

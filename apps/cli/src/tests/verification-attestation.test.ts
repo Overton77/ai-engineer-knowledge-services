@@ -35,7 +35,7 @@ const runBuiltCli = (
   }>((resolve, reject) => {
     execFile(
       process.execPath,
-      [join(import.meta.dirname, "../dist/index.js"), ...args],
+      [join(import.meta.dirname, "../../dist/index.js"), ...args],
       { env: environment },
       (error, stdout, stderr) => {
         if (

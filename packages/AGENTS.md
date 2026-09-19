@@ -9,13 +9,13 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 |---|---|---|
 | [acquisition](../docs/agents/CODE-MAP.md#acquisition) | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | packages/acquisition/src/index.ts |
 | [application](../docs/agents/CODE-MAP.md#application) | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | packages/application/src/index.ts |
-| [chunking](../docs/agents/CODE-MAP.md#chunking) | Builds bounded chunks with strategy profiles, overlap controls, and source spans. | packages/chunking/src/index.ts |
+| [chunking](../docs/agents/CODE-MAP.md#chunking) | Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA. | packages/chunking/src/index.ts |
 | [client-typescript](../docs/agents/CODE-MAP.md#client-typescript) | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | packages/client-typescript/src/index.ts |
 | [config](../docs/agents/CODE-MAP.md#config) | Validates server, authentication, and semantic-provider configuration. | packages/config/src/index.ts |
 | [contracts](../docs/agents/CODE-MAP.md#contracts) | Versioned Zod schemas and types shared by transports, application composition, and clients. | packages/contracts/src/index.ts |
 | [conversion](../docs/agents/CODE-MAP.md#conversion) | Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser. | packages/conversion/src/index.ts |
 | [db-read](../docs/agents/CODE-MAP.md#db-read) | Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger. | packages/db-read/src/index.ts |
-| [documents](../docs/agents/CODE-MAP.md#documents) | Constructs immutable document nodes and source locators from structural blocks. | packages/documents/src/index.ts |
+| [documents](../docs/agents/CODE-MAP.md#documents) | Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity. | packages/documents/src/index.ts |
 | [domain](../docs/agents/CODE-MAP.md#domain) | Shared digest, identity, idempotency, error, authority, and state-machine primitives. | packages/domain/src/index.ts |
 | [embeddings](../docs/agents/CODE-MAP.md#embeddings) | Embedding adapter requests, cache/route identity, bounded batches, and receipts. | packages/embeddings/src/index.ts |
 | [ingestion](../docs/agents/CODE-MAP.md#ingestion) | Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling. | packages/ingestion/src/index.ts |

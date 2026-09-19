@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { admissionIssues, isOfficiallyAdmittedVerdict, proposalEffect, type AuthoritativeClaim } from "./evidence-admission.js";
-import { IngestionIntentSchema, type Proposal } from "./intent.js";
-import { buildPlan, deterministicId, type PlanFacts } from "./plan.js";
+import { admissionIssues, isOfficiallyAdmittedVerdict, proposalEffect, type AuthoritativeClaim } from "../evidence-admission.js";
+import { IngestionIntentSchema, type Proposal } from "../intent.js";
+import { buildPlan, deterministicId, type PlanFacts } from "../plan.js";
 import { fixtureFacts } from "./test-fixtures.js";
 
 const tenantId = "00000000-0000-4000-8000-000000000011";

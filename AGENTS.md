@@ -54,6 +54,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - [proposed] Post-sprint module review, exemplars, and developer-overridable delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
 - [proposed] Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last: `docs/operations/internal-fallbacks-and-application-order.md`
 - [accepted] Acquisition HTTP, upload, and sealed-byte inspection review record: `docs/operations/reviews/acquisition.md`
+- [reference] Conversion route (text, Docling, gated Unstructured) and receipt review record: `docs/operations/reviews/conversion.md`
 - [proposed] Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters: `docs/operations/conversion-and-chunking.md`
 - Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills: `README.md`
 - [accepted] Runtime, transport, and deployment changes: `docs/architecture/0001-runtime-and-deployment.md`
@@ -85,7 +86,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |apps/verification-executor/examples:{CAPABILITIES-ACQUISITION.md}
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/reviews:{acquisition.md,verification-executor.md,verification.md}
+|docs/operations/reviews:{acquisition.md,conversion.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}
 |packages/verification:{CAPABILITIES.md}

@@ -51,6 +51,15 @@
       ]
     },
     {
+      "path": "docs/operations/reviews/conversion.md",
+      "task": "Conversion route (text, Docling, gated Unstructured) and receipt review record",
+      "status": "reference",
+      "modules": [
+        "conversion",
+        "worker"
+      ]
+    },
+    {
       "path": "docs/operations/conversion-and-chunking.md",
       "task": "Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters",
       "status": "proposed",

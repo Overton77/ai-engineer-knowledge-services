@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reconcileReceipt } from "./receipt-reconciliation.js";
-import type { IngestionReceipt } from "./receipt.js";
+import { reconcileReceipt } from "../receipt-reconciliation.js";
+import type { IngestionReceipt } from "../receipt.js";
 import type { ArtifactRecord } from "@aiengineer/knowledge-db-read";
 import { infrastructureError } from "@aiengineer/knowledge-schema-workspace";
 

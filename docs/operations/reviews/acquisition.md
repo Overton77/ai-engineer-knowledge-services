@@ -23,3 +23,21 @@ Provider restrictions: do not grow Firecrawl scrape; do not wire repository or p
 Evidence: `packages/acquisition/src/*.test.ts`, `packages/acquisition/examples/`, `apps/worker/src/activity-registry.test.ts`.
 
 Explicitly skipped checks: live Firecrawl, live paper resolvers, platform inspect admission, lifting `artifacts.length === 1`.
+
+## Addendum 2026-09-19: folder normalization (Phase 1, S1-C3)
+
+Structural change only; no behavior change; nothing newly wired. Decision P1-1 from the Phase 1 recommendation memo: the three library-only adapters are kept, made physically explicit, and stay unwired.
+
+| Item | Before | After |
+|---|---|---|
+| Root shims | `src/http.ts`, `src/manual-upload.ts` | `src/http/index.ts`, `src/upload/index.ts` |
+| Paper | `src/paper.ts` | `src/paper/identity.ts` (`normalizePaperIdentifier`), `src/paper/adapter.ts` (`IdentityBoundPaperAcquisitionAdapter`, `PaperProvider`, `ResolvedPaper`); `src/paper/plan-http.ts` unchanged |
+| Repository | `src/repository.ts` | `src/repository/adapter.ts` |
+| Firecrawl | `src/firecrawl.ts` | `src/firecrawl/adapter.ts` |
+| Root tests | `acquisition.test.ts`, `deadline.test.ts`, `mapped-address.test.ts`, `residuals.test.ts` | `http/adapter.test.ts`, `http/deadline.test.ts`, `http/mapped-address.test.ts`; `residuals.test.ts` split by adapter into `firecrawl/adapter.test.ts`, `upload/adapter.test.ts`, `repository/adapter.test.ts`, `paper/adapter.test.ts`. `route.test.ts` stays at the root. Assertions unchanged. |
+| Root barrel | flat re-exports | banners: Contract, Route, HTTP (wired), Upload (wired), Inspect (library), Paper (identity wired; execute unwired), Repository (unwired), Firecrawl (unwired), Fakes |
+| Wiring status | prose only | table in `packages/acquisition/examples/README.md` |
+
+Names unchanged: 58 exports on `src/index.ts` before and after, checked by emitting declarations (`tsc --declaration --emitDeclarationOnly`) for both trees and diffing the flattened export list (name, kind, hash of the resolved declaration text); only source paths differ.
+
+Checks run: `corepack pnpm --filter @aiengineer/knowledge-acquisition typecheck`, `test`, `examples`; typecheck of `@aiengineer/knowledge-application`, `@aiengineer/knowledge-worker`, `@aiengineer/knowledge-verification-executor`; `scripts/live-gate1.ts` still imports names the barrel exports. Must-have table, provider restrictions, and skipped checks above are unchanged.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPinnedRequestOptions, isForbiddenAddress, resolveSafeHttpTarget, type HttpPolicy } from "./http.js";
+import { buildPinnedRequestOptions, isForbiddenAddress, resolveSafeHttpTarget, type HttpPolicy } from "./index.js";
 
 const policy: HttpPolicy = {allowedProtocols:["https:"],allowedPorts:[443],maximumRedirects:1,timeoutMs:100,maximumBytes:1000,maximumDecompressionRatio:10};
 const addresses = ["0.0.0.1","10.0.0.1","100.64.0.1","127.0.0.1","169.254.169.254","172.16.0.1","192.168.0.1","192.0.0.8","192.0.2.1","198.18.0.1","198.51.100.1","203.0.113.1","224.0.0.1","240.0.0.1","255.255.255.255"];

@@ -9,8 +9,8 @@ import type {
   AdmittedAcquisitionPlan,
   RepositoryManifest,
   SupportDecision,
-} from "./types.js";
-import type { RepositoryAcquisitionAdapter as RepositoryAdapterContract } from "./types.js";
+} from "../types.js";
+import type { RepositoryAcquisitionAdapter as RepositoryAdapterContract } from "../types.js";
 
 export interface RepositoryArchiveEntry {
   path: string;
@@ -87,6 +87,9 @@ function extension(path: string): string {
   return index < 0 ? "" : name.slice(index).toLowerCase();
 }
 
+// Library only: wiring waits for the capture-cardinality decision, because this
+// adapter seals two artifacts (archive + manifest) and the worker admits one
+// (docs/operations/internal-fallbacks-and-application-order.md).
 export class ImmutableRepositoryAcquisitionAdapter implements RepositoryAdapterContract {
   readonly adapterKey = "repository-archive";
   readonly version = "1.0.0";

@@ -26,13 +26,13 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [worker](#worker) | apps/worker | Durable knowledge-operation execution, activity dispatch, and verification runtime wiring. | implemented |
 | [acquisition](#acquisition) | packages/acquisition | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | implemented |
 | [application](#application) | packages/application | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | implemented |
-| [chunking](#chunking) | packages/chunking | Builds bounded chunks with strategy profiles, overlap controls, and source spans. | implemented |
+| [chunking](#chunking) | packages/chunking | Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA. | implemented |
 | [client-typescript](#client-typescript) | packages/client-typescript | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
 | [config](#config) | packages/config | Validates server, authentication, and semantic-provider configuration. | implemented |
 | [contracts](#contracts) | packages/contracts | Versioned Zod schemas and types shared by transports, application composition, and clients. | implemented |
 | [conversion](#conversion) | packages/conversion | Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser. | implemented |
 | [db-read](#db-read) | packages/db-read | Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger. | partial |
-| [documents](#documents) | packages/documents | Constructs immutable document nodes and source locators from structural blocks. | implemented |
+| [documents](#documents) | packages/documents | Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity. | implemented |
 | [domain](#domain) | packages/domain | Shared digest, identity, idempotency, error, authority, and state-machine primitives. | implemented |
 | [embeddings](#embeddings) | packages/embeddings | Embedding adapter requests, cache/route identity, bounded batches, and receipts. | implemented |
 | [ingestion](#ingestion) | packages/ingestion | Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling. | partial |
@@ -67,6 +67,12 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [skill-knowledge-db](#skill-knowledge-db) | skills/knowledge-db | Procedure for catalog reads and reproducible knowledge-read snapshots that an ingestion intent can cite. | implemented |
 | [skill-knowledge-ingest](#skill-knowledge-ingest) | skills/knowledge-ingest | Procedure for composing, planning, applying, and verifying knowledge-ingestion intents through the executor. | implemented |
 | [skill-knowledge-verification](#skill-knowledge-verification) | skills/knowledge-verification | Platform verification procedure with assertion/media routing, admitted operations, held outcomes and audit limits. | implemented |
+| [skill-knowledge-acquisition-and-vetting](#skill-knowledge-acquisition-and-vetting) | skills/knowledge-acquisition-and-vetting | Source discovery, acquisition, sealed-byte inspection and vetting-proposal procedure across executor and platform surfaces; a fetch, seal or inspection is never admission. | implemented |
+| [skill-knowledge-preparation-and-promotion](#skill-knowledge-preparation-and-promotion) | skills/knowledge-preparation-and-promotion | Conversion route, node inspection, admitted chunk-profile preview, content linking, embedding and promotion-proposal procedure over already stored bytes; a routing receipt or chunk preview is not admission. | implemented |
+| [skill-knowledge-retrieval-and-evidence](#skill-knowledge-retrieval-and-evidence) | skills/knowledge-retrieval-and-evidence | Scoped retrieval planning, search, per-stage explanation, immutable evidence-packet reads and citation replay through the platform CLI and MCP. | implemented |
+| [skill-knowledge-evaluation](#skill-knowledge-evaluation) | skills/knowledge-evaluation | Frozen-version evaluation procedure: reviewed retrieval cases, experiment runs, comparisons and failure diagnosis that recommend, never execute, a knowledge release. | implemented |
+| [skill-knowledge-verification-recovery](#skill-knowledge-verification-recovery) | skills/knowledge-verification-recovery | Post-failure verification recovery: read the durable case, classify items by earliest failed stage, probe, plan, claim, execute, reconcile and checkpoint on the executor; adjudication through the platform CLI. | implemented |
+| [skill-vector-store-management](#skill-vector-store-management) | skills/vector-store-management | Store-class-explicit vector-store creation, document addition, evaluation, status, and guarded space publish/rollback submissions through the platform CLI. | implemented |
 | [skill-verification-executor](#skill-verification-executor) | apps/verification-executor/skills/knowledge-verify | Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold. | implemented |
 | [verification-internal](#verification-internal) | packages/verification/src/internal | Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights. | implemented |
 | [verification-prototype-compat](#verification-prototype-compat) | packages/verification/src/prototype-compat | Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes. | implemented |
@@ -197,6 +203,7 @@ Durable knowledge-operation execution, activity dispatch, and verification runti
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
+- [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
@@ -218,7 +225,7 @@ HTTP and local-upload acquisition wired; inspect library for sealed bytes; repos
 **Declared internal package dependencies:** [domain](#domain), [runtime](#runtime)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/acquisition/src/acquisition.test.ts`](../../packages/acquisition/src/acquisition.test.ts), [`packages/acquisition/src/deadline.test.ts`](../../packages/acquisition/src/deadline.test.ts), [`packages/acquisition/src/route.test.ts`](../../packages/acquisition/src/route.test.ts), [`packages/acquisition/src/inspect/inspect.test.ts`](../../packages/acquisition/src/inspect/inspect.test.ts) Package script names: build, examples, test, typecheck.
+**Checks:** [`packages/acquisition/src/http/adapter.test.ts`](../../packages/acquisition/src/http/adapter.test.ts), [`packages/acquisition/src/http/deadline.test.ts`](../../packages/acquisition/src/http/deadline.test.ts), [`packages/acquisition/src/route.test.ts`](../../packages/acquisition/src/route.test.ts), [`packages/acquisition/src/inspect/inspect.test.ts`](../../packages/acquisition/src/inspect/inspect.test.ts), [`packages/acquisition/examples/examples.test.ts`](../../packages/acquisition/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
@@ -260,16 +267,16 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 
 **packages/chunking** · package · implemented
 
-Builds bounded chunks with strategy profiles, overlap controls, and source spans.
+Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA.
 
-**Enter:** [`packages/chunking/src/index.ts`](../../packages/chunking/src/index.ts)
-**Interface:** Chunk profiles and deterministic chunk preparation.
+**Enter:** [`packages/chunking/src/index.ts`](../../packages/chunking/src/index.ts), [`packages/chunking/src/profiles/definitions.ts`](../../packages/chunking/src/profiles/definitions.ts), [`packages/chunking/src/chunker/chunk-document.ts`](../../packages/chunking/src/chunker/chunk-document.ts), [`packages/chunking/src/qa/validate-chunks.ts`](../../packages/chunking/src/qa/validate-chunks.ts)
+**Interface:** ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts.
 **Package:** @aiengineer/knowledge-chunking ([`packages/chunking/package.json`](../../packages/chunking/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts), [documents](#documents), [domain](#domain)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/chunking/src/index.test.ts`](../../packages/chunking/src/index.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/chunking/src/profiles/registry.test.ts`](../../packages/chunking/src/profiles/registry.test.ts), [`packages/chunking/src/chunker/chunk-document.test.ts`](../../packages/chunking/src/chunker/chunk-document.test.ts), [`packages/chunking/src/qa/validate-chunks.test.ts`](../../packages/chunking/src/qa/validate-chunks.test.ts), [`packages/chunking/examples/01-select-profiles-for-space.test.ts`](../../packages/chunking/examples/01-select-profiles-for-space.test.ts), [`packages/chunking/examples/02-chunk-and-reconstruct.test.ts`](../../packages/chunking/examples/02-chunk-and-reconstruct.test.ts), [`packages/chunking/examples/03-qa-failure-next-profile.test.ts`](../../packages/chunking/examples/03-qa-failure-next-profile.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
@@ -357,6 +364,7 @@ Converts stored artifacts: deterministic text, Docling default, gated Unstructur
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
@@ -385,16 +393,16 @@ Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-on
 
 **packages/documents** · package · implemented
 
-Constructs immutable document nodes and source locators from structural blocks.
+Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity.
 
-**Enter:** [`packages/documents/src/index.ts`](../../packages/documents/src/index.ts)
-**Interface:** Structural document builder and deterministic document identity.
+**Enter:** [`packages/documents/src/index.ts`](../../packages/documents/src/index.ts), [`packages/documents/src/nodes/structural-document.ts`](../../packages/documents/src/nodes/structural-document.ts), [`packages/documents/src/locators/source-locator.ts`](../../packages/documents/src/locators/source-locator.ts)
+**Interface:** convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, deterministicUuid (identity/, duplicate of runtime's two-argument helper until Phase 3).
 **Package:** @aiengineer/knowledge-documents ([`packages/documents/package.json`](../../packages/documents/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts), [domain](#domain)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/documents/src/index.test.ts`](../../packages/documents/src/index.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/documents/src/nodes/structural-document.test.ts`](../../packages/documents/src/nodes/structural-document.test.ts), [`packages/documents/src/locators/source-locator.test.ts`](../../packages/documents/src/locators/source-locator.test.ts), [`packages/documents/src/identity/deterministic-uuid.test.ts`](../../packages/documents/src/identity/deterministic-uuid.test.ts), [`packages/documents/examples/01-build-nodes-and-verify-locators.test.ts`](../../packages/documents/examples/01-build-nodes-and-verify-locators.test.ts), [`packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts`](../../packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
@@ -1103,6 +1111,126 @@ Platform verification procedure with assertion/media routing, admitted operation
 **Architecture and detailed docs:**
 
 - [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
+
+## skill-knowledge-acquisition-and-vetting
+
+**skills/knowledge-acquisition-and-vetting** · agent skill · implemented
+
+Source discovery, acquisition, sealed-byte inspection and vetting-proposal procedure across executor and platform surfaces; a fetch, seal or inspection is never admission.
+
+**Enter:** [`skills/knowledge-acquisition-and-vetting/SKILL.md`](../../skills/knowledge-acquisition-and-vetting/SKILL.md), [`skills/knowledge-acquisition-and-vetting/cli-reference.md`](../../skills/knowledge-acquisition-and-vetting/cli-reference.md), [`skills/knowledge-acquisition-and-vetting/mcp-reference.md`](../../skills/knowledge-acquisition-and-vetting/mcp-reference.md), [`skills/knowledge-acquisition-and-vetting/examples.md`](../../skills/knowledge-acquisition-and-vetting/examples.md)
+**Interface:** knowledge-acquisition-and-vetting skill 1.2.0: executor source discover/import/attempt/reconcile/select, verify_capture_source/verify_capture_file, verify_read_capture/verify_search_capture; platform source discover/fetch/vet.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [acquisition](#acquisition), [verification-executor](#verification-executor), [cli](#cli)
+**Checks:** No specific test anchor registered.
+- No source_resolve_identity operation; identity is resolved from captured bytes. Firecrawl/Tavily MCP stay in the agent environment and are imported as self-reported receipts.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## skill-knowledge-preparation-and-promotion
+
+**skills/knowledge-preparation-and-promotion** · agent skill · implemented
+
+Conversion route, node inspection, admitted chunk-profile preview, content linking, embedding and promotion-proposal procedure over already stored bytes; a routing receipt or chunk preview is not admission.
+
+**Enter:** [`skills/knowledge-preparation-and-promotion/SKILL.md`](../../skills/knowledge-preparation-and-promotion/SKILL.md), [`skills/knowledge-preparation-and-promotion/cli-reference.md`](../../skills/knowledge-preparation-and-promotion/cli-reference.md), [`skills/knowledge-preparation-and-promotion/mcp-reference.md`](../../skills/knowledge-preparation-and-promotion/mcp-reference.md), [`skills/knowledge-preparation-and-promotion/examples.md`](../../skills/knowledge-preparation-and-promotion/examples.md)
+**Interface:** knowledge-preparation-and-promotion skill 1.3.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [conversion](#conversion), [chunking](#chunking), [application](#application), [verification-executor](#verification-executor), [cli](#cli), [mcp](#mcp)
+**Checks:** No specific test anchor registered.
+- Converts stored artifacts only and never fetches a URL; no session-local splitter; promotion_selection_select and promotion select are absent operations.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## skill-knowledge-retrieval-and-evidence
+
+**skills/knowledge-retrieval-and-evidence** · agent skill · implemented
+
+Scoped retrieval planning, search, per-stage explanation, immutable evidence-packet reads and citation replay through the platform CLI and MCP.
+
+**Enter:** [`skills/knowledge-retrieval-and-evidence/SKILL.md`](../../skills/knowledge-retrieval-and-evidence/SKILL.md)
+**Interface:** knowledge-retrieval-and-evidence skill 1.1.0: platform retrieve plan/search/explain/run/packet/citations and operation status; MCP retrieval.plan_validate/search/explain_run/read_run/read_evidence_packet/replay_citations.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [retrieval](#retrieval), [cli](#cli), [mcp](#mcp)
+**Checks:** No specific test anchor registered.
+- Context-only neighbors are never proof; revoked support is omitted or abstained; a retrieval result never becomes a publication decision.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## skill-knowledge-evaluation
+
+**skills/knowledge-evaluation** · agent skill · implemented
+
+Frozen-version evaluation procedure: reviewed retrieval cases, experiment runs, comparisons and failure diagnosis that recommend, never execute, a knowledge release.
+
+**Enter:** [`skills/knowledge-evaluation/SKILL.md`](../../skills/knowledge-evaluation/SKILL.md)
+**Interface:** knowledge-evaluation skill 1.1.0: platform eval generate/run/compare/failures and benchmark compare/comparison; MCP evaluation.generate_query_candidates/run_experiment/compare_experiments/inspect_failures.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [evaluation](#evaluation), [cli](#cli)
+**Checks:** No specific test anchor registered.
+- An evaluation report is a recommendation and evidence binding; it never switches an official pointer, revokes support, or weakens a failed hard gate.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## skill-knowledge-verification-recovery
+
+**skills/knowledge-verification-recovery** · agent skill · implemented
+
+Post-failure verification recovery: read the durable case, classify items by earliest failed stage, probe, plan, claim, execute, reconcile and checkpoint on the executor; adjudication through the platform CLI.
+
+**Enter:** [`skills/knowledge-verification-recovery/SKILL.md`](../../skills/knowledge-verification-recovery/SKILL.md), [`skills/knowledge-verification-recovery/operations.md`](../../skills/knowledge-verification-recovery/operations.md), [`skills/knowledge-verification-recovery/examples.md`](../../skills/knowledge-verification-recovery/examples.md)
+**Interface:** knowledge-verification-recovery skill 1.0.0: executor recovery_* and checkpoint_* operations, verify_read_capture/verify_get_artifact/verify_register_artifact, report_assess, artifact_get; platform adjudication request/get.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [verification-executor](#verification-executor), [verification](#verification), [cli](#cli)
+**Checks:** No specific test anchor registered.
+- Host configured (KNOWLEDGE_RECOVERY_CONFIG_JSON plus remote custody); never retries an unchanged input; recovery_close, recovery_cancel and recovery_admit are absent operations.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## skill-vector-store-management
+
+**skills/vector-store-management** · agent skill · implemented
+
+Store-class-explicit vector-store creation, document addition, evaluation, status, and guarded space publish/rollback submissions through the platform CLI.
+
+**Enter:** [`skills/vector-store-management/SKILL.md`](../../skills/vector-store-management/SKILL.md)
+**Interface:** vector-store-management skill 1.1.0: platform store create/show/add-documents/evaluate/status, space publish/rollback, operation status/reconcile.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [vector-backends](#vector-backends), [application](#application), [cli](#cli)
+**Checks:** No specific test anchor registered.
+- Submissions grant no activation or rollback authority; store search and space rebuild are absent; the platform MCP catalog has no publication or space activation tool.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
 
 ## skill-verification-executor
 

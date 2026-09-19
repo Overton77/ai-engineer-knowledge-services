@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
-import { applyPlan, type ApplyContext } from "./apply.js";
-import { admissionIssues, proposalEffect, type AuthoritativeClaim } from "./evidence-admission.js";
-import { IngestionIntentSchema } from "./intent.js";
-import { buildPlan, type PlanFacts } from "./plan.js";
+import { applyPlan, type ApplyContext } from "../apply.js";
+import { admissionIssues, proposalEffect, type AuthoritativeClaim } from "../evidence-admission.js";
+import { IngestionIntentSchema } from "../intent.js";
+import { buildPlan, type PlanFacts } from "../plan.js";
 import { fixtureFacts } from "./test-fixtures.js";
 
 function supportFixture() {

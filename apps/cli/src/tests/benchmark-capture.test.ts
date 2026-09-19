@@ -18,7 +18,7 @@ import {
 
 const catalog = resolve(
   import.meta.dirname,
-  "../../../catalog/verification-benchmarks/diagnostics-companies-v1",
+  "../../../../catalog/verification-benchmarks/diagnostics-companies-v1",
 );
 const id = (value: number) =>
   `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;

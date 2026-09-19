@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
-import { isOfficiallyAdmittedVerdict } from "./evidence-admission.js";
-import { promoteOfficialClaimStatus } from "./provenance.js";
+import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
+import { promoteOfficialClaimStatus } from "../provenance.js";
 
 function recordingClient() {
   const statements: string[] = [];

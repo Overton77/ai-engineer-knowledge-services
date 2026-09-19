@@ -1,7 +1,7 @@
-import type { IngestionIntentInput } from "./intent.js";
-import type { PlanFacts } from "./plan.js";
-import { NO_RULES } from "./rules.js";
-import type { Vocabulary } from "./vocabulary.js";
+import type { IngestionIntentInput } from "../intent.js";
+import type { PlanFacts } from "../plan.js";
+import { NO_RULES } from "../rules.js";
+import type { Vocabulary } from "../vocabulary.js";
 
 /** In-memory vocabulary mirroring the km_01 rows the planner tests exercise. */
 export const ALL_KINDS = ["organization", "ai_model", "ai_model_version", "model_offering", "person"];

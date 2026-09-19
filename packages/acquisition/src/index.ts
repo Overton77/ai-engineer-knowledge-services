@@ -1,3 +1,4 @@
+// Contract
 export type {
   AcquisitionAdapter,
   AcquisitionObservation,
@@ -15,6 +16,11 @@ export type {
   SupportDecision,
   UploadAcquisitionAdapter,
 } from "./types.js";
+
+// Route
+export { RoutedAcquisitionAdapter } from "./route.js";
+
+// HTTP — wired in the worker
 export {
   ExactHttpAcquisitionAdapter,
   assertSafeHttpUrl,
@@ -28,8 +34,9 @@ export {
   type PinnedHttpTransport,
   type PinnedRequestOptions,
   type SafeHttpTarget,
-} from "./http.js";
-export { RoutedAcquisitionAdapter } from "./route.js";
+} from "./http/index.js";
+
+// Upload — wired in the worker
 export {
   BoundedManualUploadAdapter,
   FilesystemManualUploadSource,
@@ -39,7 +46,9 @@ export {
   type ManualUploadPolicy,
   type ManualUploadRecord,
   type ManualUploadSource,
-} from "./manual-upload.js";
+} from "./upload/index.js";
+
+// Inspect — library, used by examples; executor reads use its own path
 export {
   observeSealedCapture,
   readSealedCapture,
@@ -55,13 +64,21 @@ export {
   type SealedCaptureSearchResult,
   type SearchSealedCaptureInput,
 } from "./inspect/index.js";
-export { FixtureAcquisitionAdapter, type FakeAcquisitionFixture } from "./fakes.js";
-export { FirecrawlAcquisitionAdapter } from "./firecrawl.js";
-export { ImmutableRepositoryAcquisitionAdapter } from "./repository.js";
+
+// Paper — identity wired in the worker; execute unwired
+export { normalizePaperIdentifier } from "./paper/identity.js";
 export {
   IdentityBoundPaperAcquisitionAdapter,
-  normalizePaperIdentifier,
   type PaperProvider,
   type ResolvedPaper,
-} from "./paper.js";
+} from "./paper/adapter.js";
 export { planPaperAsHttpRequest } from "./paper/plan-http.js";
+
+// Repository — unwired pending the capture-cardinality decision
+export { ImmutableRepositoryAcquisitionAdapter } from "./repository/adapter.js";
+
+// Firecrawl — unwired; agents use the Firecrawl skill and source_import
+export { FirecrawlAcquisitionAdapter } from "./firecrawl/adapter.js";
+
+// Fakes
+export { FixtureAcquisitionAdapter, type FakeAcquisitionFixture } from "./fakes.js";

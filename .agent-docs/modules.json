@@ -243,10 +243,11 @@
         "Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection."
       ],
       "tests": [
-        "packages/acquisition/src/acquisition.test.ts",
-        "packages/acquisition/src/deadline.test.ts",
+        "packages/acquisition/src/http/adapter.test.ts",
+        "packages/acquisition/src/http/deadline.test.ts",
         "packages/acquisition/src/route.test.ts",
-        "packages/acquisition/src/inspect/inspect.test.ts"
+        "packages/acquisition/src/inspect/inspect.test.ts",
+        "packages/acquisition/examples/examples.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -281,15 +282,23 @@
       "path": "packages/chunking",
       "kind": "package",
       "state": "implemented",
-      "summary": "Builds bounded chunks with strategy profiles, overlap controls, and source spans.",
+      "summary": "Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA.",
       "entrypoints": [
-        "packages/chunking/src/index.ts"
+        "packages/chunking/src/index.ts",
+        "packages/chunking/src/profiles/definitions.ts",
+        "packages/chunking/src/chunker/chunk-document.ts",
+        "packages/chunking/src/qa/validate-chunks.ts"
       ],
       "interface": [
-        "Chunk profiles and deterministic chunk preparation."
+        "ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts."
       ],
       "tests": [
-        "packages/chunking/src/index.test.ts"
+        "packages/chunking/src/profiles/registry.test.ts",
+        "packages/chunking/src/chunker/chunk-document.test.ts",
+        "packages/chunking/src/qa/validate-chunks.test.ts",
+        "packages/chunking/examples/01-select-profiles-for-space.test.ts",
+        "packages/chunking/examples/02-chunk-and-reconstruct.test.ts",
+        "packages/chunking/examples/03-qa-failure-next-profile.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -407,15 +416,21 @@
       "path": "packages/documents",
       "kind": "package",
       "state": "implemented",
-      "summary": "Constructs immutable document nodes and source locators from structural blocks.",
+      "summary": "Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity.",
       "entrypoints": [
-        "packages/documents/src/index.ts"
+        "packages/documents/src/index.ts",
+        "packages/documents/src/nodes/structural-document.ts",
+        "packages/documents/src/locators/source-locator.ts"
       ],
       "interface": [
-        "Structural document builder and deterministic document identity."
+        "convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, deterministicUuid (identity/, duplicate of runtime's two-argument helper until Phase 3)."
       ],
       "tests": [
-        "packages/documents/src/index.test.ts"
+        "packages/documents/src/nodes/structural-document.test.ts",
+        "packages/documents/src/locators/source-locator.test.ts",
+        "packages/documents/src/identity/deterministic-uuid.test.ts",
+        "packages/documents/examples/01-build-nodes-and-verify-locators.test.ts",
+        "packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -1169,6 +1184,148 @@
         "verification",
         "application",
         "verification-executor"
+      ]
+    },
+    {
+      "id": "skill-knowledge-acquisition-and-vetting",
+      "path": "skills/knowledge-acquisition-and-vetting",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Source discovery, acquisition, sealed-byte inspection and vetting-proposal procedure across executor and platform surfaces; a fetch, seal or inspection is never admission.",
+      "entrypoints": [
+        "skills/knowledge-acquisition-and-vetting/SKILL.md",
+        "skills/knowledge-acquisition-and-vetting/cli-reference.md",
+        "skills/knowledge-acquisition-and-vetting/mcp-reference.md",
+        "skills/knowledge-acquisition-and-vetting/examples.md"
+      ],
+      "interface": [
+        "knowledge-acquisition-and-vetting skill 1.2.0: executor source discover/import/attempt/reconcile/select, verify_capture_source/verify_capture_file, verify_read_capture/verify_search_capture; platform source discover/fetch/vet."
+      ],
+      "tests": [],
+      "constraints": [
+        "No source_resolve_identity operation; identity is resolved from captured bytes. Firecrawl/Tavily MCP stay in the agent environment and are imported as self-reported receipts."
+      ],
+      "uses": [
+        "acquisition",
+        "verification-executor",
+        "cli"
+      ]
+    },
+    {
+      "id": "skill-knowledge-preparation-and-promotion",
+      "path": "skills/knowledge-preparation-and-promotion",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Conversion route, node inspection, admitted chunk-profile preview, content linking, embedding and promotion-proposal procedure over already stored bytes; a routing receipt or chunk preview is not admission.",
+      "entrypoints": [
+        "skills/knowledge-preparation-and-promotion/SKILL.md",
+        "skills/knowledge-preparation-and-promotion/cli-reference.md",
+        "skills/knowledge-preparation-and-promotion/mcp-reference.md",
+        "skills/knowledge-preparation-and-promotion/examples.md"
+      ],
+      "interface": [
+        "knowledge-preparation-and-promotion skill 1.3.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents."
+      ],
+      "tests": [],
+      "constraints": [
+        "Converts stored artifacts only and never fetches a URL; no session-local splitter; promotion_selection_select and promotion select are absent operations."
+      ],
+      "uses": [
+        "conversion",
+        "chunking",
+        "application",
+        "verification-executor",
+        "cli",
+        "mcp"
+      ]
+    },
+    {
+      "id": "skill-knowledge-retrieval-and-evidence",
+      "path": "skills/knowledge-retrieval-and-evidence",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Scoped retrieval planning, search, per-stage explanation, immutable evidence-packet reads and citation replay through the platform CLI and MCP.",
+      "entrypoints": [
+        "skills/knowledge-retrieval-and-evidence/SKILL.md"
+      ],
+      "interface": [
+        "knowledge-retrieval-and-evidence skill 1.1.0: platform retrieve plan/search/explain/run/packet/citations and operation status; MCP retrieval.plan_validate/search/explain_run/read_run/read_evidence_packet/replay_citations."
+      ],
+      "tests": [],
+      "constraints": [
+        "Context-only neighbors are never proof; revoked support is omitted or abstained; a retrieval result never becomes a publication decision."
+      ],
+      "uses": [
+        "retrieval",
+        "cli",
+        "mcp"
+      ]
+    },
+    {
+      "id": "skill-knowledge-evaluation",
+      "path": "skills/knowledge-evaluation",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Frozen-version evaluation procedure: reviewed retrieval cases, experiment runs, comparisons and failure diagnosis that recommend, never execute, a knowledge release.",
+      "entrypoints": [
+        "skills/knowledge-evaluation/SKILL.md"
+      ],
+      "interface": [
+        "knowledge-evaluation skill 1.1.0: platform eval generate/run/compare/failures and benchmark compare/comparison; MCP evaluation.generate_query_candidates/run_experiment/compare_experiments/inspect_failures."
+      ],
+      "tests": [],
+      "constraints": [
+        "An evaluation report is a recommendation and evidence binding; it never switches an official pointer, revokes support, or weakens a failed hard gate."
+      ],
+      "uses": [
+        "evaluation",
+        "cli"
+      ]
+    },
+    {
+      "id": "skill-knowledge-verification-recovery",
+      "path": "skills/knowledge-verification-recovery",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Post-failure verification recovery: read the durable case, classify items by earliest failed stage, probe, plan, claim, execute, reconcile and checkpoint on the executor; adjudication through the platform CLI.",
+      "entrypoints": [
+        "skills/knowledge-verification-recovery/SKILL.md",
+        "skills/knowledge-verification-recovery/operations.md",
+        "skills/knowledge-verification-recovery/examples.md"
+      ],
+      "interface": [
+        "knowledge-verification-recovery skill 1.0.0: executor recovery_* and checkpoint_* operations, verify_read_capture/verify_get_artifact/verify_register_artifact, report_assess, artifact_get; platform adjudication request/get."
+      ],
+      "tests": [],
+      "constraints": [
+        "Host configured (KNOWLEDGE_RECOVERY_CONFIG_JSON plus remote custody); never retries an unchanged input; recovery_close, recovery_cancel and recovery_admit are absent operations."
+      ],
+      "uses": [
+        "verification-executor",
+        "verification",
+        "cli"
+      ]
+    },
+    {
+      "id": "skill-vector-store-management",
+      "path": "skills/vector-store-management",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Store-class-explicit vector-store creation, document addition, evaluation, status, and guarded space publish/rollback submissions through the platform CLI.",
+      "entrypoints": [
+        "skills/vector-store-management/SKILL.md"
+      ],
+      "interface": [
+        "vector-store-management skill 1.1.0: platform store create/show/add-documents/evaluate/status, space publish/rollback, operation status/reconcile."
+      ],
+      "tests": [],
+      "constraints": [
+        "Submissions grant no activation or rollback authority; store search and space rebuild are absent; the platform MCP catalog has no publication or space activation tool."
+      ],
+      "uses": [
+        "vector-backends",
+        "application",
+        "cli"
       ]
     },
     {

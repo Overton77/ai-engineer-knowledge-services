@@ -6,16 +6,16 @@ import { TenantPostgres, type TenantSqlClient, type TransactionScope } from "@ai
 import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
 import { loadWorkspace } from "@aiengineer/knowledge-schema-workspace";
 import { afterAll, describe, expect, it } from "vitest";
-import { classifyFailure, IngestionExecutor } from "./executor.js";
-import type { IngestionIntentInput } from "./intent.js";
-import { disposableDatabaseUrl } from "../../persistence/test/disposable.mjs";
-import { withSnapshot } from "../test/snapshot-fixture.mjs";
-import { seedPriceSlot } from "../test/current-schema-fixture.mjs";
-import { declaredRunsOracle } from "../test/declared-evidence.mjs";
+import { classifyFailure, IngestionExecutor } from "../executor.js";
+import type { IngestionIntentInput } from "../intent.js";
+import { disposableDatabaseUrl } from "../../../persistence/test/disposable.mjs";
+import { withSnapshot } from "../../test/snapshot-fixture.mjs";
+import { seedPriceSlot } from "../../test/current-schema-fixture.mjs";
+import { declaredRunsOracle } from "../../test/declared-evidence.mjs";
 
 const url = disposableDatabaseUrl();
 const TENANT = "00000000-0000-7000-8000-000000000001";
-const REAL_WORKSPACE = resolve(import.meta.dirname, "../../../../ai-engineer-db-contract/workspace");
+const REAL_WORKSPACE = resolve(import.meta.dirname, "../../../../../ai-engineer-db-contract/workspace");
 const workspaces = [["db-contract", REAL_WORKSPACE]] as [string, string][];
 
 class InterleavedPostgres extends TenantPostgres {

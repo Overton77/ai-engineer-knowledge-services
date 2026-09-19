@@ -6,12 +6,12 @@ export {
   type DnsResolver,
   type HttpPolicy,
   type SafeHttpTarget,
-} from "./http/policy.js";
+} from "./policy.js";
 export {
   buildPinnedRequestOptions,
   nodePinnedHttpTransport,
   type HttpFetch,
   type PinnedHttpTransport,
   type PinnedRequestOptions,
-} from "./http/transport.js";
-export { ExactHttpAcquisitionAdapter } from "./http/adapter.js";
+} from "./transport.js";
+export { ExactHttpAcquisitionAdapter } from "./adapter.js";

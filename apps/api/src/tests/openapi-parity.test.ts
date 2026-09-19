@@ -22,7 +22,7 @@ describe("OpenAPI route parity", () => {
 
     const contractPath = resolve(
       import.meta.dirname,
-      "../../../packages/contracts/generated/openapi.json",
+      "../../../../packages/contracts/generated/openapi.json",
     );
     const document = JSON.parse(
       await readFile(contractPath, "utf8"),

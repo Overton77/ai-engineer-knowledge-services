@@ -5,7 +5,7 @@ import {
   assertSafeHttpUrl,
   buildPinnedRequestOptions,
   isForbiddenAddress,
-} from "./index.js";
+} from "./index.js"; // the http folder barrel: adapter, policy, and transport together
 const policy = {
   allowedProtocols: ["https:"] as const,
   allowedPorts: [443],

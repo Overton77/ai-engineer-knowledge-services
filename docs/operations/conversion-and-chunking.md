@@ -103,6 +103,8 @@ Today preparation picks one profile from `document_kind` (`profileFor`). Desired
 | Tool / model cards | `tool_capabilities`, `model_capabilities` | `tool-capabilities-v1` |
 | Entity pages | `entity_profiles` | `entity-facets-v1` |
 
+The profile table now lives at `packages/chunking/src/profiles/definitions.ts` as `chunk-profile-table.v1`, with an explicit `nodeKinds` binding per profile; this prose table is a reading of that data, not a second source.
+
 A host may auto-select from this table. An agent may override only with another **admitted** `name@version`. Dynamic skills may change which admitted profiles a mission can see. They must not mint an anonymous strategy during a run.
 
 Claims / entities / tools profiles may stay “pack by tokens / split sentences” as the fallback. Desired deepening (still our package, still named): headings already break on heading boundaries; code and tables should refuse to split mid-fence or mid-row; claims stay atomic. No model-authored splitter is required for that.

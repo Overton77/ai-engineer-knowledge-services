@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planPaperAsHttpRequest } from "./plan-http.js";
-import { normalizePaperIdentifier } from "../paper.js";
+import { normalizePaperIdentifier } from "./identity.js";
 import type { AcquisitionRequest, PaperResolution } from "../types.js";
 
 const defaults: Omit<AcquisitionRequest, "target"> = {
