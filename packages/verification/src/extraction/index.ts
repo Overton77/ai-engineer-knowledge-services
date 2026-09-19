@@ -1,7 +1,6 @@
 export {
   admitExtractionSchema,
   DEFAULT_EXTRACTION_SCHEMA_LIMITS,
-  EXTRACTION_SCHEMA_GATE_VERSION,
   validateExtractionCandidate,
   type AdmittedExtractionSchema,
   type CandidateValidationCheck,

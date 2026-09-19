@@ -7,8 +7,6 @@ import {
 } from "../internal/bounded-json.js";
 import { EXTRACTION_SCHEMA_GATE_VERSION } from "../versions.js";
 
-export { EXTRACTION_SCHEMA_GATE_VERSION };
-
 export interface ExtractionSchemaAdmissionLimits {
   readonly maxSchemaBytes: number;
   readonly maxDepth: number;

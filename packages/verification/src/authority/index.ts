@@ -1,1 +1,1 @@
-export * from "./assessment.js";
+export { assessSourceAuthority, type AuthorityDecision } from "./assessment.js";

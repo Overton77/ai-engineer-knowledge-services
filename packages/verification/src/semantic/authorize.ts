@@ -175,9 +175,11 @@ function authorizeFragment(
 }
 
 /** Shared live/replay envelope: normalized values cannot be excluded from the reviewed bytes. */
-export function semanticJudgeInput(
-  semanticCase: AuthorizedSemanticCase,
-): SemanticJudgeInput {
+/**
+ * Fresh, owned copies: the returned envelope is what gets blinded and
+ * retained, so callers may extend it (inferred mutable shape is intentional).
+ */
+export function semanticJudgeInput(semanticCase: AuthorizedSemanticCase) {
   if (!authorizedSemanticCases.has(semanticCase))
     throw new Error("SEMANTIC_CASE_NOT_AUTHORIZED");
   return {
