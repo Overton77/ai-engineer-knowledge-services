@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   prototypeSha256,
+  replayPrototypeArithmetic,
   resolvePrototypeJsonPointer,
   resolvePrototypeTextLocator,
-} from "./prototype-compat.js";
-import { replayPrototypeArithmetic } from "./prototype-bundle-compat.js";
+} from "./index.js";
 
 describe("prototype compatibility boundary", () => {
   it("keeps frozen legacy digest and text-locator outputs", () => {

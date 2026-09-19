@@ -1,5 +1,6 @@
-import { resolveEvidenceSelector } from "./evidence-selection/index.js";
-import { sha256Digest, toPrototypeSha256 } from "./canonical/index.js";
+import { sha256Digest } from "../canonical/index.js";
+import { resolveEvidenceSelector } from "../evidence-selection/index.js";
+import { prototypeSha256 } from "./digest.js";
 
 /**
  * Compatibility contract for the pre-KS verification prototype.
@@ -24,18 +25,6 @@ export interface PrototypeResolvedTextLocator {
   readonly end: number | null;
   readonly selectedContentSha256: string | null;
   readonly occurrenceCount: number;
-}
-
-export interface PrototypeResolvedJsonPointer extends Omit<
-  PrototypeResolvedTextLocator,
-  "matchMode"
-> {
-  readonly matchMode: "json_pointer" | "not_found" | "parse_error";
-  readonly value: unknown;
-}
-
-export function prototypeSha256(value: string): string {
-  return toPrototypeSha256(sha256Digest(value));
 }
 
 function contentForPrototypeBasis(
@@ -162,65 +151,5 @@ export function resolvePrototypeTextLocator(
     end,
     selectedContentSha256: prototypeSha256(basisContent.slice(start, end)),
     occurrenceCount: 1,
-  };
-}
-
-/** Preserves the prototype JSON pointer behavior, including JSON.stringify bytes. */
-export function resolvePrototypeJsonPointer(
-  content: string,
-  pointer: string,
-): PrototypeResolvedJsonPointer {
-  let value: unknown;
-  try {
-    value = JSON.parse(content) as unknown;
-  } catch {
-    return {
-      matchMode: "parse_error",
-      start: null,
-      end: null,
-      selectedContentSha256: null,
-      occurrenceCount: 0,
-      value: undefined,
-    };
-  }
-  for (const token of pointer
-    .slice(1)
-    .split("/")
-    .map((item) => item.replace(/~1/g, "/").replace(/~0/g, "~"))) {
-    if (Array.isArray(value)) {
-      const index = Number(token);
-      if (!Number.isInteger(index) || index < 0 || index >= value.length)
-        return {
-          matchMode: "not_found",
-          start: null,
-          end: null,
-          selectedContentSha256: null,
-          occurrenceCount: 0,
-          value: undefined,
-        };
-      value = value[index];
-    } else if (
-      value !== null &&
-      typeof value === "object" &&
-      Object.prototype.hasOwnProperty.call(value, token)
-    ) {
-      value = (value as Record<string, unknown>)[token];
-    } else
-      return {
-        matchMode: "not_found",
-        start: null,
-        end: null,
-        selectedContentSha256: null,
-        occurrenceCount: 0,
-        value: undefined,
-      };
-  }
-  return {
-    matchMode: "json_pointer",
-    start: null,
-    end: null,
-    selectedContentSha256: prototypeSha256(JSON.stringify(value)),
-    occurrenceCount: 1,
-    value,
   };
 }

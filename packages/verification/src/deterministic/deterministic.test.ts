@@ -12,7 +12,7 @@ import {
   prototypeClaimInput,
   prototypeMetricInput,
   runtimePrincipals,
-} from "./testing/prototype-parity.fixture.js";
+} from "./engine-golden.fixture.js";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const replaceArtifactContent = (

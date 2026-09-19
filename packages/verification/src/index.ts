@@ -223,22 +223,6 @@ export {
   type VerificationSemanticReplayPort,
 } from "./provenance/index.js";
 
-// Frozen prototype behavior; moves to a subpath export next.
-export {
-  prototypeSha256,
-  resolvePrototypeJsonPointer,
-  resolvePrototypeTextLocator,
-  type PrototypeResolvedJsonPointer,
-  type PrototypeResolvedTextLocator,
-  type PrototypeTextLocator,
-  type PrototypeTextOffsetBasis,
-} from "./prototype-compat.js";
-export {
-  replayPrototypeArithmetic,
-  verifyPrototypeBundle,
-  type PrototypeArithmeticExpression,
-} from "./prototype-bundle-compat.js";
-
 // Contract types some consumers still reach through this package. Prefer
 // importing them from `@aiengineer/knowledge-contracts` directly.
 export type {

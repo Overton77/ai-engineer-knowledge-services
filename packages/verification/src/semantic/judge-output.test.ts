@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sha256Digest } from "../canonical/index.js";
 import { verifyDeterministicBundle } from "../deterministic/index.js";
-import { prototypeClaimInput } from "../deterministic/testing/prototype-parity.fixture.js";
+import { prototypeClaimInput } from "../deterministic/engine-golden.fixture.js";
 import {
   verifyAssertionSemantics,
   type SemanticJudgeAdapter,

@@ -4,11 +4,11 @@ import type {
   VerificationBundle,
   VerificationMetricObservation,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "../../canonical/index.js";
+import { sha256Digest } from "../canonical/index.js";
 import type {
   DeterministicVerificationInput,
   RuntimePrincipalBinding,
-} from "../bundle-verification.js";
+} from "./bundle-verification.js";
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
 const artifactId = "22222222-2222-4222-8222-222222222222";

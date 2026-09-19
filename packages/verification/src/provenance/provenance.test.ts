@@ -10,7 +10,7 @@ import { verifyDeterministicBundle } from "../deterministic/index.js";
 import {
   prototypeClaimInput,
   prototypeMetricInput,
-} from "../deterministic/testing/prototype-parity.fixture.js";
+} from "../deterministic/engine-golden.fixture.js";
 import {
   createEd25519Signer,
   createEd25519Verifier,
