@@ -23,7 +23,13 @@ import {
   type JsonValue,
   type OperationKind,
 } from "@aiengineer/knowledge-contracts";
-import type { ConversionNode, ConversionProfile, DocumentConversionProvider } from "@aiengineer/knowledge-conversion";
+import {
+  conversionRouterFromProviders,
+  type ConversionNode,
+  type ConversionProfile,
+  type ConversionRoutingReceipt,
+  type DocumentConversionProvider,
+} from "@aiengineer/knowledge-conversion";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
 import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-documents";
@@ -641,16 +647,27 @@ function preparationHandlers(
           ...(input.profile.preserveHtml===undefined?{}:{preserveHtml:input.profile.preserveHtml}),
           ...(input.profile.maximumPolls===undefined?{}:{maximumPolls:input.profile.maximumPolls}),
         };
-        const attempts: {provider:string;outcome:string;failureClass?:string}[]=[];
-        let output: Awaited<ReturnType<DocumentConversionProvider["convert"]>>|undefined;
         for (const providerKey of input.providerRoute) {
-          const provider = providers.get(providerKey);
-          if (!provider) throw new CanonicalActivityError("CONVERSION_PROVIDER_NOT_ADMITTED",`Provider ${providerKey} is not configured in this worker`,false);
-          if (!provider.supports(profile)) { attempts.push({provider:providerKey,outcome:"skipped",failureClass:"unsupported_profile"}); continue; }
-          try { output=await provider.convert({tenantId:activity.context.tenantId,sourceArtifact,profile}); attempts.push({provider:providerKey,outcome:"succeeded"}); break; }
-          catch (error) { attempts.push({provider:providerKey,outcome:"failed",failureClass:error instanceof Error?`${error.name}:${error.message}`:"unknown"}); }
+          if (!providers.has(providerKey)) {
+            throw new CanonicalActivityError("CONVERSION_PROVIDER_NOT_ADMITTED",`Provider ${providerKey} is not configured in this worker`,false);
+          }
         }
-        if (!output) throw new CanonicalActivityError("CONVERSION_ROUTE_EXHAUSTED",JSON.stringify(attempts),true);
+        let output: Awaited<ReturnType<DocumentConversionProvider["convert"]>>;
+        let routingReceipt: ConversionRoutingReceipt;
+        try {
+          const routed = await conversionRouterFromProviders([...providers.values()]).convertWithReceipt(
+            {tenantId:activity.context.tenantId,sourceArtifact,profile},
+            {admittedKeys:input.providerRoute},
+          );
+          output = routed.output;
+          routingReceipt = routed.receipt;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.startsWith("CONVERSION_EXHAUSTED") || message.startsWith("CONVERSION_ROUTER_MISSING")) {
+            throw new CanonicalActivityError("CONVERSION_ROUTE_EXHAUSTED", message, true);
+          }
+          throw error;
+        }
         const structuralRepresentationId = deterministicUuid("structural-representation",`${activity.context.tenantId}:${output.requestDigest}`);
         const blocks = structuralBlocks(output.nodes);
         if (blocks.length===0) throw new CanonicalActivityError("CONVERSION_NO_ADMITTED_NODES","Converter produced no admitted structural nodes",false);
@@ -681,7 +698,9 @@ function preparationHandlers(
             digest:sha256Digest(node.text) as `sha256:${string}`,locator:node.locator})),
           fidelity:{grade:output.fidelity.grade,coverage:output.metrics.characterCoverage,locatorCoverage:output.metrics.locatorResolvability,findings:output.fidelity.findings},
           receipt:{schemaVersion:"knowledge.conversion-receipt/v1",provider:`${output.providerKey}@${output.providerVersion}`,profileDigest:output.profileDigest,
-            requestDigest:output.requestDigest,receiptDigest:output.receiptDigest,attempts,artifacts:[native,markdown,plain],metrics:output.metrics,fidelity:output.fidelity},
+            requestDigest:output.requestDigest,receiptDigest:output.receiptDigest,candidateRoute:routingReceipt.candidateRoute,
+            selectedProviderKey:routingReceipt.selectedProviderKey,fallbackUsed:routingReceipt.fallbackUsed,attempts:routingReceipt.attempts,
+            artifacts:[native,markdown,plain],metrics:output.metrics,fidelity:output.fidelity},
           completedAt:capture.capturedAt,
         });
         const reviewSubjectId=deterministicUuid("representation-review",`${persisted.structuralRepresentationId}:${persisted.structuralArtifactDigest}`);

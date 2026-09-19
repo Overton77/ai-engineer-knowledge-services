@@ -11,7 +11,20 @@ import { knowledgeOperations } from "./operations.js";
 describe("operation registry", () => {
   it("exposes knowledge operations with CLI bindings and short descriptions", () => {
     const names = knowledgeOperations.list().map((operation) => operation.name);
-    expect(names).toEqual(["checkpoint_harness", "checkpoint_commit", "checkpoint_head", "checkpoint_read", "checkpoint_restore", "checkpoint_tombstone", "schema_search", "schema_get", "schema_manifest", "schema_materialize", "db_head", "db_read_intent", "db_sql_readonly", "db_explain", "ingest_plan", "ingest_apply", "ingest_receipt", "artifact_get", "source_discover", "source_import", "source_attempt", "source_reconcile", "source_select", "report_register", "report_get"]);
+    expect(names).toEqual([
+      "source_prepare_captured", "report_assess",
+      "recovery_status", "recovery_submit", "recovery_observe", "recovery_read",
+      "recovery_probe", "recovery_plan", "recovery_claim", "recovery_execute",
+      "recovery_reconcile", "recovery_wait", "recovery_resume",
+      "content_link_plan", "content_link_apply", "content_link_receipt", "content_summary_prepare",
+      "checkpoint_harness", "checkpoint_commit", "checkpoint_head", "checkpoint_read",
+      "checkpoint_restore", "checkpoint_tombstone",
+      "schema_search", "schema_get", "schema_manifest", "schema_materialize",
+      "db_head", "db_read_intent", "db_sql_readonly", "db_explain",
+      "ingest_plan", "ingest_apply", "ingest_receipt", "artifact_get",
+      "source_discover", "source_import", "source_attempt", "source_reconcile", "source_select",
+      "report_register", "report_get",
+    ]);
     expect(knowledgeOperations.byCommand("db", "read-intent")?.name).toBe("db_read_intent");
     expect(knowledgeOperations.list().every((operation) => operation.description.length <= 300)).toBe(true);
   });

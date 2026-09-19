@@ -51,8 +51,9 @@
     "test:live:gate1": "tsx --env-file=../.env scripts/live-gate1.ts",
     "test:live:docling": "tsx scripts/live-docling-conversion.ts",
     "typecheck": "turbo run typecheck",
-    "verify": "corepack pnpm typecheck && corepack pnpm test && corepack pnpm build",
-    "experiment:model-card-verification": "tsx --env-file=.env scripts/experiments/model-card-verification/run.ts"
+    "verify": "corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm examples:verification",
+    "experiment:model-card-verification": "tsx --env-file=.env scripts/experiments/model-card-verification/run.ts",
+    "examples:verification": "corepack pnpm --filter @aiengineer/knowledge-verification examples && corepack pnpm --filter @aiengineer/knowledge-verification-executor examples"
   },
   "devDependencies": {
     "@types/node": "catalog:",

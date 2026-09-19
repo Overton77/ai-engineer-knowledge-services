@@ -120,7 +120,7 @@ const filesOf = (directory) => {
 const contentDigest = (files) => createHash("sha256").update(JSON.stringify(Object.fromEntries(Object.entries(files).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))))).digest("hex");
 
 const codeSpans = (text) => [...text.matchAll(/`([^`\n]+)`/g)].map((match) => match[1])
-  .concat([...text.matchAll(/```[a-z]*\n([\s\S]*?)```/g)].flatMap((match) => match[1].split("\n")));
+  .concat([...text.matchAll(/```[a-z]*\r?\n([\s\S]*?)```/g)].flatMap((match) => match[1].split(/\r?\n/)));
 
 const report = { skills: [], manifestDigest: contentDigest({ "manifest.json": read(join(skillsRoot, "manifest.json")) }) };
 
@@ -163,7 +163,8 @@ for (const skill of manifest.skills) {
     if (executorMcpTools.has(name) || platformTools.has(name) || platform.get(name) === "admitted") fail(`${skill.id}: declares "${name}" unavailable, but it is now an admitted operation — update the skill`);
   }
   for (const span of codeSpans(body)) {
-    for (const candidate of span.matchAll(/\b((?:knowledge|verify|schema|db|ingest|artifact|report|recovery|content|checkpoint|source)_[a-z0-9_]+)(\*?)/g)) {
+    const toolText = span.replace(/"serviceIdentity"\s*:\s*"[^"]*"/g, "");
+    for (const candidate of toolText.matchAll(/\b((?:knowledge|verify|schema|db|ingest|artifact|report|recovery|content|checkpoint|source)_[a-z0-9_]+)(\*?)/g)) {
       const name = candidate[1];
       if (candidate[2] === "*" || name.endsWith("_")) continue;
       if (executorMcpTools.has(name) || platformTools.has(name) || absent.has(name)) continue;
@@ -198,6 +199,38 @@ for (const skill of manifest.skills) {
   }
 
   report.skills.push({ id: skill.id, version: skill.version, digest: contentDigest(files), files: Object.keys(files).sort() });
+}
+
+// The executor-owned skill is shipped separately from the platform catalog.
+// Hash every reference/template, and resolve nested links from their own file.
+const executorManifest = JSON.parse(read(join(executorRoot, "skills/manifest.json")));
+const verificationSkill = executorManifest.skills.find((skill) => skill.id === "knowledge-verify");
+if (!verificationSkill) fail("executor manifest omits knowledge-verify");
+else {
+  const directory = join(executorRoot, "skills/knowledge-verify");
+  const files = filesOf(directory);
+  const cliSource = read(join(executorRoot, "src/index.ts"));
+  const commands = new Set([...cliSource.matchAll(/case "([a-z][a-z-]*)":/g)].map((match) => match[1]));
+  for (const reference of verificationSkill.references ?? []) {
+    if (!files[reference]) fail(`knowledge-verify: missing shipped reference ${reference}`);
+  }
+  for (const [name, body] of Object.entries(files)) {
+    if (name.endsWith(".mjs")) {
+      try { execFileSync(process.execPath, ["--check", join(directory, name)], { stdio: "pipe", windowsHide: true }); }
+      catch { fail(`knowledge-verify: template syntax invalid: ${name}`); }
+    }
+    if (!name.endsWith(".md")) continue;
+    for (const span of codeSpans(body)) {
+      const command = /^\s*knowledge-verify\s+([a-z][a-z-]*)/.exec(span)?.[1];
+      if (command && !commands.has(command) && !["help", "serve", "mcp-stdio"].includes(command)) fail(`knowledge-verify: unknown CLI command ${command}`);
+    }
+    for (const link of body.matchAll(/\]\(([^)\s#]+)(?:#[^)]*)?\)/g)) {
+      if (/^[a-z]+:/i.test(link[1])) continue;
+      const target = resolve(dirname(join(directory, name)), link[1]);
+      if (!existsSync(target)) fail(`knowledge-verify/${name}: broken relative link ${link[1]}`);
+    }
+  }
+  report.skills.push({ id: verificationSkill.id, version: verificationSkill.version, digest: contentDigest(files), files: Object.keys(files).sort() });
 }
 
 if (problems.length) {

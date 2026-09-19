@@ -128,7 +128,7 @@ affected references, head before/after, and storage references; it is the
 authority after an uncertain response. See
 [`apply.ts`](../packages/ingestion/src/apply.ts),
 [`executor.ts`](../packages/ingestion/src/executor.ts), and
-[`executor.integration.test.ts`](../packages/ingestion/src/executor.integration.test.ts).
+[`executor.integration.test.ts`](../packages/ingestion/src/tests/executor.integration.test.ts).
 
 | Situation | Correct action | Do not |
 | --- | --- | --- |

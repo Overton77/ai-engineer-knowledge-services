@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { SemanticAssessmentRecordSchema, VerificationPolicyDecisionSchema, VerificationPolicyDefinitionSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, digestCanonicalJson, inspectAuditBundle, validateRecordedPolicyInputsArtifact, resolveBuiltInSelector, resolveWithAdmittedResolver, projectionSelectorResolver, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
+import { canonicalizeJson, digestCanonicalJson, inspectAuditBundle, validateRecordedPolicyInputsArtifact, resolveEvidenceSelector, projectionSelectorResolver, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { evaluateVerificationPolicy } from "@aiengineer/knowledge-policy";
 
 import type { AuthoritativeClaim, EvidenceOracle, IngestionIntent } from "@aiengineer/knowledge-ingestion";
@@ -169,7 +169,7 @@ async function hydrateRun(verification: VerificationEvidenceReader, input: { run
       const content = bytes.get(edge.fragment.representationArtifactId);
       if (!representation || !content) deny();
       const request = { captureId: capture.captureId, representationArtifactId: representation.artifactId, representationDigest: representation.digest, selector: edge.fragment.selector, content };
-      const selected = resolveBuiltInSelector(request) ?? resolveWithAdmittedResolver(request, [projectionSelectorResolver]);
+      const selected = resolveEvidenceSelector(request, [projectionSelectorResolver]);
       if (!selected || !equal(selected.resolution, resolution.resolution)) deny();
       selectedBytes.set(JSON.stringify([claim.claimId, edge.fragment.fragmentId]), selected.selectedContent);
       return { source, capture: { captureId: capture.captureId, capturedAt: capture.capturedAt, captureMethod: capture.captureMethod,

@@ -271,8 +271,9 @@ export class CanonicalRecoveryHost {
     const original = current.initialBatch.items.find(item => item.observation.operationId === operationId);
     const inputDigest = execution?.inputDigest ?? original?.inputDigest;
     if (!inputDigest) throw new Error("RECOVERY_HOST_NEW_AUTHORITY_REQUIRED");
+    const originalId = execution?.originalId ?? original?.originalId;
     const result = await this.authority.readResult({ tenantId: reference.tenantId, inputDigest, operationId,
-      originalId: execution?.originalId ?? original?.originalId });
+      ...(originalId === undefined ? {} : { originalId }) });
     if (!result || result.revoked || !result.observation.diagnosticArtifacts.some(value => same(value, artifact))) {
       throw new Error("RECOVERY_HOST_NEW_AUTHORITY_REQUIRED");
     }

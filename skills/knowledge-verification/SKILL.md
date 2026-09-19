@@ -9,13 +9,16 @@ description: >-
   CLI, or running the diagnostics-companies demo.
 license: Proprietary
 metadata:
-  version: "1.0.0"
+  version: "1.2.0"
   contract: "verification.v1"
 ---
 
 # Knowledge verification
 
 Admitted verification of extractions, claims (citations / source attribution), reports, benchmarks, replays, audit bundles, and adjudication. Surfaces are the `knowledge` CLI and bounded MCP tools. Contract: `verification.v1`. Skills contain operational instructions, not verifier algorithms.
+
+Read [assertion and media decisions](capabilities.md) to distinguish library selectors from
+admitted capture surfaces and mechanical results from semantic support.
 
 ## When to use
 
@@ -28,7 +31,7 @@ Two CLIs exist. Pick by where you are running:
 
 | You are… | Use | Skill |
 |---|---|---|
-| A research agent producing a verified report (capture → quote → intent → judge → policy → seal), typically inside a sandbox with `VERIFY_EXECUTOR_URL` set | `knowledge-verify` (verification executor) | [`apps/verification-executor/skills/knowledge-verify/SKILL.md`](../../apps/verification-executor/skills/knowledge-verify/SKILL.md) |
+| A research agent producing a verified report (capture → quote → intent → judge → policy → seal), typically inside a sandbox with `VERIFY_EXECUTOR_URL` set | `knowledge-verify` (verification executor) | the separately installed `knowledge-verify` skill |
 | An operator or orchestration agent calling the admitted platform API with tenant/mission ownership context (`knowledge verify …`, `knowledge_verify_*` MCP) | `knowledge` CLI / MCP | this skill |
 
 Do not mix them in one run: the executor writes its own run receipts and store; the platform API writes to Postgres via operations. If `knowledge-verify --help` works and `KNOWLEDGE_API_URL` is unset, you are on the executor surface.

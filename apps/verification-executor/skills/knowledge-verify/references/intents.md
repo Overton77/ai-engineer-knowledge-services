@@ -61,6 +61,7 @@ The same three schemas are used on every surface (CLI, MCP tools `verify_*`, HTT
     "schemaVersion": "1",
     "jsonSchema": {
       "type": "object",
+      "description": "Synthetic model metrics example",
       "additionalProperties": false,
       "required": ["opus5_context_window"],
       "properties": {
@@ -80,8 +81,14 @@ The same three schemas are used on every surface (CLI, MCP tools `verify_*`, HTT
 | `schema.jsonSchema` | bounded object schema: root `type: object` with `properties`, `required`, `additionalProperties: false`; every node has a non-empty `description`; every string has `maxLength`; every array has bounded `items` and `maxItems`. Unbounded schemas are refused at admission (`SCHEMA_*` checks). |
 | `candidate` | the extracted object; must validate against the schema. Every leaf needs a `fields[]` binding. |
 | `fields[].path` | JSON pointer into `candidate` (`/models/0/context_window`) |
-| `fields[].comparison` | usable through this intent: `exact` (default), `normalized_text`, `decimal`, `percentage`, `date`, `datetime`. (`currency`, `unit`, `enum`, `identifier`, `checksum` exist in the verifier but need rule options the intent does not carry yet — express those values as claims.) |
+| `fields[].comparison` | `exact`, `normalized_text`, `decimal`, `percentage`, `currency`, `unit`, `date`, `datetime`, `enum`, `identifier`, `checksum`; see required options below |
 | `fields[].quote` | must occur exactly once in the capture and, under the chosen comparison, equal the candidate value |
+
+Optional rule fields are `normalizationId`, `allowedValues`, decimal-string `minimum`/`maximum`,
+`identifierKind` (uuid/sha256/cve/currency_code_token), and `checksum` (luhn/isbn13).
+Top-level `normalizations` contains bounded `{ id, operation }` rules.
+Use only options applicable to the comparison; omitted required configuration fails closed.
+See [comparison choices and runnable examples](capabilities.md). All values above are synthetic.
 
 Use `exact` unless whitespace differs (`normalized_text`) or the value is numeric text that the
 source prints differently (`decimal`, `percentage`). When a quote has to be longer than the value

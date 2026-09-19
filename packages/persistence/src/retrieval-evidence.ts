@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { VerificationSelectorSchema } from "@aiengineer/knowledge-contracts";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
-import { digestCanonicalJson, resolveBuiltInSelector } from "@aiengineer/knowledge-verification";
+import { digestCanonicalJson, resolveEvidenceSelector } from "@aiengineer/knowledge-verification";
 import type { TenantSqlClient } from "./postgres.js";
 import { readRepresentationDependencies } from "./representation-dependency.js";
 
@@ -62,7 +62,7 @@ export class RetrievalCitationReplay {
     const capture = await this.artifact(input.tenantId, String(row.capture_artifact_id), `sha256:${row.capture_sha256}`);
     const representation = row.representation_artifact_id === row.capture_artifact_id ? capture
       : await this.artifact(input.tenantId, String(row.representation_artifact_id));
-    const selected = resolveBuiltInSelector({ captureId: String(row.capture_id), representationArtifactId: String(row.representation_artifact_id),
+    const selected = resolveEvidenceSelector({ captureId: String(row.capture_id), representationArtifactId: String(row.representation_artifact_id),
       representationDigest: representation.digest, selector, content: representation.bytes });
     if (!selected) throw new Error("RETRIEVAL_SELECTOR_UNSUPPORTED");
     if (selected.resolution.status !== "resolved" || selected.resolution.selectedContentDigest !== input.selectedContentDigest

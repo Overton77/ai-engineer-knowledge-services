@@ -1,5 +1,5 @@
 import { VerificationBenchmarkCaseSchema, VerificationBenchmarkDatasetSchema, VerificationExtractionFieldEvidenceResultSchema, VerificationSourceCaptureSchema, VerificationSourceSchema, type VerificationBenchmarkCase, type VerificationBenchmarkDataset, type VerificationExtractionFieldEvidenceResult, type VerificationSource, type VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
-import { admitExtractionSchema, digestCanonicalJson, projectionSelectorResolver, resolveWithAdmittedResolver, sha256Digest } from "@aiengineer/knowledge-verification";
+import { admitExtractionSchema, digestCanonicalJson, projectionSelectorResolver, resolveEvidenceSelector, sha256Digest } from "@aiengineer/knowledge-verification";
 import type { VerificationAdmissionService } from "../verification/admission/verification-admission.js";
 
 type Digest=`sha256:${string}`;
@@ -124,7 +124,7 @@ export async function executeDiagnosticsCompanyFieldPlan(input:{readonly tenantI
   const edge=testCase.evidence[0]!;if(capture.captureId!==edge.captureId||capture.sourceId!==source.sourceId||capture.contentArtifact.tenantId!==input.tenantId)throw new Error("DIAGNOSTICS_COMPANY_FIELD_CASE_CAPTURE_MISMATCH");
   const hydrated=await input.admission.hydrateAdmittedProjection({tenantId:input.tenantId,captureId:capture.captureId,expectedSourceArtifact:{artifactId:capture.contentArtifact.artifactId,digest:capture.contentArtifact.digest as Digest},transformationArtifactId:edge.transformationArtifactId,projectionArtifactId:edge.projectionArtifactId});
   if(hydrated.receipt.projectionArtifact.digest!==edge.projectionDigest)throw new Error("DIAGNOSTICS_COMPANY_FIELD_PROJECTION_MISMATCH");
-  const selected=resolveWithAdmittedResolver({captureId:capture.captureId,representationArtifactId:hydrated.receipt.projectionArtifact.artifactId,representationDigest:hydrated.receipt.projectionArtifact.digest as Digest,selector:edge.selector,content:hydrated.content},[projectionSelectorResolver]);
+  const selected=resolveEvidenceSelector({captureId:capture.captureId,representationArtifactId:hydrated.receipt.projectionArtifact.artifactId,representationDigest:hydrated.receipt.projectionArtifact.digest as Digest,selector:edge.selector,content:hydrated.content},[projectionSelectorResolver]);
   if(!selected?.selectedText||selected.resolution.status!=="resolved"||selected.resolution.selectedContentDigest!==edge.selectedContentDigest||sha256Digest(selected.selectedContent)!==edge.selectedContentDigest)throw new Error("DIAGNOSTICS_COMPANY_FIELD_SOURCE_SELECTION_MISMATCH");
   for(const pattern of patterns){
    const match=pattern.expression.exec(selected.selectedText),asStated=match?.[pattern.group];if(!asStated)throw new Error(`DIAGNOSTICS_COMPANY_FIELD_PATTERN_DRIFT:${testCase.caseId}:${pattern.retainedProfileKey}`);

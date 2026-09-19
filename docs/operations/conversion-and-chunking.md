@@ -1,12 +1,12 @@
 ---
-status: proposed
+status: conversion-cleanup-landed
 owner: knowledge-services
 created: 2026-09-16
 ---
 
 # Conversion route and admitted chunk profiles
 
-Status: **Proposed. Conceptual recommendation accepted 2026-09-16. Do not start implementation while another agent is changing Knowledge Services.**
+Status: **Conversion fallback cleanup landed 2026-09-16. Chunk multi-profile selection is the next slice.**
 
 Parent slice (work order, acquisition, application folders): [internal fallbacks, inspection, and application order](internal-fallbacks-and-application-order.md). This page is the conversion and chunking sibling. It does not claim the router order, multi-profile selection, or skill rewrite exist yet.
 
@@ -60,7 +60,7 @@ Already the right package. Do not move Docling or Unstructured into acquisition.
 
 Desired router order: **text → Docling → Unstructured (gated)**. Unstructured is the expensive safety net, not the default.
 
-Today `ConversionRouter` is the opposite for paid docs: if `managedProcessingAllowed`, it tries managed Unstructured first, then the local Docling fallback. Cleanup flips that order, pins versions, and makes the routing receipt (candidate route, attempts, `fallbackUsed`, fidelity) the thing skills teach. Credentials never appear in URLs or errors.
+`ConversionRouter` now walks **text → Docling → Unstructured (gated)**. Exclusive text never calls Docling or Unstructured. A PDF can succeed on Docling with no Unstructured key. The routing receipt (candidate route, attempts, `fallbackUsed`, fidelity) is the thing skills teach. Credentials never appear in URLs or errors. The worker intersects a caller `providerRoute` with that policy order; it does not let Unstructured jump the queue.
 
 Fidelity is conversion QA: character coverage, locator resolvability, encoding, repeated blocks. `alternate_conversion` means try the next **admitted** converter. It does not mean the agent writes a parser.
 
@@ -164,13 +164,11 @@ Recorded so implementation does not invent product. Parent slice owns acquire/in
 - Rewriting `packages/verification` algorithms.
 - Application folder moves (parent slice).
 
-## Observed today (so the first cleanup is honest)
+## Observed after the conversion cleanup
 
-These are observations, not permission to start while the other agent is in the tree.
+- `ConversionRouter` order is text → Docling → gated Unstructured. Exclusive text never calls the binaries. Office Open XML is not treated as text. Low-fidelity `alternate_conversion` advances to the next admitted converter. Routing receipts omit secrets.
+- Worker durable convert uses `conversionRouterFromProviders` and keeps `providerRoute` as the admitted set, not as an Unstructured-first queue.
+- In-process preparation (`packages/application/src/preparation/preparation.ts`) still converts with the text provider only (`managedProcessingAllowed: false`) and picks one profile from `document_kind`. Multi-profile selection is the next slice.
+- `knowledge-preparation-and-promotion` 1.3.0 teaches the router, the two inspections, and points at `packages/conversion/examples`. Chunk profile table teaching stays thin until that slice lands.
 
-- `DeterministicTextConversionProvider`, Docling HTTP client, Unstructured HTTP client, and `ConversionRouter` exist. Desired order is not the current managed-first order.
-- `ChunkProfileRegistry` and `chunkDocument` exist with the seven strategies above. Overlap is declared on profiles; confirm it is applied before teaching it.
-- Preparation (`packages/application/src/preparation.ts`) converts with the text provider only (`managedProcessingAllowed: false`) and picks one profile from `document_kind`.
-- `knowledge-preparation-and-promotion` states the loop and `prepare-captured`; it does not yet teach the router, the profile table, or worked MCP/CLI examples.
-
-When work starts, recheck `git status` and both operations pages against the tree.
+Recheck `git status` and both operations pages against the tree before the chunking slice.

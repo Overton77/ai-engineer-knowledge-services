@@ -13,7 +13,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [client-typescript](../docs/agents/CODE-MAP.md#client-typescript) | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | packages/client-typescript/src/index.ts |
 | [config](../docs/agents/CODE-MAP.md#config) | Validates server, authentication, and semantic-provider configuration. | packages/config/src/index.ts |
 | [contracts](../docs/agents/CODE-MAP.md#contracts) | Versioned Zod schemas and types shared by transports, application composition, and clients. | packages/contracts/src/index.ts |
-| [conversion](../docs/agents/CODE-MAP.md#conversion) | Converts captured inputs and wraps external Docling and isolated native parser routes. | packages/conversion/src/index.ts |
+| [conversion](../docs/agents/CODE-MAP.md#conversion) | Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser. | packages/conversion/src/index.ts |
 | [db-read](../docs/agents/CODE-MAP.md#db-read) | Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger. | packages/db-read/src/index.ts |
 | [documents](../docs/agents/CODE-MAP.md#documents) | Constructs immutable document nodes and source locators from structural blocks. | packages/documents/src/index.ts |
 | [domain](../docs/agents/CODE-MAP.md#domain) | Shared digest, identity, idempotency, error, authority, and state-machine primitives. | packages/domain/src/index.ts |

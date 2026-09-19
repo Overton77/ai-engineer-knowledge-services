@@ -2,7 +2,7 @@ import type { VerificationBenchmarkCase, VerificationSelector } from "@aienginee
 import {
   admitExtractionSchema,
   projectionSelectorResolver,
-  resolveWithAdmittedResolver,
+  resolveEvidenceSelector,
   sha256Digest,
   verifyExtractionFields,
   type ExtractionFieldVerificationResult,
@@ -78,7 +78,7 @@ export function verifyDiagnosticsAdversarialProjection(input: DiagnosticsAdversa
     || sha256Digest(input.content) !== projectionDigest)
     throw new Error("DIAGNOSTICS_ADVERSARIAL_ADMISSION_BINDING");
 
-  const selected = resolveWithAdmittedResolver({
+  const selected = resolveEvidenceSelector({
     captureId: evidence.captureId,
     representationArtifactId: receipt.projectionArtifact.artifactId,
     representationDigest: projectionDigest,

@@ -193,10 +193,13 @@
         "knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP."
       ],
       "tests": [
-        "apps/verification-executor/src/knowledge/cli.test.ts"
+        "apps/verification-executor/src/knowledge/cli.test.ts",
+        "apps/verification-executor/src/locate.test.ts",
+        "apps/verification-executor/src/intents.test.ts"
       ],
       "constraints": [
-        "Distinct from apps/api's durable service transport; preserve the explicit sandbox capability model. Knowledge services are absent when no database URL is configured."
+        "Distinct from apps/api's durable service transport; preserve the explicit sandbox capability model. Knowledge services are absent when no database URL is configured.",
+        "Agent claim/extraction intents select exact text quotes; native projection selector support in the library does not imply executor media admission."
       ],
       "uses": [
         "schema-workspace",
@@ -356,16 +359,18 @@
       "path": "packages/conversion",
       "kind": "package",
       "state": "implemented",
-      "summary": "Converts captured inputs and wraps external Docling and isolated native parser routes.",
+      "summary": "Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser.",
       "entrypoints": [
-        "packages/conversion/src/index.ts"
+        "packages/conversion/src/index.ts",
+        "packages/conversion/src/route.ts"
       ],
       "interface": [
-        "Conversion providers, HTTP clients, and SandboxedVerificationParser."
+        "ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser."
       ],
       "tests": [
         "packages/conversion/src/conversion.test.ts",
-        "packages/conversion/src/verification-parser.test.ts"
+        "packages/conversion/src/verification-parser.test.ts",
+        "packages/conversion/examples/examples.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -471,9 +476,9 @@
         "IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf."
       ],
       "tests": [
-        "packages/ingestion/src/plan.test.ts",
-        "packages/ingestion/src/duplicate.test.ts",
-        "packages/ingestion/src/executor.integration.test.ts"
+        "packages/ingestion/src/tests/plan.test.ts",
+        "packages/ingestion/src/tests/duplicate.test.ts",
+        "packages/ingestion/src/tests/executor.integration.test.ts"
       ],
       "constraints": [
         "Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row."
@@ -956,54 +961,6 @@
       ]
     },
     {
-      "id": "verification-internal",
-      "path": "packages/verification/src/internal",
-      "kind": "support module",
-      "state": "implemented",
-      "summary": "Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.",
-      "entrypoints": [
-        "packages/verification/src/internal/bounded-json.ts",
-        "packages/verification/src/internal/deep-freeze.ts",
-        "packages/verification/src/internal/guards.ts"
-      ],
-      "interface": [
-        "Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting."
-      ],
-      "tests": [
-        "packages/verification/src/extraction/candidate-preflight.test.ts",
-        "packages/verification/src/semantic/judge-output.test.ts",
-        "packages/verification/src/providers/preflight-json.test.ts"
-      ],
-      "constraints": [
-        "Internal verification seam; do not expose it as a cross-repository import contract."
-      ],
-      "uses": []
-    },
-    {
-      "id": "verification-prototype-compat",
-      "path": "packages/verification/src/prototype-compat",
-      "kind": "compatibility module",
-      "state": "implemented",
-      "summary": "Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.",
-      "entrypoints": [
-        "packages/verification/src/prototype-compat/index.ts"
-      ],
-      "interface": [
-        "Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade."
-      ],
-      "tests": [
-        "packages/verification/src/prototype-compat/prototype-compat.test.ts"
-      ],
-      "constraints": [
-        "Internal verification seam; do not expose it as a cross-repository import contract.",
-        "Legacy behavior is frozen: no algorithm changes, no new callers."
-      ],
-      "uses": [
-        "verification-canonical",
-        "verification-evidence-selection"
-      ]
-    },
-    {
       "id": "docling",
       "path": "services/docling",
       "kind": "service",
@@ -1189,6 +1146,100 @@
       "uses": [
         "ingestion",
         "verification-executor"
+      ]
+    },
+    {
+      "id": "skill-knowledge-verification",
+      "path": "skills/knowledge-verification",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Platform verification procedure with assertion/media routing, admitted operations, held outcomes and audit limits.",
+      "entrypoints": [
+        "skills/knowledge-verification/SKILL.md",
+        "skills/knowledge-verification/capabilities.md"
+      ],
+      "interface": [
+        "Versioned platform CLI/MCP procedure; complete directory content participates in skill conformance and consumer pins."
+      ],
+      "tests": [],
+      "constraints": [
+        "Instructions describe public contracts; a seal or mechanical pass is not semantic admission."
+      ],
+      "uses": [
+        "verification",
+        "application",
+        "verification-executor"
+      ]
+    },
+    {
+      "id": "skill-verification-executor",
+      "path": "apps/verification-executor/skills/knowledge-verify",
+      "kind": "agent skill",
+      "state": "implemented",
+      "summary": "Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold.",
+      "entrypoints": [
+        "apps/verification-executor/skills/knowledge-verify/SKILL.md",
+        "apps/verification-executor/skills/knowledge-verify/examples/offline.mjs"
+      ],
+      "interface": [
+        "Versioned executor CLI procedure; templates and references ship in the sandbox tarball and complete-content consumer pins."
+      ],
+      "tests": [],
+      "constraints": [
+        "Requires a matching executor build for optional comparison rules; host recovery governs production retries."
+      ],
+      "uses": [
+        "verification-executor",
+        "verification",
+        "verification-extraction"
+      ]
+    },
+    {
+      "id": "verification-internal",
+      "path": "packages/verification/src/internal",
+      "kind": "support module",
+      "state": "implemented",
+      "summary": "Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.",
+      "entrypoints": [
+        "packages/verification/src/internal/bounded-json.ts",
+        "packages/verification/src/internal/deep-freeze.ts",
+        "packages/verification/src/internal/guards.ts"
+      ],
+      "interface": [
+        "Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting."
+      ],
+      "tests": [
+        "packages/verification/src/extraction/candidate-preflight.test.ts",
+        "packages/verification/src/semantic/judge-output.test.ts",
+        "packages/verification/src/providers/preflight-json.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": []
+    },
+    {
+      "id": "verification-prototype-compat",
+      "path": "packages/verification/src/prototype-compat",
+      "kind": "compatibility module",
+      "state": "implemented",
+      "summary": "Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.",
+      "entrypoints": [
+        "packages/verification/src/prototype-compat/index.ts"
+      ],
+      "interface": [
+        "Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade."
+      ],
+      "tests": [
+        "packages/verification/src/prototype-compat/prototype-compat.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract.",
+        "Legacy behavior is frozen: no algorithm changes, no new callers."
+      ],
+      "uses": [
+        "verification-canonical",
+        "verification-evidence-selection"
       ]
     }
   ]

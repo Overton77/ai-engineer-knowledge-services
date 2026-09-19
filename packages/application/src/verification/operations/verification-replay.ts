@@ -2,7 +2,7 @@ import { replayVerificationPolicy } from "@aiengineer/knowledge-policy";
 import {
   replayAuditBundle,
   type AuditBundleSignatureVerifier,
-  type DeterministicSelectorResolver,
+  type EvidenceSelectorResolver,
   type DeterministicVerificationOptions,
   type RuntimePrincipalBinding,
   type VerificationSemanticReplayPort,
@@ -35,7 +35,7 @@ export async function replayVerificationAudit(
     readonly artifactResolver: TrustedArtifactResolver;
     readonly runtimePrincipals: RuntimePrincipalBinding;
     readonly semanticReplay?: VerificationSemanticReplayPort;
-    readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+    readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
     readonly isProjectionLineageAdmitted?: DeterministicVerificationOptions["isProjectionLineageAdmitted"];
     readonly signatureVerifier?: AuditBundleSignatureVerifier;
   },

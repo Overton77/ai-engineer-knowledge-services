@@ -10,6 +10,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [skill-schema-explore](../docs/agents/CODE-MAP.md#skill-schema-explore) | Progressive-disclosure procedure for navigating the pinned schema workspace without querying the database. | skills/schema-explore/SKILL.md |
 | [skill-knowledge-db](../docs/agents/CODE-MAP.md#skill-knowledge-db) | Procedure for catalog reads and reproducible knowledge-read snapshots that an ingestion intent can cite. | skills/knowledge-db/SKILL.md |
 | [skill-knowledge-ingest](../docs/agents/CODE-MAP.md#skill-knowledge-ingest) | Procedure for composing, planning, applying, and verifying knowledge-ingestion intents through the executor. | skills/knowledge-ingest/SKILL.md |
+| [skill-knowledge-verification](../docs/agents/CODE-MAP.md#skill-knowledge-verification) | Platform verification procedure with assertion/media routing, admitted operations, held outcomes and audit limits. | skills/knowledge-verification/SKILL.md |
 
 Descriptions are maintained in `.agent-docs/modules.json` at the repository root. Do not edit this generated block.
 <!-- END GENERATED: semantic-map -->

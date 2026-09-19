@@ -26,7 +26,8 @@
     "dev:knowledge": "tsx src/knowledge.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "pack:sandbox": "node scripts/pack-sandbox.mjs"
+    "pack:sandbox": "node scripts/pack-sandbox.mjs",
+    "examples": "node skills/knowledge-verify/examples/offline.mjs dist/index.js"
   },
   "dependencies": {
     "@aiengineer/knowledge-application": "workspace:*",

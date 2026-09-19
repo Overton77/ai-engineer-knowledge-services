@@ -1,8 +1,8 @@
 ---
-description: Use when converting vetted sources, comparing representations, designing chunks or projections, and submitting a promotion proposal.
+description: Use when converting sealed captures, inspecting nodes, previewing admitted chunks, and submitting a promotion proposal.
 license: Proprietary
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   contract: "knowledge-service/v1"
 ---
 
@@ -11,21 +11,42 @@ metadata:
 Follow this loop without skipping a gate:
 
 ```text
-establish source identity
-→ fetch only what is necessary to vet
-→ inspect source/capture quality and risks
-→ convert with a pinned admitted adapter
-→ inspect or compare representations
-→ identify useful canonical knowledge and faithful evidence
-→ select admitted domain, chunk and projection procedures
-→ preview and inspect chunks/projections
-→ state expected users, queries, benefits, limitations and exclusions
-→ submit an immutable proposal
-→ submit the proposal or review decision through the admitted platform command
-→ stop at the authority boundary
+you already have a sealed capture, or you imported a Firecrawl / Tavily / Unstructured receipt
+→ inspect bytes (identity, media type, rights). Do not convert if identity or rights fail
+→ convert stored bytes: text stays local; PDF goes Docling unless policy and budget allow Unstructured
+→ inspect nodes and fidelity. If fidelity is low, alternate_conversion
+→ select an admitted chunk profile. Preview. Require qa.valid
+→ promotion propose. You do not publish
 ```
 
-## Link content to canonical knowledge explicitly
+Inspect bytes is acquisition. Inspect nodes is preparation. Conversion success, a routing receipt, and a chunk preview are not admission. A seal is not admission.
+
+## Conversion route we own
+
+Knowledge Services converts **already stored** artifacts. It does not fetch a URL and it does not re-host Unstructured or Firecrawl MCP.
+
+| Path | When |
+|---|---|
+| Deterministic text (`deterministic-structural-text@1.0.0`) | Markdown, VTT, plain text, JSON. Never call Docling or Unstructured. |
+| Docling Serve (`docling-serve`) | Default binary fallback for PDF / Office / hard HTML. Costs the box, not a vendor invoice. |
+| Unstructured Transform | Only when `managedProcessingAllowed` is true and budget says yes. Cite their [agent guide](https://docs.unstructured.io/agent-guide). |
+
+The routing receipt records `candidateRoute`, typed `attempts`, `selectedProviderKey`, and `fallbackUsed`. Secrets never appear in the receipt. Runnable mocked copies: `packages/conversion/examples`.
+
+Vendor MCP stays in the **agent** toolbox. After their skill runs, `source import` the self-reported receipt, then convert the stored markdown or native bytes. Do not wrap Transform inside `@aiengineer/knowledge-mcp`.
+
+## Two binaries
+
+| Surface | Binary | Convert / chunk |
+|---|---|---|
+| Executor | `knowledge` / `knowledge-verify` | `source prepare-captured` for existing plain text or Markdown captures only |
+| Platform | `knowledge` (API client) | `document convert` (`transformation`), `chunk preview`, `chunk build` |
+
+Hosts without `source_prepare_captured` reject it rather than substituting a local converter. Platform `document inspect` and `chunk inspect` are not admitted; inspect nodes from the conversion output or an executor read of sealed bytes.
+
+Worked command bodies: [cli-reference.md](cli-reference.md), [mcp-reference.md](mcp-reference.md), [examples.md](examples.md).
+
+## Prepare an existing text capture
 
 When the trusted host exposes `source_prepare_captured`, prepare an existing native text capture
 with the executor CLI `knowledge source prepare-captured <captureId> --title '<title>' --version '<version>'`
@@ -34,7 +55,12 @@ custody, and runs the pinned conversion and chunk procedures. Keep the returned 
 chunk-set and durable receipt identifiers. Repeating the exact request reconciles those receipts.
 The operation supports plain text and Markdown captures; it does not acquire a new source or admit
 the resulting representation. Independent representation review is still required before promotion.
-Hosts without this capability reject the operation rather than substituting a local converter.
+
+## Chunk with an admitted profile
+
+`chunkDocument` is the only writer of preview or persisted chunk spans for this pipeline. Select a named admitted profile (`heading-sections-v1`, `transcript-topics-v1`, `atomic-claims-v1`, `code-symbols-v1`, `table-row-groups-v1`, `tool-capabilities-v1`, `entity-facets-v1`). Preview requires `qa.valid`. Failed QA tries the next admitted profile or an alternate admitted converter. Do not invent a session-local splitter.
+
+## Link content to canonical knowledge explicitly
 
 Preparation does not link anything by itself. Canonical close-out is a typed `content-link-intent.v1`
 applied through the executor distribution: `knowledge content plan <intent.json>` validates it

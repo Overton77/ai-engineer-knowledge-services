@@ -4,7 +4,7 @@ import {
   type VerificationRecoveryItem, type VerificationRecoveryPlan,
 } from "@aiengineer/knowledge-contracts";
 import type { DurableRecoveryCustody, DurableVerificationRecoveryService, VerificationRecoveryAuthority } from "@aiengineer/knowledge-application";
-import { canonicalizeJson, digestCanonicalJson, resolveBuiltInSelector, sha256Digest } from "@aiengineer/knowledge-verification";
+import { canonicalizeJson, digestCanonicalJson, resolveEvidenceSelector, sha256Digest } from "@aiengineer/knowledge-verification";
 import { deterministicUuid } from "../store.js";
 
 const Member = z.strictObject({ originalId: z.string().min(1).max(256), binding: VerificationRecoveryBindingSchema });
@@ -142,7 +142,7 @@ export class RecoverySelectorProbes {
       bytesRead += bytes.byteLength;
       if (bytesRead > MAX_PROBE_BYTES) throw new Error("RECOVERY_PROBE_BYTES_EXCEEDED");
       if (artifact.tenantId !== this.dependencies.tenantId || artifact.digest !== edge.representationDigest || sha256Digest(bytes) !== artifact.digest) throw new Error("RECOVERY_PROBE_REPRESENTATION_MISMATCH");
-      const result = resolveBuiltInSelector({ captureId: "retained-probe", representationArtifactId: artifact.artifactId,
+      const result = resolveEvidenceSelector({ captureId: "retained-probe", representationArtifactId: artifact.artifactId,
         representationDigest: artifact.digest, selector: edge.selector, content: bytes });
       if (!result) throw new Error("RECOVERY_SELECTOR_PROBE_SCOPE_UNSUPPORTED");
       checks.push({ representationDigest: artifact.digest, selectorDigest: digestCanonicalJson(edge.selector), status: result.resolution.status });

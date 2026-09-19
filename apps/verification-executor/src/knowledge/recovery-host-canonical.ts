@@ -35,7 +35,8 @@ export function createCanonicalRecoveryResultReader(input: {
   return async request => {
     if (request.tenantId !== input.tenantId) throw new Error("RECOVERY_NATIVE_TENANT_DENIED");
     if (!request.operationId) return null;
-    const original = await input.binding({ operationId: request.operationId, inputDigest: request.inputDigest, originalId: request.originalId });
+    const original = await input.binding({ operationId: request.operationId, inputDigest: request.inputDigest,
+      ...(request.originalId === undefined ? {} : { originalId: request.originalId }) });
     if (!original) return null;
     if (request.originalId !== undefined && original.originalId !== request.originalId) throw new Error("RECOVERY_NATIVE_ORIGINAL_MISMATCH");
     if (digestCanonicalJson(original.binding) !== request.inputDigest) throw new Error("RECOVERY_NATIVE_INPUT_MISMATCH");

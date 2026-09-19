@@ -432,7 +432,7 @@ export async function startWorker(
       environment.UNSTRUCTURED_API_KEY?.trim() &&
       environment.UNSTRUCTURED_TEMPLATE_ID?.trim()
     ) {
-      conversionProviders.unshift(
+      conversionProviders.push(
         new UnstructuredTransformProvider(
           environment.UNSTRUCTURED_VERSION?.trim() || "configured-v1",
           new HttpUnstructuredTransformClient({

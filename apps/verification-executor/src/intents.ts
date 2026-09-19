@@ -53,6 +53,13 @@ export const ExtractionFieldIntentSchema = z.object({
   /** JSON pointer into `candidate`, e.g. "/models/0/context_window". */
   path: z.string().regex(/^\//).max(300),
   comparison: z.enum(["exact", "normalized_text", "decimal", "percentage", "currency", "unit", "date", "datetime", "enum", "identifier", "checksum"]).default("exact"),
+  normalizationId: z.string().min(1).max(255).optional(),
+  allowedValues: z.array(z.string().min(1).max(128)).min(1).max(128)
+    .refine((values) => new Set(values).size === values.length, "allowedValues must be unique").optional(),
+  minimum: z.string().max(128).optional(),
+  maximum: z.string().max(128).optional(),
+  identifierKind: z.enum(["uuid", "sha256", "cve", "currency_code_token"]).optional(),
+  checksum: z.enum(["luhn", "isbn13"]).optional(),
   captureId: z.string().min(1).max(255),
   quote: z.string().min(1).max(4000),
 });
@@ -63,6 +70,10 @@ export const ExtractionIntentSchema = z.object({
   schema: z.object({ schemaId: z.string().min(1).max(120), schemaVersion: z.string().min(1).max(40), jsonSchema: z.record(z.string(), z.unknown()) }),
   candidate: z.record(z.string(), z.unknown()),
   fields: z.array(ExtractionFieldIntentSchema).min(1).max(256),
+  normalizations: z.array(z.object({
+    id: z.string().min(1).max(255),
+    operation: z.enum(["trim_ascii", "ascii_whitespace_collapsed"]),
+  })).max(256).optional(),
 });
 export type ExtractionIntent = z.infer<typeof ExtractionIntentSchema>;
 

@@ -22,7 +22,7 @@ When this slice is done:
 
 1. HTTP download, local/operator upload, repo-at-SHA, and paper-identity fetch are clean, tested internal acquisition adapters.
 2. Inspection is a real step: read, search, and record findings on sealed bytes. It does not convert, ingest, or publish.
-3. Conversion fallbacks are clean: deterministic text first, **Docling Serve** as the deployed default, **Unstructured Transform** only when managed processing is allowed and paid.
+3. Conversion fallbacks are clean: deterministic text first, **Docling Serve** as the deployed default, **Unstructured Transform** only when managed processing is allowed and paid. This item landed with the conversion package cleanup.
 4. Chunking is an admitted-profile preview on the sealed tree, not a session-local script. See the [sibling](conversion-and-chunking.md).
 5. `packages/application` is ordered so a reader can find the use-case modules instead of a 160-file flat dump.
 6. Skills are rewritten **last**, against the catalogs that actually exist, with provider-skill citations and worked examples.
@@ -90,7 +90,7 @@ Already the right package (`packages/conversion`). Do not move Docling or Unstru
 | Isolated verification parser | Quote-bearing PDF geometry / HTML DOM | Verification path; not a general converter |
 | Unstructured Transform | Nasty documents | Only if `managedProcessingAllowed`; paid; credentials never in URLs or errors |
 
-Today `ConversionRouter` tries managed Unstructured first when `managedProcessingAllowed`, then Docling. Desired order is the table above (Docling default, Unstructured gated). Cleanup flips that, pins versions, and makes the receipt (who ran, fallback used, fidelity) the thing skills teach. Detail: [conversion-and-chunking.md](conversion-and-chunking.md#conversion).
+`ConversionRouter` now uses the table above (Docling default, Unstructured gated). The receipt (who ran, fallback used, fidelity) is the thing skills teach. Detail: [conversion-and-chunking.md](conversion-and-chunking.md#conversion).
 
 ### Chunking
 

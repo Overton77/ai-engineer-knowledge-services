@@ -15,7 +15,7 @@ import {
   digestCanonicalJson,
   sha256Digest,
   verifyDeterministicBundle,
-  type DeterministicSelectorResolver,
+  type EvidenceSelectorResolver,
   type RuntimePrincipalBinding,
   type TrustedArtifactResolver,
 } from "@aiengineer/knowledge-verification";
@@ -143,7 +143,7 @@ export interface VerificationMetricServiceDependencies {
   readonly profiles: VerificationMetricProfileCatalog;
   readonly runtimePrincipals: VerificationMetricRuntimePrincipalPort;
   readonly nativeProjectionAdmission?: VerificationMetricNativeProjectionAdmissionPort;
-  readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+  readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
 }
 
 export interface VerificationMetricServiceResult {

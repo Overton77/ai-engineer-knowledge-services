@@ -1,4 +1,4 @@
-import { admitExtractionSchema, projectionSelectorResolver, resolveWithAdmittedResolver, sha256Digest, verifyExtractionFields } from "@aiengineer/knowledge-verification";
+import { admitExtractionSchema, projectionSelectorResolver, resolveEvidenceSelector, sha256Digest, verifyExtractionFields } from "@aiengineer/knowledge-verification";
 import { verifyDiagnosticsAdversarialProjection, type DiagnosticsAdversarialProjectionInput } from "./verification-diagnostics-adversarial.js";
 export type DiagnosticsEngineeringMutationFamily = "names" | "biomarkers" | "institutions" | "citations";
 export interface DiagnosticsEngineeringMutation { readonly family: DiagnosticsEngineeringMutationFamily; readonly original: string; readonly replacement: string; readonly projection: DiagnosticsAdversarialProjectionInput; }
@@ -13,7 +13,7 @@ export function runDiagnosticsEngineeringMutations(input: readonly DiagnosticsEn
     if (!e) throw new Error("ENGINEERING_MUTATION_EVIDENCE_REQUIRED");
     // Reuse the existing strict receipt/capture/projection/digest admission checks.
     const admitted = verifyDiagnosticsAdversarialProjection(projection);
-    const selection = resolveWithAdmittedResolver({ captureId: e.captureId, representationArtifactId: e.projectionArtifactId, representationDigest: e.projectionDigest as `sha256:${string}`, selector: e.selector, content: projection.content }, [projectionSelectorResolver]);
+    const selection = resolveEvidenceSelector({ captureId: e.captureId, representationArtifactId: e.projectionArtifactId, representationDigest: e.projectionDigest as `sha256:${string}`, selector: e.selector, content: projection.content }, [projectionSelectorResolver]);
     if (!selection || selection.resolution.status !== "resolved") throw new Error("ENGINEERING_MUTATION_SELECTION_REQUIRED");
     const selected = new TextDecoder("utf-8", { fatal: true }).decode(selection.selectedContent);
     const binding = { family: item.family, caseId: projection.testCase.caseId, sourceArtifact: projection.receipt.sourceArtifact, projectionArtifact: projection.receipt.projectionArtifact, transformationArtifact: projection.receipt.transformationArtifact, selector: e.selector, selectedContentDigest: e.selectedContentDigest };

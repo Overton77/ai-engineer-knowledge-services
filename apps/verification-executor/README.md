@@ -133,3 +133,7 @@ node apps/verification-executor/dist/index.js serve --port 4310     # or: node d
 `dist/index.js` + `dist/knowledge.js` plus `@modelcontextprotocol/sdk`, `zod`, and `pg` is everything a sandbox needs
 (`pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox` stages both bins plus
 `knowledge-verify` and the four required canonical skills, and exits 2 when one is absent).
+
+## Reviewed examples and capability coverage
+
+The [offline CLI example](examples/README.md) exercises capture, quote ambiguity, claim mechanics, held policy and configured extraction comparisons without credentials. See the [library capability matrix](../../packages/verification/CAPABILITIES.md), [acquisition capabilities](examples/CAPABILITIES-ACQUISITION.md) and [review record](../../docs/operations/reviews/verification-executor.md). Extraction fields accept explicit allowed values, normalization rules, decimal bounds, identifier kinds and checksum options; the distributed skill documents when each is required.

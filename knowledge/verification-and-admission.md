@@ -143,7 +143,7 @@ Admission is fail-closed. Typical outcomes are `EVIDENCE_REQUIRED`,
 `PROPOSAL_REVERIFICATION_REQUIRED`, and `REPORT_BINDING_REQUIRED`. These are
 planning decisions, not a signal to synthesize replacement evidence.
 
-The focused [admission tests](../packages/ingestion/src/evidence-admission.test.ts)
+The focused [admission tests](../packages/ingestion/src/tests/evidence-admission.test.ts)
 cover empty evidence, intended-use mismatches, altered inline fields, new
 subject identity bindings, effect changes, report bindings, and independent
 closures. The [integration guide](../docs/verification/INTEGRATION-GUIDE.md)
@@ -168,3 +168,7 @@ For recovery, deployment, and operator actions, use the authoritative
 [operator runbook](../docs/verification/OPERATOR-RUNBOOK.md) and
 [durable execution and recovery](durable-execution-and-recovery.md), rather
 than this concept note.
+
+## Locators and media coverage
+
+The [library capability matrix](../packages/verification/CAPABILITIES.md) and the [executor acquisition capabilities](../apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md) distinguishes twelve library selectors from public acquisition and executor intents. Executor claims/extractions currently select exact text quotes; geometry and transcript projection resolvers do not perform OCR or transcription. [Runnable examples](../packages/verification/examples/README.md) demonstrate these limits and deterministic failures.

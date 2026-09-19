@@ -213,8 +213,8 @@ async function conversionEvidence() {
         throw new Error("UNREACHABLE");
       },
     },
-    managed,
     local,
+    managed,
   );
   const routed = await router.convertWithReceipt({
     tenantId,

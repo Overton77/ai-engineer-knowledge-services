@@ -1,4 +1,4 @@
-import { resolveBuiltInSelector, sha256Digest } from "@aiengineer/knowledge-verification";
+import { resolveEvidenceSelector, sha256Digest } from "@aiengineer/knowledge-verification";
 import type { CaptureRecord, FilesystemStore } from "./store.js";
 import { encoder } from "./store.js";
 
@@ -34,7 +34,7 @@ export function countOccurrences(haystack: string, needle: string): number {
     const index = haystack.indexOf(needle, from);
     if (index === -1) return count;
     count += 1;
-    from = index + needle.length;
+    from = index + 1;
   }
   return count;
 }
@@ -57,15 +57,12 @@ export function searchContent(content: string, query: string, limit = 10): Searc
   const hits: SearchHit[] = [];
   const terms = query.trim();
   if (!terms) return hits;
-  // exact, then case-insensitive, then whitespace-normalized token scan
-  const lower = content.toLowerCase();
-  const target = terms.toLowerCase();
-  let from = 0;
-  while (hits.length < limit) {
-    const index = lower.indexOf(target, from);
-    if (index === -1) break;
-    hits.push({ offset: index, exact: content.slice(index, index + terms.length), context: window(content, index, terms.length) });
-    from = index + Math.max(1, terms.length);
+  // Search the original string: lowercasing can expand Unicode characters and shift offsets.
+  const literal = terms.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const match of content.matchAll(new RegExp(literal, "giu"))) {
+    if (hits.length >= limit) break;
+    const index = match.index;
+    hits.push({ offset: index, exact: match[0], context: window(content, index, match[0].length) });
   }
   if (hits.length > 0) return hits;
   const words = normalize(terms).split(" ").filter((word) => word.length > 2);
@@ -86,7 +83,7 @@ export function searchContent(content: string, query: string, limit = 10): Searc
 
 export function locateQuote(record: CaptureRecord, content: string, quote: string): LocateResult {
   const contentBytes = encoder.encode(content);
-  const resolved = resolveBuiltInSelector({
+  const resolved = resolveEvidenceSelector({
     captureId: record.captureId,
     representationArtifactId: record.contentArtifact.artifactId,
     representationDigest: record.contentArtifact.digest,
@@ -107,7 +104,7 @@ export function locateQuote(record: CaptureRecord, content: string, quote: strin
       const end = content.indexOf("\n", index + quote.length);
       const line = content.slice(start, end === -1 ? content.length : end);
       suggestions.push({ quote: line.trim(), offset: index, context: window(content, index, quote.length, 100) });
-      from = index + quote.length;
+      from = index + 1;
     }
   } else if (status === "not_found") {
     for (const hit of searchContent(content, quote, 5)) suggestions.push({ quote: hit.exact, offset: hit.offset, context: hit.context });

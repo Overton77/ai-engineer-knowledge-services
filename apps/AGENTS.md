@@ -12,6 +12,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [mcp](../docs/agents/CODE-MAP.md#mcp) | In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificationHostRuntime and VerificationOperationApplicationService. | apps/mcp/src/index.ts |
 | [verification-executor](../docs/agents/CODE-MAP.md#verification-executor) | Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP. | apps/verification-executor/src/index.ts |
 | [worker](../docs/agents/CODE-MAP.md#worker) | Durable knowledge-operation execution, activity dispatch, and verification runtime wiring. | apps/worker/src/index.ts |
+| [skill-verification-executor](../docs/agents/CODE-MAP.md#skill-verification-executor) | Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold. | apps/verification-executor/skills/knowledge-verify/SKILL.md |
 
 Descriptions are maintained in `.agent-docs/modules.json` at the repository root. Do not edit this generated block.
 <!-- END GENERATED: semantic-map -->

@@ -1,7 +1,9 @@
 # Failure playbook
 
-Every failure the executor returns is deterministic and actionable. Find the code or verdict,
-apply the fix, re-run the same command. Never work around a failure by paraphrasing, by citing
+Failures include mechanical, policy, capability and infrastructure outcomes. Read the code
+and preserve the failed evidence. In a production recovery host, use the installed recovery
+skill before changing inputs or retrying; the repairs below describe possible actions, not
+authorization to bypass custody. Never work around a failure by paraphrasing, by citing
 uncaptured text, or by editing files the executor produced.
 
 ## Capture
@@ -47,7 +49,7 @@ uncaptured text, or by editing files the executor produced.
 | `candidateValid: false` with `CANDIDATE_TYPE`, `CANDIDATE_REQUIRED_MISSING`, `CANDIDATE_ADDITIONAL_PROPERTY`, `CANDIDATE_STRING_BOUND` | candidate violates the schema | fix the candidate value/type |
 | `FIELD_EXACT_MATCH` / `FIELD_NORMALIZED_TEXT_MATCH` / `FIELD_DECIMAL_MATCH` / … failed at `path` | candidate ≠ quote under `comparison` | make the candidate the exact printed value, or switch comparison (`normalized_text`, `decimal`, `percentage`, `date`) |
 | `FIELD_EVIDENCE_MISSING` / `FIELD_CANDIDATE_MISSING` | a `fields[]` path has no candidate value or vice versa | every leaf in `candidate` needs one field binding |
-| `FIELD_RULE_INVALID` | comparison needs options the intent cannot express (`unit`, `enum`, `identifier`, `checksum`, `currency` with allowed values) | use `exact` / `normalized_text` / `decimal` / `percentage` / `date` / `datetime`, or express the value as a claim |
+| `FIELD_RULE_INVALID` or a configured comparison failure | missing, inapplicable or malformed rule options | provide the options in [capabilities.md](capabilities.md); do not weaken comparison to force a pass |
 | `EVIDENCE_RESOLUTION_FAILED` / `LOCATOR_UNIQUE` | quote problem | same as locate |
 
 ## judge

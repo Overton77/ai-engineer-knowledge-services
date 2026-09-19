@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { digestCanonicalJson, resolveBuiltInSelector } from "@aiengineer/knowledge-verification";
+import { digestCanonicalJson, resolveEvidenceSelector } from "@aiengineer/knowledge-verification";
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import type { TenantSqlClient } from "./postgres.js";
 import { RETRIEVAL_SUPPORT_LIMITS, RetrievalCitationReplay, RetrievalSupportResolver } from "./retrieval-evidence.js";
@@ -12,7 +12,7 @@ function fixture() {
   const tenantId = randomUUID(), locatorId = randomUUID(), captureId = randomUUID(), artifactId = randomUUID(), sourceId = randomUUID();
   const bytes = new TextEncoder().encode("Café e\u0301 😀 preview only."), expectedDigest = hash(bytes);
   const selector: VerificationSelector = { kind: "text_quote", quote: "e\u0301 😀", normalization: "none" };
-  const selected = resolveBuiltInSelector({ captureId, representationArtifactId: artifactId, representationDigest: expectedDigest, selector, content: bytes })!;
+  const selected = resolveEvidenceSelector({ captureId, representationArtifactId: artifactId, representationDigest: expectedDigest, selector, content: bytes })!;
   const row: Record<string, unknown> = { tenant_id: tenantId, id: locatorId, capture_id: captureId, source_family_id: sourceId,
     capture_artifact_id: artifactId, representation_artifact_id: artifactId, capture_sha256: expectedDigest.slice(7),
     resolution_state: "resolved", selector, selector_sha256: digestCanonicalJson(selector).slice(7),

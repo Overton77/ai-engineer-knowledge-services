@@ -66,37 +66,75 @@
       "path": "knowledge/service-boundaries.md",
       "task": "Choose a transport and the owning module",
       "status": "reference",
-      "modules": ["application", "api", "mcp", "cli", "verification-executor", "persistence"]
+      "modules": [
+        "application",
+        "api",
+        "mcp",
+        "cli",
+        "verification-executor",
+        "persistence"
+      ]
     },
     {
       "path": "knowledge/schema-read-and-ingestion.md",
       "task": "Read a bounded knowledge snapshot or apply evidence-backed changes",
       "status": "reference",
-      "modules": ["schema-workspace", "db-read", "ingestion", "verification-executor"]
+      "modules": [
+        "schema-workspace",
+        "db-read",
+        "ingestion",
+        "verification-executor"
+      ]
     },
     {
       "path": "knowledge/preparation-and-publication.md",
       "task": "Prepare source material and publish a retrieval version",
       "status": "reference",
-      "modules": ["application", "ingestion", "persistence", "vector-backends", "policy"]
+      "modules": [
+        "application",
+        "ingestion",
+        "persistence",
+        "vector-backends",
+        "policy"
+      ]
     },
     {
       "path": "knowledge/retrieval-and-evidence.md",
       "task": "Retrieve supported results and replay citations",
       "status": "reference",
-      "modules": ["retrieval", "contracts", "api", "persistence", "policy", "vector-backends"]
+      "modules": [
+        "retrieval",
+        "contracts",
+        "api",
+        "persistence",
+        "policy",
+        "vector-backends"
+      ]
     },
     {
       "path": "knowledge/verification-and-admission.md",
       "task": "Verify claims and admit exact downstream effects",
       "status": "reference",
-      "modules": ["verification", "ingestion", "application", "policy", "verification-executor", "persistence"]
+      "modules": [
+        "verification",
+        "ingestion",
+        "application",
+        "policy",
+        "verification-executor",
+        "persistence"
+      ]
     },
     {
       "path": "knowledge/durable-execution-and-recovery.md",
       "task": "Understand fenced worker execution and bounded recovery",
       "status": "reference",
-      "modules": ["worker", "runtime", "persistence", "application", "verification-executor"]
+      "modules": [
+        "worker",
+        "runtime",
+        "persistence",
+        "application",
+        "verification-executor"
+      ]
     },
     {
       "path": "README.md",
@@ -250,6 +288,27 @@
       ]
     },
     {
+      "path": "docs/operations/reviews/verification.md",
+      "task": "Verification package quality review and executable media locator examples",
+      "status": "reference",
+      "modules": [
+        "verification",
+        "verification-evidence-selection",
+        "verification-deterministic",
+        "verification-extraction",
+        "skill-knowledge-verification"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/verification-executor.md",
+      "task": "Verification executor intent, skill, example and consumer pin review",
+      "status": "reference",
+      "modules": [
+        "verification-executor",
+        "skill-verification-executor"
+      ]
+    },
+    {
       "path": "packages/verification/CAPABILITIES.md",
       "task": "Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples",
       "status": "reference",
@@ -278,7 +337,7 @@
     "A knowledge-read retrieval operation is accepted in the intent schema but skipped as RETRIEVAL_UNAVAILABLE; catalog query retrieval.hybrid_search is pending an embedding.",
     "Ingestion records orchestration.operation_intent/receipt and does not write a knowledge_service.operation row or outbox.",
     "The database-contract pin is a local link: path, not a git ref. Cloud deployment of the km_13–km_15 contract additions is not verified by this map.",
-    "skills/ also contains knowledge-verification, vector-store-management, knowledge-evaluation, knowledge-retrieval-and-evidence, knowledge-preparation-and-promotion, and knowledge-acquisition-and-vetting; those were not registered in this update.",
+    "skills/ also contains vector-store-management, knowledge-evaluation, knowledge-retrieval-and-evidence, knowledge-preparation-and-promotion, and knowledge-acquisition-and-vetting; those were not registered in this update.",
     "Accepted ADR 0004: in-process KS servers call application; out-of-process callers use KnowledgeClient HTTP. MCP verification mutations, operation/status, and retrieval.plan_validate are in-process; decision/reconciliation/retrieval-evidence-eval reads and record-decision without the decision gate still HTTP-shim. Do not add apiClient methods."
   ],
   "ciWorkflow": ".github/workflows/agent-docs.yml",
@@ -286,12 +345,42 @@
   "knowledge": {
     "root": "knowledge",
     "routes": [
-      { "task": "Ownership and caller contracts", "concepts": ["service-boundaries"] },
-      { "task": "Schema, bounded reads, canonical writes", "concepts": ["schema-read-and-ingestion"] },
-      { "task": "Capture, prepare, publish", "concepts": ["preparation-and-publication"] },
-      { "task": "Search, evidence packets, citation replay", "concepts": ["retrieval-and-evidence"] },
-      { "task": "Claims, deterministic failures, admission", "concepts": ["verification-and-admission"] },
-      { "task": "Leases, retries, cancellation, repair", "concepts": ["durable-execution-and-recovery"] }
+      {
+        "task": "Ownership and caller contracts",
+        "concepts": [
+          "service-boundaries"
+        ]
+      },
+      {
+        "task": "Schema, bounded reads, canonical writes",
+        "concepts": [
+          "schema-read-and-ingestion"
+        ]
+      },
+      {
+        "task": "Capture, prepare, publish",
+        "concepts": [
+          "preparation-and-publication"
+        ]
+      },
+      {
+        "task": "Search, evidence packets, citation replay",
+        "concepts": [
+          "retrieval-and-evidence"
+        ]
+      },
+      {
+        "task": "Claims, deterministic failures, admission",
+        "concepts": [
+          "verification-and-admission"
+        ]
+      },
+      {
+        "task": "Leases, retries, cancellation, repair",
+        "concepts": [
+          "durable-execution-and-recovery"
+        ]
+      }
     ]
   }
 }

@@ -72,7 +72,7 @@ they must not import these internal algorithm packages.
    the exact intent is idempotent; changing its contents under the same
    identity is a conflict. The integration test covers committed-response loss
    and concurrent duplicate submission in
-   [`executor.integration.test.ts`](../packages/ingestion/src/executor.integration.test.ts).
+   [`executor.integration.test.ts`](../packages/ingestion/src/tests/executor.integration.test.ts).
 
 # Transport route
 

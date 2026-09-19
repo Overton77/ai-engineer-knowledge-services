@@ -30,7 +30,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [client-typescript](#client-typescript) | packages/client-typescript | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
 | [config](#config) | packages/config | Validates server, authentication, and semantic-provider configuration. | implemented |
 | [contracts](#contracts) | packages/contracts | Versioned Zod schemas and types shared by transports, application composition, and clients. | implemented |
-| [conversion](#conversion) | packages/conversion | Converts captured inputs and wraps external Docling and isolated native parser routes. | implemented |
+| [conversion](#conversion) | packages/conversion | Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser. | implemented |
 | [db-read](#db-read) | packages/db-read | Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger. | partial |
 | [documents](#documents) | packages/documents | Constructs immutable document nodes and source locators from structural blocks. | implemented |
 | [domain](#domain) | packages/domain | Shared digest, identity, idempotency, error, authority, and state-machine primitives. | implemented |
@@ -57,8 +57,6 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [verification-authority](#verification-authority) | packages/verification/src/authority | Source authority and corroboration assessments. | implemented |
 | [verification-semantic](#verification-semantic) | packages/verification/src/semantic | Evidence-closed semantic verification: closure, authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution. | implemented |
 | [verification-providers](#verification-providers) | packages/verification/src/providers | Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze adapters, recorded/NLI judges, and conformance registry. | implemented |
-| [verification-internal](#verification-internal) | packages/verification/src/internal | Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights. | implemented |
-| [verification-prototype-compat](#verification-prototype-compat) | packages/verification/src/prototype-compat | Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes. | implemented |
 | [docling](#docling) | services/docling | Pinned Docling Serve conversion deployment boundary. | implemented |
 | [verification-parser](#verification-parser) | services/verification-parser | Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR. | implemented |
 | [script-proofs](#script-proofs) | scripts | Targeted durability, transport, recovery, and integration proof executables. | implemented |
@@ -68,6 +66,10 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [skill-schema-explore](#skill-schema-explore) | skills/schema-explore | Progressive-disclosure procedure for navigating the pinned schema workspace without querying the database. | implemented |
 | [skill-knowledge-db](#skill-knowledge-db) | skills/knowledge-db | Procedure for catalog reads and reproducible knowledge-read snapshots that an ingestion intent can cite. | implemented |
 | [skill-knowledge-ingest](#skill-knowledge-ingest) | skills/knowledge-ingest | Procedure for composing, planning, applying, and verifying knowledge-ingestion intents through the executor. | implemented |
+| [skill-knowledge-verification](#skill-knowledge-verification) | skills/knowledge-verification | Platform verification procedure with assertion/media routing, admitted operations, held outcomes and audit limits. | implemented |
+| [skill-verification-executor](#skill-verification-executor) | apps/verification-executor/skills/knowledge-verify | Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold. | implemented |
+| [verification-internal](#verification-internal) | packages/verification/src/internal | Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights. | implemented |
+| [verification-prototype-compat](#verification-prototype-compat) | packages/verification/src/prototype-compat | Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes. | implemented |
 
 ## api
 
@@ -161,8 +163,9 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [db-read](#db-read), [ingestion](#ingestion), [persistence](#persistence), [policy](#policy), [runtime](#runtime), [schema-workspace](#schema-workspace), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, @modelcontextprotocol/sdk, pg, zod
 **Reviewed runtime/data relationships:** [schema-workspace](#schema-workspace), [db-read](#db-read), [ingestion](#ingestion)
-**Checks:** [`apps/verification-executor/src/knowledge/cli.test.ts`](../../apps/verification-executor/src/knowledge/cli.test.ts) Package script names: build, dev, dev:knowledge, pack:sandbox, test, typecheck.
+**Checks:** [`apps/verification-executor/src/knowledge/cli.test.ts`](../../apps/verification-executor/src/knowledge/cli.test.ts), [`apps/verification-executor/src/locate.test.ts`](../../apps/verification-executor/src/locate.test.ts), [`apps/verification-executor/src/intents.test.ts`](../../apps/verification-executor/src/intents.test.ts) Package script names: build, dev, dev:knowledge, examples, pack:sandbox, test, typecheck.
 - Distinct from apps/api's durable service transport; preserve the explicit sandbox capability model. Knowledge services are absent when no database URL is configured.
+- Agent claim/extraction intents select exact text quotes; native projection selector support in the library does not imply executor media admission.
 
 **Architecture and detailed docs:**
 
@@ -172,6 +175,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 - [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
+- [reference] [`docs/operations/reviews/verification-executor.md`](../../docs/operations/reviews/verification-executor.md) — Verification executor intent, skill, example and consumer pin review
 - [reference] [`apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`](../../apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md) — Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits
 
 ## worker
@@ -339,16 +343,16 @@ Versioned Zod schemas and types shared by transports, application composition, a
 
 **packages/conversion** · package · implemented
 
-Converts captured inputs and wraps external Docling and isolated native parser routes.
+Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser.
 
-**Enter:** [`packages/conversion/src/index.ts`](../../packages/conversion/src/index.ts)
-**Interface:** Conversion providers, HTTP clients, and SandboxedVerificationParser.
+**Enter:** [`packages/conversion/src/index.ts`](../../packages/conversion/src/index.ts), [`packages/conversion/src/route.ts`](../../packages/conversion/src/route.ts)
+**Interface:** ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser.
 **Package:** @aiengineer/knowledge-conversion ([`packages/conversion/package.json`](../../packages/conversion/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [domain](#domain), [runtime](#runtime)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/conversion/src/conversion.test.ts`](../../packages/conversion/src/conversion.test.ts), [`packages/conversion/src/verification-parser.test.ts`](../../packages/conversion/src/verification-parser.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/conversion/src/conversion.test.ts`](../../packages/conversion/src/conversion.test.ts), [`packages/conversion/src/verification-parser.test.ts`](../../packages/conversion/src/verification-parser.test.ts), [`packages/conversion/examples/examples.test.ts`](../../packages/conversion/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
@@ -449,7 +453,7 @@ Deterministic planner and apply of knowledge-ingestion-intent.v1 through tempora
 **Declared internal package dependencies:** [contracts](#contracts), [db-read](#db-read), [domain](#domain), [persistence](#persistence), [schema-workspace](#schema-workspace)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** [db-read](#db-read), [schema-workspace](#schema-workspace)
-**Checks:** [`packages/ingestion/src/plan.test.ts`](../../packages/ingestion/src/plan.test.ts), [`packages/ingestion/src/duplicate.test.ts`](../../packages/ingestion/src/duplicate.test.ts), [`packages/ingestion/src/executor.integration.test.ts`](../../packages/ingestion/src/executor.integration.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/ingestion/src/tests/plan.test.ts`](../../packages/ingestion/src/tests/plan.test.ts), [`packages/ingestion/src/tests/duplicate.test.ts`](../../packages/ingestion/src/tests/duplicate.test.ts), [`packages/ingestion/src/tests/executor.integration.test.ts`](../../packages/ingestion/src/tests/executor.integration.test.ts) Package script names: build, test, typecheck.
 - Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row.
 
 **Architecture and detailed docs:**
@@ -689,6 +693,7 @@ Evidence verification algorithms: canonical primitives, staged deterministic bun
 
 - [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
 - [reference] [`packages/verification/CAPABILITIES.md`](../../packages/verification/CAPABILITIES.md) — Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples
 
 ## verification-canonical
@@ -751,6 +756,7 @@ Staged mechanical bundle engine: index → capture integrity → runtime separat
 **Architecture and detailed docs:**
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
 
 ## verification-evidence-selection
 
@@ -772,6 +778,7 @@ Locates the evidence a VerificationSelector points at inside captured bytes: cor
 **Architecture and detailed docs:**
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
 
 ## verification-extraction
 
@@ -792,6 +799,7 @@ Bounded schema admission and staged field, cross-field, and duplicate verificati
 **Architecture and detailed docs:**
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
 
 ## verification-provenance
 
@@ -893,47 +901,6 @@ Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze ad
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
-
-## verification-internal
-
-**packages/verification/src/internal** · support module · implemented
-
-Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.
-
-**Enter:** [`packages/verification/src/internal/bounded-json.ts`](../../packages/verification/src/internal/bounded-json.ts), [`packages/verification/src/internal/deep-freeze.ts`](../../packages/verification/src/internal/deep-freeze.ts), [`packages/verification/src/internal/guards.ts`](../../packages/verification/src/internal/guards.ts)
-**Interface:** Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting.
-**Package:** not a standalone package
-**Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** none declared
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/extraction/candidate-preflight.test.ts`](../../packages/verification/src/extraction/candidate-preflight.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/providers/preflight-json.test.ts`](../../packages/verification/src/providers/preflight-json.test.ts)
-- Internal verification seam; do not expose it as a cross-repository import contract.
-
-**Architecture and detailed docs:**
-
-No module-specific architecture document registered. Do not infer a design decision from the folder name.
-
-## verification-prototype-compat
-
-**packages/verification/src/prototype-compat** · compatibility module · implemented
-
-Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.
-
-**Enter:** [`packages/verification/src/prototype-compat/index.ts`](../../packages/verification/src/prototype-compat/index.ts)
-**Interface:** Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade.
-**Package:** not a standalone package
-**Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** none declared
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical), [verification-evidence-selection](#verification-evidence-selection)
-**Checks:** [`packages/verification/src/prototype-compat/prototype-compat.test.ts`](../../packages/verification/src/prototype-compat/prototype-compat.test.ts)
-- Internal verification seam; do not expose it as a cross-repository import contract.
-- Legacy behavior is frozen: no algorithm changes, no new callers.
-
-**Architecture and detailed docs:**
-
-No module-specific architecture document registered. Do not infer a design decision from the folder name.
 
 ## docling
 
@@ -1116,4 +1083,85 @@ Procedure for composing, planning, applying, and verifying knowledge-ingestion i
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+
+## skill-knowledge-verification
+
+**skills/knowledge-verification** · agent skill · implemented
+
+Platform verification procedure with assertion/media routing, admitted operations, held outcomes and audit limits.
+
+**Enter:** [`skills/knowledge-verification/SKILL.md`](../../skills/knowledge-verification/SKILL.md), [`skills/knowledge-verification/capabilities.md`](../../skills/knowledge-verification/capabilities.md)
+**Interface:** Versioned platform CLI/MCP procedure; complete directory content participates in skill conformance and consumer pins.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [verification](#verification), [application](#application), [verification-executor](#verification-executor)
+**Checks:** No specific test anchor registered.
+- Instructions describe public contracts; a seal or mechanical pass is not semantic admission.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/operations/reviews/verification.md`](../../docs/operations/reviews/verification.md) — Verification package quality review and executable media locator examples
+
+## skill-verification-executor
+
+**apps/verification-executor/skills/knowledge-verify** · agent skill · implemented
+
+Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold.
+
+**Enter:** [`apps/verification-executor/skills/knowledge-verify/SKILL.md`](../../apps/verification-executor/skills/knowledge-verify/SKILL.md), [`apps/verification-executor/skills/knowledge-verify/examples/offline.mjs`](../../apps/verification-executor/skills/knowledge-verify/examples/offline.mjs)
+**Interface:** Versioned executor CLI procedure; templates and references ship in the sandbox tarball and complete-content consumer pins.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [verification-executor](#verification-executor), [verification](#verification), [verification-extraction](#verification-extraction)
+**Checks:** No specific test anchor registered.
+- Requires a matching executor build for optional comparison rules; host recovery governs production retries.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/operations/reviews/verification-executor.md`](../../docs/operations/reviews/verification-executor.md) — Verification executor intent, skill, example and consumer pin review
+
+## verification-internal
+
+**packages/verification/src/internal** · support module · implemented
+
+Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.
+
+**Enter:** [`packages/verification/src/internal/bounded-json.ts`](../../packages/verification/src/internal/bounded-json.ts), [`packages/verification/src/internal/deep-freeze.ts`](../../packages/verification/src/internal/deep-freeze.ts), [`packages/verification/src/internal/guards.ts`](../../packages/verification/src/internal/guards.ts)
+**Interface:** Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** none declared
+**Checks:** [`packages/verification/src/extraction/candidate-preflight.test.ts`](../../packages/verification/src/extraction/candidate-preflight.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/providers/preflight-json.test.ts`](../../packages/verification/src/providers/preflight-json.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## verification-prototype-compat
+
+**packages/verification/src/prototype-compat** · compatibility module · implemented
+
+Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.
+
+**Enter:** [`packages/verification/src/prototype-compat/index.ts`](../../packages/verification/src/prototype-compat/index.ts)
+**Interface:** Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical), [verification-evidence-selection](#verification-evidence-selection)
+**Checks:** [`packages/verification/src/prototype-compat/prototype-compat.test.ts`](../../packages/verification/src/prototype-compat/prototype-compat.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+- Legacy behavior is frozen: no algorithm changes, no new callers.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
 <!-- END GENERATED: semantic-map -->

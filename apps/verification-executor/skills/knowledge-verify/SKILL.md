@@ -15,17 +15,21 @@ allowed-tools:
 `knowledge-verify` is the command-line face of the knowledge-verification executor. The
 executor runs **outside** your sandbox (`VERIFY_EXECUTOR_URL` is set); the CLI forwards each
 command and prints one JSON document. You cannot edit its store, its receipts, or its verdicts.
-Failures it returns are instructions, not obstacles.
+Interpret failures with the returned checks and host recovery policy.
 
-Run `knowledge-verify help` once for the full command list. Every command below is safe to
-re-run: the store is content-addressed and every mutation is appended as a step receipt under
-your `--run <runId>`.
+Run `knowledge-verify help` once for the full command list. Mutations append receipts and
+can invalidate later results. A production recovery host may prohibit unapproved retries;
+use its recovery procedure before changing a failed run.
+
+Read [media, assertion and comparison decisions](references/capabilities.md) before choosing
+a capture or intent. It includes a distributed offline CLI scaffold and explicit limitations.
+A seal is not admission; mechanics, semantic support and policy remain separate.
 
 ## Preflight (do this first)
 
 ```bash
 knowledge-verify health                       # must print {"status":"ok",...}
-RUN=<topic-slug>-$(date -u +%Y%m%d)           # ONE runId for the whole task, e.g. anthropic-system-cards-20260909
+RUN=<host-issued-run-id>                    # pinned hosts require a canonical UUID
 mkdir -p /workspace/run && cd /workspace/run
 ```
 
@@ -34,8 +38,9 @@ you a runId, use that one verbatim.
 
 ## The evidence rule (overrides every other skill)
 
-1. **Captured bytes are the only evidence.** A fact exists only if it is an exact, contiguous
-   substring of a capture made with `knowledge-verify capture` or `knowledge-verify capture-file`.
+1. **Captured bytes are the evidence.** Every evidence quote must be an exact, contiguous
+   substring of an executor capture. The proposition may summarize those quotes; a successful
+   match alone does not establish its semantic support or truth.
 2. Search engines, scrapers, extractors and other CLIs (Firecrawl, Tavily, curl) are **for finding
    URLs and previewing pages only**. Their output is a lead. Never quote it, never register it as
    an artifact, never cite it. When a preview looks useful, capture the URL with this CLI and quote
@@ -136,7 +141,8 @@ object with the values exactly as printed, and `fields` binding each JSON pointe
 knowledge-verify verify-extraction 40-extraction-intent.json --run "$RUN" --out 41-extraction-result.json
 ```
 
-Exit 0 means `valid: true`. Otherwise fix the paths listed in `failedPaths`. `comparison: exact`
+Exit 0 means `valid: true`. Otherwise inspect `failedPaths` and route changes through the
+host recovery procedure. Configured comparisons need the options listed in the capability reference. `comparison: exact`
 requires the candidate value to equal the quote character for character; if the quote must be
 longer than the value to be unique, use a claim instead of an extraction field.
 
@@ -158,8 +164,8 @@ proposition to what the quote literally says, or drop the claim — then re-run 
 knowledge-verify policy --run "$RUN" --out 46-policy.json
 ```
 
-Exit 0 means `pass` or `pass_with_warnings`. `review` means some assertions were only partially
-supported or lack a judge verdict: fix them or drop them (step 5 → 7 → 8 again). Never cite a
+Exit 0 means `pass` or `pass_with_warnings`. `review` means the result is held. Route it through the host recovery/adjudication procedure;
+do not silently drop required claims to obtain a pass. Never cite a
 claim whose `assertionOutcomes[].outcome` is `fail` or `abstain`.
 
 ### 9. Seal
@@ -204,7 +210,7 @@ file you wrote) and finish your turn with a short message repeating those number
 | code | meaning | what to do |
 |---|---|---|
 | 0 | command succeeded and its quality gate passed | continue to the next stage |
-| 1 | command succeeded, quality gate failed (`{"qualityGate":"failed","reason":…}` on stderr, full JSON on stdout / `--out`) | read the JSON, fix the quote / intent / report, re-run |
+| 1 | command succeeded, quality gate failed (`{"qualityGate":"failed","reason":…}` on stderr, full JSON on stdout / `--out`) | read the JSON; use host recovery before changes/retries |
 | 2 | usage, network, auth or executor error (`{"error":…}` on stderr) | fix the command; if `health` fails, stop and report the outage |
 
 ## Style for the report

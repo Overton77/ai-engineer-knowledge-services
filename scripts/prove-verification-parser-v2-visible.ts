@@ -4,8 +4,8 @@ import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { SandboxedVerificationParser } from "../packages/conversion/src/verification-parser.js";
 import { canonicalizeJson, sha256Digest } from "../packages/verification/src/deterministic/canonical.js";
-import { parseCanonicalProjection } from "../packages/verification/src/selectors/projections.js";
-import { projectionSelectorResolver } from "../packages/verification/src/selectors/resolvers.js";
+import { parseCanonicalProjection } from "../packages/verification/src/evidence-selection/projections.js";
+import { projectionSelectorResolver } from "../packages/verification/src/evidence-selection/projection-resolver.js";
 
 const image = "sha256:1669a3f9674b2e0a70ba1c8686c1cb3647492b8268bdfa7a9a4452fb0530fb37" as const;
 const visible = Array.from({ length: 8 }, (_, index) => `<p id="visible-${index}">visible-${index}:${"x".repeat(48)}</p>`).join("");

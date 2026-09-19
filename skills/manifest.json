@@ -114,12 +114,18 @@
     },
     {
       "id": "knowledge-preparation-and-promotion",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "path": "knowledge-preparation-and-promotion/SKILL.md",
       "surfaces": [
         "executor-cli",
         "executor-mcp",
-        "platform-cli"
+        "platform-cli",
+        "platform-mcp"
+      ],
+      "references": [
+        "cli-reference.md",
+        "mcp-reference.md",
+        "examples.md"
       ],
       "operations": [
         "source_prepare_captured",
@@ -176,7 +182,7 @@
     },
     {
       "id": "knowledge-verification",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "knowledge-verification/SKILL.md",
       "surfaces": [
         "platform-cli",
@@ -186,7 +192,8 @@
       "references": [
         "cli-reference.md",
         "mcp-reference.md",
-        "examples.md"
+        "examples.md",
+        "capabilities.md"
       ],
       "operations": [
         "verify status",

@@ -1,0 +1,276 @@
+{
+  "status": "reference; source bytes only, not deployment evidence",
+  "inspectedAtUtc": "2026-09-17T02:37:58.1238043Z",
+  "knowledgeServicesHead": "08703d3fdaa887286473b54a6612b1963f1a5789",
+  "workingTree": "pre-existing concurrent modifications retained",
+  "files": [
+    {
+      "path": "ai-engineer-db-contract/docs/knowledge-model/SCHEMA-SUMMARY.md",
+      "sha256": "2e09c15702953c862e6a41e083fce942392e4f3b804b864b5794c60047877cb4"
+    },
+    {
+      "path": "ai-engineer-db-contract/supabase/migrations/20260908030000_verification_drift_revalidation_outbox.sql",
+      "sha256": "5e9c8653389b150b87c19df9b18f08c908852a5fc848a433a5f2f8e914ba5697"
+    },
+    {
+      "path": "ai-engineer-db-contract/supabase/migrations/20260912010500_km_05_evidence.sql",
+      "sha256": "37a2ef716a62e2ed5aa07359910d4964dda2d474fe69166352c2425b3188f8ed"
+    },
+    {
+      "path": "ai-engineer-db-contract/supabase/migrations/20260913010000_research_report_packages.sql",
+      "sha256": "6c411a1d26438a928d3679f57ad3bab345cd8068d74cb85eb8b58d1cad71ec2e"
+    },
+    {
+      "path": "ai-engineer-db-contract/supabase/migrations/20260914010700_durable_verification_recovery.sql",
+      "sha256": "6c6dc422f4a918415e9a059d248135c30a41db92bcddb6c45c344f6f47d6aaff"
+    },
+    {
+      "path": "ai-engineer-db-contract/supabase/migrations/20260915010000_official_claim_verification.sql",
+      "sha256": "6287530042f666d1bf6d6512972622f3e9feff4a5420d796c07038c3512cf474"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/.agent-docs/modules.json",
+      "sha256": "3aab40d88c2308cc52a28bb380de000cff94b4c16880ea3005a3d1e59022a247"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/examples/README.md",
+      "sha256": "8dcc62d8829164ac4d1ebb478430f2cd543270eb16a316a598412c1e9550df86"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/capture.ts",
+      "sha256": "8a30e336a45cc9c6f537875274589720c5bf4c067f0f4b02b9fd696456e3509f"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/evidence-reader.test.ts",
+      "sha256": "2e14ac332699253eb4343e1f40fdaf760c6f1f42a4aaa493ac976be8d5d61185"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/evidence-reader.ts",
+      "sha256": "9670f7e68a7d24a4344f9e5a97f9ad93d50db3be0de784673c4ed4f95610c556"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/executor.ts",
+      "sha256": "2813fe54976bbf1734c8f102964b81349669749673e94fcbfe1fb88988e4c8b7"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/intents.test.ts",
+      "sha256": "708798b1ae633ec832b61958db81945d874890085a4d5366a2fbaf0dd8b504c5"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/intents.ts",
+      "sha256": "a556961b9c75493fc86b069511b674e8c241dc0825488776810de0cccd347324"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/checkpoints-custody.ts",
+      "sha256": "a573d4dc2d358a3c3d22832b82ac298aab2c8adb6d1d21a327426d2a4f729343"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/evidence-oracle.ts",
+      "sha256": "5070d0c23bb2d2a314105fbf54da166c6d513d9b0abc923ee870c87d77945b00"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/recovery-durable-custody.test.ts",
+      "sha256": "e577ea8035531890c22a3d6986ee6010ca6470ae04f2766e541521a2a7dd9b83"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/recovery-durable-custody.ts",
+      "sha256": "f70a7d40053e6088158d9c691b14d1b8be4a42da1f08f705e6bc80c1b3879573"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/report-assessment.integration.test.ts",
+      "sha256": "3c8240da9f8979862604acf22bcd311463ec930798e3ccd6b479154ffb30c601"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/report-assessment.test.ts",
+      "sha256": "00e7970b89e9dbe6bfc72cfb2246dd920361f2ab9982d53093833ee49c8d29ac"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/apps/verification-executor/src/knowledge/report-assessment.ts",
+      "sha256": "bdb6eb9588eb622d6a80a9bd230f36ef4a0816a4d0ae520bd30300b0cb205b09"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/agents/CODE-MAP.md",
+      "sha256": "8d6b6e6b2993f09278be5db5e2bd6b264f3b4bef9ac9d176820b9fa92cf45b55"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/architecture/0004-transport-call-graph.md",
+      "sha256": "8c36e1d47ccc285f703abbcf1e4b385007be044c9f63cb71880e8d2d07461630"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/operations/reviews/verification-executor.md",
+      "sha256": "aea65e4d9579c128f4a3813197b2ad76487694a3d032cb3524e23fd1b9d88176"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/operations/reviews/verification.md",
+      "sha256": "8699377d6c0cff2d9f7f0fef769021affd249bf291c552c568a9460e20a9f24b"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/verification/INTEGRATION-GUIDE.md",
+      "sha256": "cbcccac2bdafbcc703a22d3a7b45c3643a3a1106bc8a4e6a9719553a67e95309"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/verification/KNOWLEDGE-ADMISSION.md",
+      "sha256": "559350887480bbbebfcee6ba2d9a4781b9cafd08c725e9a7c779b6e16b850103"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/verification/README.md",
+      "sha256": "1301211438e4a8afdf46360d34ebb16f51fb396f6ae7e2198d1972188ca802b5"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/docs/verification/RECOVERY-CASES.md",
+      "sha256": "09046dee3c2256fd053c79d8802b3a09ed608379599c39034c6f40e2cd0a8433"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/knowledge/verification-and-admission.md",
+      "sha256": "09b47d3aef2c6763e6a37945e968a238c186267d0cb5ac5971847bdefc8128fb"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/application/src/verification/operations/verification-service.ts",
+      "sha256": "46e56477416aa86bb838233d1f43a5b4cc2507741273b9d2af5f28b106b83593"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/application/src/verification/recovery/verification-recovery-durable.ts",
+      "sha256": "dac8289ce43d6297c9ffd4a7fdcb4283be64418698f2f782cc63a506a3501d9b"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/application/src/verification/recovery/verification-recovery.test.ts",
+      "sha256": "057b82fac8d65d441cce12d4aba7417d7ed090810f6d8109f25de81dbb491474"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/application/src/verification/recovery/verification-recovery.ts",
+      "sha256": "b372f8bdb1bccb953c00d34645769d066a232145d909ed6eccb7cdd87b649fb3"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/ingestion/src/evidence-admission.ts",
+      "sha256": "862b76027abdff7574c3c388b24de6cfbe6105e00a4a182c6296c7c86cb54b24"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/ingestion/src/tests/evidence-admission.test.ts",
+      "sha256": "82c4dc19a80d81a0755e8d57876cc7aa94e70315cf4d0f3e1d897b1959301fcc"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/persistence/src/report-source-dependencies.ts",
+      "sha256": "ad0e3bbbd439bdd8ee498ab1c9671bb979c6efe3e1b04b3f0d3cb5cb08b2dc1f"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/persistence/src/representation-dependency.test.ts",
+      "sha256": "38fd1e0da6d2ba8b9aeae6bc7d351801e6f15391b85396b321795d1923e93d7a"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/persistence/src/representation-dependency.ts",
+      "sha256": "47cfc6490d9d0c8945396c5b9765ae4fd7fda7145a7c598122bce67c95915a45"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/policy/src/verification-policy.test.ts",
+      "sha256": "9fa369fca93face69df05ff5b3f91ca2fcbe783e2bc06d333516da4f8f0c4c16"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/policy/src/verification-policy.ts",
+      "sha256": "0cd29a4a2970e0c13e6565124ea47b39f9e0238194ba9f9b70476b550668a531"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/examples/CAPABILITIES.md",
+      "sha256": "f5b2f6cb8a597f0ab9dcc77e464bc23fdfdf66ca00ed405ae199ed41f55fe48f"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/examples/README.md",
+      "sha256": "7c65ab1bcdf2a3586dad5d0c161b7e22ed8afb4af1b5bfa044e1e8e1d0661144"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/authority/assessment.ts",
+      "sha256": "2ffaeb060e14032cbfffffb4897d0006cb057ce4f720635731f082ba8c44d5d9"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/claims/decomposition.ts",
+      "sha256": "07a3363465f53752614bbb7ca1d5eea1465ac435de2ba0f1e4c92a3159ebaead"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/claims/report.ts",
+      "sha256": "9da274a22bfa8bc0a2b7d8a213fd22f781ed901171394f3a200a1036242dfe6d"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/deterministic/decimal.ts",
+      "sha256": "54fe9d3fbf2a63e3379791d4d2db2b22e614e1c629f4a05eaa702177e0c311b2"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/deterministic/engine.ts",
+      "sha256": "f46a6b0e4a8703eb42d4f33091bb80b0bca9a19e59f681f05c7de1e8d7b7bc22"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/deterministic/selectors.ts",
+      "sha256": "a414b9dd8eef3e725a6cbd4fa6ed62076d5aede18a53074af3e79690c20067d3"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/extraction/extraction.test.ts",
+      "sha256": "3e6c09ff17dfe55475ba64b365e8b46444802c61ab57b04f20804e6355982b50"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/extraction/verification.ts",
+      "sha256": "2a3b973079c5942f2f005823bc071d466d321fb5d4722bd8a8689fc335a13b42"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/provenance/attestation.test.ts",
+      "sha256": "8f434ad68d68562fb6890c524955b1c9dfad614261a0c5f105322c02749a17d2"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/provenance/attestation.ts",
+      "sha256": "df09fab3326b61546fbabebb81b761ffe161817efa2c630fc0101244c7d12ac8"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/provenance/replay.ts",
+      "sha256": "3cad580ed3adcd89a4d40f5b96c2c970ba696a7a244c023bb375701451977cdd"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/provenance/seal.ts",
+      "sha256": "d4a1d18d1146934592a7f29b2b9229d517ec8b7dede170a52680b74699257beb"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/selectors/projections.ts",
+      "sha256": "0e86bd92bd66faa5ea676f5877350e66018ecb69c6c1d7962d29396d96fa2011"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/selectors/resolvers.test.ts",
+      "sha256": "a0cf7d7a132cecfcf48971021233df90f18bae046e24ea81dfc550009fe6bd1d"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/selectors/resolvers.ts",
+      "sha256": "1ded7b75058adae4df3ed655a3bfe0efc3df9aaa66e9dd3a699b4716b7712ac1"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/semantic/diagnostics.test.ts",
+      "sha256": "5c343f6ecacae908b732756aa9c0fa21e894a5814026eecd759d03c1c89afde8"
+    },
+    {
+      "path": "ai-engineer-knowledge-services/packages/verification/src/semantic/verification.ts",
+      "sha256": "29826de3bdb3812c4bd89aa58a4e5be5bd338bb3f9736bf673ed9a9b84ccdc68"
+    },
+    {
+      "path": "ai-engineer-meta/ai-engineer-architecture/CONTEXT.md",
+      "sha256": "7419331ba79a7fb10e1f36bd07ea74eabc0baa57eec2e1def58497fb9549ad79"
+    },
+    {
+      "path": "ai-engineer-meta/docs/agents/workspace/RESPONSIBILITIES.md",
+      "sha256": "17216e34579553d4c000805ada8837c56a07c4f6374807d8b7f6c17abd17c169"
+    },
+    {
+      "path": "ai-engineer-meta/docs/product/00-vision.md",
+      "sha256": "b2787c4d214c57295e679d4f82eb6152401383d60ded4e19cfce1ee57ffec2a7"
+    },
+    {
+      "path": "ai-engineer-meta/docs/product/11-north-star-path.md",
+      "sha256": "57efc75f2b4c1074f14508a566007f07b639140407356995ca1adc3039cece27"
+    },
+    {
+      "path": "ai-engineer-mission-control/apps/worker/src/verification-workflow.ts",
+      "sha256": "83957d6d19ae240eb66a7d687979d5b52deb70d530c880812e509fa7ebd0c75a"
+    },
+    {
+      "path": "ai-engineer-mission-control/docs/agents/WORKFLOW-READING-GUIDE.md",
+      "sha256": "27d12ace9715a6f897796fc16fb92532bd0d084b72af97ef95d49258fb2038ae"
+    },
+    {
+      "path": "research_ingestion_systems_agent/README.md",
+      "sha256": "3bfce4ac894ee670bb5c873cb1cd8189b4620a63fbcb37d701235254b67b1dd1"
+    }
+  ]
+}

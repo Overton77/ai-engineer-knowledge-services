@@ -17,7 +17,7 @@ import {
   sha256Digest,
   type AuditBundleInspection,
   type AuditBundleSignatureVerifier,
-  type DeterministicSelectorResolver,
+  type EvidenceSelectorResolver,
   type DeterministicVerificationOptions,
   type RuntimePrincipalBinding,
   type VerificationSemanticReplayPort,
@@ -40,7 +40,7 @@ export interface VerificationAuditInspectionReplayTrustPort {
   }): Promise<{
     readonly runtimePrincipals: RuntimePrincipalBinding;
     readonly semanticReplay?: VerificationSemanticReplayPort;
-    readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+    readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
     readonly isProjectionLineageAdmitted?: DeterministicVerificationOptions["isProjectionLineageAdmitted"];
   }>;
 }
