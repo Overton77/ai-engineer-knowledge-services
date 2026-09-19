@@ -444,7 +444,17 @@ export class VerificationExecutor {
       const outcome = verifyExtractionFields({
         schema: admission.schema,
         candidate: intent.candidate,
-        fields: intent.fields.map((field) => ({ path: field.path, comparison: field.comparison })),
+        fields: intent.fields.map((field) => ({
+          path: field.path,
+          comparison: field.comparison,
+          ...(field.allowedValues === undefined ? {} : { allowedValues: field.allowedValues }),
+          ...(field.normalizationId === undefined ? {} : { normalizationId: field.normalizationId }),
+          ...(field.minimum === undefined ? {} : { minimum: field.minimum }),
+          ...(field.maximum === undefined ? {} : { maximum: field.maximum }),
+          ...(field.identifierKind === undefined ? {} : { identifierKind: field.identifierKind }),
+          ...(field.checksum === undefined ? {} : { checksum: field.checksum }),
+        })),
+        ...(intent.normalizations === undefined ? {} : { normalizations: intent.normalizations }),
         evidence: intent.fields.map((field) => {
           const rep = byCapture.get(field.captureId)!;
           return { path: field.path, captureId: field.captureId, representationArtifactId: rep.artifactId, representationDigest: rep.digest, selector: { kind: "text_quote" as const, quote: field.quote, normalization: "none" as const }, expectedSelectedContentDigest: sha256Digest(field.quote) };
@@ -553,7 +563,7 @@ export class VerificationExecutor {
           fragments.push({ evidenceId: edge.evidenceId, fragmentId: edge.fragment.fragmentId, exactText: edge.fragment.selector.quote, selectedContentDigest: sha256Digest(edge.fragment.selector.quote) });
         }
         if (fragments.length === 0) { skipped.push({ assertionId: assertion.assertionId, reason: "no_resolved_text_quote_fragments" }); continue; }
-        authorizeSemanticCase(bundle, result, assertion.assertionId, fragments);
+        authorizeSemanticCase({ bundle, deterministicResult: result, assertionId: assertion.assertionId, selectedFragments: fragments });
         const assessment = await verifyAssertionSemantics({ bundle, deterministicResult: result, assertionId: assertion.assertionId, selectedFragments: fragments, adapters });
         assessments.push(assessment);
       }

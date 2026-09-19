@@ -10,7 +10,7 @@ import {
   verifySemanticCase,
   type AuthorizedSemanticCase,
   type SemanticJudgeAdapter,
-} from "./verification.js";
+} from "./index.js";
 
 const digest = `sha256:${"a".repeat(64)}` as const;
 function adapter(
@@ -359,12 +359,12 @@ describe("evidence-closed semantic verification with declared synthetic adapters
     const value = fixture();
     const normalized = { status: "preview", nested: { scope: "limited" } };
     value.input.bundle.assertions[0]!.value = normalized;
-    const authorized = authorizeSemanticCase(
-      value.input.bundle,
-      value.deterministicResult,
-      "claim-1",
-      value.selectedFragments,
-    );
+    const authorized = authorizeSemanticCase({
+      bundle: value.input.bundle,
+      deterministicResult: value.deterministicResult,
+      assertionId: "claim-1",
+      selectedFragments: value.selectedFragments,
+    });
     normalized.nested.scope = "unrestricted";
     const input = semanticJudgeInput(authorized);
     expect(input.value).toEqual({

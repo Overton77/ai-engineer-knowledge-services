@@ -1,7 +1,7 @@
 import type {
   SemanticJudgeAdapter,
   SemanticJudgeExecution,
-} from "../semantic/verification.js";
+} from "../semantic/ports.js";
 import {
   SemanticJudgeOutputSchema,
   type SemanticJudgeIdentity,

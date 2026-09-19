@@ -11,7 +11,7 @@ import {
   gatewaySemanticConfigurationDigest,
   gatewaySemanticOutputSchemaDigest,
   gatewaySemanticPromptDigest,
-  resolveBuiltInSelector,
+  resolveEvidenceSelector,
   sha256Digest,
   verifyAssertionSemantics,
   verifyDeterministicBundle,
@@ -301,7 +301,7 @@ async function main() {
   const mechanicalFail = verifyDeterministicBundle({ bundle: failBundle, artifacts, runtimePrincipals });
 
   const selectorIntegrity = selected.map((metric) => {
-    const resolved = resolveBuiltInSelector({
+    const resolved = resolveEvidenceSelector({
       captureId: CAPTURE_ID,
       representationArtifactId: handle.artifactId,
       representationDigest: handle.digest,
@@ -329,7 +329,7 @@ async function main() {
       exactText: quote,
       selectedContentDigest: sha256Digest(quote),
     }];
-    const authorized = authorizeSemanticCase(passBundle, mechanicalPass, firstPassed.assertionId, selectedFragments);
+    const authorized = authorizeSemanticCase({ bundle: passBundle, deterministicResult: mechanicalPass, assertionId: firstPassed.assertionId, selectedFragments });
     const apiKey = process.env.AI_GATEWAY_API_KEY!;
     const { sink, records } = memorySink();
     const adapter = new GatewaySemanticJudgeAdapter({

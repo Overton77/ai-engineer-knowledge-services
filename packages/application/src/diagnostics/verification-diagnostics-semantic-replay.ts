@@ -13,7 +13,7 @@ import {
   canonicalizeJson,
   digestCanonicalJson,
   projectionSelectorResolver,
-  resolveWithAdmittedResolver,
+  resolveEvidenceSelector,
   sha256Digest,
   verifyDeterministicBundle,
   type RuntimePrincipalBinding,
@@ -193,9 +193,9 @@ export async function replayDiagnosticsSemanticFixture(input: {
     if (!representation) throw new Error("DIAGNOSTICS_SEMANTIC_REPLAY_PROJECTION_REQUIRED");
     const bytes = hydratedArtifacts.find((item) => item.registration.artifactId === representation.artifactId)?.bytes;
     if (!bytes) throw new Error("DIAGNOSTICS_SEMANTIC_REPLAY_PROJECTION_REQUIRED");
-    const selected = resolveWithAdmittedResolver({ captureId: capture.captureId, representationArtifactId: representation.artifactId, representationDigest: representation.digest, selector: edge.fragment.selector, content: bytes }, [projectionSelectorResolver]);
+    const selected = resolveEvidenceSelector({ captureId: capture.captureId, representationArtifactId: representation.artifactId, representationDigest: representation.digest, selector: edge.fragment.selector, content: bytes }, [projectionSelectorResolver]);
     if (!selected) throw new Error("DIAGNOSTICS_SEMANTIC_REPLAY_SELECTOR_UNRESOLVED");
-    const semanticCase = authorizeSemanticCase(bundle, deterministic, assertion.assertionId, [{ evidenceId: edge.evidenceId, fragmentId: edge.fragment.fragmentId, exactText: decoder.decode(selected.selectedContent), selectedContentDigest: sha256Digest(selected.selectedContent) }]);
+    const semanticCase = authorizeSemanticCase({ bundle, deterministicResult: deterministic, assertionId: assertion.assertionId, selectedFragments: [{ evidenceId: edge.evidenceId, fragmentId: edge.fragment.fragmentId, exactText: decoder.decode(selected.selectedContent), selectedContentDigest: sha256Digest(selected.selectedContent) }] });
     const replayed = await replayCapturedSemanticAssessment({ semanticCase, producerDeploymentId: entry.producerDeploymentId, expectedAssessment: entry.expectedAssessment, judges: entry.judges, createResolver: fixture.createResolver });
     results.push({
       caseId: entry.caseId,

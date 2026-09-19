@@ -1,4 +1,4 @@
-import { authorizeSemanticCase, digestCanonicalJson, resolveWithAdmittedResolver, sha256Digest, type DeterministicSelectorResolver, type TrustedArtifactResolver, type VerificationSemanticReplayPort } from "@aiengineer/knowledge-verification";
+import { authorizeSemanticCase, digestCanonicalJson, resolveEvidenceSelector, sha256Digest, type EvidenceSelectorResolver, type TrustedArtifactResolver, type VerificationSemanticReplayPort } from "@aiengineer/knowledge-verification";
 import { replayCapturedSemanticAssessment } from "./verification-semantic-replay.js";
 
 type ReplayInput = Parameters<VerificationSemanticReplayPort["replay"]>[0];
@@ -8,7 +8,7 @@ type Judges = Parameters<typeof replayCapturedSemanticAssessment>[0]["judges"];
 export function createCapturedSemanticAuditReplay(options: {
   readonly createResolver: () => TrustedArtifactResolver;
   readonly resolveJudges: (input: { readonly auditBundle: ReplayInput["auditBundle"]; readonly assertionId: string }) => Promise<Judges>;
-  readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+  readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
 }): VerificationSemanticReplayPort {
   const { createResolver, resolveJudges } = options, selectorResolvers = [...(options.selectorResolvers ?? [])];
   return { async replay(input) {
@@ -25,12 +25,12 @@ export function createCapturedSemanticAuditReplay(options: {
         const handle = capture && [capture.contentArtifact,...(capture.canonicalProjectionArtifact ? [capture.canonicalProjectionArtifact] : [])].find(item => item.artifactId === edge.fragment.representationArtifactId);
         const content = handle && bytes.get(handle.artifactId);
         if (!handle || !content || content.byteLength !== handle.byteLength || sha256Digest(content) !== handle.digest) throw new Error("SEMANTIC_AUDIT_REPRESENTATION_MISSING");
-        const selection = resolveWithAdmittedResolver({ captureId: edge.fragment.captureId, representationArtifactId: handle.artifactId, representationDigest: handle.digest, selector: edge.fragment.selector, content: content.slice() },selectorResolvers);
+        const selection = resolveEvidenceSelector({ captureId: edge.fragment.captureId, representationArtifactId: handle.artifactId, representationDigest: handle.digest, selector: edge.fragment.selector, content: content.slice() },selectorResolvers);
         const original = mechanical.evidence.find(item => item.evidenceId === edge.evidenceId);
         if (!selection || !original || digestCanonicalJson(selection.resolution) !== digestCanonicalJson(original.resolution)) throw new Error("SEMANTIC_AUDIT_SELECTOR_DRIFT");
         return { evidenceId: edge.evidenceId, fragmentId: edge.fragment.fragmentId, exactText: new TextDecoder("utf-8",{fatal:true}).decode(selection.selectedContent), selectedContentDigest: sha256Digest(selection.selectedContent) };
       });
-      const semanticCase = authorizeSemanticCase(bundle,deterministic,recorded.assertionId,selected);
+      const semanticCase = authorizeSemanticCase({ bundle, deterministicResult: deterministic, assertionId: recorded.assertionId, selectedFragments: selected });
       const judges = await resolveJudges({ auditBundle: structuredClone(audit), assertionId: recorded.assertionId });
       for (const judge of judges) {
         for (const handle of [judge.profileArtifact,judge.observationArtifact]) if (digestCanonicalJson(artifacts.get(handle.artifactId) ?? null) !== digestCanonicalJson(handle)) throw new Error("SEMANTIC_AUDIT_JUDGE_ARTIFACT_UNLISTED");

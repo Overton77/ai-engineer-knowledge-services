@@ -10,7 +10,7 @@ import {
   type VerificationArtifactHandle,
   type VerificationBundle,
 } from "@aiengineer/knowledge-contracts";
-import { verifySemanticCase, type SemanticJudgeAdapter, type SemanticJudgeExecution, authorizeSemanticCase, resolveWithAdmittedResolver, type AuthorizedSemanticCase, applyReportWideMechanicalGates, digestCanonicalJson, sha256Digest, verifyDeterministicBundle, verifyReportWideFromLedger, type DeterministicSelectorResolver, type RuntimePrincipalBinding } from "@aiengineer/knowledge-verification";
+import { verifySemanticCase, type SemanticJudgeAdapter, type SemanticJudgeExecution, authorizeSemanticCase, resolveEvidenceSelector, type AuthorizedSemanticCase, applyReportWideMechanicalGates, digestCanonicalJson, sha256Digest, verifyDeterministicBundle, verifyReportWideFromLedger, type EvidenceSelectorResolver, type RuntimePrincipalBinding } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import type { VerificationMetricCapturePort, VerificationMetricNativeProjectionAdmissionPort } from "./verification-metrics.js";
 
@@ -30,7 +30,7 @@ export interface VerificationClaimsServiceDependencies {
   readonly runtimePrincipals: VerificationClaimsRuntimePrincipalPort;
   readonly projectionGrants?: VerificationClaimsProjectionGrantCatalog;
   readonly nativeProjectionAdmission?: VerificationMetricNativeProjectionAdmissionPort;
-  readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+  readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
 }
 
 export interface ClaimsVerificationResult {
@@ -163,12 +163,12 @@ export class VerificationClaimsApplicationService {
         const handle = capture && [capture.contentArtifact, ...(capture.canonicalProjectionArtifact ? [capture.canonicalProjectionArtifact] : [])].find(item => item.artifactId === edge.fragment.representationArtifactId);
         const bytes = handle && prepared.artifacts.get(handle.artifactId);
         if (!handle || !bytes) throw new Error("VERIFICATION_SEMANTIC_REPRESENTATION_REQUIRED");
-        const selection = resolveWithAdmittedResolver({ captureId: edge.fragment.captureId, representationArtifactId: handle.artifactId, representationDigest: handle.digest, selector: edge.fragment.selector, content: bytes.slice() }, this.dependencies.selectorResolvers ?? []);
+        const selection = resolveEvidenceSelector({ captureId: edge.fragment.captureId, representationArtifactId: handle.artifactId, representationDigest: handle.digest, selector: edge.fragment.selector, content: bytes.slice() }, this.dependencies.selectorResolvers ?? []);
         const original = mechanical.evidence.find(item => item.evidenceId === edge.evidenceId);
         if (!selection || !original || digestCanonicalJson(selection.resolution) !== digestCanonicalJson(original.resolution)) throw new Error("VERIFICATION_SEMANTIC_SELECTOR_DRIFT");
         return { evidenceId: edge.evidenceId, fragmentId: edge.fragment.fragmentId, exactText: new TextDecoder("utf-8", { fatal: true }).decode(selection.selectedContent), selectedContentDigest: sha256Digest(selection.selectedContent) };
       });
-      return authorizeSemanticCase(prepared.bundle, deterministic, assertion.assertionId, selected);
+      return authorizeSemanticCase({ bundle: prepared.bundle, deterministicResult: deterministic, assertionId: assertion.assertionId, selectedFragments: selected });
     }));
   }
 

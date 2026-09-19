@@ -6,7 +6,7 @@ import { isSha256Digest, sha256Digest } from "../canonical/index.js";
 import type {
   SemanticJudgeAdapter,
   SemanticJudgeExecution,
-} from "../semantic/verification.js";
+} from "../semantic/ports.js";
 import type { SemanticJudgeIdentity } from "@aiengineer/knowledge-contracts";
 import {
   admitOutputSchema,

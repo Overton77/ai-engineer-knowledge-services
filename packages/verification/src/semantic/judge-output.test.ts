@@ -5,7 +5,7 @@ import { prototypeClaimInput } from "../deterministic/testing/prototype-parity.f
 import {
   verifyAssertionSemantics,
   type SemanticJudgeAdapter,
-} from "./verification.js";
+} from "./index.js";
 
 const digest = `sha256:${"a".repeat(64)}` as const;
 
