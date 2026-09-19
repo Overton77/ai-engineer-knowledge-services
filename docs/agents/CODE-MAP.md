@@ -866,7 +866,7 @@ Evidence-closed semantic verification: closure, authorization, judge ports, outp
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** [verification-deterministic](#verification-deterministic), [verification-canonical](#verification-canonical)
-**Checks:** [`packages/verification/src/semantic/verification.test.ts`](../../packages/verification/src/semantic/verification.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/semantic/diagnostics.test.ts`](../../packages/verification/src/semantic/diagnostics.test.ts)
+**Checks:** [`packages/verification/src/semantic/authorize.test.ts`](../../packages/verification/src/semantic/authorize.test.ts), [`packages/verification/src/semantic/verification.test.ts`](../../packages/verification/src/semantic/verification.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/semantic/diagnostics.test.ts`](../../packages/verification/src/semantic/diagnostics.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**

@@ -125,6 +125,35 @@ describe("bounded provider adapters", () => {
     expect(result.output).toEqual({ vendor: "Example Labs", systems: 21 });
   });
 
+  it("admits and persists the request before the network is touched, then persists the response before interpreting it", async () => {
+    const events: string[] = [];
+    const provider = new InterfazeStructuredExtractionProvider({
+      apiKey: "test",
+      artifactSink: {
+        async assertExternalProcessingAdmission() {
+          events.push("admission");
+        },
+        async persistBeforeDispatch() {
+          events.push("request");
+        },
+        async persistAfterResponse() {
+          events.push("response");
+        },
+      },
+      fetch: (async () => {
+        events.push("fetch");
+        return completion({ vendor: "Example Labs", systems: 21 });
+      }) as typeof fetch,
+    });
+    await provider.extract({
+      prompt: "Extract only fixture fields.",
+      schemaName: "synthetic_record",
+      schema,
+      execution: {},
+    });
+    expect(events).toEqual(["admission", "request", "fetch", "response"]);
+  });
+
   it("retains bounded known precontext returned with structured extraction", async () => {
     const persisted: Array<{ bytes: number; status: number | undefined }> = [];
     const provider = new InterfazeStructuredExtractionProvider({

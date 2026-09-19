@@ -914,6 +914,7 @@
         "verifyAssertionSemantics = mechanicalSemanticClosure → authorizeSemanticCase({ bundle, deterministicResult, assertionId, selectedFragments }) → verifySemanticCase; no reversal of deterministic failure."
       ],
       "tests": [
+        "packages/verification/src/semantic/authorize.test.ts",
         "packages/verification/src/semantic/verification.test.ts",
         "packages/verification/src/semantic/judge-output.test.ts",
         "packages/verification/src/semantic/diagnostics.test.ts"

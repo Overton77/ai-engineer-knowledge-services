@@ -107,6 +107,16 @@ describe("resolveEvidenceSelector", () => {
     ).toBe("invalid");
   });
 
+  it("rejects a claim whose selectedContentDigest disagrees with the bytes it returned", () => {
+    const forgedDigest = tampered((honest) =>
+      withReport(honest, { selectedContentDigest: sha256Digest("other") }),
+    );
+    expect(
+      resolveEvidenceSelector(datasetRequest, [forgedDigest])?.resolution
+        .status,
+    ).toBe("invalid");
+  });
+
   it("resolves core kinds itself even when a resolver claims to support them", () => {
     const text = new TextEncoder().encode("The count is 42.");
     const hijacker: EvidenceSelectorResolver = {
