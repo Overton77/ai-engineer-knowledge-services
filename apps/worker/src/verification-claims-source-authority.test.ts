@@ -5,7 +5,7 @@ import type { VerificationArtifactHandle, VerificationBundle } from "@aiengineer
 import { claimsHostActivation, createClaimsSourceAuthorityStage, sourceAuthorityClaimDigest, SourceAuthorityReceiptSchema } from "./verification-claims-source-authority.js";
 
 async function fixture() {
-  const fixtureUrl = new URL("../../../packages/verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+  const fixtureUrl = new URL("../../../packages/verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
   const { prototypeClaimInput } = await import(fixtureUrl) as { prototypeClaimInput(): { bundle: VerificationBundle } };
   const bundle = structuredClone(prototypeClaimInput().bundle), tenantId = randomUUID();
   const artifacts = new Map<string, { registration: VerificationArtifactHandle; bytes: Uint8Array }>();

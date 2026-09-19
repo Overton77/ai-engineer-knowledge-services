@@ -15,7 +15,7 @@ const missionId = "55555555-5555-4555-8555-555555555555";
 const workItemId = "66666666-6666-4666-8666-666666666666";
 const createdAt = "2026-09-05T12:00:00.000Z";
 type PrototypeFixture = { prototypeMetricInput(): { bundle: VerificationBundle; artifacts: readonly { artifactId: string; content: string | Uint8Array }[] }; runtimePrincipals: RuntimePrincipalBinding; };
-const prototypeFixtureUrl = new URL("../../../packages/verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const prototypeFixtureUrl = new URL("../../../packages/verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 
 function handle(id: string, bytes: Uint8Array, parents: readonly string[] = [], signature?: `sha256:${string}`): VerificationArtifactHandle {
   const digest = sha256Digest(bytes);

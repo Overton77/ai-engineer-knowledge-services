@@ -15,7 +15,7 @@ type PrototypeFixture = {
   prototypeMetricInput(): { bundle: VerificationBundle; artifacts: readonly { artifactId: string; content: string | Uint8Array }[] };
   runtimePrincipals: RuntimePrincipalBinding;
 };
-const prototypeFixtureUrl = new URL("../../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const prototypeFixtureUrl = new URL("../../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 const context = (): OperationContext => ({
   contractVersion: "v1", tenantId, operationId: "55555555-5555-4555-8555-555555555555",
   attemptId: "88888888-8888-4888-8888-888888888888", correlationId: "metric-verify-test",

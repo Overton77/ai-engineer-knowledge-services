@@ -22,7 +22,7 @@ const context: OperationContext = {
   reason: "frozen diagnostics verification",
 };
 type PrototypeFixture = { prototypeClaimInput(): { bundle: VerificationBundle; artifacts: readonly { artifactId: string; content: string | Uint8Array }[] }; runtimePrincipals: RuntimePrincipalBinding };
-const fixtureUrl = new URL("../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const fixtureUrl = new URL("../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 
 function handle(id: string, bytes: Uint8Array, mediaType = "application/json"): VerificationArtifactHandle {
   return { artifactId: id, tenantId, digest: sha256Digest(bytes), mediaType, byteLength: bytes.byteLength, objectKey: `offline/${id}`, createdAt: "2026-09-08T00:00:00.000Z", producerActivityId: "diagnostics-offline-test", producerVersion: "1", encryptionClass: "managed", retentionClass: "test", dataClassification: "internal", parentArtifactIds: [] };

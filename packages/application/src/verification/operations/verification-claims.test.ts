@@ -7,7 +7,7 @@ const tenantId = "11111111-1111-4111-8111-111111111111";
 const assertionId = "22222222-2222-4222-8222-222222222222";
 const sourceId = "33333333-3333-4333-8333-333333333333";
 type PrototypeFixture = { prototypeClaimInput(): { bundle: VerificationBundle; artifacts: readonly { artifactId: string; content: string | Uint8Array }[] }; runtimePrincipals: RuntimePrincipalBinding };
-const fixtureUrl = new URL("../../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const fixtureUrl = new URL("../../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 const context = (): OperationContext => ({ contractVersion: "v1", tenantId, operationId: "44444444-4444-4444-8444-444444444444", attemptId: "55555555-5555-4555-8555-555555555555", correlationId: "claims-test", actor: { kind: "service", id: "66666666-6666-4666-8666-666666666666", serviceIdentity: "knowledge_worker" }, capabilityVersion: "verification.v1", idempotencyKey: "claims-test-key", reason: "claims fixture" });
 function handle(id: string, bytes: Uint8Array): VerificationArtifactHandle { return { artifactId: id, tenantId, digest: sha256Digest(bytes), mediaType: "application/json", byteLength: bytes.byteLength, objectKey: `test/${id}`, createdAt: "2026-09-06T00:00:00.000Z", producerActivityId: "test", producerVersion: "1", encryptionClass: "managed", retentionClass: "test", dataClassification: "internal", parentArtifactIds: [] }; }
 

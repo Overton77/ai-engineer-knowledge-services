@@ -6,7 +6,7 @@ import { VerificationAdjudicationRequestApplicationService } from "./verificatio
 const tenantId = "11111111-1111-4111-8111-111111111111", runId = "22222222-2222-4222-8222-222222222222", createdAt = "2026-09-07T00:00:00.000Z";
 const context: OperationContext = { contractVersion: "v1", tenantId, operationId: "33333333-3333-4333-8333-333333333333", attemptId: "44444444-4444-4444-8444-444444444444", correlationId: "synthetic-adjudication-test", actor: { kind: "service", id: "55555555-5555-4555-8555-555555555555", serviceIdentity: "knowledge_worker" }, capabilityVersion: "verification-adjudication.v1", idempotencyKey: "synthetic-adjudication-test", reason: "unit test only" };
 type PrototypeFixture = { prototypeClaimInput(): { bundle: VerificationAuditBundle["verificationBundle"] }; runtimePrincipals: RuntimePrincipalBinding };
-const fixtureUrl = new URL("../../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const fixtureUrl = new URL("../../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 
 function handle(artifactId: string, digest: `sha256:${string}`, mediaType: string, parents: readonly string[] = []): VerificationArtifactHandle {
   return { artifactId, tenantId, digest, mediaType, byteLength: 2, objectKey: `${tenantId}/${digest.slice(7, 9)}/${digest.slice(7)}`, createdAt, producerActivityId: "synthetic-test-fixture", producerVersion: "test.v1", encryptionClass: "managed", retentionClass: "audit", dataClassification: "restricted", parentArtifactIds: [...parents] };

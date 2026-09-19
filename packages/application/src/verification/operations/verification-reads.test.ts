@@ -7,7 +7,7 @@ const tenantId = "11111111-1111-4111-8111-111111111111";
 const runId = "22222222-2222-4222-8222-222222222222";
 const createdAt = "2026-09-05T02:00:00.000Z";
 type PrototypeFixture = { prototypeClaimInput(): Parameters<typeof verifyDeterministicBundle>[0] };
-const prototypeFixtureUrl = new URL("../../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const prototypeFixtureUrl = new URL("../../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 
 function handle(artifactId: string, digest: `sha256:${string}`, mediaType = "application/json"): VerificationArtifactHandle {
   return {

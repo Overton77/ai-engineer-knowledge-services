@@ -14,7 +14,7 @@ import {
   type VerificationArtifactHandle,
   type VerificationRunManifest,
 } from "@aiengineer/knowledge-verification";
-import { prototypeClaimInput } from "../../../../packages/verification/src/deterministic/testing/prototype-parity.fixture.js";
+import { prototypeClaimInput } from "../../../../packages/verification/src/deterministic/engine-golden.fixture.js";
 import {
   VERIFICATION_ATTESTATION_SIGNING_KEY_ENV,
   VerificationAttestationCliError,

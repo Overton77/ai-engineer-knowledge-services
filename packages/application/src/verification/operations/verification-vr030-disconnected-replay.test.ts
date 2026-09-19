@@ -1,7 +1,7 @@
 import type { VerificationArtifactHandle, VerificationPolicyDefinition, VerificationRecordedPolicyInputs, VerificationRunManifest } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, digestCanonicalJson, sealAuditBundle, sha256Digest, verificationManifestDigest, verifyDeterministicBundle, type DeterministicVerificationInput, type RuntimePrincipalBinding, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { describe, expect, it } from "vitest";
-import { admitExtractionSchema, projectionSelectorResolver, verifyExtractionFields, type DeterministicSelectorResolver } from "@aiengineer/knowledge-verification";
+import { admitExtractionSchema, projectionSelectorResolver, verifyExtractionFields, type EvidenceSelectorResolver } from "@aiengineer/knowledge-verification";
 import { ObservationPeriodSchema } from "@aiengineer/knowledge-contracts";
 import { replayVerificationAudit } from "./verification-replay.js";
 
@@ -12,7 +12,7 @@ import { replayVerificationAudit } from "./verification-replay.js";
  * metric periods; scalar extraction comparisons are re-resolved from the same
  * immutable full-handle bytes by the supported extraction verifier.
  */
-const fixtureUrl = new URL("../../../../verification/src/deterministic/testing/prototype-parity.fixture.js", import.meta.url).href;
+const fixtureUrl = new URL("../../../../verification/src/deterministic/engine-golden.fixture.js", import.meta.url).href;
 const tenantId = "11111111-1111-4111-8111-111111111111";
 const createdAt = "2026-09-08T00:00:00.000Z";
 const encoder = new TextEncoder();
@@ -35,7 +35,7 @@ function handle(artifactId: string, bytes: Uint8Array): VerificationArtifactHand
   };
 }
 
-async function sealed(input: DeterministicVerificationInput, kind: "claim" | "metric", selectorResolvers?: readonly DeterministicSelectorResolver[]) {
+async function sealed(input: DeterministicVerificationInput, kind: "claim" | "metric", selectorResolvers?: readonly EvidenceSelectorResolver[]) {
   const deterministicResult = verifyDeterministicBundle(input, selectorResolvers ? { selectorResolvers } : undefined);
   const source = input.bundle.captures[0]!.contentArtifact;
   const policy: VerificationPolicyDefinition = {

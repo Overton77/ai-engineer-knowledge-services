@@ -12,7 +12,7 @@ const tenantId="11111111-1111-4111-8111-111111111111",operationId="22222222-2222
 const verifierAttemptId="33333333-3333-4333-8333-333333333333",missionId="44444444-4444-4444-8444-444444444444",workItemId="55555555-5555-4555-8555-555555555555";
 const createdAt="2026-09-06T12:00:00.000Z";
 type PrototypeFixture={prototypeClaimInput():{bundle:VerificationBundle;artifacts:readonly {artifactId:string;content:string|Uint8Array}[]};runtimePrincipals:RuntimePrincipalBinding};
-const fixtureUrl=new URL("../../../packages/verification/src/deterministic/testing/prototype-parity.fixture.js",import.meta.url).href;
+const fixtureUrl=new URL("../../../packages/verification/src/deterministic/engine-golden.fixture.js",import.meta.url).href;
 
 function handle(id:string,bytes:Uint8Array,parents:readonly string[]=[]):VerificationArtifactHandle{return{artifactId:id,tenantId,digest:sha256Digest(bytes),mediaType:"application/json",byteLength:bytes.byteLength,objectKey:`fixture/${id}`,createdAt,producerActivityId:"fixture",producerVersion:"fixture.v1",encryptionClass:"managed",retentionClass:"test",dataClassification:"restricted",parentArtifactIds:[...parents],...(parents.length?{transformationSignature:sha256Digest("fixture-transform")}:{})};}
 class Repository implements VerificationMetricAuditSealerRepository{
