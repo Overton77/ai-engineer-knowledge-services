@@ -29,7 +29,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [schema-workspace](../docs/agents/CODE-MAP.md#schema-workspace) | Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles. | packages/schema-workspace/src/index.ts |
 | [testkit](../docs/agents/CODE-MAP.md#testkit) | Curated evaluation corpora, embedding bundles, retrieval fixtures, and operational test assets. | packages/testkit/src/index.ts |
 | [vector-backends](../docs/agents/CODE-MAP.md#vector-backends) | Vector-store adapters and publication handling for exact and Postgres search. | packages/vector-backends/src/index.ts |
-| [verification](../docs/agents/CODE-MAP.md#verification) | Evidence verification algorithms behind deterministic, selector, claim, semantic, and provenance facades. | packages/verification/src/index.ts |
+| [verification](../docs/agents/CODE-MAP.md#verification) | Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay. | packages/verification/src/index.ts |
 
 Descriptions are maintained in `.agent-docs/modules.json` at the repository root. Do not edit this generated block.
 <!-- END GENERATED: semantic-map -->

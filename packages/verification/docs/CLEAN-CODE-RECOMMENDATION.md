@@ -1,3 +1,5 @@
+> **Status (2026-09-19):** superseded. The refactor this document recommended was implemented on 2026-09-19 (see the package [README](../README.md) for the current layout, sequence and invariants). Retained for history; file paths and symbol names below refer to the pre-refactor tree and are not updated.
+
 # Final verification clean-code implementation plan
 
 **Authority:** this document replaces the previous contents of `CLEAN-CODE-RECOMMENDATION.md` and supersedes conflicting recommendations in the companion documents. Updated 2026-09-11. This is an implementation specification; writing it has not implemented the refactor.

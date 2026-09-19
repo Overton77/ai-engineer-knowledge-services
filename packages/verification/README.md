@@ -1,200 +1,107 @@
 # `@aiengineer/knowledge-verification`
 
-For implementation, use the authoritative [final clean-code plan](CLEAN-CODE-RECOMMENDATION.md), which consolidates code and testing recommendations with ordered phases and completion criteria.
+Private workspace package that owns the verification **algorithms** for Knowledge Services (`verification.v1`): content-addressed capture integrity, evidence-selector resolution, mechanical assertion/metric/extraction checks, evidence-closed semantic judging, and audit-bundle sealing, inspection and replay. Transport schemas live in `@aiengineer/knowledge-contracts`; `packages/application` composes use cases with persistence; `apps/api`, `apps/cli`, `apps/mcp` and `apps/worker` are thin transports. Policy admission is decided in `packages/policy`, never here. Cross-repository consumers use HTTP, CLI or MCP and must not import this package.
 
-For an agent-oriented walkthrough of interfaces, call sequences and clean-code recommendations, start with the [comprehension guide](COMPREHENSION.md).
+## Sequence
 
-For the test suite, read the [testing comprehension guide](TESTING-COMPREHENSION.md) and [clean testing recommendation](CLEAN-TESTING-RECOMMENDATION.md).
+The package answers five ordered questions. Later stages may add restrictions; they never reverse an earlier deterministic failure.
 
-Private workspace package that owns verification **algorithms** for Knowledge Services (`verification.v1`). Transport schemas live in `@aiengineer/knowledge-contracts`. `packages/application` composes use cases with persistence. `apps/api`, `apps/cli`, `apps/mcp`, and `apps/worker` are thin transports.
+| Stage | Question | Entry | Reads |
+|---|---|---|---|
+| 0 | Primitives | `canonicalizeJson`, `digestCanonicalJson`, `sha256Digest`, `parseDecimal` | `src/canonical/`, `src/decimal/`, `src/versions.ts` |
+| 1 | Capture integrity | `verifyDeterministicBundle` | `src/deterministic/bundle-verification.ts` → `capture-integrity.ts`, `runtime-separation.ts` |
+| 2 | Selector integrity | `resolveEvidenceSelector` | `src/evidence-selection/resolve-evidence-selector.ts` → `core-resolver.ts`, `projection-resolver.ts`, `projections/*` |
+| 3 | Mechanical correctness | bundle assertions and metrics (`evidence-edge.ts`, `assertion-verification.ts`, `metric-verification.ts`); `verifyExtractionFields` / `verifyExtractionFieldsWithEvidence`; `verifyReportWide`, `applyReportWideMechanicalGates`; `assessSourceAuthority` | `src/deterministic/`, `src/extraction/field-verification.ts`, `src/report/`, `src/authority/` |
+| 4 | Semantic support | `verifyAssertionSemantics` = `mechanicalSemanticClosure` → `authorizeSemanticCase` → `verifySemanticCase` | `src/semantic/closure.ts`, `authorize.ts`, `verify-case.ts`, `judge-output.ts`; adapters in `src/providers/` |
+| 5 | Provenance | `sealAuditBundle` → `inspectAuditBundle` → `replayAuditBundle`; DSSE/SLSA attestation | `src/provenance/seal.ts`, `replay.ts`, `attestation.ts` |
 
-The module answers the spec’s five ordered questions (capture integrity → selector integrity → mechanical correctness → semantic support → policy admission). Later stages may add restrictions; they must not reverse an earlier deterministic failure. Orthogonal properties (evidence support, world correctness, attribution faithfulness, source authority, provenance integrity) are stored separately. Semantic/policy verdicts follow the contract lattice (`directly_supported`, `locator_error`, `unverifiable`, …). Cross-repository consumers must use HTTP, CLI, or MCP — never import this package.
+`src/provenance/replay.ts` is the top of the dependency graph: it re-hydrates artifacts through a trusted resolver, re-runs the deterministic engine, re-checks report-wide gates and recorded policy inputs, and optionally re-runs semantic replay. It is the best single file to read the whole pipeline end to end.
 
 ## Invariants enforced here
 
 | Invariant | Enforcement |
 | --- | --- |
-| Deterministic-before-semantic; monotonic failure | `verifyDeterministicBundle` sets `semanticEligibility` only when mechanical status is `passed` (`src/deterministic/engine.ts`). `authorizeSemanticCase` throws `SEMANTIC_MECHANICAL_GATE_CLOSED` otherwise (`src/semantic/verification.ts`). `applyReportWideMechanicalGates` can only add hard failures and clear eligibility (`src/claims/report.ts`). |
-| Evidence-closed judges cannot override mechanical failure | `verifyAssertionSemantics` returns `mechanicalSemanticClosure` (`locator_error` / `unverifiable`, reason `MECHANICAL_GATE_CLOSED`) without calling a judge (`src/semantic/verification.ts`). Judges see only authorized fragment IDs/bytes (`JUDGE_FRAGMENT_ID_INVENTED`, digest match). |
-| Content-addressed immutable captures | `CAPTURE_DIGEST_MATCH` / `CAPTURE_BYTE_LENGTH_MATCH` hash hydrated bytes against the registered handle (`src/deterministic/engine.ts`). Projection bytes are re-hashed the same way. |
-| Selectors ≠ display excerpts | Resolution binds `selectorDigest = digestCanonicalJson(selector)` (`SELECTOR_DEFINITION_BOUND` in `src/deterministic/engine.ts`). Locator kinds are the contract union. HTML `canonicalTextFallback` is a check, not a locator (`src/evidence-selection/projection-resolver.ts`). |
-| Producer/verifier independence | `PRODUCER_VERIFIER_INDEPENDENT` requires distinct runtime principal deployments and principal digests (`src/deterministic/engine.ts`). |
-| RFC 8785 canonicalization before hashing/sealing | `canonicalizeJson` / `digestCanonicalJson` (`src/deterministic/canonical.ts`). Manifest and audit seals hash that projection (`src/provenance/seal.ts`: `verificationManifestDigest`, `sealAuditBundle`). |
-| Append-only judgments (seal-time) | There is no in-package judgment store or overwrite API. A run manifest’s `judgments` array is part of the RFC 8785 signable payload; changing it changes `manifestDigest` (`src/provenance/seal.ts`). The `Judgment` type is re-exported from contracts only. |
-
-Policy admission (question 5) is **not** decided here. This package records policy-binding artifacts and digests; `packages/policy` is the admission authority.
+| Deterministic-before-semantic; monotonic failure | `verifyDeterministicBundle` sets `semanticEligibility` only when mechanical status is `passed` (`src/deterministic/bundle-verification.ts`). `authorizeSemanticCase` throws `SEMANTIC_MECHANICAL_GATE_CLOSED` otherwise (`src/semantic/authorize.ts`). `applyReportWideMechanicalGates` can only add hard failures and clear eligibility (`src/report/report-wide.ts`). |
+| Evidence-closed judges cannot override mechanical failure | `verifyAssertionSemantics` returns `mechanicalSemanticClosure` (`locator_error` / `unverifiable`, reason `MECHANICAL_GATE_CLOSED`) without calling a judge (`src/semantic/closure.ts`). Judges see only authorized fragment IDs/bytes; a case not minted by `authorizeSemanticCase` is rejected by runtime identity (`src/semantic/authorize.ts`, `verify-case.ts`). |
+| Content-addressed immutable captures | `CAPTURE_DIGEST_MATCH` / `CAPTURE_BYTE_LENGTH_MATCH` hash hydrated bytes against the registered handle (`src/deterministic/capture-integrity.ts`). Projection bytes are re-hashed the same way. |
+| Selectors ≠ display excerpts | Resolution binds `selectorDigest = digestCanonicalJson(selector)` (`SELECTOR_DEFINITION_BOUND`, `src/deterministic/evidence-edge.ts`); selected bytes are re-hashed and compared with the resolver's claim (`src/evidence-selection/resolve-evidence-selector.ts`). HTML `canonicalTextFallback` is a check, not a locator (`src/evidence-selection/projections/html.ts`). |
+| Producer/verifier independence | `PRODUCER_VERIFIER_INDEPENDENT` requires distinct runtime principal deployments and principal digests (`src/deterministic/runtime-separation.ts`). |
+| RFC 8785 canonicalization before hashing/sealing | `canonicalizeJson` / `digestCanonicalJson` (`src/canonical/`). Manifest and audit seals hash that projection (`src/provenance/seal.ts`: `verificationManifestDigest`, `sealAuditBundle`). |
+| Append-only judgments (seal-time) | No in-package judgment store or overwrite API. A run manifest's `judgments` array is part of the RFC 8785 signable payload; changing it changes `manifestDigest` (`src/provenance/seal.ts`). |
+| Bounded provider effects | Every provider call runs admission → persist request → fetch → persist response → interpret through one procedure (`src/providers/dispatch.ts`); no retry path exists in this package. |
 
 ## Module map
 
-| Directory | Responsibility | Key exports (from that `index.ts`) | Tests |
-| --- | --- | --- | --- |
-| `src/deterministic/` | RFC 8785 JSON, SHA-256, decimal replay, bundle engine | `canonicalizeJson`, `digestCanonicalJson`, `sha256Digest`, `fromPrototypeSha256`, `toPrototypeSha256`, `parseDecimal`, `replayDecimalOperation`, `compareFractions`, `withinTolerance`, `formatRoundedDecimal`, `verifyDeterministicBundle` | `deterministic/deterministic.test.ts` |
-| `src/evidence-selection/` | Locate the evidence a `VerificationSelector` points at inside captured bytes: core text/JSON locators (`verification-core.v1`), projection-backed locators for HTML/PDF/geometry/table/media/repo/dataset/API (`verification-projections.v1`), and verification of resolver claims | `resolveEvidenceSelector`, `EvidenceSelectionRequest`, `EvidenceSelection`, `EvidenceSelectorResolver`, `parseCanonicalProjection`, `ProjectionSelectorResolver`, `projectionSelectorResolver` | `evidence-selection/resolve-evidence-selector.test.ts`, `core-resolver.test.ts`, `projection-resolver.test.ts`, `text-offsets.test.ts` |
-| `src/extraction/` | Bounded schema gate, field/evidence verification against capture bytes | `admitExtractionSchema`, `validateExtractionCandidate`, `verifyExtractionFields`, `verifyExtractionFieldsWithEvidence`, `EXTRACTION_SCHEMA_GATE_VERSION` | `extraction/extraction.test.ts` |
-| `src/provenance/` | Audit-bundle seal/inspect, replay, recorded policy-input check, benchmark publication, DSSE/SLSA attestation | `sealAuditBundle`, `inspectAuditBundle`, `verificationManifestDigest`, `createEd25519Signer`, `createEd25519Verifier`, `replayAuditBundle`, `validateRecordedPolicyInputsArtifact`, `sealVerificationBenchmarkPublication`, `verifyVerificationBenchmarkPublication`, `sealVerificationBenchmarkComparisonPublication`, `verifyVerificationBenchmarkComparisonPublication`, `createVerificationDsseSlsaAttestation`, `inspectVerificationDsseSlsaAttestation`, `verificationDssePae` | `provenance/provenance.test.ts`, `attestation.test.ts`, `benchmark-publication.test.ts`, `benchmark-comparison-publication.test.ts` |
-| `src/claims/` | Claim atomization acceptance; report-wide mechanical gates | `acceptClaimDecomposition`, `evaluateDecompositionProposal`, `claimClassifications`, `verifyReportWide`, `verifyReportWideFromLedger`, `applyReportWideMechanicalGates` | Covered in `semantic/diagnostics.test.ts` (no `claims/*.test.ts`) |
-| `src/authority/` | Source-fitness / independent-corroboration decision from assessments | `assessSourceAuthority` | Covered in `semantic/diagnostics.test.ts` (no `authority/*.test.ts`) |
-| `src/semantic/` | Evidence-closed authorization, judge ports, rescue proposals, attribution audit metrics | `authorizeSemanticCase`, `verifySemanticCase`, `verifyAssertionSemantics`, `mechanicalSemanticClosure`, `observeSemanticModelDrift`, `semanticCalibrationStatus`, `proposeUncitedEvidenceRescue`, `summarizeAttributionPerturbations` | `semantic/verification.test.ts`, `semantic/diagnostics.test.ts` |
-| `src/providers/` | Conformance registry, bounds, injected-`fetch` Gateway/Interfaze adapters, recorded/NLI judges | `providerRegistry`, `registeredProvider`, `ProviderFailure`, `GatewaySemanticJudgeAdapter`, `GatewayStructuredExtractionProvider`, `InterfazeStructuredExtractionProvider`, `RecordedSemanticJudgeAdapter`, `ThreeWayNliSemanticJudgeAdapter` | `providers/providers.test.ts`, `semantic-judge.test.ts`, `gateway-semantic-observation.test.ts` |
-| `src/prototype-compat.ts` | Legacy `research_ingestion_systems_agent` locator/hash shapes | `prototypeSha256`, `resolvePrototypeTextLocator`, `resolvePrototypeJsonPointer` | `prototype-compat.test.ts` |
-| `src/prototype-bundle-compat.ts` | Offline translation of `verification-bundle-0.1.0` (unauthenticated prototype mechanics only) | `verifyPrototypeBundle`, `replayPrototypeArithmetic` | `prototype-compat.test.ts` |
+| Directory | Responsibility | Entry |
+| --- | --- | --- |
+| `src/canonical/` | RFC 8785 JSON and prefixed SHA-256 digests | `index.ts` |
+| `src/decimal/` | Exact rational-decimal parsing, replay and tolerance | `index.ts` |
+| `src/versions.ts` | Every protocol version literal that participates in digests | — |
+| `src/deterministic/` | Staged bundle engine: index → captures → runtime separation → evidence edges → assertions → metric graph → result | `bundle-verification.ts` |
+| `src/evidence-selection/` | Core text/JSON locators (`verification-core.v1`), projection-backed locators per media kind (`verification-projections.v1`), resolver-claim verification | `resolve-evidence-selector.ts` |
+| `src/extraction/` | Bounded schema admission; field, cross-field and duplicate verification against immutable representation bytes | `field-verification.ts` |
+| `src/report/` | Claim decomposition acceptance; report-wide mechanical gates | `report-wide.ts` |
+| `src/authority/` | Source-fitness / independent-corroboration decision | `assessment.ts` |
+| `src/semantic/` | Closure, evidence-closed authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution | `closure.ts` |
+| `src/providers/` | Provider port, HTTP bounds, shared bounded dispatch, Gateway/Interfaze adapters, recorded/NLI judges, conformance registry | `dispatch.ts` |
+| `src/provenance/` | Audit-bundle seal/inspect/replay, recorded policy inputs, detached-seal publications, DSSE/SLSA attestation | `seal.ts`, `replay.ts` |
+| `src/prototype-compat/` | Frozen legacy prototype locators, hashes and bundle translation; subpath export `@aiengineer/knowledge-verification/prototype-compat` | `index.ts` |
+| `src/internal/` | Deep freeze, record guards, bounded JSON walker (not exported) | — |
 
-`prototype-compat.ts` and `prototype-bundle-compat.ts` are compatibility facades for the legacy prototype bundle format. They reproduce unprefixed SHA-256 and IEEE-754 arithmetic. They do not create KS provenance bindings, semantic verdicts, runtime-principal attestation, or policy admission.
+## Error style by layer
 
-## Responsibilities outside this package
-
-Spec §6.2 also lists metrics, experiments, demos, and a `domain/` tree under this package. Those live elsewhere:
-
-| Spec concern | Location (verified) |
+| Layer | Style |
 | --- | --- |
-| Metrics | `packages/application/src/verification-metrics.ts` |
-| Experiments / benchmarks | `packages/evaluation/src/verification-benchmark.ts`, `verification-benchmark-v1.ts`, `verification-benchmark-run-comparison.ts`, `verification-statistics.ts`, `verification-human-review.ts`; `packages/application/src/verification-benchmark.ts` and `verification-benchmark-*.ts` |
-| Demos | `apps/cli/src/diagnostics-demo.ts`; `packages/application/src/verification-diagnostics-*.ts` |
-| Persistence | `packages/persistence/src/verification.ts` and `verification-*.ts` |
-| Policy admission | `packages/policy/src/verification-policy.ts` |
-
-## Facade (`src/index.ts`)
-
-Re-exports every subdirectory index plus the two prototype-compat modules.
-
-From `@aiengineer/knowledge-contracts` it also re-exports:
-
-- Schemas: `DeterministicVerificationResultSchema`, `VerificationBundleSchema`, `VerificationContractVersionSchema`, `VerificationMetricObservationSchema`, `VerificationOperationContextSchema`, `VerificationPolicyDecisionSchema`, `VerificationPolicyDefinitionSchema`, `VerificationRecordedPolicyInputsSchema`, `VerificationSelectorSchema`
-- Types: `Assertion`, `DeterministicVerificationResult`, `EvidenceEdge`, `Judgment`, `ResolvedSelector`, `VerificationArtifactHandle`, `VerificationBundle`, `VerificationMetricObservation`, `VerificationOperationContext`, `VerificationPolicyDecision`, `VerificationPolicyDefinition`, `VerificationRecordedPolicyInputs`, `VerificationRunManifest`, `VerificationSelector`, `VerificationSource`, `VerificationSourceCapture`
+| Deterministic engine, extraction, report-wide | Never throws for verification outcomes: returns checks (`code`, `status`/`passed`, `detail`) and aggregate status; malformed input is itself a failed check. |
+| Selector resolution | Returns an `EvidenceSelection` whose `resolution.status` is `resolved`, `not_found`, `ambiguous`, `invalid` or `parse_error`; `undefined` means no resolver owns the kind. Projection parsers throw `PROJECTION_INVALID:*` internally and the resolver converts that to `invalid`. |
+| Semantic authorization and sealing | Throws `Error("CODE")` with a stable code (`SEMANTIC_MECHANICAL_GATE_CLOSED`, `POLICY_VERSION_BINDING_MISMATCH`, `LINEAGE_CYCLE`, …); nothing is repaired. |
+| Provider adapters | Throws `ProviderFailure` with a `code` and `retryable` flag; callers decide, this package never retries. |
+| Verification-style results | `{ verified: false, reason }` or `{ valid, errors[] }` records (`inspectAuditBundle`, attestation inspection, decomposition evaluation) so a caller can persist the outcome. |
 
 ## Usage
 
-### Resolve a selector
+Start with the runnable, tested examples — one per stage:
 
-```ts
-import { resolveEvidenceSelector, sha256Digest, type ResolvedSelector } from "@aiengineer/knowledge-verification";
+- [`examples/01-canonical-digest.ts`](examples/01-canonical-digest.ts)
+- [`examples/02-resolve-selectors.ts`](examples/02-resolve-selectors.ts)
+- [`examples/03-deterministic-bundle.ts`](examples/03-deterministic-bundle.ts)
+- [`examples/04-extraction-fields.ts`](examples/04-extraction-fields.ts)
+- [`examples/05-semantic-recorded-judge.ts`](examples/05-semantic-recorded-judge.ts)
+- [`examples/06-seal-inspect-replay.ts`](examples/06-seal-inspect-replay.ts)
 
-const content = new TextEncoder().encode("Intro. RAG was basically just a hack.");
-const selection = resolveEvidenceSelector({
-  captureId: "capture-1",
-  representationArtifactId: "22222222-2222-4222-8222-222222222222",
-  representationDigest: sha256Digest(content),
-  selector: { kind: "text_quote", quote: "RAG was basically just a hack", normalization: "none" },
-  content,
-});
-const resolution: ResolvedSelector | undefined = selection?.resolution;
-```
-
-`undefined` means no resolver owns that selector kind; a failed locate is a selection whose `resolution.status` is `not_found`, `ambiguous`, `invalid`, or `parse_error`.
-
-HTML/PDF/table/media/repo/dataset/API selectors go through `resolveEvidenceSelector(request, [projectionSelectorResolver])` against a canonical projection whose UTF-8 JSON equals `canonicalizeJson(value)`. The resolver's claim is re-checked (custody fields, selector digest, selected-byte digest) before it is returned.
-
-### Deterministic engine (bundle or extraction)
-
-```ts
-import {
-  verifyDeterministicBundle,
-  verifyExtractionFields,
-  projectionSelectorResolver,
-} from "@aiengineer/knowledge-verification";
-
-const deterministic = verifyDeterministicBundle(
-  {
-    bundle,
-    artifacts: [{ artifactId: handle.artifactId, content }],
-    runtimePrincipals: {
-      basis: "runtime_principal_binding",
-      producerDeploymentId: "research-synthesis",
-      verifierDeploymentId: "verification-agent",
-      producerPrincipalDigest,
-      verifierPrincipalDigest,
-    },
-  },
-  { selectorResolvers: [projectionSelectorResolver] },
-);
-
-const fields = verifyExtractionFields({
-  schema, // AdmittedExtractionSchema from admitExtractionSchema(...)
-  candidate,
-  fields: [{ path: "/vendor", comparison: "exact" }],
-  evidence: [{
-    path: "/vendor",
-    captureId,
-    representationArtifactId,
-    representationDigest,
-    selector: { kind: "json_pointer", pointer: "/vendor" },
-  }],
-  representations: [{ captureId, artifactId, digest: representationDigest, content }],
-});
-```
-
-### Canonicalize and digest (RFC 8785)
-
-```ts
-import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
-
-const canonical = canonicalizeJson({ b: 1, a: 2 });
-const digest = digestCanonicalJson({ b: 1, a: 2 }); // `sha256:${hex}`
-const raw = sha256Digest(new TextEncoder().encode(canonical));
-```
-
-### Seal or attest
-
-```ts
-import {
-  sealAuditBundle,
-  inspectAuditBundle,
-  createEd25519Signer,
-  createEd25519Verifier,
-  createVerificationDsseSlsaAttestation,
-  inspectVerificationDsseSlsaAttestation,
-} from "@aiengineer/knowledge-verification";
-
-const audit = await sealAuditBundle({
-  tenantId,
-  verificationBundle,
-  manifest, // canonicalization.manifestDigest must equal verificationManifestDigest(manifest)
-  policyBinding: { policyVersion, policyArtifact, recordedPolicyInputsArtifact },
-  recordedPolicyInputsBytes,
-  policyDecision,
-  signer: createEd25519Signer(privateKeyPem, "key-1"),
-});
-const inspection = await inspectAuditBundle(audit, createEd25519Verifier({ "key-1": publicKeyPem }));
-
-const attestation = await createVerificationDsseSlsaAttestation({
-  auditBundle: audit,
-  auditBundleVerifier,
-  signer,
-  trustedBinding: { builderId, keyId: "key-1" },
-});
-await inspectVerificationDsseSlsaAttestation({
-  auditBundle: audit,
-  auditBundleVerifier,
-  envelope: attestation.envelope,
-  attestationVerifier,
-  expectedBinding: { builderId, keyId: "key-1" },
-});
-```
+See [examples/README.md](examples/README.md). [CAPABILITIES.md](CAPABILITIES.md) is the selector, deterministic-diversity and semantic-scope matrix, with each row linked to its example.
 
 ## Development
-
-Canonical commands:
 
 ```bash
 corepack pnpm --filter @aiengineer/knowledge-verification typecheck
 corepack pnpm --filter @aiengineer/knowledge-verification test
+corepack pnpm --filter @aiengineer/knowledge-verification examples
 corepack pnpm --filter @aiengineer/knowledge-verification build
 ```
 
-On Windows Git Bash, `corepack` may not be on `PATH`; use `corepack.cmd` instead of `corepack` for the same commands.
+On Windows Git Bash use `corepack.cmd`. Tests are colocated `*.test.ts` files run by `vitest run`; the examples' `*.test.ts` files are part of the same suite and the typecheck covers `examples/`. The frozen engine golden lives at `src/deterministic/engine-golden.fixture.ts`: a change to its digests means bytes, order or meaning changed — find out why, do not refresh it.
 
-Tests are colocated `*.test.ts` files run by `vitest run` (package script; no local Vitest config). Frozen prototype-parity input lives at `src/deterministic/testing/prototype-parity.fixture.ts`.
+Historical design and review notes are under [`docs/`](docs/).
 
 ## Boundaries
 
 This package must not:
 
-- Own persistence, tenant authorization, or artifact registration (application + `packages/persistence`).
+- Own persistence, tenant authorization or artifact registration (application + `packages/persistence`).
 - Be the policy admission authority (`packages/policy`).
-- Put provider SDK client objects on the public facade. Adapters take `fetch`, an API key, and a `ProviderArtifactSink`.
-- Perform filesystem I/O. (Gateway/Interfaze adapters may call an injected `fetch`; that is the only network path.)
-- Be imported by other repositories. Cross-repo callers use HTTP, CLI, or MCP.
+- Put provider SDK client objects on the public facade. Adapters take `fetch`, an API key and a `ProviderArtifactSink`.
+- Perform filesystem I/O. An injected `fetch` inside the provider adapters is the only network path.
+- Retry provider calls, add selector kinds, or extend `prototype-compat/`.
+- Be imported by other repositories. Cross-repo callers use HTTP, CLI or MCP.
 
-## Reviewed examples and capability coverage
+## Responsibilities outside this package
 
-Start with [runnable examples](examples/README.md), the [media and capability matrix](examples/CAPABILITIES.md), and the [2026-09-16 review record](../../docs/operations/reviews/verification.md). These distinguish algorithm support from admitted acquisition and executor intent support.
+| Concern | Location |
+| --- | --- |
+| Metrics | `packages/application/src/verification-metrics.ts` |
+| Experiments / benchmarks | `packages/evaluation/src/verification-benchmark*.ts`, `verification-statistics.ts`, `verification-human-review.ts`; `packages/application/src/verification-benchmark*.ts` |
+| Demos | `apps/cli/src/diagnostics-demo.ts`; `packages/application/src/verification-diagnostics-*.ts` |
+| Persistence | `packages/persistence/src/verification*.ts` |
+| Policy admission | `packages/policy/src/verification-policy.ts` |
+| Acquisition and executor intents | `apps/verification-executor` ([acquisition capabilities](../../apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md)) |

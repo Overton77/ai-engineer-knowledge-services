@@ -1,3 +1,5 @@
+> **Status (2026-09-19):** superseded. The refactor this document recommended was implemented on 2026-09-19 (see the package [README](../README.md) for the current layout, sequence and invariants). Retained for history; file paths and symbol names below refer to the pre-refactor tree and are not updated.
+
 # Understanding verification: interfaces and likely call sequences
 
 Reading snapshot: 2026-09-11. This is a comprehension guide to the current working tree, with proposed improvements alongside it. The [final clean-code implementation plan](CLEAN-CODE-RECOMMENDATION.md) consolidates these recommendations and governs implementation where suggestions differ. No refactor has been implemented by writing these documents. Prototype compatibility and experiment caller migration are outside the walkthrough.

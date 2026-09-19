@@ -8,7 +8,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 ## Task routes
 
 - Change an HTTP/MCP/CLI verification surface: [contracts](#contracts) → [application](#application) → [api](#api) → [mcp](#mcp) → [cli](#cli)
-- Change locator or evidence verification: [verification](#verification) → [verification-selectors](#verification-selectors) → [verification-deterministic](#verification-deterministic) → [verification-semantic](#verification-semantic)
+- Change locator or evidence verification: [verification](#verification) → [verification-evidence-selection](#verification-evidence-selection) → [verification-deterministic](#verification-deterministic) → [verification-semantic](#verification-semantic)
 - Debug worker retry or persistence: [worker](#worker) → [runtime](#runtime) → [persistence](#persistence)
 - Change parsing and conversion: [conversion](#conversion) → [chunking](#chunking) → [documents](#documents) → [verification-parser](#verification-parser) → [docling](#docling)
 - Change retrieval or embedding: [retrieval](#retrieval) → [embeddings](#embeddings) → [vector-backends](#vector-backends) → [policy](#policy)
@@ -46,15 +46,19 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [schema-workspace](#schema-workspace) | packages/schema-workspace | Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles. | implemented |
 | [testkit](#testkit) | packages/testkit | Curated evaluation corpora, embedding bundles, retrieval fixtures, and operational test assets. | implemented |
 | [vector-backends](#vector-backends) | packages/vector-backends | Vector-store adapters and publication handling for exact and Postgres search. | implemented |
-| [verification](#verification) | packages/verification | Evidence verification algorithms behind deterministic, selector, claim, semantic, and provenance facades. | implemented |
-| [verification-deterministic](#verification-deterministic) | packages/verification/src/deterministic | Canonical numeric, selector, and mechanical verification checks. | implemented |
-| [verification-selectors](#verification-selectors) | packages/verification/src/selectors | Canonical projection models and deterministic source locator resolution. | implemented |
-| [verification-extraction](#verification-extraction) | packages/verification/src/extraction | Schema-bound extraction field verification and evidence comparisons. | implemented |
-| [verification-provenance](#verification-provenance) | packages/verification/src/provenance | Verification seals, replay, policy inputs, attestations, and publication bindings. | implemented |
-| [verification-claims](#verification-claims) | packages/verification/src/claims | Claim decomposition and report-level evidence structure. | implemented |
+| [verification](#verification) | packages/verification | Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay. | implemented |
+| [verification-canonical](#verification-canonical) | packages/verification/src/canonical | RFC 8785 canonical JSON and prefixed SHA-256 digests shared by every stage. | implemented |
+| [verification-decimal](#verification-decimal) | packages/verification/src/decimal | Exact rational-decimal parsing, replay, tolerance, and rounding. | implemented |
+| [verification-deterministic](#verification-deterministic) | packages/verification/src/deterministic | Staged mechanical bundle engine: index → capture integrity → runtime separation → evidence edges → assertions → metric graph → result. | implemented |
+| [verification-evidence-selection](#verification-evidence-selection) | packages/verification/src/evidence-selection | Locates the evidence a VerificationSelector points at inside captured bytes: core text/JSON locators, projection-backed locators, and verification of resolver claims. | implemented |
+| [verification-extraction](#verification-extraction) | packages/verification/src/extraction | Bounded schema admission and staged field, cross-field, and duplicate verification against immutable representation bytes. | implemented |
+| [verification-provenance](#verification-provenance) | packages/verification/src/provenance | Audit-bundle seal/inspect/replay, recorded policy inputs, detached-seal benchmark publications, and DSSE/SLSA attestations. | implemented |
+| [verification-report](#verification-report) | packages/verification/src/report | Claim decomposition acceptance and report-wide mechanical gates. | implemented |
 | [verification-authority](#verification-authority) | packages/verification/src/authority | Source authority and corroboration assessments. | implemented |
-| [verification-semantic](#verification-semantic) | packages/verification/src/semantic | Evidence-closed semantic verification, rescue, and attribution checks. | implemented |
-| [verification-providers](#verification-providers) | packages/verification/src/providers | Bounded semantic-provider adapters, gateway routes, and provider registry. | implemented |
+| [verification-semantic](#verification-semantic) | packages/verification/src/semantic | Evidence-closed semantic verification: closure, authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution. | implemented |
+| [verification-providers](#verification-providers) | packages/verification/src/providers | Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze adapters, recorded/NLI judges, and conformance registry. | implemented |
+| [verification-internal](#verification-internal) | packages/verification/src/internal | Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights. | implemented |
+| [verification-prototype-compat](#verification-prototype-compat) | packages/verification/src/prototype-compat | Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes. | implemented |
 | [docling](#docling) | services/docling | Pinned Docling Serve conversion deployment boundary. | implemented |
 | [verification-parser](#verification-parser) | services/verification-parser | Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR. | implemented |
 | [script-proofs](#script-proofs) | scripts | Targeted durability, transport, recovery, and integration proof executables. | implemented |
@@ -168,6 +172,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 - [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
+- [reference] [`apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`](../../apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md) — Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits
 
 ## worker
 
@@ -669,35 +674,77 @@ Vector-store adapters and publication handling for exact and Postgres search.
 
 **packages/verification** · package · implemented
 
-Evidence verification algorithms behind deterministic, selector, claim, semantic, and provenance facades.
+Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay.
 
-**Enter:** [`packages/verification/src/index.ts`](../../packages/verification/src/index.ts)
-**Interface:** Algorithm exports consumed inside Knowledge Services; external callers use public service surfaces.
+**Enter:** [`packages/verification/src/index.ts`](../../packages/verification/src/index.ts), [`packages/verification/src/prototype-compat/index.ts`](../../packages/verification/src/prototype-compat/index.ts)
+**Interface:** Explicit named exports from src/index.ts consumed inside Knowledge Services; legacy prototype shapes via the ./prototype-compat subpath export; external callers use public service surfaces.
 **Package:** @aiengineer/knowledge-verification ([`packages/verification/package.json`](../../packages/verification/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
+**Export subpaths:** ., ./prototype-compat. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/prototype-compat.test.ts`](../../packages/verification/src/prototype-compat.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/verification/src/prototype-compat/prototype-compat.test.ts`](../../packages/verification/src/prototype-compat/prototype-compat.test.ts), [`packages/verification/examples/02-resolve-selectors.test.ts`](../../packages/verification/examples/02-resolve-selectors.test.ts), [`packages/verification/examples/03-deterministic-bundle.test.ts`](../../packages/verification/examples/03-deterministic-bundle.test.ts), [`packages/verification/examples/06-seal-inspect-replay.test.ts`](../../packages/verification/examples/06-seal-inspect-replay.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
 - [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
+- [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`packages/verification/CAPABILITIES.md`](../../packages/verification/CAPABILITIES.md) — Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples
+
+## verification-canonical
+
+**packages/verification/src/canonical** · algorithm module · implemented
+
+RFC 8785 canonical JSON and prefixed SHA-256 digests shared by every stage.
+
+**Enter:** [`packages/verification/src/canonical/index.ts`](../../packages/verification/src/canonical/index.ts)
+**Interface:** canonicalizeJson, digestCanonicalJson, sha256Digest, isSha256Digest, ZERO_SHA256_DIGEST, prototype digest conversions.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** none declared
+**Checks:** [`packages/verification/src/deterministic/deterministic.test.ts`](../../packages/verification/src/deterministic/deterministic.test.ts), [`packages/verification/examples/01-canonical-digest.test.ts`](../../packages/verification/examples/01-canonical-digest.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+- Output participates in digests and signatures; never vary by deployment.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+
+## verification-decimal
+
+**packages/verification/src/decimal** · algorithm module · implemented
+
+Exact rational-decimal parsing, replay, tolerance, and rounding.
+
+**Enter:** [`packages/verification/src/decimal/index.ts`](../../packages/verification/src/decimal/index.ts)
+**Interface:** parseDecimal, replayDecimalOperation, compareFractions, withinTolerance, formatRoundedDecimal.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** none declared
+**Checks:** [`packages/verification/src/deterministic/deterministic.test.ts`](../../packages/verification/src/deterministic/deterministic.test.ts), [`packages/verification/src/extraction/extraction.test.ts`](../../packages/verification/src/extraction/extraction.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+
+**Architecture and detailed docs:**
+
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
 ## verification-deterministic
 
 **packages/verification/src/deterministic** · algorithm module · implemented
 
-Canonical numeric, selector, and mechanical verification checks.
+Staged mechanical bundle engine: index → capture integrity → runtime separation → evidence edges → assertions → metric graph → result.
 
-**Enter:** [`packages/verification/src/deterministic/index.ts`](../../packages/verification/src/deterministic/index.ts)
-**Interface:** Deterministic engine and exact decimal/canonicalization helpers.
+**Enter:** [`packages/verification/src/deterministic/bundle-verification.ts`](../../packages/verification/src/deterministic/bundle-verification.ts)
+**Interface:** verifyDeterministicBundle(input, options) returns checks and semanticEligibility; check codes are registered in deterministic/checks.ts. Canonical JSON and decimal helpers moved to verification-canonical and verification-decimal.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
+**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical), [verification-decimal](#verification-decimal), [verification-evidence-selection](#verification-evidence-selection)
 **Checks:** [`packages/verification/src/deterministic/deterministic.test.ts`](../../packages/verification/src/deterministic/deterministic.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
@@ -705,21 +752,22 @@ Canonical numeric, selector, and mechanical verification checks.
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
-## verification-selectors
+## verification-evidence-selection
 
-**packages/verification/src/selectors** · algorithm module · implemented
+**packages/verification/src/evidence-selection** · algorithm module · implemented
 
-Canonical projection models and deterministic source locator resolution.
+Locates the evidence a VerificationSelector points at inside captured bytes: core text/JSON locators, projection-backed locators, and verification of resolver claims.
 
-**Enter:** [`packages/verification/src/selectors/index.ts`](../../packages/verification/src/selectors/index.ts)
-**Interface:** Projection parsing and resolvers.
+**Enter:** [`packages/verification/src/evidence-selection/resolve-evidence-selector.ts`](../../packages/verification/src/evidence-selection/resolve-evidence-selector.ts)
+**Interface:** resolveEvidenceSelector(request, resolvers?) is the single entry; undefined means no resolver owns the selector kind, a non-resolved status means the locate failed., EvidenceSelectorResolver is the port for non-core kinds; projectionSelectorResolver dispatches to one parser+resolver per media kind under projections/.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/selectors/resolvers.test.ts`](../../packages/verification/src/selectors/resolvers.test.ts)
+**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical)
+**Checks:** [`packages/verification/src/evidence-selection/resolve-evidence-selector.test.ts`](../../packages/verification/src/evidence-selection/resolve-evidence-selector.test.ts), [`packages/verification/src/evidence-selection/core-resolver.test.ts`](../../packages/verification/src/evidence-selection/core-resolver.test.ts), [`packages/verification/src/evidence-selection/projection-resolver.test.ts`](../../packages/verification/src/evidence-selection/projection-resolver.test.ts), [`packages/verification/src/evidence-selection/html-fallback-normalization.test.ts`](../../packages/verification/src/evidence-selection/html-fallback-normalization.test.ts), [`packages/verification/src/evidence-selection/text-offsets.test.ts`](../../packages/verification/src/evidence-selection/text-offsets.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
+- Canonical projections require admitted acquisition/parser lineage; geometry and transcript selectors do not perform OCR or transcription.
 
 **Architecture and detailed docs:**
 
@@ -729,16 +777,16 @@ Canonical projection models and deterministic source locator resolution.
 
 **packages/verification/src/extraction** · algorithm module · implemented
 
-Schema-bound extraction field verification and evidence comparisons.
+Bounded schema admission and staged field, cross-field, and duplicate verification against immutable representation bytes.
 
-**Enter:** [`packages/verification/src/extraction/index.ts`](../../packages/verification/src/extraction/index.ts)
-**Interface:** verifyExtractionFields and extraction evidence/schema types.
+**Enter:** [`packages/verification/src/extraction/field-verification.ts`](../../packages/verification/src/extraction/field-verification.ts), [`packages/verification/src/extraction/schema.ts`](../../packages/verification/src/extraction/schema.ts)
+**Interface:** admitExtractionSchema, validateExtractionCandidate, verifyExtractionFields, verifyExtractionFieldsWithEvidence; comparators per FieldComparison kind in field-comparators.ts.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/extraction/extraction.test.ts`](../../packages/verification/src/extraction/extraction.test.ts)
+**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical), [verification-decimal](#verification-decimal), [verification-evidence-selection](#verification-evidence-selection)
+**Checks:** [`packages/verification/src/extraction/extraction.test.ts`](../../packages/verification/src/extraction/extraction.test.ts), [`packages/verification/src/extraction/candidate-preflight.test.ts`](../../packages/verification/src/extraction/candidate-preflight.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
@@ -749,36 +797,36 @@ Schema-bound extraction field verification and evidence comparisons.
 
 **packages/verification/src/provenance** · algorithm module · implemented
 
-Verification seals, replay, policy inputs, attestations, and publication bindings.
+Audit-bundle seal/inspect/replay, recorded policy inputs, detached-seal benchmark publications, and DSSE/SLSA attestations.
 
-**Enter:** [`packages/verification/src/provenance/index.ts`](../../packages/verification/src/provenance/index.ts)
-**Interface:** Seal/replay/attestation functions over immutable lineage.
+**Enter:** [`packages/verification/src/provenance/seal.ts`](../../packages/verification/src/provenance/seal.ts), [`packages/verification/src/provenance/replay.ts`](../../packages/verification/src/provenance/replay.ts)
+**Interface:** sealAuditBundle → inspectAuditBundle → replayAuditBundle over immutable lineage; replay.ts is the top of the package dependency graph.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/provenance/attestation.test.ts`](../../packages/verification/src/provenance/attestation.test.ts)
+**Reviewed runtime/data relationships:** [verification-deterministic](#verification-deterministic), [verification-report](#verification-report), [verification-semantic](#verification-semantic)
+**Checks:** [`packages/verification/src/provenance/provenance.test.ts`](../../packages/verification/src/provenance/provenance.test.ts), [`packages/verification/src/provenance/attestation.test.ts`](../../packages/verification/src/provenance/attestation.test.ts), [`packages/verification/src/provenance/benchmark-publication.test.ts`](../../packages/verification/src/provenance/benchmark-publication.test.ts), [`packages/verification/src/provenance/benchmark-comparison-publication.test.ts`](../../packages/verification/src/provenance/benchmark-comparison-publication.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 
-## verification-claims
+## verification-report
 
-**packages/verification/src/claims** · algorithm module · implemented
+**packages/verification/src/report** · algorithm module · implemented
 
-Claim decomposition and report-level evidence structure.
+Claim decomposition acceptance and report-wide mechanical gates.
 
-**Enter:** [`packages/verification/src/claims/index.ts`](../../packages/verification/src/claims/index.ts)
-**Interface:** Decomposition and report functions.
+**Enter:** [`packages/verification/src/report/report-wide.ts`](../../packages/verification/src/report/report-wide.ts), [`packages/verification/src/report/decomposition.ts`](../../packages/verification/src/report/decomposition.ts)
+**Interface:** acceptClaimDecomposition, evaluateDecompositionProposal; verifyReportWide, verifyReportWideFromLedger, applyReportWideMechanicalGates (may only add failures).
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** No specific test anchor registered.
+**Checks:** [`packages/verification/src/report/decomposition.test.ts`](../../packages/verification/src/report/decomposition.test.ts), [`packages/verification/src/report/report-wide.test.ts`](../../packages/verification/src/report/report-wide.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
@@ -791,14 +839,14 @@ Claim decomposition and report-level evidence structure.
 
 Source authority and corroboration assessments.
 
-**Enter:** [`packages/verification/src/authority/index.ts`](../../packages/verification/src/authority/index.ts)
-**Interface:** Authority assessment functions.
+**Enter:** [`packages/verification/src/authority/assessment.ts`](../../packages/verification/src/authority/assessment.ts)
+**Interface:** assessSourceAuthority(assessments) returns an AuthorityDecision.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** No specific test anchor registered.
+**Checks:** [`packages/verification/src/authority/assessment.test.ts`](../../packages/verification/src/authority/assessment.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
@@ -809,16 +857,16 @@ Source authority and corroboration assessments.
 
 **packages/verification/src/semantic** · algorithm module · implemented
 
-Evidence-closed semantic verification, rescue, and attribution checks.
+Evidence-closed semantic verification: closure, authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution.
 
-**Enter:** [`packages/verification/src/semantic/index.ts`](../../packages/verification/src/semantic/index.ts)
-**Interface:** Semantic verification functions; no reversal of deterministic failure.
+**Enter:** [`packages/verification/src/semantic/closure.ts`](../../packages/verification/src/semantic/closure.ts), [`packages/verification/src/semantic/authorize.ts`](../../packages/verification/src/semantic/authorize.ts), [`packages/verification/src/semantic/verify-case.ts`](../../packages/verification/src/semantic/verify-case.ts)
+**Interface:** verifyAssertionSemantics = mechanicalSemanticClosure → authorizeSemanticCase({ bundle, deterministicResult, assertionId, selectedFragments }) → verifySemanticCase; no reversal of deterministic failure.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/semantic/diagnostics.test.ts`](../../packages/verification/src/semantic/diagnostics.test.ts)
+**Reviewed runtime/data relationships:** [verification-deterministic](#verification-deterministic), [verification-canonical](#verification-canonical)
+**Checks:** [`packages/verification/src/semantic/verification.test.ts`](../../packages/verification/src/semantic/verification.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/semantic/diagnostics.test.ts`](../../packages/verification/src/semantic/diagnostics.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
@@ -829,22 +877,63 @@ Evidence-closed semantic verification, rescue, and attribution checks.
 
 **packages/verification/src/providers** · algorithm module · implemented
 
-Bounded semantic-provider adapters, gateway routes, and provider registry.
+Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze adapters, recorded/NLI judges, and conformance registry.
 
-**Enter:** [`packages/verification/src/providers/index.ts`](../../packages/verification/src/providers/index.ts)
-**Interface:** Semantic judge/provider adapters with explicit limits.
+**Enter:** [`packages/verification/src/providers/dispatch.ts`](../../packages/verification/src/providers/dispatch.ts), [`packages/verification/src/providers/gateway.ts`](../../packages/verification/src/providers/gateway.ts), [`packages/verification/src/providers/interfaze.ts`](../../packages/verification/src/providers/interfaze.ts)
+**Interface:** dispatchBoundedCompletion enforces admission → persist request → fetch → persist response → interpret; adapters raise ProviderFailure with code and retryable flag and never retry.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/verification/src/providers/gateway-semantic-observation.test.ts`](../../packages/verification/src/providers/gateway-semantic-observation.test.ts)
+**Reviewed runtime/data relationships:** [verification-semantic](#verification-semantic), [verification-extraction](#verification-extraction)
+**Checks:** [`packages/verification/src/providers/providers.test.ts`](../../packages/verification/src/providers/providers.test.ts), [`packages/verification/src/providers/gateway-semantic-observation.test.ts`](../../packages/verification/src/providers/gateway-semantic-observation.test.ts), [`packages/verification/src/providers/semantic-judge.test.ts`](../../packages/verification/src/providers/semantic-judge.test.ts), [`packages/verification/src/providers/preflight-json.test.ts`](../../packages/verification/src/providers/preflight-json.test.ts)
 - Internal verification seam; do not expose it as a cross-repository import contract.
 
 **Architecture and detailed docs:**
 
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
+
+## verification-internal
+
+**packages/verification/src/internal** · support module · implemented
+
+Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.
+
+**Enter:** [`packages/verification/src/internal/bounded-json.ts`](../../packages/verification/src/internal/bounded-json.ts), [`packages/verification/src/internal/deep-freeze.ts`](../../packages/verification/src/internal/deep-freeze.ts), [`packages/verification/src/internal/guards.ts`](../../packages/verification/src/internal/guards.ts)
+**Interface:** Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** none declared
+**Checks:** [`packages/verification/src/extraction/candidate-preflight.test.ts`](../../packages/verification/src/extraction/candidate-preflight.test.ts), [`packages/verification/src/semantic/judge-output.test.ts`](../../packages/verification/src/semantic/judge-output.test.ts), [`packages/verification/src/providers/preflight-json.test.ts`](../../packages/verification/src/providers/preflight-json.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## verification-prototype-compat
+
+**packages/verification/src/prototype-compat** · compatibility module · implemented
+
+Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.
+
+**Enter:** [`packages/verification/src/prototype-compat/index.ts`](../../packages/verification/src/prototype-compat/index.ts)
+**Interface:** Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [verification-canonical](#verification-canonical), [verification-evidence-selection](#verification-evidence-selection)
+**Checks:** [`packages/verification/src/prototype-compat/prototype-compat.test.ts`](../../packages/verification/src/prototype-compat/prototype-compat.test.ts)
+- Internal verification seam; do not expose it as a cross-repository import contract.
+- Legacy behavior is frozen: no algorithm changes, no new callers.
+
+**Architecture and detailed docs:**
+
+No module-specific architecture document registered. Do not infer a design decision from the folder name.
 
 ## docling
 

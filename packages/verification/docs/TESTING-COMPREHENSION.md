@@ -1,3 +1,5 @@
+> **Status (2026-09-19):** superseded. The refactor this document recommended was implemented on 2026-09-19 (see the package [README](../README.md) for the current layout, sequence and invariants). Retained for history; file paths and symbol names below refer to the pre-refactor tree and are not updated.
+
 # Understanding the verification tests
 
 Snapshot: 2026-09-11. This guide explains the current suite, the sequences it exercises and what its results mean. The [final implementation plan](CLEAN-CODE-RECOMMENDATION.md) governs the combined code/test work; [CLEAN-TESTING-RECOMMENDATION.md](CLEAN-TESTING-RECOMMENDATION.md) supplies detailed test improvements. Functions and interfaces are explained in [COMPREHENSION.md](COMPREHENSION.md).

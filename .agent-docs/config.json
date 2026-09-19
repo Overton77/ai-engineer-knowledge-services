@@ -185,10 +185,12 @@
       "modules": [
         "verification",
         "verification-deterministic",
-        "verification-selectors",
+        "verification-canonical",
+        "verification-decimal",
+        "verification-evidence-selection",
         "verification-extraction",
         "verification-provenance",
-        "verification-claims",
+        "verification-report",
         "verification-authority",
         "verification-semantic",
         "verification-providers",
@@ -245,6 +247,22 @@
         "policy",
         "verification-parser",
         "verification-providers"
+      ]
+    },
+    {
+      "path": "packages/verification/CAPABILITIES.md",
+      "task": "Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples",
+      "status": "reference",
+      "modules": [
+        "verification"
+      ]
+    },
+    {
+      "path": "apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md",
+      "task": "Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits",
+      "status": "reference",
+      "modules": [
+        "verification-executor"
       ]
     }
   ],

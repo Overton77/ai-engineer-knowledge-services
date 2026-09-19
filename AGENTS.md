@@ -42,7 +42,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - `scripts/AGENTS.md`: Explicit proof, evaluation, reconciliation, and experiment commands.
 - `skills/AGENTS.md`: Agent skills for schema navigation, bounded reads, and ingestion.
 - Change an HTTP/MCP/CLI verification surface: contracts → application → api → mcp → cli
-- Change locator or evidence verification: verification → verification-selectors → verification-deterministic → verification-semantic
+- Change locator or evidence verification: verification → verification-evidence-selection → verification-deterministic → verification-semantic
 - Debug worker retry or persistence: worker → runtime → persistence
 - Change parsing and conversion: conversion → chunking → documents → verification-parser → docling
 - Change retrieval or embedding: retrieval → embeddings → vector-backends → policy
@@ -67,6 +67,8 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - Verification deployment and rollback: `docs/verification/DEPLOYMENT.md`
 - Worker restart, leases, callbacks, incidents: `docs/operations/runbooks.md`
 - Authentication, capability admission, parser isolation: `docs/security.md`
+- [reference] Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples: `packages/verification/CAPABILITIES.md`
+- [reference] Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits: `apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`
 
 ### Validation
 
@@ -78,9 +80,11 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 
 [Docs index]|root:.
 |.:{README.md}
+|apps/verification-executor/examples:{CAPABILITIES-ACQUISITION.md}
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
 |docs/operations/reviews:{acquisition.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}
+|packages/verification:{CAPABILITIES.md}
 <!-- END GENERATED: agent-docs -->

@@ -47,7 +47,7 @@
       "task": "Change locator or evidence verification",
       "modules": [
         "verification",
-        "verification-selectors",
+        "verification-evidence-selection",
         "verification-deterministic",
         "verification-semantic"
       ]
@@ -690,73 +690,60 @@
       "path": "packages/verification",
       "kind": "package",
       "state": "implemented",
-      "summary": "Evidence verification algorithms behind deterministic, selector, claim, semantic, and provenance facades.",
+      "summary": "Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay.",
       "entrypoints": [
-        "packages/verification/src/index.ts"
+        "packages/verification/src/index.ts",
+        "packages/verification/src/prototype-compat/index.ts"
       ],
       "interface": [
-        "Algorithm exports consumed inside Knowledge Services; external callers use public service surfaces."
+        "Explicit named exports from src/index.ts consumed inside Knowledge Services; legacy prototype shapes via the ./prototype-compat subpath export; external callers use public service surfaces."
       ],
       "tests": [
-        "packages/verification/src/prototype-compat.test.ts"
+        "packages/verification/src/prototype-compat/prototype-compat.test.ts",
+        "packages/verification/examples/02-resolve-selectors.test.ts",
+        "packages/verification/examples/03-deterministic-bundle.test.ts",
+        "packages/verification/examples/06-seal-inspect-replay.test.ts"
       ],
       "constraints": [],
       "uses": [],
       "packageJson": "packages/verification/package.json"
     },
     {
-      "id": "verification-deterministic",
-      "path": "packages/verification/src/deterministic",
+      "id": "verification-canonical",
+      "path": "packages/verification/src/canonical",
       "kind": "algorithm module",
       "state": "implemented",
-      "summary": "Canonical numeric, selector, and mechanical verification checks.",
+      "summary": "RFC 8785 canonical JSON and prefixed SHA-256 digests shared by every stage.",
       "entrypoints": [
-        "packages/verification/src/deterministic/index.ts"
+        "packages/verification/src/canonical/index.ts"
       ],
       "interface": [
-        "Deterministic engine and exact decimal/canonicalization helpers."
+        "canonicalizeJson, digestCanonicalJson, sha256Digest, isSha256Digest, ZERO_SHA256_DIGEST, prototype digest conversions."
       ],
       "tests": [
-        "packages/verification/src/deterministic/deterministic.test.ts"
+        "packages/verification/src/deterministic/deterministic.test.ts",
+        "packages/verification/examples/01-canonical-digest.test.ts"
       ],
       "constraints": [
-        "Internal verification seam; do not expose it as a cross-repository import contract."
+        "Internal verification seam; do not expose it as a cross-repository import contract.",
+        "Output participates in digests and signatures; never vary by deployment."
       ],
       "uses": []
     },
     {
-      "id": "verification-selectors",
-      "path": "packages/verification/src/selectors",
+      "id": "verification-decimal",
+      "path": "packages/verification/src/decimal",
       "kind": "algorithm module",
       "state": "implemented",
-      "summary": "Canonical projection models and deterministic source locator resolution.",
+      "summary": "Exact rational-decimal parsing, replay, tolerance, and rounding.",
       "entrypoints": [
-        "packages/verification/src/selectors/index.ts"
+        "packages/verification/src/decimal/index.ts"
       ],
       "interface": [
-        "Projection parsing and resolvers."
+        "parseDecimal, replayDecimalOperation, compareFractions, withinTolerance, formatRoundedDecimal."
       ],
       "tests": [
-        "packages/verification/src/selectors/resolvers.test.ts"
-      ],
-      "constraints": [
-        "Internal verification seam; do not expose it as a cross-repository import contract."
-      ],
-      "uses": []
-    },
-    {
-      "id": "verification-extraction",
-      "path": "packages/verification/src/extraction",
-      "kind": "algorithm module",
-      "state": "implemented",
-      "summary": "Schema-bound extraction field verification and evidence comparisons.",
-      "entrypoints": [
-        "packages/verification/src/extraction/index.ts"
-      ],
-      "interface": [
-        "verifyExtractionFields and extraction evidence/schema types."
-      ],
-      "tests": [
+        "packages/verification/src/deterministic/deterministic.test.ts",
         "packages/verification/src/extraction/extraction.test.ts"
       ],
       "constraints": [
@@ -765,38 +752,128 @@
       "uses": []
     },
     {
-      "id": "verification-provenance",
-      "path": "packages/verification/src/provenance",
+      "id": "verification-deterministic",
+      "path": "packages/verification/src/deterministic",
       "kind": "algorithm module",
       "state": "implemented",
-      "summary": "Verification seals, replay, policy inputs, attestations, and publication bindings.",
+      "summary": "Staged mechanical bundle engine: index → capture integrity → runtime separation → evidence edges → assertions → metric graph → result.",
       "entrypoints": [
-        "packages/verification/src/provenance/index.ts"
+        "packages/verification/src/deterministic/bundle-verification.ts"
       ],
       "interface": [
-        "Seal/replay/attestation functions over immutable lineage."
+        "verifyDeterministicBundle(input, options) returns checks and semanticEligibility; check codes are registered in deterministic/checks.ts. Canonical JSON and decimal helpers moved to verification-canonical and verification-decimal."
       ],
       "tests": [
-        "packages/verification/src/provenance/attestation.test.ts"
+        "packages/verification/src/deterministic/deterministic.test.ts"
       ],
       "constraints": [
         "Internal verification seam; do not expose it as a cross-repository import contract."
       ],
-      "uses": []
+      "uses": [
+        "verification-canonical",
+        "verification-decimal",
+        "verification-evidence-selection"
+      ]
     },
     {
-      "id": "verification-claims",
-      "path": "packages/verification/src/claims",
+      "id": "verification-evidence-selection",
+      "path": "packages/verification/src/evidence-selection",
       "kind": "algorithm module",
       "state": "implemented",
-      "summary": "Claim decomposition and report-level evidence structure.",
+      "summary": "Locates the evidence a VerificationSelector points at inside captured bytes: core text/JSON locators, projection-backed locators, and verification of resolver claims.",
       "entrypoints": [
-        "packages/verification/src/claims/index.ts"
+        "packages/verification/src/evidence-selection/resolve-evidence-selector.ts"
       ],
       "interface": [
-        "Decomposition and report functions."
+        "resolveEvidenceSelector(request, resolvers?) is the single entry; undefined means no resolver owns the selector kind, a non-resolved status means the locate failed.",
+        "EvidenceSelectorResolver is the port for non-core kinds; projectionSelectorResolver dispatches to one parser+resolver per media kind under projections/."
       ],
-      "tests": [],
+      "tests": [
+        "packages/verification/src/evidence-selection/resolve-evidence-selector.test.ts",
+        "packages/verification/src/evidence-selection/core-resolver.test.ts",
+        "packages/verification/src/evidence-selection/projection-resolver.test.ts",
+        "packages/verification/src/evidence-selection/html-fallback-normalization.test.ts",
+        "packages/verification/src/evidence-selection/text-offsets.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract.",
+        "Canonical projections require admitted acquisition/parser lineage; geometry and transcript selectors do not perform OCR or transcription."
+      ],
+      "uses": [
+        "verification-canonical"
+      ]
+    },
+    {
+      "id": "verification-extraction",
+      "path": "packages/verification/src/extraction",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Bounded schema admission and staged field, cross-field, and duplicate verification against immutable representation bytes.",
+      "entrypoints": [
+        "packages/verification/src/extraction/field-verification.ts",
+        "packages/verification/src/extraction/schema.ts"
+      ],
+      "interface": [
+        "admitExtractionSchema, validateExtractionCandidate, verifyExtractionFields, verifyExtractionFieldsWithEvidence; comparators per FieldComparison kind in field-comparators.ts."
+      ],
+      "tests": [
+        "packages/verification/src/extraction/extraction.test.ts",
+        "packages/verification/src/extraction/candidate-preflight.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": [
+        "verification-canonical",
+        "verification-decimal",
+        "verification-evidence-selection"
+      ]
+    },
+    {
+      "id": "verification-provenance",
+      "path": "packages/verification/src/provenance",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Audit-bundle seal/inspect/replay, recorded policy inputs, detached-seal benchmark publications, and DSSE/SLSA attestations.",
+      "entrypoints": [
+        "packages/verification/src/provenance/seal.ts",
+        "packages/verification/src/provenance/replay.ts"
+      ],
+      "interface": [
+        "sealAuditBundle → inspectAuditBundle → replayAuditBundle over immutable lineage; replay.ts is the top of the package dependency graph."
+      ],
+      "tests": [
+        "packages/verification/src/provenance/provenance.test.ts",
+        "packages/verification/src/provenance/attestation.test.ts",
+        "packages/verification/src/provenance/benchmark-publication.test.ts",
+        "packages/verification/src/provenance/benchmark-comparison-publication.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": [
+        "verification-deterministic",
+        "verification-report",
+        "verification-semantic"
+      ]
+    },
+    {
+      "id": "verification-report",
+      "path": "packages/verification/src/report",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Claim decomposition acceptance and report-wide mechanical gates.",
+      "entrypoints": [
+        "packages/verification/src/report/report-wide.ts",
+        "packages/verification/src/report/decomposition.ts"
+      ],
+      "interface": [
+        "acceptClaimDecomposition, evaluateDecompositionProposal; verifyReportWide, verifyReportWideFromLedger, applyReportWideMechanicalGates (may only add failures)."
+      ],
+      "tests": [
+        "packages/verification/src/report/decomposition.test.ts",
+        "packages/verification/src/report/report-wide.test.ts"
+      ],
       "constraints": [
         "Internal verification seam; do not expose it as a cross-repository import contract."
       ],
@@ -809,12 +886,14 @@
       "state": "implemented",
       "summary": "Source authority and corroboration assessments.",
       "entrypoints": [
-        "packages/verification/src/authority/index.ts"
+        "packages/verification/src/authority/assessment.ts"
       ],
       "interface": [
-        "Authority assessment functions."
+        "assessSourceAuthority(assessments) returns an AuthorityDecision."
       ],
-      "tests": [],
+      "tests": [
+        "packages/verification/src/authority/assessment.test.ts"
+      ],
       "constraints": [
         "Internal verification seam; do not expose it as a cross-repository import contract."
       ],
@@ -825,15 +904,74 @@
       "path": "packages/verification/src/semantic",
       "kind": "algorithm module",
       "state": "implemented",
-      "summary": "Evidence-closed semantic verification, rescue, and attribution checks.",
+      "summary": "Evidence-closed semantic verification: closure, authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution.",
       "entrypoints": [
-        "packages/verification/src/semantic/index.ts"
+        "packages/verification/src/semantic/closure.ts",
+        "packages/verification/src/semantic/authorize.ts",
+        "packages/verification/src/semantic/verify-case.ts"
       ],
       "interface": [
-        "Semantic verification functions; no reversal of deterministic failure."
+        "verifyAssertionSemantics = mechanicalSemanticClosure → authorizeSemanticCase({ bundle, deterministicResult, assertionId, selectedFragments }) → verifySemanticCase; no reversal of deterministic failure."
       ],
       "tests": [
+        "packages/verification/src/semantic/verification.test.ts",
+        "packages/verification/src/semantic/judge-output.test.ts",
         "packages/verification/src/semantic/diagnostics.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": [
+        "verification-deterministic",
+        "verification-canonical"
+      ]
+    },
+    {
+      "id": "verification-providers",
+      "path": "packages/verification/src/providers",
+      "kind": "algorithm module",
+      "state": "implemented",
+      "summary": "Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze adapters, recorded/NLI judges, and conformance registry.",
+      "entrypoints": [
+        "packages/verification/src/providers/dispatch.ts",
+        "packages/verification/src/providers/gateway.ts",
+        "packages/verification/src/providers/interfaze.ts"
+      ],
+      "interface": [
+        "dispatchBoundedCompletion enforces admission → persist request → fetch → persist response → interpret; adapters raise ProviderFailure with code and retryable flag and never retry."
+      ],
+      "tests": [
+        "packages/verification/src/providers/providers.test.ts",
+        "packages/verification/src/providers/gateway-semantic-observation.test.ts",
+        "packages/verification/src/providers/semantic-judge.test.ts",
+        "packages/verification/src/providers/preflight-json.test.ts"
+      ],
+      "constraints": [
+        "Internal verification seam; do not expose it as a cross-repository import contract."
+      ],
+      "uses": [
+        "verification-semantic",
+        "verification-extraction"
+      ]
+    },
+    {
+      "id": "verification-internal",
+      "path": "packages/verification/src/internal",
+      "kind": "support module",
+      "state": "implemented",
+      "summary": "Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights.",
+      "entrypoints": [
+        "packages/verification/src/internal/bounded-json.ts",
+        "packages/verification/src/internal/deep-freeze.ts",
+        "packages/verification/src/internal/guards.ts"
+      ],
+      "interface": [
+        "Not exported from the package facade; callers keep their own error codes and byte-versus-character accounting."
+      ],
+      "tests": [
+        "packages/verification/src/extraction/candidate-preflight.test.ts",
+        "packages/verification/src/semantic/judge-output.test.ts",
+        "packages/verification/src/providers/preflight-json.test.ts"
       ],
       "constraints": [
         "Internal verification seam; do not expose it as a cross-repository import contract."
@@ -841,24 +979,28 @@
       "uses": []
     },
     {
-      "id": "verification-providers",
-      "path": "packages/verification/src/providers",
-      "kind": "algorithm module",
+      "id": "verification-prototype-compat",
+      "path": "packages/verification/src/prototype-compat",
+      "kind": "compatibility module",
       "state": "implemented",
-      "summary": "Bounded semantic-provider adapters, gateway routes, and provider registry.",
+      "summary": "Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes.",
       "entrypoints": [
-        "packages/verification/src/providers/index.ts"
+        "packages/verification/src/prototype-compat/index.ts"
       ],
       "interface": [
-        "Semantic judge/provider adapters with explicit limits."
+        "Subpath export @aiengineer/knowledge-verification/prototype-compat; not on the root facade."
       ],
       "tests": [
-        "packages/verification/src/providers/gateway-semantic-observation.test.ts"
+        "packages/verification/src/prototype-compat/prototype-compat.test.ts"
       ],
       "constraints": [
-        "Internal verification seam; do not expose it as a cross-repository import contract."
+        "Internal verification seam; do not expose it as a cross-repository import contract.",
+        "Legacy behavior is frozen: no algorithm changes, no new callers."
       ],
-      "uses": []
+      "uses": [
+        "verification-canonical",
+        "verification-evidence-selection"
+      ]
     },
     {
       "id": "docling",

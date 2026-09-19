@@ -1,3 +1,5 @@
+> **Status (2026-09-19):** superseded. The refactor this document recommended was implemented on 2026-09-19 (see the package [README](../README.md) for the current layout, sequence and invariants). Retained for history; file paths and symbol names below refer to the pre-refactor tree and are not updated.
+
 # Clean testing recommendation for verification
 
 Status: recommendation only, based on the working tree inspected on 2026-09-11. No tests or production algorithms have been changed by this documentation work. The [final clean-code implementation plan](CLEAN-CODE-RECOMMENDATION.md) incorporates these findings and governs scope, implementation order and conflicting suggestions. This file supplies the detailed testing rationale and examples. Read it alongside [module comprehension](COMPREHENSION.md) and [testing comprehension](TESTING-COMPREHENSION.md).
