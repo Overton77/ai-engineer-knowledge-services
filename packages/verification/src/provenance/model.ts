@@ -50,7 +50,8 @@ export interface TrustedArtifactResolver {
   authorizeArtifact(input: {
     readonly tenantId: string;
     readonly artifactId: string;
-    readonly purpose: "verification_replay" | "policy_replay" | "verification_admission";
+    readonly purpose:
+      "verification_replay" | "policy_replay" | "verification_admission";
   }): Promise<void>;
   hydrateRegisteredArtifact(input: {
     readonly tenantId: string;
@@ -98,12 +99,14 @@ export interface VerificationReplayResult {
   readonly replayedArtifactIds: readonly string[];
 }
 
-
 export interface VerificationSemanticReplayPort {
   replay(input: {
     readonly auditBundle: VerificationAuditBundle;
     readonly deterministicResult: DeterministicVerificationResult;
     readonly recordedPolicyInputs: VerificationRecordedPolicyInputs;
     readonly verifiedRepresentationBytes: ReadonlyMap<string, Uint8Array>;
-  }): Promise<{ readonly assessments: readonly SemanticAssessmentRecord[]; readonly replayedArtifactIds: readonly string[] }>;
+  }): Promise<{
+    readonly assessments: readonly SemanticAssessmentRecord[];
+    readonly replayedArtifactIds: readonly string[];
+  }>;
 }

@@ -10,9 +10,7 @@ import { sha256Digest, toPrototypeSha256 } from "./deterministic/canonical.js";
  * until all persisted prototype locators have been migrated.
  */
 export type PrototypeTextOffsetBasis =
-  | "raw_utf16"
-  | "lf_normalized"
-  | "lf_normalized_newlines_collapsed";
+  "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
 
 export interface PrototypeTextLocator {
   readonly kind: "text_quote";

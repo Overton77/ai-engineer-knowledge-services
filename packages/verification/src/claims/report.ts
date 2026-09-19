@@ -8,11 +8,7 @@ export interface ReportCitationAssessment {
   readonly citationId: string;
   readonly fragmentId: string;
   readonly pointerStatus:
-    | "valid"
-    | "missing"
-    | "out_of_range"
-    | "malformed"
-    | "misplaced";
+    "valid" | "missing" | "out_of_range" | "malformed" | "misplaced";
   readonly semanticVerdict: SemanticVerdict;
   readonly sourceFamilyId: string;
   readonly sourceIndependence: "independent" | "not_independent" | "unknown";

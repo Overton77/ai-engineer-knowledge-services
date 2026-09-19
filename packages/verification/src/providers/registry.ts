@@ -3,12 +3,7 @@ import { providerDigest, type JsonSchema } from "./bounds.js";
 import { INTERFAZE_MODEL, interfazeConfigurationDigest } from "./interfaze.js";
 
 export type ProviderPromotionState =
-  | "lab"
-  | "offline"
-  | "shadow"
-  | "admitted"
-  | "suspended"
-  | "retired";
+  "lab" | "offline" | "shadow" | "admitted" | "suspended" | "retired";
 export interface ProviderModalityRegistration {
   readonly capability: string;
   readonly modality: "text" | "image" | "audio";

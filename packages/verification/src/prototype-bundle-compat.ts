@@ -18,9 +18,7 @@ type Locator =
       readonly claimedStart?: number;
       readonly claimedEnd?: number;
       readonly offsetBasis:
-        | "raw_utf16"
-        | "lf_normalized"
-        | "lf_normalized_newlines_collapsed";
+        "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
     }
   | {
       readonly kind: "json_pointer";
@@ -83,12 +81,7 @@ type PrototypeBundle = {
 };
 
 export type PrototypeArithmeticExpression =
-  | "identity"
-  | "sum"
-  | "difference"
-  | "product"
-  | "ratio"
-  | "percent_change";
+  "identity" | "sum" | "difference" | "product" | "ratio" | "percent_change";
 
 const check = (code: string, passed: boolean, detail: string) => ({
   code,

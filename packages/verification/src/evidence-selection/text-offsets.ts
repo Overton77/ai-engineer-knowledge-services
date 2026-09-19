@@ -1,7 +1,8 @@
 interface TextOffsetRange {
   readonly start: number;
   readonly end: number;
-  readonly offsetBasis: "utf8_bytes" | "utf16_code_units" | "unicode_code_points";
+  readonly offsetBasis:
+    "utf8_bytes" | "utf16_code_units" | "unicode_code_points";
 }
 
 interface Utf16Range {
@@ -12,14 +13,30 @@ interface Utf16Range {
 const utf8 = new TextEncoder();
 
 /** Converts a nonempty, code-point-aligned range for slicing; callers retain the declared coordinates. */
-export function resolveTextOffsetRange(text: string, range: TextOffsetRange): Utf16Range | undefined {
+export function resolveTextOffsetRange(
+  text: string,
+  range: TextOffsetRange,
+): Utf16Range | undefined {
   const { start, end, offsetBasis } = range;
-  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end <= start) return undefined;
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start < 0 ||
+    end <= start
+  )
+    return undefined;
 
   if (offsetBasis === "utf16_code_units") {
-    const startsInsideSurrogatePair = start > 0 && /[\uDC00-\uDFFF]/u.test(text[start]!);
-    const endsInsideSurrogatePair = end > 0 && /[\uD800-\uDBFF]/u.test(text[end - 1]!);
-    if (end > text.length || startsInsideSurrogatePair || endsInsideSurrogatePair) return undefined;
+    const startsInsideSurrogatePair =
+      start > 0 && /[\uDC00-\uDFFF]/u.test(text[start]!);
+    const endsInsideSurrogatePair =
+      end > 0 && /[\uD800-\uDBFF]/u.test(text[end - 1]!);
+    if (
+      end > text.length ||
+      startsInsideSurrogatePair ||
+      endsInsideSurrogatePair
+    )
+      return undefined;
     return { start, end };
   }
 

@@ -216,7 +216,11 @@ export function prepareGatewaySemanticRequest(
   expectedPromptDigest: string = gatewaySemanticPromptDigest,
 ) {
   const legacy = expectedPromptDigest === providerDigest(legacySemanticPrompt);
-  if ((!legacy && expectedPromptDigest !== gatewaySemanticPromptDigest) || (legacy && input.value !== undefined)) throw new Error("SEMANTIC_REQUEST_PROMPT_BINDING");
+  if (
+    (!legacy && expectedPromptDigest !== gatewaySemanticPromptDigest) ||
+    (legacy && input.value !== undefined)
+  )
+    throw new Error("SEMANTIC_REQUEST_PROMPT_BINDING");
   preflightJson(input, {
     maximumNodes: 256,
     maximumDepth: 8,
@@ -228,7 +232,10 @@ export function prepareGatewaySemanticRequest(
     temperature: 0,
     max_completion_tokens: 900,
     messages: [
-      { role: "system", content: legacy ? legacySemanticPrompt : semanticPrompt },
+      {
+        role: "system",
+        content: legacy ? legacySemanticPrompt : semanticPrompt,
+      },
       { role: "user", content: JSON.stringify(input) },
     ],
     response_format: {

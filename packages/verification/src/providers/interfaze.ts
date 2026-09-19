@@ -18,11 +18,7 @@ export const INTERFAZE_ENDPOINT =
   "https://api.interfaze.ai/v1/chat/completions";
 export const INTERFAZE_MODEL = "interfaze-beta";
 export type InterfazeTask =
-  | "ocr"
-  | "object_detection"
-  | "scraper"
-  | "speech_to_text"
-  | "translate";
+  "ocr" | "object_detection" | "scraper" | "speech_to_text" | "translate";
 const taskNames = new Set<InterfazeTask>([
   "ocr",
   "object_detection",

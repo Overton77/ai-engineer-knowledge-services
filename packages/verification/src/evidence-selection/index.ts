@@ -4,7 +4,10 @@ export type {
   EvidenceSelectionRequest,
   EvidenceSelectorResolver,
 } from "./selection.js";
-export { ProjectionSelectorResolver, projectionSelectorResolver } from "./projection-resolver.js";
+export {
+  ProjectionSelectorResolver,
+  projectionSelectorResolver,
+} from "./projection-resolver.js";
 export {
   parseCanonicalProjection,
   type CanonicalProjection,
