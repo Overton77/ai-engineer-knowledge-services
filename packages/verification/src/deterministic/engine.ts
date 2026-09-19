@@ -13,11 +13,11 @@ import {
 import { digestCanonicalJson, sha256Digest } from "./canonical.js";
 import { compareFractions, formatRoundedDecimal, parseDecimal, replayDecimalOperation, withinTolerance } from "./decimal.js";
 import {
-  resolveWithAdmittedResolver,
-  type DeterministicSelection,
-  type DeterministicSelectorResolver,
-  type SelectorResolutionRequest,
-} from "./selectors.js";
+  resolveEvidenceSelector,
+  type EvidenceSelection,
+  type EvidenceSelectionRequest,
+  type EvidenceSelectorResolver,
+} from "../evidence-selection/index.js";
 
 export interface HydratedVerificationArtifact {
   readonly artifactId: string;
@@ -39,7 +39,7 @@ export interface DeterministicVerificationInput {
 }
 
 export interface DeterministicVerificationOptions {
-  readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+  readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
   /** Trusted application port backed by hydrated capture-specific transformation
    * envelopes. Never construct from serialized caller assertions. Byte identity
    * remains independently checked by this engine. */
@@ -53,7 +53,7 @@ export interface DeterministicVerificationOptions {
 type Status = "passed" | "failed" | "review_required";
 type EvidenceResult = {
   readonly contract: EvidenceMechanicalResult;
-  readonly selection?: DeterministicSelection;
+  readonly selection?: EvidenceSelection;
 };
 
 const bytes = (value: string | Uint8Array): Uint8Array => typeof value === "string" ? new TextEncoder().encode(value) : value;
@@ -147,14 +147,14 @@ export function verifyDeterministicBundle(input: DeterministicVerificationInput,
     if (!handle) return unresolvedEvidence(edge, "REPRESENTATION_BOUND_TO_CAPTURE", `Artifact ${edge.fragment.representationArtifactId} is not a representation of capture ${capture.captureId}.`);
     const content = verifiedArtifacts.get(handle.artifactId);
     if (!content) return unresolvedEvidence(edge, "REPRESENTATION_ARTIFACT_VERIFIED", `Artifact ${handle.artifactId} did not pass digest and lineage checks.`);
-    const request: SelectorResolutionRequest = {
+    const request: EvidenceSelectionRequest = {
       captureId: capture.captureId,
       representationArtifactId: handle.artifactId,
       representationDigest: handle.digest,
       selector: edge.fragment.selector,
       content,
     };
-    const selection = resolveWithAdmittedResolver(request, options.selectorResolvers ?? []);
+    const selection = resolveEvidenceSelector(request, options.selectorResolvers ?? []);
     if (!selection) return unresolvedEvidence(edge, "SELECTOR_RESOLVER_ADMITTED", `No admitted deterministic resolver handles ${edge.fragment.selector.kind}.`);
     const resolution = selection.resolution;
     const checks: VerificationCheck[] = [

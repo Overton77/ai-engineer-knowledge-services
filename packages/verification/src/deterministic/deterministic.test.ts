@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeJson, sha256Digest } from "./canonical.js";
 import { formatRoundedDecimal, replayDecimalOperation } from "./decimal.js";
 import { verifyDeterministicBundle, type DeterministicVerificationInput } from "./engine.js";
-import { resolveBuiltInSelector } from "./selectors.js";
 import { prototypeClaimInput, prototypeMetricInput, runtimePrincipals } from "./testing/prototype-parity.fixture.js";
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -222,36 +221,5 @@ describe("canonical JSON and exact decimal replay", () => {
     expect(() => replayDecimalOperation("ratio", ["1"])).toThrow(/exactly two/);
     expect(formatRoundedDecimal(replayDecimalOperation("ratio", ["1", "8"]), 3, "none")).toBe("0.125");
     expect(formatRoundedDecimal(replayDecimalOperation("percent_change", ["10", "15"]), 0, "half_even")).toBe("50");
-  });
-});
-
-describe("selector resolution records", () => {
-  it("binds nested and escaped JSON Pointers to canonical selected bytes", () => {
-    const content = new TextEncoder().encode(JSON.stringify({ a: { "b/c": { "~key": 7 }, "": { b: 9 } } }));
-    const request = { captureId: "capture", representationArtifactId: "artifact", representationDigest: sha256Digest(content), selector: { kind: "json_pointer" as const, pointer: "/a/b~1c/~0key" }, content };
-    expect(resolveBuiltInSelector(request)?.selectedValue).toBe(7);
-    expect(resolveBuiltInSelector({ ...request, selector: { kind: "json_pointer", pointer: "/a//b" } })?.selectedValue).toBe(9);
-    expect(resolveBuiltInSelector({ ...request, selector: { kind: "json_pointer", pointer: "" } })?.resolution.status).toBe("resolved");
-  });
-
-  it("maps UTF-16, CRLF, and lossy-normalized quotes back to original bytes", () => {
-    const resolveQuote = (contentText: string, quote: string, normalization: "none" | "lf" | "casefold_whitespace_filler_removed") => resolveBuiltInSelector({
-      captureId: "capture",
-      representationArtifactId: "artifact",
-      representationDigest: sha256Digest(contentText),
-      selector: { kind: "text_quote", quote, normalization },
-      content: new TextEncoder().encode(contentText),
-    });
-    const astral = resolveQuote("😀 one two", "one", "none");
-    expect(astral?.resolution.resolvedRanges[0]).toMatchObject({ start: 3, end: 6 });
-    expect(astral?.selectedText).toBe("one");
-    const astralQuote = resolveQuote("prefix 😀 suffix", "😀", "none");
-    expect(astralQuote?.resolution.resolvedRanges[0]).toMatchObject({ start: 7, end: 9 });
-    expect(astralQuote?.selectedText).toBe("😀");
-    const crlf = resolveQuote("A\r\nB", "B", "lf");
-    expect(crlf?.resolution.resolvedRanges[0]).toMatchObject({ start: 3, end: 4 });
-    expect(crlf?.selectedText).toBe("B");
-    const filler = resolveQuote("some  uh\r\nFact", "some Fact", "casefold_whitespace_filler_removed");
-    expect(filler?.selectedText).toBe("some  uh\r\nFact");
   });
 });

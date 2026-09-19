@@ -17,7 +17,7 @@ The module answers the spec’s five ordered questions (capture integrity → se
 | Deterministic-before-semantic; monotonic failure | `verifyDeterministicBundle` sets `semanticEligibility` only when mechanical status is `passed` (`src/deterministic/engine.ts`). `authorizeSemanticCase` throws `SEMANTIC_MECHANICAL_GATE_CLOSED` otherwise (`src/semantic/verification.ts`). `applyReportWideMechanicalGates` can only add hard failures and clear eligibility (`src/claims/report.ts`). |
 | Evidence-closed judges cannot override mechanical failure | `verifyAssertionSemantics` returns `mechanicalSemanticClosure` (`locator_error` / `unverifiable`, reason `MECHANICAL_GATE_CLOSED`) without calling a judge (`src/semantic/verification.ts`). Judges see only authorized fragment IDs/bytes (`JUDGE_FRAGMENT_ID_INVENTED`, digest match). |
 | Content-addressed immutable captures | `CAPTURE_DIGEST_MATCH` / `CAPTURE_BYTE_LENGTH_MATCH` hash hydrated bytes against the registered handle (`src/deterministic/engine.ts`). Projection bytes are re-hashed the same way. |
-| Selectors ≠ display excerpts | Resolution binds `selectorDigest = digestCanonicalJson(selector)` (`SELECTOR_DEFINITION_BOUND` in `src/deterministic/engine.ts`). Locator kinds are the contract union. HTML `canonicalTextFallback` is a check, not a locator (`src/selectors/resolvers.ts`). |
+| Selectors ≠ display excerpts | Resolution binds `selectorDigest = digestCanonicalJson(selector)` (`SELECTOR_DEFINITION_BOUND` in `src/deterministic/engine.ts`). Locator kinds are the contract union. HTML `canonicalTextFallback` is a check, not a locator (`src/evidence-selection/projection-resolver.ts`). |
 | Producer/verifier independence | `PRODUCER_VERIFIER_INDEPENDENT` requires distinct runtime principal deployments and principal digests (`src/deterministic/engine.ts`). |
 | RFC 8785 canonicalization before hashing/sealing | `canonicalizeJson` / `digestCanonicalJson` (`src/deterministic/canonical.ts`). Manifest and audit seals hash that projection (`src/provenance/seal.ts`: `verificationManifestDigest`, `sealAuditBundle`). |
 | Append-only judgments (seal-time) | There is no in-package judgment store or overwrite API. A run manifest’s `judgments` array is part of the RFC 8785 signable payload; changing it changes `manifestDigest` (`src/provenance/seal.ts`). The `Judgment` type is re-exported from contracts only. |
@@ -28,8 +28,8 @@ Policy admission (question 5) is **not** decided here. This package records poli
 
 | Directory | Responsibility | Key exports (from that `index.ts`) | Tests |
 | --- | --- | --- | --- |
-| `src/deterministic/` | RFC 8785 JSON, SHA-256, decimal replay, built-in text/JSON selectors, bundle engine | `canonicalizeJson`, `digestCanonicalJson`, `sha256Digest`, `fromPrototypeSha256`, `toPrototypeSha256`, `parseDecimal`, `replayDecimalOperation`, `compareFractions`, `withinTolerance`, `formatRoundedDecimal`, `verifyDeterministicBundle`, `resolveBuiltInSelector`, `resolveWithAdmittedResolver` | `deterministic/deterministic.test.ts` |
-| `src/selectors/` | Canonical projection parse + admitted resolvers for HTML/PDF/geometry/table/media/repo/dataset/API | `parseCanonicalProjection`, `ProjectionSelectorResolver`, `projectionSelectorResolver` | `selectors/resolvers.test.ts` |
+| `src/deterministic/` | RFC 8785 JSON, SHA-256, decimal replay, bundle engine | `canonicalizeJson`, `digestCanonicalJson`, `sha256Digest`, `fromPrototypeSha256`, `toPrototypeSha256`, `parseDecimal`, `replayDecimalOperation`, `compareFractions`, `withinTolerance`, `formatRoundedDecimal`, `verifyDeterministicBundle` | `deterministic/deterministic.test.ts` |
+| `src/evidence-selection/` | Locate the evidence a `VerificationSelector` points at inside captured bytes: core text/JSON locators (`verification-core.v1`), projection-backed locators for HTML/PDF/geometry/table/media/repo/dataset/API (`verification-projections.v1`), and verification of resolver claims | `resolveEvidenceSelector`, `EvidenceSelectionRequest`, `EvidenceSelection`, `EvidenceSelectorResolver`, `parseCanonicalProjection`, `ProjectionSelectorResolver`, `projectionSelectorResolver` | `evidence-selection/resolve-evidence-selector.test.ts`, `core-resolver.test.ts`, `projection-resolver.test.ts`, `text-offsets.test.ts` |
 | `src/extraction/` | Bounded schema gate, field/evidence verification against capture bytes | `admitExtractionSchema`, `validateExtractionCandidate`, `verifyExtractionFields`, `verifyExtractionFieldsWithEvidence`, `EXTRACTION_SCHEMA_GATE_VERSION` | `extraction/extraction.test.ts` |
 | `src/provenance/` | Audit-bundle seal/inspect, replay, recorded policy-input check, benchmark publication, DSSE/SLSA attestation | `sealAuditBundle`, `inspectAuditBundle`, `verificationManifestDigest`, `createEd25519Signer`, `createEd25519Verifier`, `replayAuditBundle`, `validateRecordedPolicyInputsArtifact`, `sealVerificationBenchmarkPublication`, `verifyVerificationBenchmarkPublication`, `sealVerificationBenchmarkComparisonPublication`, `verifyVerificationBenchmarkComparisonPublication`, `createVerificationDsseSlsaAttestation`, `inspectVerificationDsseSlsaAttestation`, `verificationDssePae` | `provenance/provenance.test.ts`, `attestation.test.ts`, `benchmark-publication.test.ts`, `benchmark-comparison-publication.test.ts` |
 | `src/claims/` | Claim atomization acceptance; report-wide mechanical gates | `acceptClaimDecomposition`, `evaluateDecompositionProposal`, `claimClassifications`, `verifyReportWide`, `verifyReportWideFromLedger`, `applyReportWideMechanicalGates` | Covered in `semantic/diagnostics.test.ts` (no `claims/*.test.ts`) |
@@ -67,10 +67,10 @@ From `@aiengineer/knowledge-contracts` it also re-exports:
 ### Resolve a selector
 
 ```ts
-import { resolveBuiltInSelector, sha256Digest, type ResolvedSelector } from "@aiengineer/knowledge-verification";
+import { resolveEvidenceSelector, sha256Digest, type ResolvedSelector } from "@aiengineer/knowledge-verification";
 
 const content = new TextEncoder().encode("Intro. RAG was basically just a hack.");
-const selection = resolveBuiltInSelector({
+const selection = resolveEvidenceSelector({
   captureId: "capture-1",
   representationArtifactId: "22222222-2222-4222-8222-222222222222",
   representationDigest: sha256Digest(content),
@@ -80,7 +80,9 @@ const selection = resolveBuiltInSelector({
 const resolution: ResolvedSelector | undefined = selection?.resolution;
 ```
 
-HTML/PDF/table/media/repo/dataset/API selectors go through `projectionSelectorResolver` (or `resolveWithAdmittedResolver(request, [projectionSelectorResolver])`) against a canonical projection whose UTF-8 JSON equals `canonicalizeJson(value)`.
+`undefined` means no resolver owns that selector kind; a failed locate is a selection whose `resolution.status` is `not_found`, `ambiguous`, `invalid`, or `parse_error`.
+
+HTML/PDF/table/media/repo/dataset/API selectors go through `resolveEvidenceSelector(request, [projectionSelectorResolver])` against a canonical projection whose UTF-8 JSON equals `canonicalizeJson(value)`. The resolver's claim is re-checked (custody fields, selector digest, selected-byte digest) before it is returned.
 
 ### Deterministic engine (bundle or extraction)
 
@@ -192,3 +194,7 @@ This package must not:
 - Put provider SDK client objects on the public facade. Adapters take `fetch`, an API key, and a `ProviderArtifactSink`.
 - Perform filesystem I/O. (Gateway/Interfaze adapters may call an injected `fetch`; that is the only network path.)
 - Be imported by other repositories. Cross-repo callers use HTTP, CLI, or MCP.
+
+## Reviewed examples and capability coverage
+
+Start with [runnable examples](examples/README.md), the [media and capability matrix](examples/CAPABILITIES.md), and the [2026-09-16 review record](../../docs/operations/reviews/verification.md). These distinguish algorithm support from admitted acquisition and executor intent support.

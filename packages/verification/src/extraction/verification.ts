@@ -1,7 +1,7 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
 import { compareFractions, parseDecimal, replayDecimalOperation, withinTolerance } from "../deterministic/decimal.js";
-import { resolveWithAdmittedResolver, type DeterministicSelectorResolver } from "../deterministic/selectors.js";
+import { resolveEvidenceSelector, type EvidenceSelectorResolver } from "../evidence-selection/index.js";
 import { type AdmittedExtractionSchema, validateExtractionCandidate } from "./schema.js";
 import {sourceComponentValue} from "./source-component.js";
 
@@ -54,7 +54,7 @@ export interface ExtractionFieldVerificationInput {
   readonly normalizations?: readonly ExtractionNormalizationRule[];
   readonly duplicates?: readonly DuplicateRecordRule[];
   readonly totals?: readonly CrossFieldTotalRule[];
-  readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+  readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
 }
 
 const utf8 = new TextDecoder("utf-8", { fatal: true });
@@ -267,7 +267,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(input: ExtractionFi
     if (!evidence) { check(checks, "FIELD_EVIDENCE_MISSING", path, false, "Every candidate leaf requires evidence." ); continue; }
     const representation = representationById.get(evidence.representationArtifactId);
     if (!representation || representation.captureId !== evidence.captureId || representation.digest !== evidence.representationDigest) { check(checks, "EVIDENCE_REPRESENTATION_UNSUPPORTED", path, false, "Evidence does not bind to a verified immutable representation." ); continue; }
-    const selection = resolveWithAdmittedResolver({ captureId: representation.captureId, representationArtifactId: representation.artifactId, representationDigest: representation.digest, selector: evidence.selector, content: representation.content }, input.selectorResolvers ?? []);
+    const selection = resolveEvidenceSelector({ captureId: representation.captureId, representationArtifactId: representation.artifactId, representationDigest: representation.digest, selector: evidence.selector, content: representation.content }, input.selectorResolvers ?? []);
     if (!selection || selection.resolution.status !== "resolved" || selection.resolution.occurrenceCount !== 1 || selection.resolution.selectedContentDigest !== sha256Digest(selection.selectedContent) || (evidence.expectedSelectedContentDigest !== undefined && evidence.expectedSelectedContentDigest !== selection.resolution.selectedContentDigest)) { check(checks, "EVIDENCE_RESOLUTION_FAILED", path, false, "Evidence selector did not uniquely resolve to the expected selected bytes." ); continue; }
     let selected: unknown;
     const component = sourceComponentValue(rule, evidence.selector, selection.resolution.selectedValue);

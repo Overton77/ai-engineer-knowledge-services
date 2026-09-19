@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { VerificationSelectorSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
-import { resolveWithAdmittedResolver } from "../deterministic/selectors.js";
+import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
 import { parseCanonicalProjection } from "./projections.js";
-import { projectionSelectorResolver } from "./resolvers.js";
+import { projectionSelectorResolver } from "./projection-resolver.js";
 
 const bytes = (value: unknown): Uint8Array => new TextEncoder().encode(canonicalizeJson(value));
 const request = (content: Uint8Array, selector: any) => ({ captureId: "capture-01", representationArtifactId: "11111111-1111-4111-8111-111111111111", representationDigest: sha256Digest(content), selector, content });
@@ -156,7 +156,7 @@ describe("synthetic canonical selector projections", () => {
 
   it("is admitted by the core port only when its canonical selected bytes replay", () => {
     const projection = bytes({ kind: "dataset", datasetVersionId: "dataset-v1", rows: [{ key: "r1", value: { answer: 42 } }] });
-    const selection = resolveWithAdmittedResolver(request(projection, { kind: "dataset", datasetVersionId: "dataset-v1", rowKey: "r1", column: "answer" }), [projectionSelectorResolver]);
+    const selection = resolveEvidenceSelector(request(projection, { kind: "dataset", datasetVersionId: "dataset-v1", rowKey: "r1", column: "answer" }), [projectionSelectorResolver]);
     expect(selection?.resolution.status).toBe("resolved");
     expect(sha256Digest(selection!.selectedContent)).toBe(selection!.resolution.selectedContentDigest);
   });

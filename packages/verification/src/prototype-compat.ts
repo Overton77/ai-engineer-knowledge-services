@@ -1,4 +1,4 @@
-import { resolveBuiltInSelector } from "./deterministic/selectors.js";
+import { resolveEvidenceSelector } from "./evidence-selection/index.js";
 import { sha256Digest, toPrototypeSha256 } from "./deterministic/canonical.js";
 
 /**
@@ -117,7 +117,7 @@ export function resolvePrototypeTextLocator(
   const basisContent = contentForPrototypeBasis(content, locator.offsetBasis);
   // The canonical resolver owns exact quote matching.  We preproject to retain
   // the prototype's coordinate space, then translate its range back unchanged.
-  const selected = resolveBuiltInSelector({
+  const selected = resolveEvidenceSelector({
     captureId: "prototype-compatibility-capture",
     representationArtifactId: "prototype-compatibility-artifact",
     representationDigest: sha256Digest(basisContent),

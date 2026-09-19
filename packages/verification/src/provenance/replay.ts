@@ -1,5 +1,6 @@
 import { VerificationArtifactHandleSchema, VerificationReportGateArtifactSchema, VerificationReportLedgerSchema, type DeterministicVerificationResult, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { canonicalizeJson, digestCanonicalJson, sha256Digest, verifyDeterministicBundle, type DeterministicSelectorResolver, type DeterministicVerificationOptions, type RuntimePrincipalBinding } from "../deterministic/index.js";
+import { canonicalizeJson, digestCanonicalJson, sha256Digest, verifyDeterministicBundle, type DeterministicVerificationOptions, type RuntimePrincipalBinding } from "../deterministic/index.js";
+import type { EvidenceSelectorResolver } from "../evidence-selection/index.js";
 import { applyReportWideMechanicalGates, verifyReportWideFromLedger } from "../claims/report.js";
 import { inspectAuditBundle } from "./seal.js";
 import type { AuditBundleSignatureVerifier, TrustedArtifactResolver, VerificationAuditBundle, VerificationPolicyReplayPort, VerificationSemanticReplayPort, VerificationReplayResult } from "./model.js";
@@ -121,7 +122,7 @@ export async function replayAuditBundle(
     readonly runtimePrincipals: RuntimePrincipalBinding;
     readonly policyReplay: VerificationPolicyReplayPort;
     readonly semanticReplay?: VerificationSemanticReplayPort;
-    readonly selectorResolvers?: readonly DeterministicSelectorResolver[];
+    readonly selectorResolvers?: readonly EvidenceSelectorResolver[];
     readonly isProjectionLineageAdmitted?: DeterministicVerificationOptions["isProjectionLineageAdmitted"];
     readonly signatureVerifier?: AuditBundleSignatureVerifier;
   },

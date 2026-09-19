@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { admitExtractionSchema, validateExtractionCandidate, verifyExtractionFields, verifyExtractionFieldsWithEvidence, type AdmittedExtractionSchema, type ExtractionEvidence, type ExtractionFieldRule } from "./index.js";
 import { canonicalizeJson, sha256Digest } from "../deterministic/canonical.js";
-import { ProjectionSelectorResolver } from "../selectors/index.js";
+import { ProjectionSelectorResolver } from "../evidence-selection/index.js";
 
 const encoder = new TextEncoder();
 const schema = (properties: Record<string, unknown>, required = Object.keys(properties)): AdmittedExtractionSchema => {

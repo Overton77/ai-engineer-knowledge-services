@@ -174,21 +174,31 @@ Current sequence inside the function:
 
 The caller must distinguish “function returned a failed result” from “input parsing threw.” The former is a verification finding; the latter is an invalid invocation or an integrity/precondition problem.
 
-### Selector interfaces
+### Evidence selection
 
-[deterministic/selectors.ts](src/deterministic/selectors.ts) owns `SelectorResolutionRequest`, `TrustedSelectorResolution`, `DeterministicSelectorResolver` and `DeterministicSelection`.
+[evidence-selection/](src/evidence-selection/) answers one question: given captured bytes and a `VerificationSelector`, which bytes does the selector point at, and can that be located uniquely? It does not decide that a claim is true.
+
+[selection.ts](src/evidence-selection/selection.ts) owns the vocabulary: `EvidenceSelectionRequest` (bytes + custody + locator), `EvidenceSelection` (the outcome: `resolution` report plus `selectedContent` bytes), and `EvidenceSelectorResolver` (the port for selector kinds the core does not own). Its `evidenceSelectionReporter(version)` is the only place custody fields are stamped onto a `ResolvedSelector`; both resolvers use it.
 
 ```text
-SelectorResolutionRequest
+EvidenceSelectionRequest
   captureId + representationArtifactId + representationDigest + selector + content
-    → resolveWithAdmittedResolver(request, resolvers)
-      → built-in text/JSON handling or an admitted resolver
-        → resolution + selectedContent (+ optional selectedText/selectedValue)
+    → resolveEvidenceSelector(request, resolvers)          resolve-evidence-selector.ts
+      → resolveCoreEvidenceSelector                         core-resolver.ts  (verification-core.v1)
+          text_quote / character_position / json_pointer / multi_fragment_text
+      → or delegateToResolver → EvidenceSelectorResolver.resolve
+          → verifyClaimedSelection                          custody bound? digests replay?
+    → EvidenceSelection
+        .resolution       ResolvedSelector (the report; status may be not_found / ambiguous / invalid / parse_error)
+        .selectedContent  the bytes (empty on failure)
+        .selectedText?  .selectedValue?
 ```
 
-`resolveBuiltInSelector` handles built-in locator kinds; `undefined` means it cannot handle that kind, not that evidence was verified. Inspect the returned resolution status as well as whether a value exists.
+`undefined` from `resolveEvidenceSelector` means no resolver owns that selector kind. It is not a failed locate; failures carry a status. Inspect `resolution.status` as well as whether a value exists.
 
-`ProjectionSelectorResolver` / `projectionSelectorResolver` handle canonical structured projections. [projections.ts](src/selectors/projections.ts) defines `CanonicalProjection` and its HTML, PDF-text, geometry, table, transcript, repository, dataset and paginated-API variants. `parseCanonicalProjection(bytes)` admits those bytes; it does not fetch or convert a source document.
+[core-resolver.ts](src/evidence-selection/core-resolver.ts) holds the four core locators. [text-normalization.ts](src/evidence-selection/text-normalization.ts) builds the search index (`NormalizedText`) that maps normalized hits back onto source offsets; [text-offsets.ts](src/evidence-selection/text-offsets.ts) converts declared UTF-8/UTF-16/code-point offsets into a sliceable range; [json-pointer.ts](src/evidence-selection/json-pointer.ts) is the RFC 6901 walk shared by both resolvers.
+
+[projection-resolver.ts](src/evidence-selection/projection-resolver.ts) (`ProjectionSelectorResolver` / `projectionSelectorResolver`, `verification-projections.v1`) handles canonical structured projections. [projections.ts](src/evidence-selection/projections.ts) defines `CanonicalProjection` and its HTML, PDF-text, geometry, table, transcript, repository, dataset and paginated-API variants. `parseCanonicalProjection(bytes)` admits those bytes; it does not fetch or convert a source document.
 
 **Recommendation:** split the engine into named stages matching the six steps above. Keep the checks and their ordering visible. Use a name such as `buildDeterministicResult` for final aggregation: this stage does not cryptographically seal anything.
 
@@ -495,7 +505,13 @@ This index lists exported declarations in the production algorithm source files,
 | [src/deterministic/canonical.ts](src/deterministic/canonical.ts) | `canonicalizeJson`, `sha256Digest`, `digestCanonicalJson`, `fromPrototypeSha256`, `toPrototypeSha256` |
 | [src/deterministic/decimal.ts](src/deterministic/decimal.ts) | `DecimalFraction`, `parseDecimal`, `replayDecimalOperation`, `compareFractions`, `withinTolerance`, `formatRoundedDecimal` |
 | [src/deterministic/engine.ts](src/deterministic/engine.ts) | `HydratedVerificationArtifact`, `RuntimePrincipalBinding`, `DeterministicVerificationInput`, `DeterministicVerificationOptions`, `verifyDeterministicBundle` |
-| [src/deterministic/selectors.ts](src/deterministic/selectors.ts) | `SelectorResolutionRequest`, `TrustedSelectorResolution`, `DeterministicSelectorResolver`, `resolveBuiltInSelector`, `resolveWithAdmittedResolver`, `DeterministicSelection` |
+| [src/evidence-selection/selection.ts](src/evidence-selection/selection.ts) | `EvidenceSelectionRequest`, `EvidenceSelection`, `EvidenceSelectorResolver`, `EvidenceSelectionFailure`, `EvidenceSelectionOutcome`, `evidenceSelectionReporter` |
+| [src/evidence-selection/resolve-evidence-selector.ts](src/evidence-selection/resolve-evidence-selector.ts) | `resolveEvidenceSelector` |
+| [src/evidence-selection/core-resolver.ts](src/evidence-selection/core-resolver.ts) | `CORE_RESOLVER_VERSION`, `resolveCoreEvidenceSelector` (module-internal) |
+| [src/evidence-selection/projection-resolver.ts](src/evidence-selection/projection-resolver.ts) | `PROJECTION_RESOLVER_VERSION`, `ProjectionSelectorResolver`, `projectionSelectorResolver` |
+| [src/evidence-selection/text-normalization.ts](src/evidence-selection/text-normalization.ts) | `TextNormalization`, `NormalizedText`, `normalizeText`, `findAllOccurrences` |
+| [src/evidence-selection/text-offsets.ts](src/evidence-selection/text-offsets.ts) | `resolveTextOffsetRange` |
+| [src/evidence-selection/json-pointer.ts](src/evidence-selection/json-pointer.ts) | `JsonPointerLookup`, `evaluateJsonPointer` |
 | [src/extraction/evidence.ts](src/extraction/evidence.ts) | `ExtractionEvidenceJsonScalar`, `ExtractionNormalizationOperation`, `ExtractionLeafDerivation`, `AcceptedExtractionLeaf`, `ExtractionFieldEvidenceResult`, `verifyExtractionFieldsWithEvidence` |
 | [src/extraction/schema.ts](src/extraction/schema.ts) | `EXTRACTION_SCHEMA_GATE_VERSION`, `ExtractionSchemaAdmissionLimits`, `DEFAULT_EXTRACTION_SCHEMA_LIMITS`, `AdmittedExtractionSchema`, `ExtractionSchemaAdmission`, `ExtractionSchemaCheck`, `admitExtractionSchema`, `CandidateValidationCheck`, `CandidateValidationResult`, `validateExtractionCandidate` |
 | [src/extraction/source-component.ts](src/extraction/source-component.ts) | `sourceComponentValue` |
@@ -512,8 +528,7 @@ This index lists exported declarations in the production algorithm source files,
 | [src/providers/interfaze.ts](src/providers/interfaze.ts) | `INTERFAZE_ENDPOINT`, `INTERFAZE_MODEL`, `InterfazeTask`, `InterfazeCallRecord`, `InterfazeExtractionResult`, `InterfazeStructuredExtractionProvider`, `interfazeConfigurationDigest` |
 | [src/providers/registry.ts](src/providers/registry.ts) | `ProviderPromotionState`, `ProviderModalityRegistration`, `ProviderRegistration`, `providerRegistry`, `registeredProvider`, `admittedSchemaDigest` |
 | [src/providers/semantic-judge.ts](src/providers/semantic-judge.ts) | `RecordedSemanticJudgeAdapter`, `NliClassifier`, `ThreeWayNliSemanticJudgeAdapter` |
-| [src/selectors/projections.ts](src/selectors/projections.ts) | `ProjectionAdmissionContext`, `CanonicalProjection`, `DomNode`, `HtmlDomProjection`, `PdfTextProjection`, `GeometryProjection`, `TableProjection`, `TranscriptProjection`, `RepositoryProjection`, `DatasetProjection`, `PaginatedApiProjection`, `parseCanonicalProjection` |
-| [src/selectors/resolvers.ts](src/selectors/resolvers.ts) | `ProjectionSelectorResolver`, `projectionSelectorResolver` |
+| [src/evidence-selection/projections.ts](src/evidence-selection/projections.ts) | `ProjectionAdmissionContext`, `CanonicalProjection`, `DomNode`, `HtmlDomProjection`, `PdfTextProjection`, `GeometryProjection`, `TableProjection`, `TranscriptProjection`, `RepositoryProjection`, `DatasetProjection`, `PaginatedApiProjection`, `parseCanonicalProjection` |
 | [src/semantic/attribution.ts](src/semantic/attribution.ts) | `AttributionPerturbationObservation`, `summarizeAttributionPerturbations` |
 | [src/semantic/rescue.ts](src/semantic/rescue.ts) | `RescueBudget`, `RescueCandidate`, `BoundedEvidenceRescuePort`, `proposeUncitedEvidenceRescue` |
 | [src/semantic/verification.ts](src/semantic/verification.ts) | `MechanicallySelectedFragment`, `AuthorizedSemanticFragment`, `AuthorizedSemanticCase`, `SemanticJudgeAdapter`, `SemanticJudgePort`, `SemanticDriftObservation`, `observeSemanticModelDrift`, `SemanticJudgeExecution`, `authorizeSemanticCase`, `verifySemanticCase`, `verifyAssertionSemantics`, `mechanicalSemanticClosure`, `semanticCalibrationStatus` |

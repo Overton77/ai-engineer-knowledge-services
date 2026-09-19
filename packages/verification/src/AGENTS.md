@@ -7,8 +7,8 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../../../
 
 | Module | Responsibility | Enter |
 |---|---|---|
-| [verification-deterministic](../../../docs/agents/CODE-MAP.md#verification-deterministic) | Canonical numeric, selector, and mechanical verification checks. | packages/verification/src/deterministic/index.ts |
-| [verification-selectors](../../../docs/agents/CODE-MAP.md#verification-selectors) | Canonical projection models and deterministic source locator resolution. | packages/verification/src/selectors/index.ts |
+| [verification-deterministic](../../../docs/agents/CODE-MAP.md#verification-deterministic) | Canonical JSON, exact decimal replay, and the mechanical bundle verification engine. | packages/verification/src/deterministic/index.ts |
+| [verification-evidence-selection](../../../docs/agents/CODE-MAP.md#verification-evidence-selection) | Locates the evidence a VerificationSelector points at inside captured bytes: core text/JSON locators, projection-backed locators, and verification of resolver claims. | packages/verification/src/evidence-selection/index.ts |
 | [verification-extraction](../../../docs/agents/CODE-MAP.md#verification-extraction) | Schema-bound extraction field verification and evidence comparisons. | packages/verification/src/extraction/index.ts |
 | [verification-provenance](../../../docs/agents/CODE-MAP.md#verification-provenance) | Verification seals, replay, policy inputs, attestations, and publication bindings. | packages/verification/src/provenance/index.ts |
 | [verification-claims](../../../docs/agents/CODE-MAP.md#verification-claims) | Claim decomposition and report-level evidence structure. | packages/verification/src/claims/index.ts |

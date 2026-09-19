@@ -12,8 +12,9 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm && tsc --emitDeclarationOnly --rootDir src --outDir dist",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.examples.json --noEmit",
+    "test": "vitest run",
+    "examples": "tsx examples/run.ts"
   },
   "dependencies": {
     "@aiengineer/knowledge-contracts": "workspace:*"
