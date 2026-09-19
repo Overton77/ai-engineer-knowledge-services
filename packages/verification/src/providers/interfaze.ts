@@ -1,18 +1,30 @@
+import { sha256Digest } from "../canonical/index.js";
+import type { AdmittedExtractionSchema } from "../extraction/index.js";
+import {
+  boundedRequest,
+  dispatchBoundedCompletion,
+  type CapturedCompletion,
+} from "./dispatch.js";
+import {
+  boundedJsonBytes,
+  parseBoundedResponseJson,
+  type ProviderExecution,
+} from "./http.js";
 import {
   admitOutputSchema,
-  boundedJsonBytes,
-  boundedResponseBytes,
-  parseBoundedResponseJson,
-  type JsonObject,
-  type ProviderArtifactSink,
+  validateOutputAgainstSchema,
+} from "./output-schema.js";
+import {
   ProviderFailure,
   providerDigest,
-  requestSignal,
-  requireActive,
-  validateOutputAgainstSchema,
-} from "./bounds.js";
-import type { AdmittedExtractionSchema } from "../extraction/index.js";
-import { sha256Digest } from "../canonical/index.js";
+  type JsonObject,
+  type ProviderArtifactSink,
+  type ProviderModality,
+} from "./port.js";
+
+const MAX_REQUEST_BYTES = 160_000;
+const MAX_RESPONSE_BYTES = 160_000;
+const MAX_PRECONTEXT_BYTES = 64_000;
 
 export const INTERFAZE_ENDPOINT =
   "https://api.interfaze.ai/v1/chat/completions";
@@ -182,10 +194,7 @@ export class InterfazeStructuredExtractionProvider {
       readonly filename: string;
       readonly dataUri: string;
     };
-    readonly execution: {
-      readonly signal?: AbortSignal;
-      readonly deadlineEpochMs?: number;
-    };
+    readonly execution: ProviderExecution;
   }): Promise<InterfazeExtractionResult> {
     if (
       !input.prompt ||
@@ -235,10 +244,7 @@ export class InterfazeStructuredExtractionProvider {
     readonly task: InterfazeTask;
     readonly prompt: string;
     readonly inputData: { readonly filename: string; readonly dataUri: string };
-    readonly execution: {
-      readonly signal?: AbortSignal;
-      readonly deadlineEpochMs?: number;
-    };
+    readonly execution: ProviderExecution;
   }): Promise<InterfazeExtractionResult> {
     if (
       !taskNames.has(input.task) ||
@@ -303,150 +309,96 @@ export class InterfazeStructuredExtractionProvider {
   async #dispatch(
     requestBody: JsonObject,
     schema: AdmittedExtractionSchema | undefined,
-    execution: {
-      readonly signal?: AbortSignal;
-      readonly deadlineEpochMs?: number;
-    },
-    modality: "text" | "image" | "audio",
+    execution: ProviderExecution,
+    modality: ProviderModality,
     allowedPrecontextNames: readonly string[],
   ): Promise<InterfazeExtractionResult> {
-    const bytes = boundedJsonBytes(requestBody, 160_000);
-    const requestDigest = providerDigest(requestBody);
-    const active = requestSignal(execution);
-    const started = Date.now();
-    try {
-      try {
-        await this.#artifactSink.assertExternalProcessingAdmission({
-          providerId: "interfaze",
-          modality,
-        });
-        requireActive(active.signal, execution);
-        await this.#artifactSink.persistBeforeDispatch({
-          requestDigest,
-          requestBytes: bytes,
-        });
-        requireActive(active.signal, execution);
-      } catch (error) {
-        throw error instanceof ProviderFailure
-          ? error
-          : new ProviderFailure("PROVIDER_ARTIFACT_PERSISTENCE_FAILURE", false);
-      }
-      const response = await this.#fetch(INTERFAZE_ENDPOINT, {
-        method: "POST",
-        redirect: "error",
-        headers: {
-          authorization: `Bearer ${this.#apiKey}`,
-          "content-type": "application/json",
-          "x-interfaze-zdr": "true",
-        },
-        body: bytes,
-        signal: active.signal,
-      });
-      const responseBytes = await boundedResponseBytes(
-        response,
-        160_000,
-        active.signal,
-      );
-      try {
-        await this.#artifactSink.persistAfterResponse({
-          requestDigest,
-          rawResponseBytes: responseBytes,
-          httpStatus: response.status,
-        });
-        requireActive(active.signal, execution);
-      } catch (error) {
-        throw error instanceof ProviderFailure
-          ? error
-          : new ProviderFailure("PROVIDER_ARTIFACT_PERSISTENCE_FAILURE", false);
-      }
-      if (!response.ok)
-        throw new ProviderFailure(
-          "PROVIDER_HTTP_FAILURE",
-          response.status === 408 ||
-            response.status === 429 ||
-            response.status >= 500,
-        );
-      const raw = {
-        bytes: responseBytes,
-        value: parseBoundedResponseJson(responseBytes, 160_000),
-      };
-      const payload = completionPayload(raw.value);
-      if (payload.model !== undefined && payload.model !== INTERFAZE_MODEL)
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      const content = messageContent(payload);
-      let output: unknown;
-      try {
-        output = JSON.parse(content);
-      } catch {
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      }
-      if (schema) validateOutputAgainstSchema(schema, output);
-      else if (
-        output === null ||
-        typeof output !== "object" ||
-        Array.isArray(output)
-      )
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      const context = precontext(payload.precontext, allowedPrecontextNames);
-      const contextBytes = boundedJsonBytes(context, 64_000);
-      if (context.length) {
-        try {
-          await this.#artifactSink.persistAfterResponse({
-            requestDigest,
-            rawResponseBytes: raw.bytes,
-            precontextBytes: contextBytes,
-            httpStatus: response.status,
-          });
-          requireActive(active.signal, execution);
-        } catch (error) {
-          throw error instanceof ProviderFailure
-            ? error
-            : new ProviderFailure(
-                "PROVIDER_ARTIFACT_PERSISTENCE_FAILURE",
-                false,
-              );
-        }
-      }
-      return Object.freeze({
-        output: output as JsonObject,
-        precontext: context.map((entry) =>
-          Object.freeze({
-            name: entry.name,
-            resultDigest: sha256Digest(
-              entry.result === undefined
-                ? "undefined"
-                : JSON.stringify(entry.result),
-            ),
-          }),
+    return dispatchBoundedCompletion({
+      sink: this.#artifactSink,
+      providerId: "interfaze",
+      modality,
+      endpoint: INTERFAZE_ENDPOINT,
+      headers: {
+        authorization: `Bearer ${this.#apiKey}`,
+        "content-type": "application/json",
+        "x-interfaze-zdr": "true",
+      },
+      request: boundedRequest(requestBody, MAX_REQUEST_BYTES),
+      maxResponseBytes: MAX_RESPONSE_BYTES,
+      execution,
+      fetch: this.#fetch,
+      interpret: (captured) =>
+        interpretCompletion(captured, { schema, allowedPrecontextNames }),
+    });
+  }
+}
+
+interface CompletionExpectation {
+  readonly schema: AdmittedExtractionSchema | undefined;
+  readonly allowedPrecontextNames: readonly string[];
+}
+
+/** Model identity, one JSON message, schema (or plain object) output, then admitted precontext retained as a second projection. */
+async function interpretCompletion(
+  captured: CapturedCompletion,
+  expectation: CompletionExpectation,
+): Promise<InterfazeExtractionResult> {
+  const { request, rawResponseBytes } = captured;
+  const payload = completionPayload(
+    parseBoundedResponseJson(rawResponseBytes, MAX_RESPONSE_BYTES),
+  );
+  if (payload.model !== undefined && payload.model !== INTERFAZE_MODEL)
+    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+  const output = parseMessageJson(payload);
+  if (expectation.schema)
+    validateOutputAgainstSchema(expectation.schema, output);
+  else if (
+    output === null ||
+    typeof output !== "object" ||
+    Array.isArray(output)
+  )
+    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+  const context = precontext(
+    payload.precontext,
+    expectation.allowedPrecontextNames,
+  );
+  const contextBytes = boundedJsonBytes(context, MAX_PRECONTEXT_BYTES);
+  if (context.length) await captured.persistPrecontext(contextBytes);
+  return Object.freeze({
+    output: output as JsonObject,
+    precontext: context.map((entry) =>
+      Object.freeze({
+        name: entry.name,
+        resultDigest: sha256Digest(
+          entry.result === undefined
+            ? "undefined"
+            : JSON.stringify(entry.result),
         ),
-        call: Object.freeze({
-          requestDigest,
-          rawResponseDigest: sha256Digest(raw.bytes),
-          precontextDigest: providerDigest(context),
-          ...(typeof payload.id === "string" && payload.id.length <= 256
-            ? { providerResponseId: payload.id }
-            : {}),
-          ...(typeof payload.model === "string" && payload.model.length <= 256
-            ? { observedModel: payload.model }
-            : {}),
-          latencyMs: Date.now() - started,
-          usage: usage(payload.usage),
-          vcache: payload.vcache === true,
-        }),
-      });
-    } catch (error) {
-      if (active.signal.aborted)
-        throw new ProviderFailure(
-          execution.signal?.aborted
-            ? "PROVIDER_CANCELLED"
-            : "PROVIDER_DEADLINE_EXCEEDED",
-          false,
-        );
-      if (error instanceof ProviderFailure) throw error;
-      throw new ProviderFailure("PROVIDER_NETWORK_FAILURE", true);
-    } finally {
-      active.release();
-    }
+      }),
+    ),
+    call: Object.freeze({
+      requestDigest: request.digest,
+      rawResponseDigest: sha256Digest(rawResponseBytes),
+      precontextDigest: providerDigest(context),
+      ...(typeof payload.id === "string" && payload.id.length <= 256
+        ? { providerResponseId: payload.id }
+        : {}),
+      ...(typeof payload.model === "string" && payload.model.length <= 256
+        ? { observedModel: payload.model }
+        : {}),
+      latencyMs: Date.now() - captured.startedEpochMs,
+      usage: usage(payload.usage),
+      vcache: payload.vcache === true,
+    }),
+  });
+}
+
+function parseMessageJson(payload: Completion): unknown {
+  const content = messageContent(payload);
+  try {
+    return JSON.parse(content);
+  } catch {
+    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   }
 }
 

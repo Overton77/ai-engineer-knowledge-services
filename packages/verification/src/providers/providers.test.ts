@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { boundedResponseJson } from "./http.js";
 import {
-  boundedResponseJson,
   GatewaySemanticJudgeAdapter,
   gatewaySemanticConfigurationDigest,
   gatewaySemanticOutputSchemaDigest,

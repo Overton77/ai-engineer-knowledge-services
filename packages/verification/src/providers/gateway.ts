@@ -9,18 +9,25 @@ import type {
 } from "../semantic/ports.js";
 import type { SemanticJudgeIdentity } from "@aiengineer/knowledge-contracts";
 import {
+  boundedRequest,
+  dispatchBoundedCompletion,
+  isRetryableHttpStatus,
+  type BoundedRequest,
+} from "./dispatch.js";
+import { parseBoundedResponseJson, preflightJson } from "./http.js";
+import {
   admitOutputSchema,
-  boundedJsonBytes,
-  boundedResponseBytes,
-  parseBoundedResponseJson,
-  preflightJson,
-  type ProviderArtifactSink,
+  validateOutputAgainstSchema,
+} from "./output-schema.js";
+import {
+  artifactFailure,
   ProviderFailure,
   providerDigest,
-  requestSignal,
-  requireActive,
-  validateOutputAgainstSchema,
-} from "./bounds.js";
+  type ProviderArtifactSink,
+} from "./port.js";
+
+const MAX_REQUEST_BYTES = 96_000;
+const MAX_RESPONSE_BYTES = 96_000;
 
 const endpoint = "https://ai-gateway.vercel.sh/v1/chat/completions";
 const extractionModel = "openai/gpt-5.6-luna";
@@ -121,48 +128,17 @@ type GatewayPayload = {
   };
 };
 
-function artifactFailure(error: unknown): ProviderFailure {
-  return error instanceof ProviderFailure
-    ? error
-    : new ProviderFailure("PROVIDER_ARTIFACT_PERSISTENCE_FAILURE", false);
-}
+const gatewayHeaders = (apiKey: string): Readonly<Record<string, string>> => ({
+  authorization: `Bearer ${apiKey}`,
+  "content-type": "application/json",
+});
 
-async function admitDispatch(
-  sink: ProviderArtifactSink,
-  providerId: string,
-  modality: "text" | "image" | "audio",
-  requestDigest: `sha256:${string}`,
-  requestBytes: Uint8Array,
-  signal: AbortSignal,
-  execution: SemanticJudgeExecution,
-): Promise<void> {
+/** The message content the model returned, parsed as JSON. */
+function parsedContent(payload: GatewayPayload): unknown {
   try {
-    await sink.assertExternalProcessingAdmission({ providerId, modality });
-    requireActive(signal, execution);
-    await sink.persistBeforeDispatch({ requestDigest, requestBytes });
-    requireActive(signal, execution);
-  } catch (error) {
-    throw artifactFailure(error);
-  }
-}
-
-async function persistRaw(
-  sink: ProviderArtifactSink,
-  requestDigest: `sha256:${string}`,
-  rawResponseBytes: Uint8Array,
-  httpStatus: number,
-  signal: AbortSignal,
-  execution: SemanticJudgeExecution,
-): Promise<void> {
-  try {
-    await sink.persistAfterResponse({
-      requestDigest,
-      rawResponseBytes,
-      httpStatus,
-    });
-    requireActive(signal, execution);
-  } catch (error) {
-    throw artifactFailure(error);
+    return JSON.parse(content(payload));
+  } catch {
+    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   }
 }
 
@@ -247,9 +223,8 @@ export function prepareGatewaySemanticRequest(
       },
     },
   };
-  const requestBytes = boundedJsonBytes(body, 96_000);
-  const requestDigest = providerDigest(body);
-  return { requestBytes, requestDigest };
+  const request = boundedRequest(body, MAX_REQUEST_BYTES);
+  return { requestBytes: request.bytes, requestDigest: request.digest };
 }
 
 export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
@@ -313,67 +288,36 @@ export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
       this.identity.model,
       this.maximumInputCharacters,
     );
-    const active = requestSignal(execution);
-    try {
-      await admitDispatch(
-        this.#artifactSink,
-        "gateway",
-        "text",
-        requestDigest,
-        requestBytes,
-        active.signal,
-        execution,
-      );
-      const response = await this.#fetch(endpoint, {
-        method: "POST",
-        redirect: "error",
-        headers: {
-          authorization: `Bearer ${this.#apiKey}`,
-          "content-type": "application/json",
-        },
-        body: requestBytes,
-        signal: active.signal,
-      });
-      const rawResponseBytes = await boundedResponseBytes(
-        response,
-        96_000,
-        active.signal,
-      );
-      await persistRaw(
-        this.#artifactSink,
-        requestDigest,
-        rawResponseBytes,
-        response.status,
-        active.signal,
-        execution,
-      );
-      return await interpretCapturedGatewaySemanticResponse({
-        rawResponseBytes,
-        rawResponseDigest: sha256Digest(rawResponseBytes),
-        httpStatus: response.status,
-        requestDigest,
-        identity: this.identity,
-        ...(input.inputArtifactDigest
-          ? { inputArtifactDigest: input.inputArtifactDigest }
-          : {}),
-        ...(this.#recordObservation
-          ? { recordObservation: this.#recordObservation }
-          : {}),
-        assertActive: () => requireActive(active.signal, execution),
-      });
-    } catch (error) {
-      if (active.signal.aborted)
-        throw new ProviderFailure(
-          execution.signal?.aborted
-            ? "PROVIDER_CANCELLED"
-            : "PROVIDER_DEADLINE_EXCEEDED",
-          false,
-        );
-      if (error instanceof ProviderFailure) throw error;
-      throw new ProviderFailure("PROVIDER_NETWORK_FAILURE", true);
-    } finally {
-      active.release();
-    }
+    const request: BoundedRequest = {
+      bytes: requestBytes,
+      digest: requestDigest,
+    };
+    return dispatchBoundedCompletion({
+      sink: this.#artifactSink,
+      providerId: "gateway",
+      modality: "text",
+      endpoint,
+      headers: gatewayHeaders(this.#apiKey),
+      request,
+      maxResponseBytes: MAX_RESPONSE_BYTES,
+      execution,
+      fetch: this.#fetch,
+      interpret: (captured) =>
+        interpretCapturedGatewaySemanticResponse({
+          rawResponseBytes: captured.rawResponseBytes,
+          rawResponseDigest: sha256Digest(captured.rawResponseBytes),
+          httpStatus: captured.httpStatus,
+          requestDigest,
+          identity: this.identity,
+          ...(input.inputArtifactDigest
+            ? { inputArtifactDigest: input.inputArtifactDigest }
+            : {}),
+          ...(this.#recordObservation
+            ? { recordObservation: this.#recordObservation }
+            : {}),
+          assertActive: captured.assertActive,
+        }),
+    });
   }
 }
 
@@ -414,9 +358,12 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
   if (httpStatus < 200 || httpStatus >= 300)
     throw new ProviderFailure(
       "PROVIDER_HTTP_FAILURE",
-      httpStatus === 408 || httpStatus === 429 || httpStatus >= 500,
+      isRetryableHttpStatus(httpStatus),
     );
-  const payload = parseBoundedResponseJson(bytes, 96_000) as GatewayPayload;
+  const payload = parseBoundedResponseJson(
+    bytes,
+    MAX_RESPONSE_BYTES,
+  ) as GatewayPayload;
   if (!payload || typeof payload !== "object" || Array.isArray(payload))
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   if (recordObservation) {
@@ -453,22 +400,17 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
   }
   if (payload.model !== undefined && payload.model !== identity.model)
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-  try {
-    const output: unknown = JSON.parse(content(payload));
-    validateOutputAgainstSchema(
-      admitOutputSchema(
-        semanticOutputSchema,
-        "verification_semantic_judge",
-        "v1",
-      ),
-      output,
-    );
-    assertActive();
-    return output;
-  } catch (error) {
-    if (error instanceof ProviderFailure) throw error;
-    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-  }
+  const output = parsedContent(payload);
+  validateOutputAgainstSchema(
+    admitOutputSchema(
+      semanticOutputSchema,
+      "verification_semantic_judge",
+      "v1",
+    ),
+    output,
+  );
+  assertActive();
+  return output;
 }
 
 export interface GatewaySemanticResponseObservation {
@@ -553,87 +495,39 @@ export class GatewayStructuredExtractionProvider {
         },
       },
     };
-    const requestBytes = boundedJsonBytes(body, 96_000);
-    const requestDigest = providerDigest(body);
-    const active = requestSignal(input.execution);
-    try {
-      await admitDispatch(
-        this.#artifactSink,
-        "gateway",
-        "text",
-        requestDigest,
-        requestBytes,
-        active.signal,
-        input.execution,
-      );
-      const response = await this.#fetch(endpoint, {
-        method: "POST",
-        redirect: "error",
-        headers: {
-          authorization: `Bearer ${this.#apiKey}`,
-          "content-type": "application/json",
-        },
-        body: requestBytes,
-        signal: active.signal,
-      });
-      const rawResponseBytes = await boundedResponseBytes(
-        response,
-        96_000,
-        active.signal,
-      );
-      await persistRaw(
-        this.#artifactSink,
-        requestDigest,
-        rawResponseBytes,
-        response.status,
-        active.signal,
-        input.execution,
-      );
-      if (!response.ok)
-        throw new ProviderFailure(
-          "PROVIDER_HTTP_FAILURE",
-          response.status === 408 ||
-            response.status === 429 ||
-            response.status >= 500,
-        );
-      const payload = parseBoundedResponseJson(
-        rawResponseBytes,
-        96_000,
-      ) as GatewayPayload;
-      if (payload.model !== undefined && payload.model !== extractionModel)
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      let output: unknown;
-      try {
-        output = JSON.parse(content(payload));
-      } catch {
-        throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-      }
-      validateOutputAgainstSchema(schema, output);
-      requireActive(active.signal, input.execution);
-      return Object.freeze({
-        output: output as Record<string, unknown>,
-        requestDigest,
-        rawResponseDigest: sha256Digest(rawResponseBytes),
-        ...(typeof payload.id === "string"
-          ? { providerResponseId: payload.id }
-          : {}),
-        ...(typeof payload.model === "string"
-          ? { observedModel: payload.model }
-          : {}),
-        usage: usage(payload),
-      });
-    } catch (error) {
-      if (active.signal.aborted)
-        throw new ProviderFailure(
-          input.execution.signal?.aborted
-            ? "PROVIDER_CANCELLED"
-            : "PROVIDER_DEADLINE_EXCEEDED",
-          false,
-        );
-      if (error instanceof ProviderFailure) throw error;
-      throw new ProviderFailure("PROVIDER_NETWORK_FAILURE", true);
-    } finally {
-      active.release();
-    }
+    return dispatchBoundedCompletion({
+      sink: this.#artifactSink,
+      providerId: "gateway",
+      modality: "text",
+      endpoint,
+      headers: gatewayHeaders(this.#apiKey),
+      request: boundedRequest(body, MAX_REQUEST_BYTES),
+      maxResponseBytes: MAX_RESPONSE_BYTES,
+      execution: input.execution,
+      fetch: this.#fetch,
+      interpret: ({ request, rawResponseBytes, assertActive }) => {
+        const payload = parseBoundedResponseJson(
+          rawResponseBytes,
+          MAX_RESPONSE_BYTES,
+        ) as GatewayPayload;
+        if (payload.model !== undefined && payload.model !== extractionModel)
+          throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+        const output = parsedContent(payload);
+        validateOutputAgainstSchema(schema, output);
+        assertActive();
+        return Object.freeze({
+          output: output as Record<string, unknown>,
+          requestDigest: request.digest,
+          rawResponseDigest: sha256Digest(rawResponseBytes),
+          ...(typeof payload.id === "string"
+            ? { providerResponseId: payload.id }
+            : {}),
+          ...(typeof payload.model === "string"
+            ? { observedModel: payload.model }
+            : {}),
+          usage: usage(payload),
+        });
+      },
+    });
   }
 }

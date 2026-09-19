@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ProviderFailure, preflightJson } from "./bounds.js";
+import { preflightJson } from "./http.js";
+import { ProviderFailure } from "./port.js";
 
 const limits = {
   maximumNodes: 100,

@@ -1,5 +1,5 @@
 import { gatewaySemanticConfigurationDigest } from "./gateway.js";
-import { providerDigest, type JsonSchema } from "./bounds.js";
+import { providerDigest } from "./port.js";
 import { INTERFAZE_MODEL, interfazeConfigurationDigest } from "./interfaze.js";
 import { deepFreeze } from "../internal/deep-freeze.js";
 
@@ -157,7 +157,4 @@ export function registeredProvider(providerId: string): ProviderRegistration {
   const match = providerRegistry.find((item) => item.providerId === providerId);
   if (!match) throw new Error("PROVIDER_NOT_REGISTERED");
   return match;
-}
-export function admittedSchemaDigest(schema: JsonSchema): `sha256:${string}` {
-  return providerDigest(schema);
 }
