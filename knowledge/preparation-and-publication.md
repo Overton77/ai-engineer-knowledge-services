@@ -12,7 +12,7 @@ sources:
     resource: ../packages/ingestion/src/executor.ts
     title: Knowledge ingestion executor
   - id: publication-coordinator
-    resource: ../packages/vector-backends/src/publication.ts
+    resource: ../packages/vector-backends/src/publication/coordinator.ts
     title: Exploratory publication coordinator
   - id: selected-candidate-evaluation
     resource: ../packages/persistence/src/publication-evaluation.ts
@@ -63,7 +63,7 @@ An agent captures a vendor document, converts it, and selects a chunk saying a c
 
 ## Publication is a separate gate
 
-Publication exposes a particular vector-space version for a tenant and store space. The exploratory coordinator checks expected item count, dimensions and precision, source/representation/chunk/projection/vector/embedding/index/policy/evaluation manifests, index readiness, authorization, evaluation, and a sample search. It advances the active pointer atomically only after those checks pass. The implementation is [`packages/vector-backends/src/publication.ts`](../packages/vector-backends/src/publication.ts), with coverage in [`packages/vector-backends/src/publication.test.ts`](../packages/vector-backends/src/publication.test.ts).
+Publication exposes a particular vector-space version for a tenant and store space. The exploratory coordinator checks expected item count, dimensions and precision, source/representation/chunk/projection/vector/embedding/index/policy/evaluation manifests, index readiness, authorization, evaluation, and a sample search. It advances the active pointer atomically only after those checks pass. The implementation is [`packages/vector-backends/src/publication/coordinator.ts`](../packages/vector-backends/src/publication/coordinator.ts), with the inspection checks in [`verification.ts`](../packages/vector-backends/src/publication/verification.ts) and coverage in [`coordinator.test.ts`](../packages/vector-backends/src/publication/coordinator.test.ts) and [`verification.test.ts`](../packages/vector-backends/src/publication/verification.test.ts).
 
 Canonical ingestion is not a prerequisite for every vector publication. The publication request accepts a promotion decision and evaluation-gate identifiers, while candidate evidence is optional and checked only when supplied. A publication therefore protects the inspected version it activates; it does not imply a canonical-record materialization happened first.
 

@@ -390,21 +390,25 @@
       "path": "packages/db-read",
       "kind": "package",
       "state": "partial",
-      "summary": "Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard and artifact ledger.",
+      "summary": "Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard, artifact ledger, and the space manifest read.",
       "entrypoints": [
         "packages/db-read/src/index.ts",
         "packages/db-read/src/read-executor.ts",
-        "packages/db-read/src/sql-guard.ts"
+        "packages/db-read/src/sql-guard.ts",
+        "packages/db-read/src/space-manifest.ts"
       ],
       "interface": [
-        "ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH."
+        "ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH.",
+        "buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[]."
       ],
       "tests": [
         "packages/db-read/src/db-read.test.ts",
-        "packages/db-read/src/read-executor.integration.test.ts"
+        "packages/db-read/src/read-executor.integration.test.ts",
+        "packages/db-read/src/space-manifest.test.ts"
       ],
       "constraints": [
-        "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run."
+        "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.",
+        "space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3)."
       ],
       "uses": [
         "schema-workspace"
@@ -462,13 +466,22 @@
       "state": "implemented",
       "summary": "Embedding adapter requests, cache/route identity, bounded batches, and receipts.",
       "entrypoints": [
-        "packages/embeddings/src/index.ts"
+        "packages/embeddings/src/index.ts",
+        "packages/embeddings/src/gateway.ts",
+        "packages/embeddings/src/vectors.ts",
+        "packages/embeddings/src/fake.ts"
       ],
       "interface": [
-        "EmbeddingAdapter with discoverModel, embedOne, and embedMany."
+        "EmbeddingAdapter with discoverModel, embedOne, and embedMany; VercelAiGatewayEmbeddingAdapter and DeterministicFakeEmbeddingAdapter implement it; validateVector and vectorDigest bound output."
       ],
       "tests": [
-        "packages/embeddings/src/index.test.ts"
+        "packages/embeddings/src/vectors.test.ts",
+        "packages/embeddings/src/cache.test.ts",
+        "packages/embeddings/src/gateway.test.ts",
+        "packages/embeddings/src/fake.test.ts",
+        "packages/embeddings/examples/01-deterministic-batch.test.ts",
+        "packages/embeddings/examples/02-cache-and-retry.test.ts",
+        "packages/embeddings/examples/03-reject-bad-output.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -571,18 +584,24 @@
       "path": "packages/policy",
       "kind": "package",
       "state": "implemented",
-      "summary": "Authorization, capability, retrieval, promotion, and verification admission decisions.",
+      "summary": "Authorization, capability, retrieval, promotion, selection-eligibility, and verification admission decisions.",
       "entrypoints": [
-        "packages/policy/src/index.ts"
+        "packages/policy/src/index.ts",
+        "packages/policy/src/selection-eligibility.ts",
+        "packages/policy/src/verification-policy.ts"
       ],
       "interface": [
-        "Policy functions; successful execution alone does not authorize publication."
+        "Policy functions; successful execution alone does not authorize publication.",
+        "evaluateSelectionEligibility is a pure representation-eligibility read returning reasons, diversity group and per-space budget effect; it never enforces membership or budget."
       ],
       "tests": [
         "packages/policy/src/policy.test.ts",
-        "packages/policy/src/verification-policy.test.ts"
+        "packages/policy/src/verification-policy.test.ts",
+        "packages/policy/src/selection-eligibility.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "Selection eligibility has no caller until S2; membership, budget and authority enforcement stays in packages/persistence/src/promotion-selection.ts."
+      ],
       "uses": [],
       "packageJson": "packages/policy/package.json"
     },
@@ -593,13 +612,21 @@
       "state": "implemented",
       "summary": "Produces domain projections whose assertions remain bound to source evidence.",
       "entrypoints": [
-        "packages/projections/src/index.ts"
+        "packages/projections/src/index.ts",
+        "packages/projections/src/validation/evidence-support.ts",
+        "packages/projections/src/projection/create-projection.ts",
+        "packages/projections/src/classification/disposition-spaces.ts"
       ],
       "interface": [
-        "EvidenceSupport and supported projection construction."
+        "validateEvidenceSupport over EvidenceSupport, createProjection into the contract DomainProjection union, and classifyProjectionSpaces mapping dispositions to spaces."
       ],
       "tests": [
-        "packages/projections/src/index.test.ts"
+        "packages/projections/src/validation/evidence-support.test.ts",
+        "packages/projections/src/projection/create-projection.test.ts",
+        "packages/projections/src/classification/disposition-spaces.test.ts",
+        "packages/projections/examples/01-validate-and-build.test.ts",
+        "packages/projections/examples/02-source-native-fidelity.test.ts",
+        "packages/projections/examples/03-classify-dispositions.test.ts"
       ],
       "constraints": [],
       "uses": [],
@@ -612,15 +639,29 @@
       "state": "implemented",
       "summary": "Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval.",
       "entrypoints": [
-        "packages/retrieval/src/index.ts"
+        "packages/retrieval/src/index.ts",
+        "packages/retrieval/src/retrieve.ts",
+        "packages/retrieval/src/plan/build-plan.ts",
+        "packages/retrieval/src/spaces/admission.ts"
       ],
       "interface": [
-        "buildRetrievalPlan and retrieval results with stage receipts."
+        "buildRetrievalPlan and retrieve are the only public names; the plan, space-admission, lexical, semantic, graph and rerank stage folders are internal primitives the pipeline calls."
       ],
       "tests": [
-        "packages/retrieval/src/index.test.ts"
+        "packages/retrieval/src/retrieve.test.ts",
+        "packages/retrieval/src/plan/build-plan.test.ts",
+        "packages/retrieval/src/spaces/admission.test.ts",
+        "packages/retrieval/src/lexical/scoring.test.ts",
+        "packages/retrieval/src/semantic/cosine.test.ts",
+        "packages/retrieval/src/graph/expand.test.ts",
+        "packages/retrieval/src/rerank/fuse.test.ts",
+        "packages/retrieval/examples/01-plan-and-admission.test.ts",
+        "packages/retrieval/examples/02-fuse-channels.test.ts",
+        "packages/retrieval/examples/03-abstain-and-omit.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "Not on the canonical HTTP retrieval path: apps/api serves retrieval through packages/persistence. This package backs the in-memory exploratory index and evaluation corpora."
+      ],
       "uses": [],
       "packageJson": "packages/retrieval/package.json"
     },
@@ -690,18 +731,30 @@
       "path": "packages/vector-backends",
       "kind": "package",
       "state": "implemented",
-      "summary": "Vector-store adapters and publication handling for exact and Postgres search.",
+      "summary": "Vector-store adapters, publication and rollback mechanics, and space version-pointer and entity-link shapes for exact and Postgres search.",
       "entrypoints": [
-        "packages/vector-backends/src/index.ts"
+        "packages/vector-backends/src/index.ts",
+        "packages/vector-backends/src/backends/in-memory-exact.ts",
+        "packages/vector-backends/src/backends/postgres.ts",
+        "packages/vector-backends/src/publication/coordinator.ts",
+        "packages/vector-backends/src/spaces/link.ts"
       ],
       "interface": [
-        "Backend types, in-memory exact adapter, and Postgres adapter."
+        "Backend types, in-memory exact adapter, Postgres adapter, ExploratoryPublicationCoordinator (publish, rollback, reconcile), and the VectorItemEntityLink shape with validateVectorItemEntityLink."
       ],
       "tests": [
-        "packages/vector-backends/src/in-memory-exact.test.ts",
-        "packages/vector-backends/src/postgres.test.ts"
+        "packages/vector-backends/src/backends/in-memory-exact.test.ts",
+        "packages/vector-backends/src/backends/postgres.test.ts",
+        "packages/vector-backends/src/publication/coordinator.test.ts",
+        "packages/vector-backends/src/publication/verification.test.ts",
+        "packages/vector-backends/src/spaces/link.test.ts",
+        "packages/vector-backends/examples/01-exact-search.test.ts",
+        "packages/vector-backends/examples/02-publish-and-rollback.test.ts",
+        "packages/vector-backends/examples/03-reconcile-drift.test.ts"
       ],
-      "constraints": [],
+      "constraints": [
+        "spaces/link.ts is a shape only: no relational row binds a vector item to its projection target and admission in database contract 0.4.16. It has no caller until the S2 publication host."
+      ],
       "uses": [],
       "packageJson": "packages/vector-backends/package.json"
     },

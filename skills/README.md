@@ -1,6 +1,6 @@
 # Skills
 
-This directory is the source of truth for the ten versioned Knowledge Services skills listed in
+This directory is the source of truth for the eleven versioned Knowledge Services skills listed in
 `manifest.json`. Consumers pin a released version and may add runtime-specific wrapper instructions,
 but must not fork authority, evidence, tenant, or publication semantics.
 
@@ -21,6 +21,7 @@ publication.
 | `knowledge-retrieval-and-evidence` | platform | Scoped retrieval plans, explanations and immutable evidence packets |
 | `knowledge-evaluation` | platform | Reviewed retrieval cases, ablations, release recommendations |
 | `vector-store-management` | platform | Store classes, ingestion, publication and rollback |
+| `jev-system-one` | external (TypeSafe API) | Jev typed decisions: contract, limits, question design, calibration, batch runs. Pre-integration; no platform surface yet |
 
 ## Two distributions expose `knowledge`
 

@@ -3,7 +3,7 @@
   "id": "ai-engineer-knowledge-services",
   "purpose": "Knowledge preparation, retrieval, evidence, evaluation, publication, and verification; API, MCP, CLI, durable workers, and parser boundaries.",
   "lifecycle": "Active service repository; see deployment docs for rollout state.",
-  "budgetBytes": 8192,
+  "budgetBytes": 9216,
   "rules": [
     "Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.",
     "In-process KS servers (API, MCP, workers) call packages/application. Out-of-process callers (laptop CLI remote, Eve, Mission Control, other repos) use KnowledgeClient against the HTTP API. CLI local demo/attestation stay application-direct. Do not add MCP apiClient methods; new use cases go through application.",
@@ -17,6 +17,11 @@
     "corepack pnpm verify"
   ],
   "docs": [
+    {
+      "path": "docs/operations/package-cleanup/README.md",
+      "task": "Dated package and app cleanup proposal, phase instructions, recommendations, and feature sequence",
+      "status": "proposed"
+    },
     {
       "path": "docs/operations/code-quality-and-delivery-process.md",
       "task": "Post-sprint module review, exemplars, and developer-overridable delivery workflow",
@@ -57,6 +62,54 @@
       "modules": [
         "conversion",
         "worker"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/retrieval.md",
+      "task": "Retrieval package review record",
+      "status": "reference",
+      "modules": [
+        "retrieval"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/vector-backends.md",
+      "task": "Vector-backends package review record",
+      "status": "reference",
+      "modules": [
+        "vector-backends"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/projections.md",
+      "task": "Projections package review record",
+      "status": "reference",
+      "modules": [
+        "projections"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/embeddings.md",
+      "task": "Embeddings package review record",
+      "status": "reference",
+      "modules": [
+        "embeddings"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/policy.md",
+      "task": "Policy package review record, including selection eligibility",
+      "status": "reference",
+      "modules": [
+        "policy"
+      ]
+    },
+    {
+      "path": "docs/operations/reviews/db-read.md",
+      "task": "Bounded read executor and space manifest review record",
+      "status": "reference",
+      "modules": [
+        "db-read"
       ]
     },
     {

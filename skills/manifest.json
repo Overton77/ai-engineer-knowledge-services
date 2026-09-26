@@ -321,6 +321,19 @@
         "store search",
         "space rebuild"
       ]
+    },
+    {
+      "id": "jev-system-one",
+      "version": "0.1.0",
+      "path": "jev-system-one/SKILL.md",
+      "surfaces": [],
+      "operations": [],
+      "references": [
+        "api-reference.md",
+        "question-design.md",
+        "examples.md",
+        "scripts/jev-batch.mjs"
+      ]
     }
   ]
 }

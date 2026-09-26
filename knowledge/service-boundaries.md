@@ -45,7 +45,7 @@ authority. The accepted lifecycle design is
 | Inspect a permitted query plan or bounded ad hoc read | [`sql-guard.ts`](../packages/db-read/src/sql-guard.ts) | Guards one read statement and uses the bounded `pipeline_agent` role. |
 | Plan or commit verified knowledge proposals | [`IngestionExecutor`](../packages/ingestion/src/executor.ts) | Produces a deterministic plan or applies through `temporal.*` as `executor_service`. |
 | Expose schema/read/ingest functions to an operator or agent | [`knowledge/operations.ts`](../apps/verification-executor/src/knowledge/operations.ts) | Defines one operation catalog for CLI, HTTP, and MCP. |
-| Retrieve already prepared, authorized records | [`retrieve`](../packages/retrieval/src/index.ts) | Builds an evidence packet under retrieval policy; it does not write canonical knowledge. |
+| Retrieve already prepared, authorized records | [`retrieve`](../packages/retrieval/src/retrieve.ts) | Builds an evidence packet under retrieval policy; it does not write canonical knowledge. |
 
 Cross-repository consumers use the published HTTP/client, CLI, or MCP contract;
 they must not import these internal algorithm packages.
@@ -117,8 +117,8 @@ Retrieval filters records by tenant, visibility, space, lifecycle, promotion,
 and hard policy filters before ranking lexical, semantic, graph, rerank, and
 diversity channels. It records omissions, degraded reranking, coverage, and an
 abstention recommendation in an immutable packet. See
-[`index.ts`](../packages/retrieval/src/index.ts) and
-[`index.test.ts`](../packages/retrieval/src/index.test.ts).
+[`retrieve.ts`](../packages/retrieval/src/retrieve.ts) and
+[`retrieve.test.ts`](../packages/retrieval/src/retrieve.test.ts).
 
 Do not request retrieval through `knowledge-read-intent.v1` today: its
 `retrieval` operation is deliberately skipped with `RETRIEVAL_UNAVAILABLE` in

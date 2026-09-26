@@ -8,3 +8,4 @@ export * from "./references.js";
 export * from "./artifacts.js";
 export * from "./read-executor.js";
 export * from "./snapshot.js";
+export * from "./space-manifest.js";

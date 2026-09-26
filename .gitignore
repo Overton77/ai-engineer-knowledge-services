@@ -81,5 +81,5 @@ internal_hidden_docs/
 
 # Packed npm artifacts. Keep only the currently referenced database-contract pin.
 *.tgz
-!vendor/aiengineer-database-contract-0.4.7.tgz
+!vendor/aiengineer-database-contract-0.4.16.tgz
 packages/persistence/vendor/
