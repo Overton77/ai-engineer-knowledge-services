@@ -2,6 +2,7 @@ import {VerificationExtractionFieldEvidenceResultSchema,ApplyProviderReconciliat
 import { PromotionSelectionSchema, PromotionSelectionAuthoritySchema, PromotionProposalInputSchema } from "../src/promotion-selection.js";
 import { SelectedCandidateIndexInputSchema, SelectedCandidateEvaluationInputSchema, SelectedSpacePublicationInputSchema } from "../src/vector-store.js";
 import { ContentLinkIntentSchema } from "../src/content-links.js";
+import { RetrievalCitationReplaySchema } from "../src/retrieval.js";
 import { VerificationProfileCaptureAcceptedSchema } from "../src/index.js";
 import { VerificationFailureSetSchema, VerificationRecoveryPlanSchema, VerificationRecoveryReceiptSchema, VerificationRecoveryInvalidationSchema } from "../src/index.js";
 import { ParseArtifactRequestSchema, VerificationParseArtifactResultSchema } from "../src/index.js";
@@ -53,6 +54,7 @@ const schemas = {
   VerificationRunSummaryResource:VerificationRunSummaryResourceSchema,VerificationRunManifestResource:VerificationRunManifestResourceSchema,
   VerificationRunCasesResource:VerificationRunCasesResourceSchema,VerificationCaseResource:VerificationCaseResourceSchema,VerificationEvidenceResource:VerificationEvidenceResourceSchema,
   ServiceStatus: ServiceStatusSchema, RetrievalRunInput: RetrievalRunInputSchema,
+  RetrievalCitationReplay: RetrievalCitationReplaySchema,
   ExploratoryEvaluationInput: ExploratoryEvaluationInputSchema,
   VerificationSelector: VerificationSelectorSchema,
   VerificationBundle: VerificationBundleSchema,
@@ -260,6 +262,7 @@ add({method:"post",path:"/v1/demo/evaluations",fastifyRoute:"/v1/demo/evaluation
 const resourceReads: readonly [string,string,string,string][] = [
   ["/v1/vector-stores/{vectorStoreId}","/v1/vector-stores/:id","getVectorStore","VectorStoreResource"],
   ["/v1/evidence-packets/{packetId}","/v1/evidence-packets/:id","getEvidencePacket","EvidencePacket"],
+  ["/v1/evidence-packets/{packetId}/citations","/v1/evidence-packets/:id/citations","replayEvidencePacketCitations","RetrievalCitationReplay"],
   ["/v1/retrieval-runs/{runId}","/v1/retrieval-runs/:id","getRetrievalRun","RetrievalRunResource"],
   ["/v1/retrieval-runs/{runId}/explanation","/v1/retrieval-runs/:id/explanation","getRetrievalExplanation","RetrievalExplanationResource"],
   ["/v1/eval-runs/{runId}/report","/v1/eval-runs/:id/report","getEvaluationReport","EvaluationReportResource"],

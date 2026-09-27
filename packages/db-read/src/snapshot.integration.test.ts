@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { TenantPostgres, type TenantSqlClient, type TransactionScope } from "@aiengineer/knowledge-persistence";
@@ -13,7 +13,6 @@ import type { ReadIntentInput } from "./read-intent.js";
 import { validatePersistedSnapshot } from "./snapshot.js";
 
 const url = disposableDatabaseUrl();
-const workspace = loadWorkspace(resolve(import.meta.dirname, "../../../../ai-engineer-db-contract/workspace"));
 
 class InterleavedPostgres extends TenantPostgres {
   afterFirstHead: (() => Promise<void>) | undefined;
@@ -31,15 +30,32 @@ class InterleavedPostgres extends TenantPostgres {
 }
 
 describe.skipIf(!url)("P1.2 persisted repeatable snapshots on isolated Postgres", () => {
-  const db = new InterleavedPostgres({ connectionString: url ?? "postgresql://unused" });
-  const writer = new TenantPostgres({ connectionString: url ?? "postgresql://unused" });
+  let db!: InterleavedPostgres;
+  let writer!: TenantPostgres;
+  let workspace!: ReturnType<typeof loadWorkspace>;
   const tenantId = randomUUID();
   const entityId = randomUUID();
-  const directory = mkdtempSync(join(tmpdir(), "ks-p1-snapshots-"));
-  const store = new LocalArtifactStore(directory);
-  const artifacts = new ArtifactLedger({ db, store, bucket: "research-ingestion-intents", uploaded: false, executorVersion: "synthetic-p1-snapshot/1" });
-  const reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: "synthetic-p1-snapshot/1" });
-  afterAll(async () => { await db.close(); await writer.close(); });
+  let directory: string | undefined;
+  let store!: LocalArtifactStore;
+  let artifacts!: ArtifactLedger;
+  let reads!: ReadExecutor;
+  beforeAll(async () => {
+    workspace = loadWorkspace(resolve(import.meta.dirname, "../../../../ai-engineer-db-contract/workspace"));
+    db = new InterleavedPostgres({ connectionString: url ?? "postgresql://unused" });
+    writer = new TenantPostgres({ connectionString: url ?? "postgresql://unused" });
+    directory = mkdtempSync(join(tmpdir(), "ks-p1-snapshots-"));
+    store = new LocalArtifactStore(directory);
+    artifacts = new ArtifactLedger({ db, store, bucket: "research-ingestion-intents", uploaded: false, executorVersion: "synthetic-p1-snapshot/1" });
+    reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: "synthetic-p1-snapshot/1" });
+    await version("operating", true);
+  });
+  afterAll(async () => {
+    try { await db?.close(); }
+    finally {
+      try { await writer?.close(); }
+      finally { if (directory) rmSync(directory, { recursive: true, force: true }); }
+    }
+  });
 
   async function version(status: string, create = false): Promise<void> {
     await writer.transaction({ tenantId }, async (client) => {
@@ -55,7 +71,6 @@ describe.skipIf(!url)("P1.2 persisted repeatable snapshots on isolated Postgres"
       await client.query("select temporal.commit_batch($1,$2,repeat('0',64),'{}')", [receiptId, intentId]);
     });
   }
-  beforeAll(() => version("operating", true));
   const intent = (overrides: Partial<ReadIntentInput> = {}): ReadIntentInput => ({ schemaVersion: "knowledge-read-intent.v1", intentId: `snapshot-${randomUUID()}`, context: { tenantId },
     operations: [{ opId: "facts", query: "entity.at", params: { entity_id: entityId, at: "2026-02-01T00:00:00Z" } }, { opId: "head", query: "knowledge.head" }], ...overrides });
 

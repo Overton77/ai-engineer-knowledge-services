@@ -83,6 +83,23 @@ describe("deterministic conversion", () => {
     ).toEqual(["document", "heading", "paragraph", "code_block"]);
   });
 
+  it("records only present ancestors when heading levels jump", () => {
+    const text = "### Orphan\n\nOrphan body.\n\n# Root\n\n#### Deep\n\nDeep body.\n\n## Sibling\n\nSibling body.";
+    const converted = convertTextToNodes(text, "text/markdown", "sparse-headings");
+    expect(converted.nodes.slice(1).map((node) => node.locator.sectionPath)).toEqual([
+      ["Orphan"],
+      ["Orphan"],
+      ["Root"],
+      ["Root", "Deep"],
+      ["Root", "Deep"],
+      ["Root", "Sibling"],
+      ["Root", "Sibling"],
+    ]);
+    for (const node of converted.nodes.slice(1)) {
+      expect(converted.markdown.slice(node.locator.startOffset, node.locator.endOffset)).toBe(node.text);
+    }
+  });
+
   it("preserves transcript timestamps and seals all outputs", async () => {
     const store = new InMemoryArtifactStore();
     const bytes = encoder.encode(
