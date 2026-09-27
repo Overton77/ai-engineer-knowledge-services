@@ -1,6 +1,6 @@
 # Unit 2 specification: shared host composition
 
-Status: proposed execution specification, prepared during Unit 1 on 2026-09-27. Begin only from the locally integrated Unit 1 main. Parent: [FINAL-LAYOUT.md](./FINAL-LAYOUT.md), unit 2. Progress and entry evidence: [workspace/PROGRESS.md](./workspace/PROGRESS.md).
+Status: reference. Implemented on `refactor/ks-unit-2-host-composition` and integrated locally on 2026-09-27; the delivery record, exact validation and remaining seams are in the [ledger](./workspace/PROGRESS.md) and [delivered seams](#delivered-composition-and-remaining-seams) below. The next unit is [Unit 3](./UNIT-3-APPLICATION-AND-MCP.md). Original specification follows, prepared during Unit 1. Parent: [FINAL-LAYOUT.md](./FINAL-LAYOUT.md), unit 2. Progress and entry evidence: [workspace/PROGRESS.md](./workspace/PROGRESS.md).
 
 ## Scope and entry gate
 
@@ -77,3 +77,15 @@ Coordinator sequencing decision for the later specification: Unit 5 must adapt J
 - Run preparation/retrieval and verification examples, skill conformance, executor sandbox pack and fresh installed offline CLI smoke. Current executor packaging remains supported until Unit 5.
 - Update `.agent-docs` authored inputs and live concepts, generate and check navigation; `git diff --check` passes. Preserve dated reviews and stored receipts. No shared database changes, provider calls, deployment or remote publication.
 - Update the ledger with exact checks, remaining Unit 3/5 seams and Unit 3 specification. Merge this unit with a local merge commit only after its evidence has been reviewed, then return to main.
+
+## Delivered composition and remaining seams
+
+Recorded at Unit 2 exit. Code is authoritative; this section names what later units must retire.
+
+- `@aiengineer/knowledge-host` exposes `createHost` with `profile: "server"` and roles `api`, `mcp` and `worker`; the return type follows the role. `profile: "local"` throws `HostProfileUnavailableError` (`HOST_PROFILE_UNAVAILABLE`) before any construction. `@aiengineer/knowledge-host/config` carries only the former config/identity exports.
+- `HostResources` releases in reverse order, attempts every release, and shares one close across callers; `constructWithResources` releases partial construction. API/MCP runtimes expose an idempotent `close()` that closes the listener before the host. The worker's `stop()` stops scheduling, awaits the active run, then releases the host, and concurrent calls share it.
+- Multi-fault ordering: pure configuration checks keep their previous order. Two intentional differences: MCP validates `KNOWLEDGE_API_URL` before constructing the repository (the pool is no longer leaked on that error), and API/MCP/worker now release the pool on any failure after it opened.
+- Unit 3 seams (`apps/api/src/composition.ts`): `createCanonicalRetrievalExecutor`, `createVerificationDriftRevalidation`, and `createVerificationUseCases` (provider/semantic reconciliation, structured-extraction/audit-inspection/claims-report/capture/adjudication reads, benchmark capture profiles, adjudication decisions). MCP's `createApiClient` HTTP shim remains.
+- Classification of API helpers: construction-only `verification-reads-runtime`, `verification-benchmark-reads-runtime` and `verification-benchmark-comparison-reads-runtime` moved to `host/src/verification/api/`; helpers with read authorization, ownership, actor matching, signature policy or use cases stayed in the API behind the seams above.
+- Worker: host builds persistence, artifact stores, acquisition, conversion providers and the lazily credentialed embedding adapter, then reconciles before returning. The worker supplies a two-phase `WorkerExecutionFactory`: configuration checks before resources, then verification handlers, registry and `CanonicalDurableKnowledgeWorker`. Only `verification-audit-signing-runtime` was construction-only and moved to `host/src/verification/worker/`; the other `verification-*-runtime.ts` helpers bind activity handlers and remain until worker activity extraction.
+- Unit 5 seams: local offline profile, remote CLI host exclusion (the CLI does not depend on host), executor fold and Jev transport consolidation. Jev is unchanged.

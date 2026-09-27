@@ -11,7 +11,7 @@ sources:
     title: Read executor
   - resource: ../packages/knowledge-db/src/ingestion/executor.ts
     title: Ingestion executor
-  - resource: ../packages/persistence/src/verification-host-runtime.ts
+  - resource: ../packages/host/src/verification/host-runtime.ts
     title: Shared verification host
   - resource: ../apps/api/src/index.ts
     title: API runtime composition
@@ -39,7 +39,7 @@ authority. The accepted lifecycle design is
 | --- | --- | --- |
 | Change a service use case shared by transports | [`application`](../packages/application/src/index.ts) | Shared use-case composition; keep algorithms out of transport handlers. |
 | Change the main service HTTP, CLI, or MCP surface | [API runtime](../apps/api/src/index.ts), [CLI commands](../apps/cli/src/commands.ts), [MCP runtime](../apps/mcp/src/index.ts) | Transport adaptation to published contracts and shared application behavior. |
-| Compose verification ownership and admission for API or MCP | [`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts) | Shared host; transports are not a second algorithm authority. |
+| Compose verification ownership and admission for API or MCP | [`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts) | Shared host; transports are not a second algorithm authority. |
 | Find schema meaning, a relation, vocabulary, rule, or named query | [`schema-workspace`](../packages/knowledge-db/src/schema-workspace/index.ts) | Loads and searches the pinned workspace; it does not query tenant data. |
 | Read tenant knowledge reproducibly | [`ReadExecutor`](../packages/knowledge-db/src/db-read/read-executor.ts) | Executes catalog queries in a read-only transaction and returns a digestible snapshot. |
 | Inspect a permitted query plan or bounded ad hoc read | [`sql-guard.ts`](../packages/knowledge-db/src/db-read/sql-guard.ts) | Guards one read statement and uses the bounded `pipeline_agent` role. |
@@ -93,9 +93,12 @@ share input schemas and gates. The CLI behaviour is covered by
 
 The main API and MCP servers compose the same verification host.
 [`createApiRuntime`](../apps/api/src/index.ts) and
-[`createMcpRuntime`](../apps/mcp/src/index.ts) both call
-[`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts)
-before they attach read runtimes. That host wires application ownership and
+[`createMcpRuntime`](../apps/mcp/src/index.ts) call
+[`createHost`](../packages/host/src/create-host.ts), whose `api` and `mcp`
+roles both call
+[`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts)
+before they attach read runtimes. Host owns construction and release; the
+transports keep credential handling, listeners and protocol mapping. That host wires application ownership and
 catalog/SQL admission ports; it is not a second algorithm authority.
 
 MCP verification mutations call application in-process after ownership and

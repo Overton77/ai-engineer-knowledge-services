@@ -97,24 +97,27 @@
       "path": "apps/api",
       "kind": "app",
       "state": "implemented",
-      "summary": "Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime before read runtimes.",
+      "summary": "Fastify HTTP transport. createApiRuntime composes through createHost (role api) and maps host services onto buildServer.",
       "entrypoints": [
         "apps/api/src/index.ts",
+        "apps/api/src/composition.ts",
         "apps/api/src/server.ts",
         "apps/api/src/verification-ownership.ts"
       ],
       "interface": [
-        "Versioned HTTP endpoints backed by application services. The shared verification host supplies ownership, admission, and the verification operation port; read, decision, and reconciliation runtimes stay API-local."
+        "Versioned HTTP endpoints backed by application services. Host composes persistence, operation ports and the shared verification host; composition.ts injects API-owned retrieval execution, drift policy and ownership-authorized verification use cases as typed Unit 3 seams."
       ],
       "tests": [
         "apps/api/src/tests/server.test.ts",
-        "apps/api/src/tests/verification-routes.test.ts",
+        "apps/api/src/tests/bootstrap.test.ts",
+        "apps/api/src/tests/host-lifecycle.test.ts",
         "apps/api/src/tests/verification-ownership.test.ts"
       ],
       "constraints": [
-        "verification-ownership.ts is a thin Eve persistence adapter re-export of application ports. Do not treat API-local read or decision runtimes as the shared host."
+        "verification-ownership.ts is a thin Eve persistence adapter re-export of application ports. Public-origin validation, credential resolution, callbacks, listeners and the serverless singleton stay in the API; close the server before the host."
       ],
       "uses": [
+        "host",
         "persistence"
       ],
       "packageJson": "apps/api/package.json"
@@ -146,7 +149,7 @@
       "path": "apps/mcp",
       "kind": "app",
       "state": "implemented",
-      "summary": "In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificationHostRuntime and VerificationOperationApplicationService.",
+      "summary": "In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHost (role mcp), which supplies the shared verification host and VerificationOperationApplicationService.",
       "entrypoints": [
         "apps/mcp/src/index.ts",
         "apps/mcp/src/catalog.ts"
@@ -157,7 +160,7 @@
       "tests": [
         "apps/mcp/src/tests/index.test.ts",
         "apps/mcp/src/tests/verification-surface-inventory.test.ts",
-        "apps/mcp/src/tests/adjudication.test.ts",
+        "apps/mcp/src/tests/host-lifecycle.test.ts",
         "apps/mcp/src/tests/verification-operation-read.test.ts"
       ],
       "constraints": [
@@ -165,7 +168,7 @@
       ],
       "uses": [
         "application",
-        "persistence"
+        "host"
       ],
       "packageJson": "apps/mcp/package.json"
     },
@@ -205,21 +208,25 @@
       "path": "apps/worker",
       "kind": "app",
       "state": "implemented",
-      "summary": "Durable knowledge-operation execution, activity dispatch, and verification runtime wiring.",
+      "summary": "Durable knowledge-operation execution and activity dispatch over host-composed adapters; verification runtime wiring stays in the worker execution factory.",
       "entrypoints": [
         "apps/worker/src/index.ts",
         "apps/worker/src/worker.ts",
         "apps/worker/src/activity-registry.ts"
       ],
       "interface": [
-        "Worker loop and activity registry; preserve lease ownership and idempotent terminal receipts."
+        "startWorker composes through createHost (role worker): host builds adapters, reconciles before scheduling and owns release; the worker supplies activity execution, leases and receipts. Preserve lease ownership and idempotent terminal receipts."
       ],
       "tests": [
         "apps/worker/src/worker.test.ts",
         "apps/worker/src/activity-registry.test.ts"
       ],
-      "constraints": [],
-      "uses": [],
+      "constraints": [
+        "WorkerHostDependencies.promotionSelection stays fail-closed; memory mode is development/test-only and is not the offline profile."
+      ],
+      "uses": [
+        "host"
+      ],
       "packageJson": "apps/worker/package.json"
     },
     {
@@ -333,21 +340,32 @@
       "packageJson": "packages/client-typescript/package.json"
     },
     {
-      "id": "config",
-      "path": "packages/config",
+      "id": "host",
+      "path": "packages/host",
       "kind": "package",
       "state": "implemented",
-      "summary": "Validates server, authentication, and semantic-provider configuration.",
+      "summary": "Server composition root: configuration and identity (absorbed config), shared verification host, and createHost for API, MCP and worker with owned lifecycle.",
       "entrypoints": [
-        "packages/config/src/index.ts"
+        "packages/host/src/index.ts",
+        "packages/host/src/create-host.ts",
+        "packages/host/src/config/index.ts",
+        "packages/host/src/verification/host-runtime.ts"
       ],
       "interface": [
-        "Configuration loaders; do not read or emit environment secrets in docs."
+        "createHost({ profile: \"server\", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); the local profile is reserved and fails with HOST_PROFILE_UNAVAILABLE. @aiengineer/knowledge-host/config exposes configuration and identity only. createVerificationHostRuntime is the shared API/MCP ownership and admission host."
       ],
-      "tests": [],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/config/package.json"
+      "tests": [
+        "packages/host/src/tests/composition.test.ts",
+        "packages/host/src/tests/lifecycle.test.ts"
+      ],
+      "constraints": [
+        "Never import apps; application and persistence never import host. Importing host opens no pool, timer or child process. Do not read or emit environment secrets in docs."
+      ],
+      "uses": [
+        "application",
+        "persistence"
+      ],
+      "packageJson": "packages/host/package.json"
     },
     {
       "id": "contracts",
@@ -511,21 +529,19 @@
       "path": "packages/persistence",
       "kind": "package",
       "state": "implemented",
-      "summary": "Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host.",
+      "summary": "Postgres, storage, operation ledger, verification records, and runtime wiring adapters.",
       "entrypoints": [
         "packages/persistence/src/index.ts",
-        "packages/persistence/src/verification-host-runtime.ts"
+        "packages/persistence/src/wiring.ts"
       ],
       "interface": [
-        "Persistence implementations; schema migrations remain in the database-contract repository. createVerificationHostRuntime is the shared API/MCP host for ownership, catalog/SQL admission, and the verification operation port."
+        "Persistence implementations; schema migrations remain in the database-contract repository. Host composition (packages/host) constructs these adapters; persistence never imports host."
       ],
       "tests": [
         "packages/persistence/src/eve-verification-binding.test.ts",
         "packages/persistence/src/operation-service.test.ts"
       ],
-      "constraints": [
-        "The host does not compose API-local decision, reconciliation, or verification/retrieval read runtimes."
-      ],
+      "constraints": [],
       "uses": [],
       "packageJson": "packages/persistence/package.json"
     },

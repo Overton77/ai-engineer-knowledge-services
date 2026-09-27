@@ -1,19 +1,18 @@
 # Cleanup progress
 
-Status: reference. Updated 2026-09-27 UTC.
+Status: reference. Updated 2026-09-27 UTC (Unit 2 delivery).
 
 Target: [FINAL-LAYOUT.md](../FINAL-LAYOUT.md). Review: [FINAL-REVIEW.md](../FINAL-REVIEW.md).
 
 ## Current handoff
 
-- Active checkout: `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`; branch `main`, with Unit 1 integrated from `refactor/ks-unit-1-package-merges` at `85066f0` (base `99aeaa6`). Required ancestor `81556ad` verified. The isolated checkout and safety stash are historical and untouched. No remote push or deployment is claimed.
-- Jev is part of Knowledge Services and is included in combined validation: core service, child workers, HTTP/MCP host, contracts/application/client entrypoints, CLI, skill and public walkthrough evidence. See [next instruction](../NEXT-PACKAGE-CLEANUP.md).
-- Unit 0 retains one missing historical judge-failure input; it is not unconditionally green. Unit 1 may proceed under the exact documented exception in the next instruction, retaining the failing test and requiring no new failures or lost coverage. All four source groups are committed through `2ba7111`; combined final validation is accepted under that exact exception.
-- Fresh baseline and per-group inventories preserve all exports and test identities. Jev source is unchanged. Unit 2 specification is drafted and reviewed, but Unit 2 implementation and Units 3–7 remain queued.
-- Coordinator and two reusable Sol workers: three agents total; maximum four. One implementation/validation worker runs groups sequentially; one read-only reviewer handles bounded checks. Coordinator owns ledger, live docs, unit specifications and integration. Do not run competing full test suites.
-- Scoped safety stash `0971486d67cf7ddc32ac0f5eff952a9ebb15dfbb` preserves duplicate pre-merge baseline files and provisional evidence. Do not apply it: baseline changes are merged and its provisional before.json is obsolete.
-- Actual pre–Mission Control plan: `ai-engineer-meta/ai-engineer-architecture/specs/knowledge-services-pre-mission-control/OPENAI_FIXTURE.md`. Its human gold review, frozen fixture/runner, budget and isolated deployment prerequisites remain separate from this local merge. Cleanup smoke tests are not that evaluation.
-- Historical entries below describe the state when written. Current merge validation is recorded in the final session entry.
+- Active checkout: `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`; branch `main`, with Unit 2 integrated from `refactor/ks-unit-2-host-composition` (implementation `a6b6790`, proofs `e036bf0`, documentation/evidence commit on the branch). Unit 1 remains integrated at `0d73dac`. No remote push or deployment is claimed.
+- Jev is part of Knowledge Services and is included in combined validation. Jev source is unchanged by Unit 2; importing host does not start Jev.
+- Unit 0 retains one missing historical judge-failure input; it is not unconditionally green. Unit 2 reassessed it explicitly at entry (still absent workspace-wide, same single failure) and continued under the same exact exception for this composition-only unit. No new failure was accepted.
+- Next implementation: [Unit 3](../UNIT-3-APPLICATION-AND-MCP.md). Units 4–7 remain queued. The [continuation](../NEXT-PACKAGE-CLEANUP.md) carries the bounded pre–Mission Control stage-graph experiment milestone and the accepted sequencing adjustment (it may run before Unit 7 once its prerequisites are met; provisional results only).
+- Scoped safety stash `0971486d67cf7ddc32ac0f5eff952a9ebb15dfbb` preserves duplicate pre-merge baseline files and provisional evidence. Do not apply it.
+- Actual pre–Mission Control plan: `ai-engineer-meta/ai-engineer-architecture/specs/knowledge-services-pre-mission-control/OPENAI_FIXTURE.md` and `EVE_AGENT_EXECUTION.md`. Human gold review, frozen fixture/runner, budget and isolated deployment prerequisites remain separate from cleanup. Cleanup smoke tests are not that evaluation.
+- Historical entries below describe the state when written. Current validation is recorded in the final session entry.
 ## Work board
 
 | Work | Status | Entry / scope | Exit evidence |
@@ -21,15 +20,16 @@ Target: [FINAL-LAYOUT.md](../FINAL-LAYOUT.md). Review: [FINAL-REVIEW.md](../FINA
 | Final review and ledger | validated | Inspected target against code and consumers; corrected unit 1 instructions | Review findings and linked workspace written; docs build/check and diff check passed |
 | 0 — baseline | repaired; one documented missing-input failure | [Spec](../UNIT-0-BASELINE.md); isolate fixture/setup repair | Clean-checkout verify; before test/export inventories; install and packaging evidence |
 | 1 — package merges | landed locally, under exact baseline exception | [Continuation](../NEXT-PACKAGE-CLEANUP.md) and [spec](../UNIT-1-PACKAGE-MERGES.md) | No lost tests/exports; four merged packages; examples and packaging; verify/docs checks |
-| 2 — host composition | specified; implementation queued | [Spec](../UNIT-2-HOST-COMPOSITION.md); reuse current shared verification host (R2), define lifecycle/profile matrix (R5); move config/wiring only | Server composition parity, shutdown/startup cleanup, profile admission, no new cycles; verify |
-| 3 — application and MCP | queued | Write spec; inventory each residual HTTP shim; move retrieval execution and remaining policy checks | No sibling-HTTP calls; shared tenant/admission failures; intended new tool contracts tested and mapped for Eve; verify |
+| 2 — host composition | landed locally, under reassessed baseline exception | [Spec and delivered seams](../UNIT-2-HOST-COMPOSITION.md) | `createHost` for API/MCP/worker, owned lifecycle, local profile rejected; identities preserved; full graph with only the retained failure; see final Unit 2 entry |
+| 3 — application and MCP | specified; implementation queued | [Spec](../UNIT-3-APPLICATION-AND-MCP.md); retire Unit 2 seams; replace every MCP HTTP shim | No sibling-HTTP calls (fetch trap); API/MCP authority parity; intended new tool contracts tested and mapped for Eve; verify |
 | 4 — folders, names, catalog | queued | Write spec; make CLI client exception explicit; inventory package/service/deployment path consumers | Runtime imports obey host rule; complete profile-aware catalog; reads/mutations/exclusions tested; verify |
 | 5 — executor fold and Eve adaptation | queued | Write spec; first remove database cycle (R1); adapt Eve's host integration, binaries, packaging and env configuration (R4–R5) | New Eve/service integration and offline/remote CLI smoke tests pass; custody/recovery unchanged; obsolete app/interfaces removed; no legacy adapters |
 | 6 — skills | queued | Write spec; preserve procedures and references; migrate agent sync/capability consumers | Eight canonical skills with accurate capability coverage; sandbox packaging and consumer skills check; no invented F6/Jev capabilities |
 | 7 — proofs | queued | Write spec; classify live entrypoints/build tooling/historical scripts; inventory external path consumers | Live proof commands and packaged assets resolve; archive index preserves historical references; verify/docs checks |
 | Post-cleanup — pre–Mission Control testing | queued | Cleanup complete; Eve uses new services, updated skills and capability profiles | Execute the applicable pre–Mission Control test plan; record results, failures and evidence against the new integration |
+| Bounded stage-graph engineering experiment | queued; milestone | [Continuation](../NEXT-PACKAGE-CLEANUP.md#priority-a-useful-experiment-feedback-loop-before-full-mission-control); may precede unit 7 once service, Eve, skill and fixture prerequisites are met | Three sequential stage sessions (research → reports → ingestion consuming both manifests), restoration and fresh-consumer evaluation; provisional engineering results, not fixture acceptance |
 
-Unit 2 now has a bounded specification. Units 3–7 cannot be called ready until their specs exist. Their scope and gates are prepared above so that writing the next spec is bounded work, not another architecture survey.
+Unit 3 now has a bounded specification. Units 4–7 cannot be called ready until their specs exist. Their scope and gates are prepared above so that writing the next spec is bounded work, not another architecture survey.
 
 ## Decisions carried forward
 
@@ -41,7 +41,8 @@ Unit 2 now has a bounded specification. Units 3–7 cannot be called ready until
 | R4 | No live consumers; adapt Eve's test integration directly, including current `scoped-host/v1` usage; no legacy adapters | 5–6 |
 | R5 | Offline is an enforced capability set; remote CLI stays client-only and lazy | 2, 5 |
 | R6 | Catalog separates declared, admitted, executable and transport/profile availability | 4 |
-| R7 | Preserve the exact missing-input failure; Unit 1 continuation permits only that baseline exception and requires fresh comparison evidence and no new failures | 0–1 |
+| R7 | Preserve the exact missing-input failure; each unit reassesses it explicitly and may continue only under that exact exception, with fresh comparison evidence and no new failures | 0–3 |
+| R9 | Bounded pre–Mission Control stage-graph experiment may run before unit 7 once its prerequisites are met; its results are provisional engineering results, distinct from full fixture acceptance (developer, 2026-09-27) | experiment |
 | R8 | Mechanical moves preserve tests/types/runtime identities; count targets do not prove behavior | 1, 6–7 |
 
 ## Session log
@@ -266,3 +267,14 @@ Pre-integration main was `9084428`, with no commits absent from the final-layout
 Merged `refactor/ks-unit-1-package-merges` at `85066f0` into local main with a merge commit. The four implementation checkpoints are `6e81658`, `3bceceb`, `4aa5d38` and `2ba7111`; the fifth commit records reviewed documentation and evidence. Integration changes only delivery status/navigation beyond that validated branch. The checkout is returned to main; the unit branch is retained. No push or deployment was performed. Historical worktree and stash are untouched.
 
 Next implementation is the [Unit 2 host-composition specification](../UNIT-2-HOST-COMPOSITION.md), on its own branch from this main. Reassess the historical missing-fixture exception explicitly before accepting that unit. This delivery completes the linked Unit 1 mission, not the seven-unit cleanup or pre–Mission Control evaluation.
+
+### 2026-09-27 — Unit 2 host composition
+
+- Owner: single coordinator session (Claude) with one read-only reviewer subagent; no competing suites. Branch `refactor/ks-unit-2-host-composition` from `0d73dac`. Implementation `a6b6790` (host package, API/MCP/worker composition, tests), `e036bf0` (live proofs follow moved paths and `close()`); documentation/evidence commit follows.
+- Entry reassessment: the registered-replay test still fails only with `SEALED_CHECKPOINT_MISSING:records/25-gl-repeatability-mutated-haiku_judge-failure.json`; a workspace-wide filename search found no copy. Decision: continue this composition-only unit under the same exact exception. Nothing about the test, its skip predicates or receipts changed.
+- Delivered: `@aiengineer/knowledge-host` absorbs config (root and `/config` entrypoints) and the shared verification host runtime; `createHost` supports `server` roles `api`, `mcp`, `worker` and rejects `local` explicitly. Host owns construction and idempotent reverse-order release, including after partial failure. Transports close listeners before the host; worker stop drains the active run and is shared. Details, classification of every API/worker helper and remaining Unit 3/5 seams: [Unit 2 delivered seams](../UNIT-2-HOST-COMPOSITION.md#delivered-composition-and-remaining-seams).
+- Validation ([record](./evidence/unit2-validation.json)): frozen install; typecheck 36/36; forced build 21/21; forced complete test graph 36/37 tasks, zero cached, 2,752 passed, 126 skipped, one failed (the retained receipt). The first forced run also exposed recurring stale compiled acquisition `dist/*.test.js` files (Unit 1's known contamination; preserved under `%TEMP%/ks-unit2-stale-acquisition-dist`) and a host build that typechecked a test mid-edit; both are resolved and the rerun is the acceptance run. Examples, skill conformance (12 skills, 6 Jev MCP tools, 9 Jev commands), sandbox pack (`71fe20de…`), installed offline smoke (11 receipts, 0 providers) and agent-docs check passed.
+- Identity evidence: `unit2-before.json`/`unit2-after.json` via `unit2-inventory.mjs` — no missing test identities or changed outcomes (two tests moved to host and mapped), 23 new lifecycle/composition tests, all config exports present in host, no persistence export lost besides the moved host runtime, zero manifest cycles, no host→app dependency.
+- Review: independent read-only review found no blocking issue. Applied: `resolvePublicOrigin` is required; MCP logs `knowledge.mcp.shutdown_failed`. Recorded multi-fault ordering differences (MCP origin before repository; identity resolvers after host construction) are in the delivered-seams section; single-fault behavior is unchanged.
+- Jev source unchanged; built `dist/worker.js` executed by the service tests run against dist (8/9; the ninth forks a `.ts` source path absent from dist). No `.jev` state, provider calls, database mutation, deployment or remote publication.
+- Next: [Unit 3](../UNIT-3-APPLICATION-AND-MCP.md). The bounded stage-graph experiment milestone and the accepted sequencing adjustment (R9) are carried in the [continuation](../NEXT-PACKAGE-CLEANUP.md).

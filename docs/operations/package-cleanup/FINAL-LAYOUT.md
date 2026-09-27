@@ -158,14 +158,16 @@ Each unit has its own specification in this folder before it starts.
 | Unit | Scope | Behavior change | Spec |
 |---|---|---|---|
 | 1 | Mechanical package merges: `core`, `preparation`, `retrieval`, `knowledge-db` | None | [`UNIT-1-PACKAGE-MERGES.md`](./UNIT-1-PACKAGE-MERGES.md) |
-| 2 | Add `packages/host` (absorbs `config`); move API and worker runtime wiring into it | None intended | [`UNIT-2-HOST-COMPOSITION.md`](./UNIT-2-HOST-COMPOSITION.md) |
-| 3 | Ownership, admission, retrieval executor into application; delete MCP `createApiClient` | MCP no longer calls the API | to write |
+| 2 | Add `packages/host` (absorbs `config`); move API and worker runtime wiring into it | None intended | [`UNIT-2-HOST-COMPOSITION.md`](./UNIT-2-HOST-COMPOSITION.md) (delivered) |
+| 3 | Ownership, admission, retrieval executor into application; delete MCP `createApiClient` | MCP no longer calls the API | [`UNIT-3-APPLICATION-AND-MCP.md`](./UNIT-3-APPLICATION-AND-MCP.md) |
 | 4 | Application folders by tool group; A2A adapter into `apps/api`; testkit to devDependency; naming pass (`acquisition`→`sources`, `client-typescript`→`client`, `verification-parser`→`parser`); catalog parity test | None | to write |
 | 5 | Fold `verification-executor` into api/mcp/cli/application via host profiles | Executor binaries replaced by `ks` | to write |
 | 6 | Skills to eight; update `skills/manifest.json` and sandbox packaging's required skills | Skill names change | to write |
 | 7 | `scripts/` → `proofs/`; archive sprint-only proofs | None | to write |
 
 Unit 5 starts with dependency inversion: unit 1 leaves `knowledge-db → persistence → application`; application cannot then depend on knowledge-db until its persistence coupling is replaced by injected interfaces. Keep that prerequisite separate from unit 1's mechanical moves. Adapt Eve to the new services in unit 5 and the updated skills in unit 6; run integration smoke checks against the new contract. After cleanup is complete, run the pre–Mission Control testing. Specifications for units 2–7 are written against the preceding validated state; the workspace ledger records their entry/exit gates.
+
+Accepted sequencing adjustment (developer, 2026-09-27): a bounded pre–Mission Control engineering experiment may run before unit 7's proof-folder reorganization once its service, Eve, skill and fixture prerequisites are satisfied. It runs a small real stage graph sequentially — research/verification → reports → ingestion/publication, with ingestion consuming both upstream manifests — then restoration and fresh-consumer evaluation. Each stage is a separate agent session with explicit inputs, durable outputs and validated handoffs; manual launch is acceptable and production scheduling, Temporal and a Mission Control dashboard are not prerequisites. Its results are provisional engineering results, kept distinct from full fixture acceptance under the [OpenAI fixture](../../../../ai-engineer-meta/ai-engineer-architecture/specs/knowledge-services-pre-mission-control/OPENAI_FIXTURE.md). The milestone and its prerequisites are tracked in the [continuation](./NEXT-PACKAGE-CLEANUP.md).
 
 Deliberately deferred until they cause a problem: unifying the three capture/parse paths (knowledge acquisition + Docling, verification capture + `services/verification-parser`, executor Firecrawl parse); renames inside `packages/verification`; the two `deterministicUuid` functions (`runtime` two-argument, `documents` one-argument).
 

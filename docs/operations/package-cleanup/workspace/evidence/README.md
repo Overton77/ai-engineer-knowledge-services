@@ -1,6 +1,14 @@
 # Package cleanup inventory evidence
 
-## Current Unit 1 evidence
+## Unit 2 evidence
+
+`unit2-inventory.mjs` collects runtime exports of config/host/persistence, the declared manifest graph and sequential Vitest identities for API, MCP, worker, persistence and host, then compares them with explicit moved-test mapping. `unit2-before.json` is from `0d73dac` (dirty only with new, unimported host files and this script); `unit2-after.json` is from `e036bf0` with pending documentation edits. `unit2-validation.json` records the complete command outcomes and the fixture reassessment.
+
+```powershell
+node docs/operations/package-cleanup/workspace/evidence/unit2-inventory.mjs compare docs/operations/package-cleanup/workspace/evidence/unit2-before.json docs/operations/package-cleanup/workspace/evidence/unit2-after.json
+```
+
+## Unit 1 evidence
 
 The `unit1-*` captures use integrated Jev baseline `99aeaa61483cec0ba720f21bce25b659cb302aab`, not the historical isolated checkout. Initial source status was clean. A forced build of all thirteen source packages and nine dependencies passed before capture (22/22 tasks, zero cached). Node was `v24.18.0` and pnpm `10.34.5`. Captures report dirty=true because coordinator documentation was being authored; no production-source change preceded the before captures. Per-group after captures precede their implementation commits; the [ledger](../PROGRESS.md) associates them with the reviewed commits.
 

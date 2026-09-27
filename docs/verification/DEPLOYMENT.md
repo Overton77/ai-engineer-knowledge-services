@@ -17,7 +17,7 @@ Mission Control / Temporal (`../ai-engineer-mission-control`) dispatches KS capa
 
 ## Environment variable matrix
 
-`packages/config` has no `VERIFICATION_*` keys. MCP and CLI do not read `VERIFICATION_*`. API and worker read `process.env` (or an injected `Environment`).
+Host configuration (`@aiengineer/knowledge-host/config`, formerly `packages/config`) has no `VERIFICATION_*` keys. MCP and CLI do not read `VERIFICATION_*`. API and worker read `process.env` (or an injected `Environment`).
 
 ### Shared / ownership
 
