@@ -10,7 +10,7 @@ Status: **Conversion fallback cleanup landed 2026-09-16. Chunk multi-profile sel
 
 Parent slice (work order, acquisition, application folders): [internal fallbacks, inspection, and application order](internal-fallbacks-and-application-order.md). This page is the conversion and chunking sibling. It does not claim the router order, multi-profile selection, or skill rewrite exist yet.
 
-Accepted architecture for this pair: [ADR 0002 deterministic preparation](../architecture/0002-deterministic-preparation.md). Packages: `packages/conversion`, `packages/documents`, `packages/chunking`. Deployed binary fallback: `services/docling`.
+Accepted architecture for this pair: [ADR 0002 deterministic preparation](../architecture/0002-deterministic-preparation.md). Packages: `packages/preparation`, `packages/preparation`, `packages/preparation`. Deployed binary fallback: `services/docling`.
 
 ## What we are deciding
 
@@ -52,7 +52,7 @@ Already the right package. Do not move Docling or Unstructured into acquisition.
 
 | Path | Owner | When |
 |---|---|---|
-| Deterministic text | `packages/conversion` | Always first for markdown, HTML, VTT, plain text. Never call Docling or Unstructured. |
+| Deterministic text | `packages/preparation` | Always first for markdown, HTML, VTT, plain text. Never call Docling or Unstructured. |
 | Docling Serve | Our deploy + HTTP adapter | Default binary fallback (PDF / Office / hard HTML). Costs the box, not a vendor invoice. |
 | Isolated verification parser | Verification only | Quote geometry / DOM. Not a general converter. |
 | Unstructured Transform MCP / skill | Their team, attached by mission config | Nasty documents when budget **and** `managedProcessingAllowed` say yes. Cite [their agent guide](https://docs.unstructured.io/agent-guide). |
@@ -103,7 +103,7 @@ Today preparation picks one profile from `document_kind` (`profileFor`). Desired
 | Tool / model cards | `tool_capabilities`, `model_capabilities` | `tool-capabilities-v1` |
 | Entity pages | `entity_profiles` | `entity-facets-v1` |
 
-The profile table now lives at `packages/chunking/src/profiles/definitions.ts` as `chunk-profile-table.v1`, with an explicit `nodeKinds` binding per profile; this prose table is a reading of that data, not a second source.
+The profile table now lives at `packages/preparation/src/chunking/profiles/definitions.ts` as `chunk-profile-table.v1`, with an explicit `nodeKinds` binding per profile; this prose table is a reading of that data, not a second source.
 
 A host may auto-select from this table. An agent may override only with another **admitted** `name@version`. Dynamic skills may change which admitted profiles a mission can see. They must not mint an anonymous strategy during a run.
 
@@ -171,6 +171,6 @@ Recorded so implementation does not invent product. Parent slice owns acquire/in
 - `ConversionRouter` order is text → Docling → gated Unstructured. Exclusive text never calls the binaries. Office Open XML is not treated as text. Low-fidelity `alternate_conversion` advances to the next admitted converter. Routing receipts omit secrets.
 - Worker durable convert uses `conversionRouterFromProviders` and keeps `providerRoute` as the admitted set, not as an Unstructured-first queue.
 - In-process preparation (`packages/application/src/preparation/preparation.ts`) still converts with the text provider only (`managedProcessingAllowed: false`) and picks one profile from `document_kind`. Multi-profile selection is the next slice.
-- `knowledge-preparation-and-promotion` 1.3.0 teaches the router, the two inspections, and points at `packages/conversion/examples`. Chunk profile table teaching stays thin until that slice lands.
+- `knowledge-preparation-and-promotion` 1.3.0 teaches the router, the two inspections, and points at `packages/preparation/examples`. Chunk profile table teaching stays thin until that slice lands.
 
 Recheck `git status` and both operations pages against the tree before the chunking slice.

@@ -101,9 +101,10 @@ adds each operation's JSON Schema input and its file-valued arguments. That outp
 source for skill conformance (`node skills/check.mjs`) and for generating a child's scoped tool
 catalog — never hand-write an operation list.
 
-Libraries: `packages/schema-workspace` (load/search/pages/head check/materialize),
-`packages/db-read` (catalog-driven `knowledge-read-intent.v1` → snapshot, guarded SQL, artifact ledger),
-`packages/ingestion` (`knowledge-ingestion-intent.v1` → plan → apply as `executor_service` → receipt).
+Library: `packages/knowledge-db`, with three internal submodules:
+`schema-workspace` (load/search/pages/head check/materialize), `db-read` (catalog-driven
+`knowledge-read-intent.v1` → snapshot, guarded SQL, artifact ledger), and `ingestion`
+(`knowledge-ingestion-intent.v1` → plan → apply as `executor_service` → receipt).
 Skills: the canonical tree is `../../skills` (`schema-explore`, `knowledge-db`, `knowledge-ingest`,
 `knowledge-verification-recovery` ship in the sandbox tarball); `skills/knowledge-verify` is canonical
 here. `pack:sandbox` fails when a required skill directory is missing or unregistered in

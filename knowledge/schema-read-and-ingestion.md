@@ -5,11 +5,11 @@ description: A safe sequence for navigating the pinned schema, creating reproduc
 tags: [knowledge, schema, read, ingestion, receipts]
 owner: ai-engineer-knowledge-services
 sources:
-  - resource: ../packages/schema-workspace/src/workspace.ts
+  - resource: ../packages/knowledge-db/src/schema-workspace/workspace.ts
     title: Workspace loader
-  - resource: ../packages/db-read/src/read-executor.ts
+  - resource: ../packages/knowledge-db/src/db-read/read-executor.ts
     title: Read executor
-  - resource: ../packages/ingestion/src/executor.ts
+  - resource: ../packages/knowledge-db/src/ingestion/executor.ts
     title: Ingestion executor
 ---
 
@@ -25,13 +25,13 @@ Start with `schema_search`, then `schema_get` for the domain page before a
 relation or function page. Search normalizes terms and ranks exact aliases,
 names, terminology, partial aliases, then token overlap; it is a navigator,
 not a database query. See
-[`search.ts`](../packages/schema-workspace/src/search.ts) and its tests in
-[`schema-workspace.test.ts`](../packages/schema-workspace/src/schema-workspace.test.ts).
+[`search.ts`](../packages/knowledge-db/src/schema-workspace/search.ts) and its tests in
+[`schema-workspace.test.ts`](../packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts).
 
 Read the relevant rule and vocabulary files before composing an intent.
 `schema_materialize` can use the db-contract CLI, a prebuilt bundle, or an
 in-process filter; it records the chosen strategy and omitted items. See
-[`materialize.ts`](../packages/schema-workspace/src/materialize.ts).
+[`materialize.ts`](../packages/knowledge-db/src/schema-workspace/materialize.ts).
 ## Contract pins
 
 The workspace manifest provides `migrationHead` and, when available, a
@@ -39,8 +39,8 @@ workspace fingerprint. `ReadExecutor.validateIntent` rejects an intent whose
 declared pin disagrees with the loaded workspace. Before a database read, the
 executor compares the workspace migration head with the database migration
 head and fails closed on mismatch by default. See
-[`workspace.ts`](../packages/schema-workspace/src/workspace.ts) and
-[`head.ts`](../packages/schema-workspace/src/head.ts).
+[`workspace.ts`](../packages/knowledge-db/src/schema-workspace/workspace.ts) and
+[`head.ts`](../packages/knowledge-db/src/schema-workspace/head.ts).
 
 **Do not** copy a migration head from a different checkout or bypass a mismatch
 for normal work. `allowStale` is documented in code as experiments only and is
@@ -52,15 +52,15 @@ operations. The catalog owns SQL, parameters, result shape, role ceiling, cost
 class, and defaults. An operation can refer to a prior result with
 `$<opId>...`; unresolved references skip it rather than silently substituting
 a value. The contract is defined in
-[`read-intent.ts`](../packages/db-read/src/read-intent.ts).
+[`read-intent.ts`](../packages/knowledge-db/src/db-read/read-intent.ts).
 
 The executor validates duplicate operation IDs, catalog membership, parameter
 schemas, role escalation, and limits before it touches the database. It then
 uses a repeatable-read transaction, caps rows with one extra row to detect
 truncation, and returns a per-operation digest. Read the implementation in
-[`read-executor.ts`](../packages/db-read/src/read-executor.ts) and the
+[`read-executor.ts`](../packages/knowledge-db/src/db-read/read-executor.ts) and the
 database proof in
-[`read-executor.integration.test.ts`](../packages/db-read/src/read-executor.integration.test.ts).
+[`read-executor.integration.test.ts`](../packages/knowledge-db/src/db-read/read-executor.integration.test.ts).
 
 | Need | Use | Result to retain |
 | --- | --- | --- |
@@ -72,7 +72,7 @@ database proof in
 Raw SQL is limited to one guarded read statement and runs as `pipeline_agent`.
 It is not a mutation route. `SELECT` syntax alone is insufficient proof of
 safety: database read-only enforcement is also tested in
-[`read-executor.integration.test.ts`](../packages/db-read/src/read-executor.integration.test.ts).
+[`read-executor.integration.test.ts`](../packages/knowledge-db/src/db-read/read-executor.integration.test.ts).
 
 ## Interpret statuses
 
@@ -85,7 +85,7 @@ safety: database read-only enforcement is also tested in
   the caller must retry the read intent.
 
 `retrieval` operations are currently skipped as `RETRIEVAL_UNAVAILABLE` in
-[`read-executor.ts`](../packages/db-read/src/read-executor.ts). Use the
+[`read-executor.ts`](../packages/knowledge-db/src/db-read/read-executor.ts). Use the
 separate retrieval service path; do not treat this status as a negative search
 result.
 
@@ -97,8 +97,8 @@ knowledge sequence, `expectedKnowledgeHead`, subjects, and proposals. Planning
 writes no canonical data. It validates the evidence, vocabulary, rules,
 subjects, snapshot preflight, and current head, then reports proposal outcomes,
 rewrites, actions, and planned order. See
-[`intent.ts`](../packages/ingestion/src/intent.ts) and
-[`plan.ts`](../packages/ingestion/src/plan.ts).
+[`intent.ts`](../packages/knowledge-db/src/ingestion/intent.ts) and
+[`plan.ts`](../packages/knowledge-db/src/ingestion/plan.ts).
 
 Example shape:
 
@@ -126,9 +126,9 @@ the temporal helpers in one executor-service transaction. It records an
 immutable receipt and relational receipt data. The receipt carries outcomes,
 affected references, head before/after, and storage references; it is the
 authority after an uncertain response. See
-[`apply.ts`](../packages/ingestion/src/apply.ts),
-[`executor.ts`](../packages/ingestion/src/executor.ts), and
-[`executor.integration.test.ts`](../packages/ingestion/src/tests/executor.integration.test.ts).
+[`apply.ts`](../packages/knowledge-db/src/ingestion/apply.ts),
+[`executor.ts`](../packages/knowledge-db/src/ingestion/executor.ts), and
+[`executor.integration.test.ts`](../packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts).
 
 | Situation | Correct action | Do not |
 | --- | --- | --- |
@@ -147,7 +147,7 @@ current head. Compare the receipt's created/superseded references with the new
 snapshot; a previous snapshot cannot prove a batch committed. The persisted
 read path stores the intent and snapshot as separate ledger artifacts with a
 `derived_from` link in
-[`ReadExecutor.persist`](../packages/db-read/src/read-executor.ts).
+[`ReadExecutor.persist`](../packages/knowledge-db/src/db-read/read-executor.ts).
 
 # Current limitations
 

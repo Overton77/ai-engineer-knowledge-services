@@ -5,11 +5,11 @@ description: Ownership and safe entry points for schema navigation, bounded read
 tags: [knowledge, boundaries, schema, ingestion, retrieval]
 owner: ai-engineer-knowledge-services
 sources:
-  - resource: ../packages/schema-workspace/src/workspace.ts
+  - resource: ../packages/knowledge-db/src/schema-workspace/workspace.ts
     title: Workspace loader
-  - resource: ../packages/db-read/src/read-executor.ts
+  - resource: ../packages/knowledge-db/src/db-read/read-executor.ts
     title: Read executor
-  - resource: ../packages/ingestion/src/executor.ts
+  - resource: ../packages/knowledge-db/src/ingestion/executor.ts
     title: Ingestion executor
   - resource: ../packages/persistence/src/verification-host-runtime.ts
     title: Shared verification host
@@ -28,7 +28,7 @@ a retrieval result as a second authority for canonical knowledge.
 The service owns knowledge preparation, retrieval, evidence, verification, and
 policy admission. The shared database schema, migrations, Supabase configuration,
 and generated database types remain in the pinned
-[`ai-engineer-db-contract`](../packages/schema-workspace/package.json) dependency;
+[`ai-engineer-db-contract`](../packages/knowledge-db/package.json) dependency;
 this repository consumes that contract and does not create a rival schema
 authority. The accepted lifecycle design is
 [`0002-deterministic-preparation.md`](../docs/architecture/0002-deterministic-preparation.md).
@@ -40,12 +40,12 @@ authority. The accepted lifecycle design is
 | Change a service use case shared by transports | [`application`](../packages/application/src/index.ts) | Shared use-case composition; keep algorithms out of transport handlers. |
 | Change the main service HTTP, CLI, or MCP surface | [API runtime](../apps/api/src/index.ts), [CLI commands](../apps/cli/src/commands.ts), [MCP runtime](../apps/mcp/src/index.ts) | Transport adaptation to published contracts and shared application behavior. |
 | Compose verification ownership and admission for API or MCP | [`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts) | Shared host; transports are not a second algorithm authority. |
-| Find schema meaning, a relation, vocabulary, rule, or named query | [`schema-workspace`](../packages/schema-workspace/src/index.ts) | Loads and searches the pinned workspace; it does not query tenant data. |
-| Read tenant knowledge reproducibly | [`ReadExecutor`](../packages/db-read/src/read-executor.ts) | Executes catalog queries in a read-only transaction and returns a digestible snapshot. |
-| Inspect a permitted query plan or bounded ad hoc read | [`sql-guard.ts`](../packages/db-read/src/sql-guard.ts) | Guards one read statement and uses the bounded `pipeline_agent` role. |
-| Plan or commit verified knowledge proposals | [`IngestionExecutor`](../packages/ingestion/src/executor.ts) | Produces a deterministic plan or applies through `temporal.*` as `executor_service`. |
+| Find schema meaning, a relation, vocabulary, rule, or named query | [`schema-workspace`](../packages/knowledge-db/src/schema-workspace/index.ts) | Loads and searches the pinned workspace; it does not query tenant data. |
+| Read tenant knowledge reproducibly | [`ReadExecutor`](../packages/knowledge-db/src/db-read/read-executor.ts) | Executes catalog queries in a read-only transaction and returns a digestible snapshot. |
+| Inspect a permitted query plan or bounded ad hoc read | [`sql-guard.ts`](../packages/knowledge-db/src/db-read/sql-guard.ts) | Guards one read statement and uses the bounded `pipeline_agent` role. |
+| Plan or commit verified knowledge proposals | [`IngestionExecutor`](../packages/knowledge-db/src/ingestion/executor.ts) | Produces a deterministic plan or applies through `temporal.*` as `executor_service`. |
 | Expose schema/read/ingest functions to an operator or agent | [`knowledge/operations.ts`](../apps/verification-executor/src/knowledge/operations.ts) | Defines one operation catalog for CLI, HTTP, and MCP. |
-| Retrieve already prepared, authorized records | [`retrieve`](../packages/retrieval/src/retrieve.ts) | Builds an evidence packet under retrieval policy; it does not write canonical knowledge. |
+| Retrieve already prepared, authorized records | [`retrieve`](../packages/retrieval/src/search/retrieve.ts) | Builds an evidence packet under retrieval policy; it does not write canonical knowledge. |
 
 Cross-repository consumers use the published HTTP/client, CLI, or MCP contract;
 they must not import these internal algorithm packages.
@@ -56,12 +56,12 @@ they must not import these internal algorithm packages.
    manifest, search index, optional catalog, terminology, and rules lazily;
    `assertHeadMatches` fails closed when the database migration head differs,
    unless an explicit experiment-only `allowStale` setting is used. See
-   [`workspace.ts`](../packages/schema-workspace/src/workspace.ts) and
-   [`head.ts`](../packages/schema-workspace/src/head.ts).
+   [`workspace.ts`](../packages/knowledge-db/src/schema-workspace/workspace.ts) and
+   [`head.ts`](../packages/knowledge-db/src/schema-workspace/head.ts).
 2. A named query is the normal read boundary. The catalog fixes query text,
    parameter schema, role ceiling, cost class, and row/timeout limits. Callers
    may ask for a lower role, never a higher one. See
-   [`read-intent.ts`](../packages/db-read/src/read-intent.ts).
+   [`read-intent.ts`](../packages/knowledge-db/src/db-read/read-intent.ts).
 3. A read snapshot observes one repeatable-read view and records its contract,
    selected knowledge sequence, operation digests, and head. It is evidence for
    a later plan, not proof that a write committed.
@@ -72,13 +72,16 @@ they must not import these internal algorithm packages.
    the exact intent is idempotent; changing its contents under the same
    identity is a conflict. The integration test covers committed-response loss
    and concurrent duplicate submission in
-   [`executor.integration.test.ts`](../packages/ingestion/src/tests/executor.integration.test.ts).
+   [`executor.integration.test.ts`](../packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts).
 
 # Transport route
 
 ```text
-schema-workspace ──> db-read ──> ingestion ──> verification-executor
-      contract          snapshot       receipt       CLI / HTTP / MCP
+knowledge-db: schema-workspace → db-read → ingestion
+                     contract    snapshot    receipt
+                                              ↓
+                                  verification-executor
+                                     CLI / HTTP / MCP
 ```
 
 The executor is a sandbox host distinct from `apps/api`. It creates its
@@ -117,12 +120,12 @@ Retrieval filters records by tenant, visibility, space, lifecycle, promotion,
 and hard policy filters before ranking lexical, semantic, graph, rerank, and
 diversity channels. It records omissions, degraded reranking, coverage, and an
 abstention recommendation in an immutable packet. See
-[`retrieve.ts`](../packages/retrieval/src/retrieve.ts) and
-[`retrieve.test.ts`](../packages/retrieval/src/retrieve.test.ts).
+[`retrieve.ts`](../packages/retrieval/src/search/retrieve.ts) and
+[`retrieve.test.ts`](../packages/retrieval/src/search/retrieve.test.ts).
 
 Do not request retrieval through `knowledge-read-intent.v1` today: its
 `retrieval` operation is deliberately skipped with `RETRIEVAL_UNAVAILABLE` in
-[`ReadExecutor.runQueryOperation`](../packages/db-read/src/read-executor.ts).
+[`ReadExecutor.runQueryOperation`](../packages/knowledge-db/src/db-read/read-executor.ts).
 That is a present implementation limitation, even though retrieval is an
 implemented package and a catalog entry may describe a retrieval-shaped query.
 

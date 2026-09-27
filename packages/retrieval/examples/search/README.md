@@ -8,7 +8,7 @@ corepack pnpm --filter @aiengineer/knowledge-retrieval typecheck
 corepack pnpm --filter @aiengineer/knowledge-retrieval test
 ```
 
-Or one at a time from `packages/retrieval`: `pnpm exec tsx examples/01-plan-and-admission.ts`.
+Or one at a time from `packages/retrieval`: `pnpm exec tsx examples/search/01-plan-and-admission.ts`.
 
 Each `NN-*.ts` module exports a small function over the readable fixtures in
 [fixtures.ts](fixtures.ts); `NN-*.test.ts` runs the same fixtures in the ordinary

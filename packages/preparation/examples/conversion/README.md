@@ -2,15 +2,15 @@
 
 Runnable, mocked demonstrations of the internal conversion fallbacks. Default examples need no vendor key.
 
-From `packages/conversion`:
+From `packages/preparation`:
 
 ```bash
-pnpm exec tsx examples/01-text-convert.ts
-pnpm exec tsx examples/02-pdf-docling.ts
-pnpm exec tsx examples/03-inspect-fidelity.ts
-pnpm exec tsx examples/04-docling-then-unstructured.ts
-pnpm exec tsx examples/05-import-stored-markdown.ts
-pnpm exec tsx examples/06-managed-denied.ts
+pnpm exec tsx examples/conversion/01-text-convert.ts
+pnpm exec tsx examples/conversion/02-pdf-docling.ts
+pnpm exec tsx examples/conversion/03-inspect-fidelity.ts
+pnpm exec tsx examples/conversion/04-docling-then-unstructured.ts
+pnpm exec tsx examples/conversion/05-import-stored-markdown.ts
+pnpm exec tsx examples/conversion/06-managed-denied.ts
 pnpm exec tsc --noEmit -p tsconfig.examples.json
 ```
 

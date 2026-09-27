@@ -126,8 +126,8 @@ function manifestGraph(tracked) {
   return { packageCount: manifests.length, edges, cycles };
 }
 
-function collisions(packages) {
-  return Object.fromEntries(Object.entries(groups).map(([group, members]) => {
+function collisions(packages, selectedGroup) {
+  return Object.fromEntries(Object.entries(groups).filter(([group]) => !selectedGroup || group === selectedGroup).map(([group, members]) => {
     const owners = new Map();
     for (const name of members) {
       for (const item of packages[name].sourceExports) {
@@ -142,16 +142,17 @@ function collisions(packages) {
   }));
 }
 
-async function collect(layout) {
+async function collect(layout, selectedGroup) {
   const tracked = git("ls-files", "--", "packages", "apps", "services").split(/\r?\n/).filter(Boolean);
   const packages = {};
   const api = new API();
-  const configPaths = [...new Set(Object.keys(groupByPackage).map((name) =>
+  const members = selectedGroup ? groups[selectedGroup] : Object.keys(groupByPackage);
+  const configPaths = [...new Set(members.map((name) =>
     join(repository, packageLocation(name, layout), "tsconfig.json")))];
   const snapshot = api.updateSnapshot({ openProjects: configPaths });
   let groupExports;
   try {
-    for (const name of Object.keys(groupByPackage)) {
+    for (const name of members) {
       const entry = sourceEntry(name, layout);
       const absoluteEntry = join(repository, entry);
       if (!existsSync(absoluteEntry)) throw new Error(`Missing source entry ${entry}`);
@@ -167,7 +168,8 @@ async function collect(layout) {
         testFiles: testFiles(name, layout, tracked),
       };
     }
-    groupExports = layout === "after" ? Object.fromEntries(Object.keys(groups).map((group) => [
+    groupExports = layout === "after" ? Object.fromEntries(Object.keys(groups).filter((group) =>
+      !selectedGroup || group === selectedGroup).map((group) => [
       group,
       { source: compilerExports(join(repository, `packages/${group}/src/index.ts`),
         snapshot.getProject(join(repository, `packages/${group}/tsconfig.json`))) },
@@ -187,20 +189,22 @@ async function collect(layout) {
   return {
     schema: 1,
     layout,
+    ...(selectedGroup ? { group: selectedGroup } : {}),
     sourceCommit: git("rev-parse", "HEAD"),
     dirty: Boolean(git("status", "--porcelain")),
     compilerVersion: typescript.version,
     runtimeProvenance: "Built dist/index.js is untracked output; digest proves byte identity only, not source commit or successful build.",
     packages,
     groupExports,
-    collisions: collisions(packages),
+    collisions: collisions(packages, selectedGroup),
     manifestGraph: manifestGraph(tracked),
   };
 }
 
-function compare(before, after) {
+function compare(before, after, selectedGroup) {
   const changes = {};
-  for (const [group, members] of Object.entries(groups)) {
+  for (const [group, members] of Object.entries(groups).filter(([group]) =>
+    !selectedGroup || group === selectedGroup)) {
     const oldSymbols = members.flatMap((name) => before.packages[name].sourceExports);
     const newSymbols = after.groupExports[group].source;
     const expectedTypes = sorted(new Set(oldSymbols.map((item) => item.name)));
@@ -234,18 +238,20 @@ function compare(before, after) {
 }
 
 const [command, ...arguments_] = process.argv.slice(2);
-if (command === "collect") {
-  const [layout, output] = arguments_;
+if (command === "collect" || command === "collect-group") {
+  const [selectedGroup, layout, output] = command === "collect-group" ? arguments_ : [undefined, ...arguments_];
+  if (selectedGroup && !groups[selectedGroup]) throw new Error(`Unknown package group: ${selectedGroup}`);
   if (!["before", "after"].includes(layout) || !output) throw new Error("Usage: node inventory.mjs collect before|after output.json");
-  const inventory = await collect(layout);
+  const inventory = await collect(layout, selectedGroup);
   writeFileSync(resolve(output), `${JSON.stringify(inventory, null, 2)}\n`);
   console.log(`Wrote ${output}: ${Object.keys(inventory.packages).length} source packages, ${inventory.manifestGraph.cycles.length} manifest cycles`);
   if (inventory.manifestGraph.cycles.length || Object.values(inventory.packages).some((item) =>
     item.runtimeExports.status !== "present-unverified-build")) process.exitCode = 1;
-} else if (command === "compare") {
-  const [beforePath, afterPath] = arguments_;
+} else if (command === "compare" || command === "compare-group") {
+  const [selectedGroup, beforePath, afterPath] = command === "compare-group" ? arguments_ : [undefined, ...arguments_];
+  if (selectedGroup && !groups[selectedGroup]) throw new Error(`Unknown package group: ${selectedGroup}`);
   if (!beforePath || !afterPath) throw new Error("Usage: node inventory.mjs compare before.json after.json");
-  const changes = compare(readManifest(resolve(beforePath)), readManifest(resolve(afterPath)));
+  const changes = compare(readManifest(resolve(beforePath)), readManifest(resolve(afterPath)), selectedGroup);
   console.log(JSON.stringify(changes, null, 2));
   if (Object.values(changes).some((group) => Object.values(group).some((value) =>
     Array.isArray(value) ? value.length > 0 : value))) process.exitCode = 1;

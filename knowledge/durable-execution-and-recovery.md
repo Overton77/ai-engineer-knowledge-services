@@ -63,10 +63,10 @@ cannot heartbeat, complete, or fail a step.
 
 This behavior is implemented by
 [`canonical-worker.ts`](../apps/worker/src/canonical-worker.ts) and the
-runtime [ledger](../packages/runtime/src/ledger.ts). The focused
+runtime [ledger](../packages/core/src/runtime/ledger.ts). The focused
 [worker tests](../apps/worker/src/worker.test.ts) cover normal reconciliation,
 unimplemented terminal activity failure, eligibility scoping, and restart
-lease reclamation; the [runtime tests](../packages/runtime/src/runtime.test.ts)
+lease reclamation; the [runtime tests](../packages/core/src/runtime/runtime.test.ts)
 cover receipt idempotency and stale-lease handling. These retries are not
 recovery cases: recovery begins only after the authority-bound verification
 batch is triaged for drift, invalidation, unavailability, or repair.

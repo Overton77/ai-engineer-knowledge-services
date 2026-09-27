@@ -1,4 +1,29 @@
-# Unit 0 inventory evidence
+# Package cleanup inventory evidence
+
+## Current Unit 1 evidence
+
+The `unit1-*` captures use integrated Jev baseline `99aeaa61483cec0ba720f21bce25b659cb302aab`, not the historical isolated checkout. Initial source status was clean. A forced build of all thirteen source packages and nine dependencies passed before capture (22/22 tasks, zero cached). Node was `v24.18.0` and pnpm `10.34.5`. Captures report dirty=true because coordinator documentation was being authored; no production-source change preceded the before captures. Per-group after captures precede their implementation commits; the [ledger](../PROGRESS.md) associates them with the reviewed commits.
+
+- `unit1-before.json` and `unit1-before-tests.json` record the combined baseline.
+- `unit1-<group>-after.json` and `unit1-<group>-after-tests.json` record each sequential merge; groups are `knowledge-db`, `retrieval`, `preparation` and `core`.
+- `unit1-<group>-consumer-probe-before/after.ts` and matching JSON files record compiler probes against built declarations. Before captures name the baseline commit; later captures distinguish baseline/current commit and dirty state.
+- `unit1-after.json` and `unit1-after-tests.json` are the final all-group captures after the four implementation commits.
+- `unit1-validation.json` records command outcomes, full graph totals, the retained missing-fixture failure, packaging checks and temporary diagnostic log locations. `unit1-live-reference-audit.json` records the bounded live-source/navigation audit and preserved data identities.
+- A package inventory is not a full-suite or database-integration pass. Temporary logs are diagnostic convenience; structured captures and the ledger are the durable evidence.
+
+The consumer probes check that every public symbol resolves with its type/value use from built declarations. They do not prove full type-signature assignability equivalence. Runtime export lists compare names, not behavior. Mechanical source-diff review and existing behavioral tests provide complementary evidence. Do not infer a clean source tree solely from a capture's HEAD or build digest.
+
+Group collection/comparison extends the same runners without changing the full comparison. For example, from the repository root:
+
+```powershell
+node docs/operations/package-cleanup/workspace/evidence/inventory.mjs compare-group knowledge-db docs/operations/package-cleanup/workspace/evidence/unit1-before.json docs/operations/package-cleanup/workspace/evidence/unit1-knowledge-db-after.json
+node docs/operations/package-cleanup/workspace/evidence/test-inventory.mjs compare-group knowledge-db docs/operations/package-cleanup/workspace/evidence/unit1-before-tests.json docs/operations/package-cleanup/workspace/evidence/unit1-knowledge-db-after-tests.json
+node docs/operations/package-cleanup/workspace/evidence/type-consumer-probe.mjs knowledge-db after
+```
+
+The exact missing historical judge checkpoint remains an explicit Unit 1 exception. No capture waives other failures, changes skip predicates, or proves later cleanup/Eve/release acceptance.
+
+## Historical Unit 0 evidence
 
 `inventory.mjs` records the thirteen source packages named in unit 1. It reads tracked test-file paths through `git ls-files`, resolves public exports through the installed TypeScript 7 compiler's symbol graph, imports each built `dist/index.js` to record actual runtime names, and checks the declared workspace manifest graph for cycles. Built files are untracked: their SHA-256 digests identify the bytes inspected but do not prove which source commit produced them.
 

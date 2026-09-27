@@ -3,12 +3,12 @@
 Run from the repository root with Node >=24 and installed workspace dependencies:
 
 ```sh
-corepack pnpm --filter @aiengineer/knowledge-vector-backends examples
-corepack pnpm --filter @aiengineer/knowledge-vector-backends typecheck
-corepack pnpm --filter @aiengineer/knowledge-vector-backends test
+corepack pnpm --filter @aiengineer/knowledge-retrieval examples
+corepack pnpm --filter @aiengineer/knowledge-retrieval typecheck
+corepack pnpm --filter @aiengineer/knowledge-retrieval test
 ```
 
-Or one at a time from `packages/vector-backends`: `pnpm exec tsx examples/01-exact-search.ts`.
+Or one at a time from `packages/retrieval`: `pnpm exec tsx examples/vector-backends/01-exact-search.ts`.
 
 One example per concern this package owns: exact search isolation, verified
 publish/rollback, and reconciliation drift classification. Each `NN-*.ts`
@@ -22,7 +22,7 @@ part of them is faked for these examples. `PublicationInspector` is a stub
 (`StubPublicationInspector` in `fixtures.ts`); a real inspector would read the
 store a publication host just wrote, which these examples never do. No
 database is touched, and `PostgresVectorSearchBackend` has no example here —
-see `src/backends/postgres.test.ts` for its stubbed-client behavior.
+see `src/vector-backends/backends/postgres.test.ts` for its stubbed-client behavior.
 
 | Example | Shows |
 |---|---|

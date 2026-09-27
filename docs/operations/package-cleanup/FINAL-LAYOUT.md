@@ -158,7 +158,7 @@ Each unit has its own specification in this folder before it starts.
 | Unit | Scope | Behavior change | Spec |
 |---|---|---|---|
 | 1 | Mechanical package merges: `core`, `preparation`, `retrieval`, `knowledge-db` | None | [`UNIT-1-PACKAGE-MERGES.md`](./UNIT-1-PACKAGE-MERGES.md) |
-| 2 | Add `packages/host` (absorbs `config`); move API and worker runtime wiring into it | None intended | to write |
+| 2 | Add `packages/host` (absorbs `config`); move API and worker runtime wiring into it | None intended | [`UNIT-2-HOST-COMPOSITION.md`](./UNIT-2-HOST-COMPOSITION.md) |
 | 3 | Ownership, admission, retrieval executor into application; delete MCP `createApiClient` | MCP no longer calls the API | to write |
 | 4 | Application folders by tool group; A2A adapter into `apps/api`; testkit to devDependency; naming pass (`acquisition`→`sources`, `client-typescript`→`client`, `verification-parser`→`parser`); catalog parity test | None | to write |
 | 5 | Fold `verification-executor` into api/mcp/cli/application via host profiles | Executor binaries replaced by `ks` | to write |

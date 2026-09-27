@@ -81,7 +81,7 @@ Capture cardinality is an explicit decision before repo/Firecrawl-scrape wiring:
 
 ### Conversion
 
-Already the right package (`packages/conversion`). Do not move Docling or Unstructured into acquisition.
+Conversion lives in `packages/preparation/src/conversion`. Do not move Docling or Unstructured into acquisition.
 
 | Fallback | Job | Policy |
 |---|---|---|
@@ -94,7 +94,7 @@ Already the right package (`packages/conversion`). Do not move Docling or Unstru
 
 ### Chunking
 
-Already the right package (`packages/chunking`). Do not add a second splitter in application, skills, or the sandbox.
+Chunking lives in `packages/preparation/src/chunking`. Do not add a second splitter in application, skills, or the sandbox.
 
 | Fallback | Job | Policy |
 |---|---|---|

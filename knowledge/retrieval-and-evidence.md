@@ -12,7 +12,7 @@ sources:
     resource: ../apps/api/src/retrieval-executor.ts
     title: API retrieval executor
   - id: bounded-read-executor
-    resource: ../packages/db-read/src/read-executor.ts
+    resource: ../packages/knowledge-db/src/db-read/read-executor.ts
     title: Bounded knowledge read executor
 ---
 
@@ -100,7 +100,7 @@ Retrieval consumes the published, versioned output of preparation. It does not r
 
 ## Current limitations
 
-The bounded read-intent executor accepts a retrieval operation but returns it as skipped with `RETRIEVAL_UNAVAILABLE`; see [`packages/db-read/src/read-executor.ts`](../packages/db-read/src/read-executor.ts). That code path is distinct from the API retrieval executor described here, so a caller must select the intended transport rather than assuming every read surface executes retrieval.
+The bounded read-intent executor accepts a retrieval operation but returns it as skipped with `RETRIEVAL_UNAVAILABLE`; see [`packages/knowledge-db/src/db-read/read-executor.ts`](../packages/knowledge-db/src/db-read/read-executor.ts). That code path is distinct from the API retrieval executor described here, so a caller must select the intended transport rather than assuming every read surface executes retrieval.
 
 This page also does not guarantee the quality of a result merely because it passed contract checks. Retrieval evaluates bounded, authorized support for the requested purpose. It cannot make inaccessible material visible, turn contextual similarity into proof, or replace a policy/admission decision with ranking score. The upstream custody and publication path is described by the neighboring [knowledge preparation and publication concept](./preparation-and-publication.md).
 

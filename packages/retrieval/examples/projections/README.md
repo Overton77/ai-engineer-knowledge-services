@@ -3,18 +3,15 @@
 Run from the repository root with Node >=24 and installed workspace dependencies:
 
 ```sh
-corepack pnpm --filter @aiengineer/knowledge-projections examples
-corepack pnpm --filter @aiengineer/knowledge-projections typecheck
-corepack pnpm --filter @aiengineer/knowledge-projections test
+corepack pnpm --filter @aiengineer/knowledge-retrieval examples
+corepack pnpm --filter @aiengineer/knowledge-retrieval typecheck
+corepack pnpm --filter @aiengineer/knowledge-retrieval test
 ```
 
-Or one at a time from `packages/projections`: `pnpm exec tsx examples/01-validate-and-build.ts`.
+Or one at a time from `packages/retrieval`: `pnpm exec tsx examples/projections/01-validate-and-build.ts`.
 
-Fixtures build evidence with `createSourceLocator` from `@aiengineer/knowledge-documents`
-directly, **never** through `@aiengineer/knowledge-conversion`. `packages/conversion/src/deterministic/nodes.ts:65-66`
-has an open bug where a skipped heading level leaves `undefined` in `sectionPath`, which
-would trip `SourceNativeSectionProjectionSchema`'s array-of-non-empty-string check. Keeping
-conversion out of these examples keeps that bug out of this package's proof (P2-11).
+Fixtures build evidence with `createSourceLocator` from `@aiengineer/knowledge-preparation`
+directly. This exercises projection validation independently of conversion-provider routing.
 
 | Example | Shows |
 |---|---|

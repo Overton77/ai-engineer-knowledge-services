@@ -3,15 +3,15 @@
 Run from the repository root with Node >=24 and installed workspace dependencies:
 
 ```sh
-corepack pnpm --filter @aiengineer/knowledge-chunking examples
-corepack pnpm --filter @aiengineer/knowledge-chunking typecheck
-corepack pnpm --filter @aiengineer/knowledge-chunking test
+corepack pnpm --filter @aiengineer/knowledge-preparation examples
+corepack pnpm --filter @aiengineer/knowledge-preparation typecheck
+corepack pnpm --filter @aiengineer/knowledge-preparation test
 ```
 
-Or one at a time from `packages/chunking`: `pnpm exec tsx examples/01-select-profiles-for-space.ts`.
+Or one at a time from `packages/preparation`: `pnpm exec tsx examples/chunking/01-select-profiles-for-space.ts`.
 
 One example per stage of the select → preview → QA loop in
-[`docs/operations/conversion-and-chunking.md`](../../../docs/operations/conversion-and-chunking.md).
+[`docs/operations/conversion-and-chunking.md`](../../../../docs/operations/conversion-and-chunking.md).
 Each `NN-*.ts` module exports a small function over the readable fixtures in
 [fixtures.ts](fixtures.ts); `NN-*.test.ts` runs the same fixtures in the ordinary
 package test suite with one behavior per `it`. Nothing is mocked: the fixtures are

@@ -9,10 +9,10 @@ sources:
     resource: ../packages/persistence/src/preparation.ts
     title: Preparation persistence repository
   - id: ingestion-executor
-    resource: ../packages/ingestion/src/executor.ts
+    resource: ../packages/knowledge-db/src/ingestion/executor.ts
     title: Knowledge ingestion executor
   - id: publication-coordinator
-    resource: ../packages/vector-backends/src/publication/coordinator.ts
+    resource: ../packages/retrieval/src/vector-backends/publication/coordinator.ts
     title: Exploratory publication coordinator
   - id: selected-candidate-evaluation
     resource: ../packages/persistence/src/publication-evaluation.ts
@@ -51,9 +51,9 @@ The business result is traceability: an operator can connect a retrieved passage
 
 ## Optional canonical knowledge integration
 
-The ingestion planner is a deterministic decision stage. It reads an intent, a bounded snapshot, the current knowledge head, vocabulary, subject-resolution facts, and an authenticated evidence oracle; it returns admitted, held, rejected, or no-op proposals. Apply occurs only after planning and uses the expected head, a transactional batch, idempotency identity, immutable intent/plan/receipt artifacts, and receipt reconciliation. The execution boundary is [`packages/ingestion/src/executor.ts`](../packages/ingestion/src/executor.ts); proposal semantics and planned outcomes are tested in [`packages/ingestion/src/tests/plan.test.ts`](../packages/ingestion/src/tests/plan.test.ts).
+The ingestion planner is a deterministic decision stage. It reads an intent, a bounded snapshot, the current knowledge head, vocabulary, subject-resolution facts, and an authenticated evidence oracle; it returns admitted, held, rejected, or no-op proposals. Apply occurs only after planning and uses the expected head, a transactional batch, idempotency identity, immutable intent/plan/receipt artifacts, and receipt reconciliation. The execution boundary is [`packages/knowledge-db/src/ingestion/executor.ts`](../packages/knowledge-db/src/ingestion/executor.ts); proposal semantics and planned outcomes are tested in [`packages/knowledge-db/src/ingestion/tests/plan.test.ts`](../packages/knowledge-db/src/ingestion/tests/plan.test.ts).
 
-A materialized record needs an eligible, authoritative claim whose verdict is `directly_supported` and whose subject binding agrees with the resolved subject. A later proposal must preserve the authorized statement, qualifiers, and encoded effect; it cannot reinterpret a claim by writing similar prose. Report publication additionally requires a complete report binding, while the legacy report route is deliberately rejected. These rules are in [`packages/ingestion/src/evidence-admission.ts`](../packages/ingestion/src/evidence-admission.ts) and its tests in [`packages/ingestion/src/tests/evidence-admission.test.ts`](../packages/ingestion/src/tests/evidence-admission.test.ts).
+A materialized record needs an eligible, authoritative claim whose verdict is `directly_supported` and whose subject binding agrees with the resolved subject. A later proposal must preserve the authorized statement, qualifiers, and encoded effect; it cannot reinterpret a claim by writing similar prose. Report publication additionally requires a complete report binding, while the legacy report route is deliberately rejected. These rules are in [`packages/knowledge-db/src/ingestion/evidence-admission.ts`](../packages/knowledge-db/src/ingestion/evidence-admission.ts) and its tests in [`packages/knowledge-db/src/ingestion/tests/evidence-admission.test.ts`](../packages/knowledge-db/src/ingestion/tests/evidence-admission.test.ts).
 
 Content links make source-to-knowledge connections explicit. The current contract supports document-to-entity, chunk-to-entity, chunk-to-claim, chunk-to-relationship, summary materialization, summary-source, and projection-target links. An intent pins its contract head, workspace fingerprint, policy digest, snapshot artifact, and knowledge sequence; stale application fails. Dependency order and exact evidence/capture bindings are schema-validated in [`packages/contracts/src/content-links.ts`](../packages/contracts/src/content-links.ts).
 
@@ -63,7 +63,7 @@ An agent captures a vendor document, converts it, and selects a chunk saying a c
 
 ## Publication is a separate gate
 
-Publication exposes a particular vector-space version for a tenant and store space. The exploratory coordinator checks expected item count, dimensions and precision, source/representation/chunk/projection/vector/embedding/index/policy/evaluation manifests, index readiness, authorization, evaluation, and a sample search. It advances the active pointer atomically only after those checks pass. The implementation is [`packages/vector-backends/src/publication/coordinator.ts`](../packages/vector-backends/src/publication/coordinator.ts), with the inspection checks in [`verification.ts`](../packages/vector-backends/src/publication/verification.ts) and coverage in [`coordinator.test.ts`](../packages/vector-backends/src/publication/coordinator.test.ts) and [`verification.test.ts`](../packages/vector-backends/src/publication/verification.test.ts).
+Publication exposes a particular vector-space version for a tenant and store space. The exploratory coordinator checks expected item count, dimensions and precision, source/representation/chunk/projection/vector/embedding/index/policy/evaluation manifests, index readiness, authorization, evaluation, and a sample search. It advances the active pointer atomically only after those checks pass. The implementation is [`packages/retrieval/src/vector-backends/publication/coordinator.ts`](../packages/retrieval/src/vector-backends/publication/coordinator.ts), with the inspection checks in [`verification.ts`](../packages/retrieval/src/vector-backends/publication/verification.ts) and coverage in [`coordinator.test.ts`](../packages/retrieval/src/vector-backends/publication/coordinator.test.ts) and [`verification.test.ts`](../packages/retrieval/src/vector-backends/publication/verification.test.ts).
 
 Canonical ingestion is not a prerequisite for every vector publication. The publication request accepts a promotion decision and evaluation-gate identifiers, while candidate evidence is optional and checked only when supplied. A publication therefore protects the inspected version it activates; it does not imply a canonical-record materialization happened first.
 
@@ -107,7 +107,7 @@ Publication is the handoff to retrieval, not the conclusion of a research task. 
 
 ## Limits and open implementation facts
 
-The bounded read executor explicitly returns `RETRIEVAL_UNAVAILABLE` for a `retrieval` operation instead of executing it; see [`packages/db-read/src/read-executor.ts`](../packages/db-read/src/read-executor.ts). That read-intent limitation is separate from the API retrieval executor and from guarded ingestion application. The retrieval-side packet and replay boundary is described by the neighboring [retrieval and evidence concept](./retrieval-and-evidence.md).
+The bounded read executor explicitly returns `RETRIEVAL_UNAVAILABLE` for a `retrieval` operation instead of executing it; see [`packages/knowledge-db/src/db-read/read-executor.ts`](../packages/knowledge-db/src/db-read/read-executor.ts). That read-intent limitation is separate from the API retrieval executor and from guarded ingestion application. The retrieval-side packet and replay boundary is described by the neighboring [retrieval and evidence concept](./retrieval-and-evidence.md).
 
 The evidence rules and publication tests demonstrate selected local behavior. They do not prove tenant data exists, storage objects are reachable, credentials are configured, or a published pointer has been activated in a deployed environment.
 

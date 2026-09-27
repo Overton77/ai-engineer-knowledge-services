@@ -3,12 +3,12 @@
 Run from the repository root with Node >=24 and installed workspace dependencies:
 
 ```sh
-corepack pnpm --filter @aiengineer/knowledge-embeddings examples
-corepack pnpm --filter @aiengineer/knowledge-embeddings typecheck
-corepack pnpm --filter @aiengineer/knowledge-embeddings test
+corepack pnpm --filter @aiengineer/knowledge-retrieval examples
+corepack pnpm --filter @aiengineer/knowledge-retrieval typecheck
+corepack pnpm --filter @aiengineer/knowledge-retrieval test
 ```
 
-Or one at a time from `packages/embeddings`: `pnpm exec tsx examples/01-deterministic-batch.ts`.
+Or one at a time from `packages/retrieval`: `pnpm exec tsx examples/embeddings/01-deterministic-batch.ts`.
 
 | Example | Shows |
 |---|---|

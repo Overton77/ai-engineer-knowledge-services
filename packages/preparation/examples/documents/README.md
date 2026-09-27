@@ -3,12 +3,12 @@
 Run from the repository root with Node >=24 and installed workspace dependencies:
 
 ```sh
-corepack pnpm --filter @aiengineer/knowledge-documents examples
-corepack pnpm --filter @aiengineer/knowledge-documents typecheck
-corepack pnpm --filter @aiengineer/knowledge-documents test
+corepack pnpm --filter @aiengineer/knowledge-preparation examples
+corepack pnpm --filter @aiengineer/knowledge-preparation typecheck
+corepack pnpm --filter @aiengineer/knowledge-preparation test
 ```
 
-Or one at a time from `packages/documents`: `pnpm exec tsx examples/01-build-nodes-and-verify-locators.ts`.
+Or one at a time from `packages/preparation`: `pnpm exec tsx examples/documents/01-build-nodes-and-verify-locators.ts`.
 
 Each `NN-*.ts` module exports a small function over the readable converter output in
 [fixtures.ts](fixtures.ts); `NN-*.test.ts` runs the same fixture in the ordinary package

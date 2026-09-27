@@ -1,8 +1,14 @@
-# Continue package cleanup after Jev integration
+# Package cleanup delivery and continuation
 
 Status: reference. Execution handoff, 2026-09-27.
 
-## Starting point
+## Current delivery
+
+Unit 1 source changes are committed on `refactor/ks-unit-1-package-merges`: knowledge-db `6e81658`, retrieval `3bceceb`, preparation `4aa5d38`, core `2ba7111`. Final combined validation and local integration are tracked in the [ledger](./workspace/PROGRESS.md). The bounded [Unit 2 specification](./UNIT-2-HOST-COMPOSITION.md) is prepared; its implementation is not part of this delivery.
+
+The instructions below are the retained Unit 1 execution brief. Do not replay completed moves. For subsequent work, start from integrated main, read the Unit 2 specification and ledger, reassess the missing historical fixture exception, then use a separate Unit 2 branch.
+
+## Unit 1 starting point
 
 Work in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`. The combined baseline is integrated into local `main` under the developer's explicit instruction. Verify that `main` contains `81556ad` and this handoff, then create `refactor/ks-unit-1-package-merges` from its current tip. If that unit branch already exists, inspect its ancestry and ledger and resume it without resetting or discarding work. Merge `e9829a8` combines Jev checkpoint `dbe0c4b` with cleanup baseline branch through `38ff40d`; these SHAs identify history, not reset targets. The isolated `ks-package-cleanup` checkout and completed final-layout branch are historical references.
 
