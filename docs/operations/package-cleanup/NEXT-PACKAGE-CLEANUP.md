@@ -4,7 +4,7 @@ Status: reference. Execution handoff, 2026-09-27 (Unit 2 delivery).
 
 ## Current delivery
 
-Unit 2 (shared host composition) is merged into local `main` from `refactor/ks-unit-2-host-composition`. Implementation commits: host composition `a6b6790`, proof path/lifecycle adaptation `e036bf0`; the documentation commit records evidence, navigation and the [Unit 3 specification](./UNIT-3-APPLICATION-AND-MCP.md). Exact validation, the fixture reassessment and remaining seams are in the [ledger](./workspace/PROGRESS.md) and the [Unit 2 delivered-seams section](./UNIT-2-HOST-COMPOSITION.md#delivered-composition-and-remaining-seams). Unit 1 remains as recorded (`0d73dac`).
+Unit 2 (shared host composition) is merged into local `main` from `refactor/ks-unit-2-host-composition`. Implementation commits: host composition `a6b6790`, proof path/lifecycle adaptation `e036bf0`, review fix `deac8fb`; documentation commit `232b33c` records evidence, navigation and the [Unit 3 specification](./UNIT-3-APPLICATION-AND-MCP.md). Exact validation, the fixture reassessment and remaining seams are in the [ledger](./workspace/PROGRESS.md) and the [Unit 2 delivered-seams section](./UNIT-2-HOST-COMPOSITION.md#delivered-composition-and-remaining-seams). Unit 1 remains as recorded (`0d73dac`).
 
 ## Priority: a useful experiment feedback loop before full Mission Control
 
