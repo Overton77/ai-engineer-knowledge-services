@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { TenantPostgres } from "@aiengineer/knowledge-persistence";
 import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
 import { loadWorkspace } from "@aiengineer/knowledge-schema-workspace";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ArtifactLedger } from "./artifacts.js";
 import { ReadExecutor } from "./read-executor.js";
 import type { ReadIntentInput } from "./read-intent.js";
@@ -20,12 +20,22 @@ const MIGRATION_HEAD_PATTERN = /^\d{14}$/;
 describe.skipIf(!url).each(workspaces)("ReadExecutor against the disposable database (%s workspace)", (label, workspaceDir) => {
   // The package fixture is a frozen snapshot; only the real db-contract tree is expected to match the database head.
   const workspaceTracksDatabase = label === "db-contract";
-  const db = new TenantPostgres({ connectionString: url ?? "postgresql://unused", maximumPoolSize: 2 });
-  const storeDir = mkdtempSync(join(tmpdir(), "ks-read-artifacts-"));
-  const workspace = loadWorkspace(workspaceDir);
-  const artifacts = new ArtifactLedger({ db, store: new LocalArtifactStore(storeDir), bucket: "research-ingestion-intents", uploaded: false, executorVersion: "knowledge-executor/test" });
-  const executor = new ReadExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/test" });
-  afterAll(async () => { await db.close(); rmSync(storeDir, { recursive: true, force: true }); });
+  let db!: TenantPostgres;
+  let storeDir: string | undefined;
+  let workspace!: ReturnType<typeof loadWorkspace>;
+  let artifacts!: ArtifactLedger;
+  let executor!: ReadExecutor;
+  beforeAll(() => {
+    workspace = loadWorkspace(workspaceDir);
+    db = new TenantPostgres({ connectionString: url ?? "postgresql://unused", maximumPoolSize: 2 });
+    storeDir = mkdtempSync(join(tmpdir(), "ks-read-artifacts-"));
+    artifacts = new ArtifactLedger({ db, store: new LocalArtifactStore(storeDir), bucket: "research-ingestion-intents", uploaded: false, executorVersion: "knowledge-executor/test" });
+    executor = new ReadExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/test" });
+  });
+  afterAll(async () => {
+    try { await db?.close(); }
+    finally { if (storeDir) rmSync(storeDir, { recursive: true, force: true }); }
+  });
 
   const intent = (extra: Partial<ReadIntentInput> = {}): ReadIntentInput => ({
     schemaVersion: "knowledge-read-intent.v1",
