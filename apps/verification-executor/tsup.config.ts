@@ -11,6 +11,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   splitting: false,
+  metafile: true,
   noExternal: [/^@aiengineer\//],
   banner: { js: "#!/usr/bin/env node" },
 });
