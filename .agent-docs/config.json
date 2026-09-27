@@ -19,13 +19,18 @@
   "docs": [
     {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
-      "task": "Final package/app/skill layout, host transport rule, unit specs; start here for cleanup",
+      "task": "Accepted cleanup layout, transport rule, and sequence",
       "status": "accepted"
     },
     {
+      "path": "docs/operations/package-cleanup/workspace/README.md",
+      "task": "Cleanup ledger and readiness",
+      "status": "reference"
+    },
+    {
       "path": "docs/operations/package-cleanup/README.md",
-      "task": "Dated package and app cleanup proposal, phase instructions, recommendations, and feature sequence",
-      "status": "proposed"
+      "task": "Current cleanup index and historical archive",
+      "status": "reference"
     },
     {
       "path": "docs/operations/code-quality-and-delivery-process.md",

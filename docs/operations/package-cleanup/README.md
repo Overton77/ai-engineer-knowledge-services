@@ -1,25 +1,22 @@
 # Knowledge Services package cleanup
 
-> **Current source of truth (2026-09-27):** [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) is the accepted target layout, transport rule, and unit sequence. It supersedes the S0–S7 sequencing below. Unit specifications: [`UNIT-1-PACKAGE-MERGES.md`](./UNIT-1-PACKAGE-MERGES.md).
+Status: reference. Current execution index.
 
-These dated proposal documents were moved here from `ai-engineer-meta/ai-engineer-architecture/notes/proposals/knowledge-services-package-cleanup` so Knowledge Services agents can read them from this repository. They record the 2026-09-19 survey and decisions; verify their implementation claims against the current source, `AGENTS.md`, and `docs/agents/CODE-MAP.md` before acting. The local `workspace/` session handoffs remain in meta and are not required to navigate this proposal.
+## Start here
 
-This package answers **what order to clean up `ai-engineer-knowledge-services` packages, apps, and skills in, what to name things, and what feature gaps to close along the way** — and how to get developer approval on naming and scope before any of it gets built.
+1. [COORDINATOR-INSTRUCTIONS.md](./COORDINATOR-INSTRUCTIONS.md): attach to a GPT 6 Astra session; delegate bounded implementation to GPT 6 Sol.
+2. [FINAL-LAYOUT.md](./FINAL-LAYOUT.md): accepted layout, transport rules, and seven-unit sequence.
+3. [workspace/PROGRESS.md](./workspace/PROGRESS.md): current state, validation evidence, and next task.
+4. [workspace/README.md](./workspace/README.md): ledger ownership and handoff rules.
 
-## Deliverables
+## Implementation references
 
-- `SEQUENCED-CLEANUP-PLAN.md` — four phases, each with concrete proposed folder/interface names per package and a reasoned list of feature additions (including a proprietary deep-research skill), grounded in a 2026-09-19 codebase survey and the existing `skills/manifest.json` `absentOperations` gaps.
-- `PHASE-EXPLORATION-INSTRUCTIONS.md` — the operating instruction for running each phase: a single agent explores and reasons directly (no sub-delegation), confirms or revises the plan's naming/feature candidates against actual code, and produces a recommendation memo for developer approval before any implementation starts.
-- `FEATURE-SET-SPECIFICATION.md` (2026-09-19) — the challenge to the plans above where they were stale or contradictory (C1–C12), the final feature set F1–F12 (research execution contracts, the evidence assurance packet, usage ledger, first-class inspection, coordination and synthesis skills, `space_manifest`, selection eligibility policy, skill stage contracts with a conformance harness, outbox events, the Mission Control transfer package), the optimizations, the developer decisions D1–D10, and the **single merged sequence S0–S7** that runs the cleanup phases together with the pre-Mission-Control implementation ledger. Read it before running any phase.
-- `ORCHESTRATION-PLAN.md` (2026-09-19, proposed) — how a coordinator session would run S0–S7 with subagents: roles (coordinator as sole ledger writer, memo authors, implementers with file reservations, an independent reviewer, one proof runner holding the disposable-services lock), a per-step wave plan, a four-agent concurrency cap, and the rules that keep fan-out from becoming rediscovery or lost forks.
-- `PHASE-1-RECOMMENDATION.md` (2026-09-19, proposed, awaiting developer decisions P1-1 … P1-10) — the Phase 1 explore-and-recommend memo: confirmed or revised names for `chunking`, `documents`, `acquisition`, `conversion` and the `application` diagnostics fold with consumer impact, the `knowledge-research-coordination` skill design (F6), the `source_inspect` assessment (F5), behavior findings outside cleanup scope, and the implementation sequence per S-step. Records that Phase 0 is still open and that the contract pin narrative has three values.
-- `PHASE-2-RECOMMENDATION.md` (2026-09-19, proposed, decisions P2-1 … P2-12 taken under the developer override and implemented in the same session) — the Phase 2 memo: confirmed or revised structure for `retrieval`, `vector-backends`, `projections` and `embeddings` with a measured consumer-impact table (no app imports `retrieval`, `vector-backends` or `projections`), the F9 selection-eligibility design against `SPECIFICATION.md` §5.1, the F8 `space_manifest` design placed in `db-read` (D4) with the finding that the pinned query catalog has no space queries, and the resulting cross-repository proposals to `ai-engineer-db-contract`.
-- `workspace/` — session state for the cleanup track: `README.md` (rules), `PROGRESS.md` (status board and session log), `sessions/<date>-<phase>/HANDOFF.md` (per-session handoffs). Ledger authority stays with the pre-Mission-Control specification's `implementation/ledger.json`.
+- [FINAL-REVIEW.md](./FINAL-REVIEW.md): source-backed findings and implementation considerations, including the developer's subsequent clarification.
+- [UNIT-0-BASELINE.md](./UNIT-0-BASELINE.md): establish reproducible verification before package moves.
+- [UNIT-1-PACKAGE-MERGES.md](./UNIT-1-PACKAGE-MERGES.md): first mechanical implementation unit. Write specifications for units 2–7 as their turn arrives.
 
-## One-sentence decision
+No live consumers require compatibility support. Adapt Eve directly to the new services and skills, then run pre–Mission Control testing after cleanup. Preserve stored evidence and the populated shared database.
 
-**Resume the acquisition → conversion → chunking → application-folders sequence with named folders and interfaces, add the previously out-of-scope vector-space/promotion design as its own phase, add a proprietary long-horizon research-coordination skill as a feature addition rather than pure cleanup, and gate every phase on an explore-and-recommend memo the developer approves before implementation.** As of 2026-09-19 the phases run inside the merged S0–S7 sequence in `FEATURE-SET-SPECIFICATION.md`: lane A of the OpenAI fixture is built first and rerun after every structural phase, and all structure freezes before the scored agent lanes.
+## Historical material
 
-## Relationship to existing documents
-
-`docs/operations/code-quality-and-delivery-process.md` supplies the module-review and delivery-workflow steps this plan sequences into phases; `docs/operations/internal-fallbacks-and-application-order.md` and `docs/operations/conversion-and-chunking.md` supplied the original Phase 1 scoping, now resumed and extended. This proposal's contribution is the naming/interface recommendations, the vector-space and promotion-policy feature design, the deep-research skill, and the approval-gated phase process — none of which the existing docs covered.
+The superseded plans, phase approval instructions, and recommendation memos are in [archive/](./archive/README.md). They do not control execution order, delegation, approvals, or new feature scope. Consult a historical memo only for a specific decision explicitly retained by FINAL-LAYOUT.md; verify its implementation claims against current code.
