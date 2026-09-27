@@ -19,6 +19,8 @@ Repository roots relative to the workspace:
 
 ## Read and establish the starting state
 
+Developer-accepted branch rule: one cleanup unit per branch, created from integrated local `main`; multiple cohesive commits per branch are expected. Complete and validate the unit, update its evidence and next-unit handoff, then merge it into local `main` before branching for the next unit. Routine local unit merges are authorized. Do not stack unfinished units or implement them directly on main. Follow [the current handoff](./NEXT-PACKAGE-CLEANUP.md) for the exact next branch and baseline exception. Preserve functionality; specify and test deliberate enhancements in the appropriate later units. Remote publication and deployment are separate from this local workflow.
+
 1. Read workspace `AGENTS.md`, primary repository `AGENTS.md`, and this folder's `FINAL-LAYOUT.md`.
 2. Read `workspace/README.md`, `workspace/PROGRESS.md`, `FINAL-REVIEW.md`, and the current unit's specification. Follow links to source-specific guides and accepted architecture as needed. Read Eve's own instructions before changing that repository.
 3. Inspect actual Git status, branch, HEAD, worktrees, and relevant source. The preparation session was based on `9084428` and left documentation uncommitted; this is historical context, not a command to reset to that commit. Preserve those authored and generated documentation changes and any unrelated user work.

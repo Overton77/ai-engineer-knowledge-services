@@ -4,9 +4,17 @@ Status: reference. Execution handoff, 2026-09-27.
 
 ## Starting point
 
-Work in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`, branch `refactor/knowledge-services-final-layout`. Merge `e9829a8` combines Jev checkpoint `dbe0c4b` with cleanup baseline branch through `38ff40d`. Inspect the current HEAD and status; continue from its descendant, never reset to these historical SHAs. The isolated `ks-package-cleanup` checkout is now a historical reference.
+Work in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`. The combined baseline is integrated into local `main` under the developer's explicit instruction. Verify that `main` contains `81556ad` and this handoff, then create `refactor/ks-unit-1-package-merges` from its current tip. If that unit branch already exists, inspect its ancestry and ledger and resume it without resetting or discarding work. Merge `e9829a8` combines Jev checkpoint `dbe0c4b` with cleanup baseline branch through `38ff40d`; these SHAs identify history, not reset targets. The isolated `ks-package-cleanup` checkout and completed final-layout branch are historical references.
 
 Read repository AGENTS.md, [coordinator instructions](./COORDINATOR-INSTRUCTIONS.md), [final layout](./FINAL-LAYOUT.md), [progress](./workspace/PROGRESS.md), and [Unit 1](./UNIT-1-PACKAGE-MERGES.md). This handoff updates their starting state and gives the narrow baseline exception below. Their other scope and preservation rules remain in force.
+
+## Branch and delivery rule — developer accepted
+
+Use **one branch per cleanup unit, with as many cohesive commits as needed**. Branch from the integrated local `main`; do not stack unfinished unit branches or implement cleanup directly on `main`. Keep Unit 1's four package groups on the same unit branch, committing each validated group separately. Do not squash away useful checkpoints merely to make one commit per unit.
+
+After completing a unit, inspect its diff and acceptance evidence, resolve new regressions, update the ledger and next-unit specification, and merge the validated unit into local `main` with a merge commit. This local unit-integration workflow is authorized; no routine approval round is required. Create the following unit branch from that updated `main`. Remote publication and deployments are separate actions, not implied by these local merges.
+
+Move quickly through bounded implementation and relevant checks. Preserve functionality throughout; deliberate enhancements belong in the specified behavior-changing units with tests and consumer/skill updates. Unit 1 stays mechanical. The overall goal remains organized packages and apps, redesigned skills, direct Eve adaptation, and the actual pre–Mission Control evaluation. Documentation and passing smoke tests alone do not complete that goal.
 
 ## Execute Unit 1
 
@@ -34,4 +42,4 @@ There are no live production consumers requiring legacy adapters. Adapt Eve dire
 
 ## Suggested next-session instruction
 
-> Continue the Knowledge Services package cleanup from the merged `refactor/knowledge-services-final-layout` branch. Read `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md` and complete Unit 1's four mechanical package merges, with at most four agents total. Preserve the implemented Jev service and integration, capture fresh before/after evidence, keep the one documented missing historical fixture failure visible, and fix all new regressions. Update generated agent navigation and the progress ledger, commit the completed groups, then leave a concrete Unit 2 specification. Do not stop at another plan.
+> Continue the Knowledge Services package cleanup from local main. Read `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`, create or safely resume `refactor/ks-unit-1-package-merges`, and complete Unit 1's four mechanical package merges with at most four agents total. One unit per branch; multiple cohesive commits are expected. Preserve Jev and all existing functionality, capture fresh before/after evidence, keep the one documented missing historical fixture failure visible, and fix all new regressions. Update generated agent navigation and the progress ledger, prepare the concrete Unit 2 specification, then merge the validated Unit 1 branch into local main. Move quickly through implementation and verification; do not stop at another plan. The full cleanup still includes the later app organization, redesigned skills, Eve adaptation and pre–Mission Control evaluation.
