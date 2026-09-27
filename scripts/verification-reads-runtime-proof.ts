@@ -119,12 +119,12 @@ export async function proveVerificationReads(input:{tenantId:string;otherTenantI
     for(const path of ["packages/persistence/src/verification-case-reads.ts","packages/persistence/src/verification-case-writer.ts"]){
       if(caseReads.length)sourceHashes[path]=createHash("sha256").update(await readFile(new URL(`../${path}`,import.meta.url))).digest("hex");
     }
-    for(const path of ["packages/contracts/src/verification/reads.ts","packages/application/src/verification/operations/verification-reads.ts","packages/persistence/src/verification.ts","apps/api/src/verification-reads-runtime.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/verification-reads-runtime-proof.ts"]){
+    for(const path of ["packages/contracts/src/verification/reads.ts","packages/application/src/verification/operations/verification-reads.ts","packages/persistence/src/verification.ts","packages/host/src/verification/api/verification-reads-runtime.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/host/src/server/api.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/verification-reads-runtime-proof.ts"]){
       sourceHashes[path]=createHash("sha256").update(await readFile(new URL(`../${path}`,import.meta.url))).digest("hex");
     }
     const receipt=fileURLToPath(new URL(`../../internal/verification-reads-runtime-${randomUUID()}.json`,import.meta.url));
     await writeFile(receipt,JSON.stringify({capturedAt:new Date().toISOString(),...input,summary,manifest,caseReads,checks,sourceHashes,providerDispatches:0,remoteWrites:0,passed:true},null,2),{flag:"wx"});
     process.stdout.write(JSON.stringify({verificationReadsReceipt:receipt})+"\n");
     return checks;
-  }finally{await runtime.server.close();await runtime.database?.close();}
+  }finally{await runtime.close();}
 }

@@ -125,8 +125,7 @@ try {
   }
   throw error;
 } finally {
-  await api?.server.close().catch(() => undefined);
-  await api?.database?.close().catch(() => undefined);
+  await api?.close().catch(() => undefined);
   await worker?.stop("decision-full-startup-proof").catch(() => undefined);
   await database.close();
 }
