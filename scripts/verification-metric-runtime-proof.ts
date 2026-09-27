@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { OperationContext, VerifyMetricObservationRequest } from "@aiengineer/knowledge-contracts";
 import type { VerificationMetricProfileGrant,VerificationSealPolicyGrant } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
+import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { createApiRuntime } from "../apps/api/src/index.js";
 import { startWorker } from "../apps/worker/src/index.js";
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
@@ -49,6 +50,8 @@ export async function proveMetricRuntime(input: {
     }]),
   };
   const runtime = await createApiRuntime(environment);
+  // Proof-owned read/write access; the API runtime no longer exposes its host pool.
+  const proofDatabase = new PostgresCanonicalRepository({ connectionString, localOnly: true });
   let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
   const checks: Record<string, boolean> = {};
   try {
@@ -127,14 +130,14 @@ export async function proveMetricRuntime(input: {
       try{
         const temporalUrl=await temporalApi.server.listen({host:"127.0.0.1",port:0});
         Object.assign(checks,await proveVerificationTemporal({baseUrl:temporalUrl,token,context:testCase.context,request:input.request,missionExecutionId,expectedDisposition:testCase.expectedDisposition}));
-      }finally{await temporalApi.server.close();await temporalApi.database?.close();}
+      }finally{await temporalApi.close();}
       }
       // Stop service execution so the cancellation fixture observes durable queued
       // work, rather than racing an already completed verification.
       await worker.stop("temporal-cancellation-fixture");
       for(const recoveryCase of [{kind:"cancel",attemptNo:4},{kind:"recovery",attemptNo:5}]){
       const cancellationAttemptId=randomUUID(),missionExecutionId=`verification-${recoveryCase.kind}-${randomUUID()}`;
-      await runtime.database!.transaction(context.tenantId,async database=>{
+      await proofDatabase.transaction(context.tenantId,async database=>{
         await database.query("insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,$4,$5)",
           [cancellationAttemptId,context.tenantId,context.workItemId,recoveryCase.attemptNo,input.verifierDeploymentId]);
       });
@@ -164,12 +167,12 @@ export async function proveMetricRuntime(input: {
           const {proveVerificationTemporalRecovery}=await import("../../ai-engineer-mission-control/scripts/prove-verification-temporal-recovery.js");
           const recovered=await proveVerificationTemporalRecovery({...fixture,resumeServiceWorker:async()=>{worker=await startWorker(environment);}});
           Object.assign(checks,recovered.checks);
-          const records=await runtime.database!.transaction(context.tenantId,async database=>
+          const records=await proofDatabase.transaction(context.tenantId,async database=>
             (await database.query("select id from knowledge_service.operation where tenant_id=$1 and attempt_id=$2 and operation_kind='verification_metric'",[context.tenantId,cancellationAttemptId])).rows);
           assert.deepEqual(records.map(record=>record.id),[recovered.operationId],"RECOVERY_MUST_NOT_DUPLICATE_DURABLE_OPERATION");
           checks.temporalRecoverySingleDurableOperation=true;
         }
-      }finally{await cancellationApi.server.close();await cancellationApi.database?.close();}
+      }finally{await cancellationApi.close();}
       }
     }
     if(["1","http"].includes(process.env.VERIFICATION_PROVE_TEMPORAL??"")){
@@ -177,7 +180,7 @@ export async function proveMetricRuntime(input: {
       for(const testCase of [{attemptNo:6,deployment:input.verifierDeploymentId,expectedDisposition:"succeeded" as const},
         {attemptNo:7,deployment:input.producerDeploymentId,expectedDisposition:"quality_rejected" as const}]){
         const attemptId=randomUUID(),missionExecutionId=`verification-http-${randomUUID()}`;
-        await runtime.database!.transaction(context.tenantId,async database=>{
+        await proofDatabase.transaction(context.tenantId,async database=>{
           await database.query("insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,$4,$5)",
             [attemptId,context.tenantId,context.workItemId,testCase.attemptNo,testCase.deployment]);
         });
@@ -189,13 +192,13 @@ export async function proveMetricRuntime(input: {
           const baseUrl=await httpApi.server.listen({host:"127.0.0.1",port:0});
           Object.assign(checks,await proveVerificationHttp({baseUrl,token,context:{...context,attemptId},request:input.request,
             missionExecutionId,expectedDisposition:testCase.expectedDisposition}));
-        }finally{await httpApi.server.close();await httpApi.database?.close();}
+        }finally{await httpApi.close();}
       }
     }
     if(["1","uncertain"].includes(process.env.VERIFICATION_PROVE_TEMPORAL??"")){
       await worker.stop("temporal-uncertain-cancellation-fixture");
       const attemptId=randomUUID(),missionExecutionId=`verification-uncertain-${randomUUID()}`;
-      await runtime.database!.transaction(context.tenantId,async database=>{
+      await proofDatabase.transaction(context.tenantId,async database=>{
         await database.query("insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,$4,$5)",
           [attemptId,context.tenantId,context.workItemId,8,input.verifierDeploymentId]);
       });
@@ -207,16 +210,16 @@ export async function proveMetricRuntime(input: {
         const baseUrl=await uncertainApi.server.listen({host:"127.0.0.1",port:0});
         const {proveVerificationTemporalUncertainCancellation}=await import("../../ai-engineer-mission-control/scripts/prove-verification-temporal-uncertain-cancellation.js");
         Object.assign(checks,await proveVerificationTemporalUncertainCancellation({baseUrl,token,context:{...context,attemptId},request:input.request,missionExecutionId}));
-        const records=await runtime.database!.transaction(context.tenantId,async database=>
+        const records=await proofDatabase.transaction(context.tenantId,async database=>
           (await database.query("select status from knowledge_service.operation where tenant_id=$1 and attempt_id=$2 and operation_kind='verification_metric'",[context.tenantId,attemptId])).rows);
         assert.deepEqual(records,[{status:"cancelled"}],"UNCERTAIN_CANCELLATION_MUST_LEAVE_ONE_CANCELLED_OPERATION");
         checks.temporalUncertainCancellationSingleDurableOperation=true;
-      }finally{await uncertainApi.server.close();await uncertainApi.database?.close();}
+      }finally{await uncertainApi.close();}
     }
     return checks;
   } finally {
     await worker?.stop("metric-proof-complete");
-    await runtime.server.close();
-    await runtime.database?.close();
+    await runtime.close();
+    await proofDatabase.close();
   }
 }

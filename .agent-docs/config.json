@@ -19,15 +19,26 @@
   "docs": [
     {
       "path": "docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md",
-      "task": "Unit 1 delivery record and next-unit handoff",
+      "task": "Current handoff and experiment milestone",
       "status": "reference"
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md",
-      "task": "Next unit: host composition and lifecycle",
+      "path": "docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md",
+      "task": "Next unit: application use cases, no MCP HTTP shims",
       "status": "proposed",
       "modules": [
-        "config",
+        "application",
+        "host",
+        "api",
+        "mcp"
+      ]
+    },
+    {
+      "path": "docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md",
+      "task": "Unit 2 host composition and seams",
+      "status": "reference",
+      "modules": [
+        "host",
         "persistence",
         "api",
         "mcp",
@@ -38,22 +49,22 @@
     },
     {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
-      "task": "Accepted cleanup layout, transport rule, and sequence",
+      "task": "Accepted cleanup layout and sequence",
       "status": "accepted"
     },
     {
       "path": "docs/operations/package-cleanup/README.md",
-      "task": "Current cleanup index and historical archive",
+      "task": "Cleanup index and archive",
       "status": "reference"
     },
     {
       "path": "docs/operations/code-quality-and-delivery-process.md",
-      "task": "Post-sprint module review, exemplars, and developer-overridable delivery workflow",
+      "task": "Module review and delivery workflow",
       "status": "proposed"
     },
     {
       "path": "docs/operations/internal-fallbacks-and-application-order.md",
-      "task": "Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last",
+      "task": "Internal fallbacks and application folder order",
       "status": "proposed",
       "modules": [
         "acquisition",
@@ -235,7 +246,7 @@
         "api",
         "mcp",
         "worker",
-        "config",
+        "host",
         "docling"
       ],
       "status": "accepted"
@@ -353,7 +364,7 @@
       "path": "docs/security.md",
       "task": "Authentication, capability admission, parser isolation",
       "modules": [
-        "config",
+        "host",
         "policy",
         "verification-parser",
         "verification-providers"

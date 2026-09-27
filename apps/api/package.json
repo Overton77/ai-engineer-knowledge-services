@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@aiengineer/knowledge-application": "workspace:*",
-    "@aiengineer/knowledge-config": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-core": "workspace:*",
+    "@aiengineer/knowledge-host": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
     "@aiengineer/knowledge-testkit": "workspace:*",

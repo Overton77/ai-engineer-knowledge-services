@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationBenchmarkComparisonReads } from "../apps/api/src/verification-benchmark-comparison-reads-runtime.js";
+import { createVerificationBenchmarkComparisonReads } from "../packages/host/src/verification/api/verification-benchmark-comparison-reads-runtime.js";
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { VerificationBenchmarkComparisonResourceSchema } from "@aiengineer/knowledge-contracts";
@@ -199,7 +199,7 @@ try {
     "packages/contracts/src/verification/benchmark-comparison-reads.ts",
     "packages/application/src/verification/benchmark/verification-benchmark-comparison-reads.ts",
     "packages/persistence/src/verification-benchmark-comparison-reads.ts",
-    "apps/api/src/verification-benchmark-comparison-reads-runtime.ts",
+    "packages/host/src/verification/api/verification-benchmark-comparison-reads-runtime.ts",
     "apps/api/src/server.ts",
     "packages/client-typescript/src/client.ts",
     "apps/cli/src/commands.ts",

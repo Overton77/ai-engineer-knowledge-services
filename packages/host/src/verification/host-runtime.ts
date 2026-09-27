@@ -35,9 +35,11 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import { UuidSchema } from "@aiengineer/knowledge-contracts";
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
-import { PostgresKnowledgeOperationService } from "./operation-service.js";
-import { resolveEveVerificationBinding } from "./eve-verification-binding.js";
-import type { PostgresCanonicalRepository } from "./postgres.js";
+import {
+  PostgresKnowledgeOperationService,
+  resolveEveVerificationBinding,
+  type PostgresCanonicalRepository,
+} from "@aiengineer/knowledge-persistence";
 
 export interface VerificationHostAdmission {
   readonly isParseArtifactRequestAdmitted?: (

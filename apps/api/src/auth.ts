@@ -1,2 +1,2 @@
-/** @deprecated Import identity helpers from @aiengineer/knowledge-config. */
-export * from "@aiengineer/knowledge-config";
+/** @deprecated Import identity helpers from @aiengineer/knowledge-host/config. */
+export * from "@aiengineer/knowledge-host/config";

@@ -3,7 +3,7 @@ import { VerificationArtifactHandleSchema } from "@aiengineer/knowledge-contract
 import { PostgresCanonicalRepository, PostgresVerificationDriftRevalidationOutbox } from "@aiengineer/knowledge-persistence";
 import { compareVerifiedComponentVersions } from "@aiengineer/knowledge-application";
 import { createEd25519Verifier, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
-import { parseBenchmarkReadPublicKeys } from "./verification-benchmark-reads-runtime.js";
+import { parseBenchmarkReadPublicKeys } from "@aiengineer/knowledge-application";
 
 const identities = z.array(z.string().regex(/^[A-Za-z0-9_.:-]{1,128}$/)).min(1).max(32)
   .refine(value => new Set(value).size === value.length, "duplicate service identity");

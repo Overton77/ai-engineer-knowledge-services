@@ -96,15 +96,15 @@ importers:
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../../packages/application
-      '@aiengineer/knowledge-config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@aiengineer/knowledge-core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@aiengineer/knowledge-host':
+        specifier: workspace:*
+        version: link:../../packages/host
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
@@ -138,7 +138,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   apps/cli:
     dependencies:
@@ -204,12 +204,12 @@ importers:
       '@aiengineer/knowledge-client':
         specifier: workspace:*
         version: link:../../packages/client-typescript
-      '@aiengineer/knowledge-config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@aiengineer/knowledge-host':
+        specifier: workspace:*
+        version: link:../../packages/host
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
@@ -311,6 +311,9 @@ importers:
       '@aiengineer/knowledge-evaluation':
         specifier: workspace:*
         version: link:../../packages/evaluation
+      '@aiengineer/knowledge-host':
+        specifier: workspace:*
+        version: link:../../packages/host
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
@@ -424,25 +427,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/config:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
   packages/contracts:
     dependencies:
       zod:
@@ -476,7 +460,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   packages/evaluation:
     dependencies:
@@ -489,6 +473,46 @@ importers:
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../verification
+    devDependencies:
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
+  packages/host:
+    dependencies:
+      '@aiengineer/knowledge-acquisition':
+        specifier: workspace:*
+        version: link:../acquisition
+      '@aiengineer/knowledge-application':
+        specifier: workspace:*
+        version: link:../application
+      '@aiengineer/knowledge-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@aiengineer/knowledge-core':
+        specifier: workspace:*
+        version: link:../core
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../persistence
+      '@aiengineer/knowledge-preparation':
+        specifier: workspace:*
+        version: link:../preparation
+      '@aiengineer/knowledge-retrieval':
+        specifier: workspace:*
+        version: link:../retrieval
+      '@aiengineer/knowledge-verification':
+        specifier: workspace:*
+        version: link:../verification
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       tsup:
         specifier: 'catalog:'

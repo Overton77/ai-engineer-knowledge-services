@@ -15,7 +15,7 @@ import {
   actorsMatch,
   type ApiAction,
   type LocalApiIdentity,
-} from "@aiengineer/knowledge-config";
+} from "@aiengineer/knowledge-host";
 import type {
   FastifyInstance,
   FastifyReply,

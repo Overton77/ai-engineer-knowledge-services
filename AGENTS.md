@@ -51,12 +51,13 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 
 ### Task routes
 
-- [reference] Unit 1 delivery record and next-unit handoff: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next unit: host composition and lifecycle: `docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`
-- [accepted] Accepted cleanup layout, transport rule, and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
-- [reference] Current cleanup index and historical archive: `docs/operations/package-cleanup/README.md`
-- [proposed] Post-sprint module review, exemplars, and developer-overridable delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
-- [proposed] Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last: `docs/operations/internal-fallbacks-and-application-order.md`
+- [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
+- [proposed] Next unit: application use cases, no MCP HTTP shims: `docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`
+- [reference] Unit 2 host composition and seams: `docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`
+- [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
+- [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
+- [proposed] Module review and delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
+- [proposed] Internal fallbacks and application folder order: `docs/operations/internal-fallbacks-and-application-order.md`
 - [accepted] Acquisition HTTP, upload, and sealed-byte inspection review record: `docs/operations/reviews/acquisition.md`
 - [reference] Conversion route (text, Docling, gated Unstructured) and receipt review record: `docs/operations/reviews/conversion.md`
 - [reference] Retrieval package review record: `docs/operations/reviews/retrieval.md`
@@ -98,7 +99,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-2-HOST-COMPOSITION.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-2-HOST-COMPOSITION.md,UNIT-3-APPLICATION-AND-MCP.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

@@ -1,5 +1,5 @@
 import { ActorSchema, OperationContextSchema, UuidSchema, type OperationContext } from "@aiengineer/knowledge-contracts";
-import { actorsMatch, isAuthorized, type LocalApiIdentity } from "@aiengineer/knowledge-config";
+import { actorsMatch, isAuthorized, type LocalApiIdentity } from "@aiengineer/knowledge-host";
 import type { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { z } from "zod";
 import { createVerificationOwnershipResolver } from "./verification-ownership.js";

@@ -3,7 +3,7 @@ import {
   CallbackReplayGuard,
   KnowledgeIntegrationService,
 } from "@aiengineer/knowledge-application";
-import type { LocalApiIdentity } from "@aiengineer/knowledge-config";
+import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { buildServer } from "../server.js";
 import type { CanonicalRetrievalExecutorPort } from "../retrieval-executor.js";

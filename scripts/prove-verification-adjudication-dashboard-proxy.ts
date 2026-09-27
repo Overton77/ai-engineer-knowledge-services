@@ -102,7 +102,7 @@ try {
   if (operationId) { const record = await database.getOperationRecord(tenantId, operationId).catch(() => undefined); const context = (record?.request as { authenticatedContext?: Record<string, unknown> } | undefined)?.authenticatedContext ?? operationContext; if (context?.actor) await database.cancelOperation(tenantId, operationId, { actorIdentity: `${(context.actor as { kind: string; id: string }).kind}:${(context.actor as { kind: string; id: string }).id}`, correlationId: String(context.correlationId) }).catch(() => undefined); }
   throw error;
 } finally {
-  await stopProcessTree(dashboard).catch(() => undefined); await api?.server.close().catch(() => undefined); await api?.database?.close().catch(() => undefined); await worker?.stop("dashboard-decision-proof").catch(() => undefined); await database.close();
+  await stopProcessTree(dashboard).catch(() => undefined); await api?.close().catch(() => undefined); await worker?.stop("dashboard-decision-proof").catch(() => undefined); await database.close();
 }
 
 function dashboardEnvironment(input: { sessionSecret: string; operatorToken: string; reviewerSubject: string; tenantId: string; missionId: string; workItemId: string; attemptId: string; knowledgeUrl: string; reviewerToken: string }): Record<string, string> {

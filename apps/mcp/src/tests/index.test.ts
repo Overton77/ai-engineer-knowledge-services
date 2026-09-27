@@ -6,7 +6,7 @@ import type { KnowledgeOperationPort } from "@aiengineer/knowledge-application";
 import {
   createLocalIdentityResolver,
   type LocalApiIdentity,
-} from "@aiengineer/knowledge-config";
+} from "@aiengineer/knowledge-host";
 import type {
   AcceptedOperation,
   OperationContext,

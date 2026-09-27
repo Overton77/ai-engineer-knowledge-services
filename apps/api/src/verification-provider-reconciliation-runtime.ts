@@ -1,12 +1,12 @@
 import {z} from "zod";
 import {ActorSchema,UuidSchema,VerificationArtifactHandleSchema,type Actor,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
-import {actorsMatch} from "@aiengineer/knowledge-config";
+import {actorsMatch} from "@aiengineer/knowledge-host";
 import {ProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
 import {PostgresProviderReconciliationStore,PostgresProviderReconciliationReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
 import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {createVerificationOperationReadAuthorizer} from "./verification-ownership.js";
-import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";
+import { parseBenchmarkReadPublicKeys } from "@aiengineer/knowledge-application";
 
 const grantSchema=z.strictObject({tenantId:UuidSchema,actor:ActorSchema,providerId:z.enum(["gateway-structured-extraction.v1","interfaze-extraction.v1"]),
   keyId:z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/u),operatorId:z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/u),basis:z.enum(["synthetic_fixture","supplier_statement"])});

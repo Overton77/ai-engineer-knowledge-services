@@ -1,4 +1,4 @@
-import type { LocalApiIdentity } from "@aiengineer/knowledge-config";
+import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import { describe, expect, it, vi } from "vitest";
 import { ServerOwnedBenchmarkCaptureProfileResolver } from "../verification-benchmark-capture-profile.js";
 

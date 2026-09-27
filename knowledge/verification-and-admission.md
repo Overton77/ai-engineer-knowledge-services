@@ -19,7 +19,7 @@ sources:
     resource: ../packages/application/src/verification/operations/verification-ownership.ts
     title: Ownership resolver and read authorizer
   - id: verification-host
-    resource: ../packages/persistence/src/verification-host-runtime.ts
+    resource: ../packages/host/src/verification/host-runtime.ts
     title: Shared verification host runtime
 ---
 
@@ -51,8 +51,8 @@ application ports:
 (`ResolveVerificationContext`, catalog/SQL admission factories, static context
 resolver) and
 [`verification-ownership.ts`](../packages/application/src/verification/operations/verification-ownership.ts)
-(ownership resolver and read authorizer). Persistence
-[`createVerificationHostRuntime`](../packages/persistence/src/verification-host-runtime.ts)
+(ownership resolver and read authorizer). Host
+[`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts)
 wires those ports for both servers.
 
 MCP verification mutations, operation/status, and `retrieval.plan_validate`

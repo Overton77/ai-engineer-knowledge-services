@@ -21,18 +21,15 @@ import {
 } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import {
-  createVerificationHostRuntime,
-  type VerificationHostAdmission,
-} from "@aiengineer/knowledge-persistence";
-import {
   actorsMatch,
+  createHost,
   createLocalIdentityResolver,
   isAuthorized,
   requiredSubmissionAction,
-  loadServerConfig,
   type LocalApiIdentity,
   type ResolveApiIdentity,
-} from "@aiengineer/knowledge-config";
+  type VerificationHostAdmission,
+} from "@aiengineer/knowledge-host";
 import {
   JsonValueSchema,
   CaptureSourceRequestSchema,
@@ -51,10 +48,6 @@ import {
   VectorStoreCreateInputSchema,
   VectorStoreDocumentsInputSchema,
 } from "@aiengineer/knowledge-contracts";
-import {
-  PostgresCanonicalRepository,
-  PostgresKnowledgeOperationService,
-} from "@aiengineer/knowledge-persistence";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
@@ -1124,71 +1117,55 @@ export function apiPublicOrigin(
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
-function composeMcpVerificationHost(input: {
-  readonly database: PostgresCanonicalRepository;
-  readonly environment: Environment;
-  readonly production: boolean;
-  readonly apiOrigin: string;
-}): Pick<
-  KnowledgeMcpAppOptions,
-  | "verificationOperations"
-  | "resolveVerificationContext"
-  | "verificationAdmission"
-> {
-  const host = createVerificationHostRuntime(input.database, input.environment, {
-    production: input.production,
-  });
-  return {
-    ...(host.verificationOperationService
-      ? {
-          verificationOperations: new VerificationOperationApplicationService(
-            host.verificationOperationService,
-            input.apiOrigin,
-            host.verificationCaptureCatalog,
-          ),
-        }
-      : {}),
-    ...(host.resolveVerificationContext
-      ? { resolveVerificationContext: host.resolveVerificationContext }
-      : {}),
-    verificationAdmission: host,
-  };
-}
-
 export async function createMcpRuntime(environment: Environment = process.env) {
-  const config = loadServerConfig({
-    ...environment,
-    PORT: environment.PORT ?? "4101",
+  const host = await createHost({
+    profile: "server",
+    role: "mcp",
+    environment,
+    resolveApiOrigin: (config) =>
+      apiPublicOrigin(
+        environment.KNOWLEDGE_API_URL,
+        config.NODE_ENV === "production",
+      ),
   });
-  const connectionString = environment.POSTGRES_URL?.trim();
-  if (!connectionString) throw new Error("POSTGRES_URL_REQUIRED");
-  const database = new PostgresCanonicalRepository({
-    connectionString,
-    ...(environment.CANONICAL_LOCAL_ONLY === "1" ? { localOnly: true } : {}),
-  });
-  const apiOrigin = apiPublicOrigin(
-    environment.KNOWLEDGE_API_URL,
-    config.NODE_ENV === "production",
-  );
-  const app = buildKnowledgeMcpApp({
-    operationService: new PostgresKnowledgeOperationService(database),
-    apiOrigin,
-    resolveIdentity: createLocalIdentityResolver(
-      environment.KNOWLEDGE_API_IDENTITIES,
-    ),
-    ...composeMcpVerificationHost({
-      database,
-      environment,
-      production: config.NODE_ENV === "production",
+  try {
+    const { apiOrigin, verify } = host;
+    const app = buildKnowledgeMcpApp({
+      operationService: host.operations.service,
       apiOrigin,
-    }),
-    createApiClient: (accessToken) =>
-      new KnowledgeClient({
-        baseUrl: apiOrigin,
-        getAccessToken: () => accessToken,
-      }),
-  });
-  return { app, config, database };
+      resolveIdentity: createLocalIdentityResolver(
+        environment.KNOWLEDGE_API_IDENTITIES,
+      ),
+      ...(verify.operations ? { verificationOperations: verify.operations } : {}),
+      ...(verify.runtime.resolveVerificationContext
+        ? { resolveVerificationContext: verify.runtime.resolveVerificationContext }
+        : {}),
+      verificationAdmission: verify.runtime,
+      // Temporary HTTP shim; Unit 3 replaces these calls with application ports.
+      createApiClient: (accessToken) =>
+        new KnowledgeClient({
+          baseUrl: apiOrigin,
+          getAccessToken: () => accessToken,
+        }),
+    });
+    let closing: Promise<void> | undefined;
+    return {
+      app,
+      config: host.config,
+      /** Closes the HTTP app before releasing host resources; idempotent. */
+      close: () =>
+        (closing ??= (async () => {
+          try {
+            await app.close();
+          } finally {
+            await host.close();
+          }
+        })()),
+    };
+  } catch (error) {
+    await host.close().catch(() => undefined);
+    throw error;
+  }
 }
 
 let serverlessRuntime: ReturnType<typeof createMcpRuntime> | undefined;
@@ -1218,14 +1195,23 @@ const handler = createMcpRequestHandler(getServerlessRuntime);
 export default handler;
 
 async function main() {
-  const { app, config, database } = await createMcpRuntime();
-  const shutdown = async () => {
-    await app.close();
-    await database.close();
-  };
-  process.once("SIGINT", () => void shutdown());
-  process.once("SIGTERM", () => void shutdown());
-  await app.listen({ host: config.HOST, port: config.PORT });
+  const runtime = await createMcpRuntime();
+  const shutdown = () =>
+    void runtime.close().catch((error) => {
+      process.stderr.write(
+        `${JSON.stringify({ event: "knowledge.mcp.shutdown_failed", error: error instanceof Error ? error.message : "unknown" })}
+`,
+      );
+      process.exitCode = 1;
+    });
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+  try {
+    await runtime.app.listen({ host: runtime.config.HOST, port: runtime.config.PORT });
+  } catch (error) {
+    await runtime.close().catch(() => undefined);
+    throw error;
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

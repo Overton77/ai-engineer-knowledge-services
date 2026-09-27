@@ -16,6 +16,7 @@
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-evaluation": "workspace:*",
+    "@aiengineer/knowledge-host": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-policy": "workspace:*",
     "@aiengineer/knowledge-preparation": "workspace:*",

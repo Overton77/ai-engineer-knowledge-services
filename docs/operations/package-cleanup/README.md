@@ -2,7 +2,7 @@
 
 Status: reference. Current execution index.
 
-Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Unit 1 is merged into local main under its exact exception; acceptance evidence is recorded in the ledger. The exact missing-input exception remains visible.
+Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Units 1 and 2 are merged into local main, each under an explicitly reassessed missing-input exception; acceptance evidence is recorded in the ledger. The continuation also carries the bounded pre–Mission Control stage-graph experiment milestone.
 
 ## Start here
 
@@ -16,7 +16,8 @@ Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Unit
 - [FINAL-REVIEW.md](./FINAL-REVIEW.md): source-backed findings and implementation considerations, including the developer's subsequent clarification.
 - [UNIT-0-BASELINE.md](./UNIT-0-BASELINE.md): establish reproducible verification before package moves.
 - [UNIT-1-PACKAGE-MERGES.md](./UNIT-1-PACKAGE-MERGES.md): mechanical package merges and their preservation gates.
-- [UNIT-2-HOST-COMPOSITION.md](./UNIT-2-HOST-COMPOSITION.md): next bounded specification; implementation remains queued. Write specifications for units 3–7 as their turn arrives.
+- [UNIT-2-HOST-COMPOSITION.md](./UNIT-2-HOST-COMPOSITION.md): delivered host composition, lifecycle and the remaining Unit 3/5 seams.
+- [UNIT-3-APPLICATION-AND-MCP.md](./UNIT-3-APPLICATION-AND-MCP.md): next bounded specification. Write specifications for units 4–7 as their turn arrives.
 
 No live consumers require compatibility support. Adapt Eve directly to the new services and skills, then run pre–Mission Control testing after cleanup. Preserve stored evidence and the populated shared database.
 

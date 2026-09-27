@@ -6,7 +6,7 @@ import {createRequire} from "node:module";
 import {pathToFileURL} from "node:url";
 import {resolve} from "node:path";
 import {buildServer} from "../apps/api/src/server.js";
-import {createVerificationBenchmarkReads} from "../apps/api/src/verification-benchmark-reads-runtime.js";
+import {createVerificationBenchmarkReads} from "../packages/host/src/verification/api/verification-benchmark-reads-runtime.js";
 import {buildKnowledgeMcpApp} from "../apps/mcp/src/index.js";
 import {PostgresCanonicalRepository,PostgresKnowledgeOperationService} from "@aiengineer/knowledge-persistence";
 import {KnowledgeClient} from "@aiengineer/knowledge-client";
@@ -52,7 +52,7 @@ try{
  try{await protocolClient.connect(new StreamableHTTPClientTransport(new URL(`${mcpOrigin}/mcp`),{requestInit:{headers:{authorization:`Bearer ${token}`}}}));
   for(const name of ["knowledge_get_benchmark_run","knowledge_get_benchmark_manifest"]){const result=await protocolClient.callTool({name,arguments:{context,runId:fixture.benchmarkRunId}});assert.notEqual(result.isError,true);assert.equal(result.structuredContent.runId,fixture.benchmarkRunId);}
  }finally{await protocolClient.close();}checks.actualMcpHttpReads=true;
- const sourcePaths=["packages/persistence/src/verification-benchmark-reads.ts","packages/application/src/verification/benchmark/verification-benchmark-reads.ts","packages/contracts/src/verification/benchmark-reads.ts","apps/api/src/verification-benchmark-reads-runtime.ts","apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-benchmark-reads.ts"];
+ const sourcePaths=["packages/persistence/src/verification-benchmark-reads.ts","packages/application/src/verification/benchmark/verification-benchmark-reads.ts","packages/contracts/src/verification/benchmark-reads.ts","packages/host/src/verification/api/verification-benchmark-reads-runtime.ts","apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-benchmark-reads.ts"];
  const sources=await Promise.all(sourcePaths.map(async path=>{const bytes=await readFile(path);return {path,digest:`sha256:${createHash("sha256").update(bytes).digest("hex")}`,bytesBase64:bytes.toString("base64")};}));
  const output=resolve(internal,`verification-benchmark-reads-${namespace}.json`);await writeFile(output,JSON.stringify({status:"passed",scope:"Read-only local completed benchmark SQL/Storage custody through configured HTTP, built CLI and actual MCP HTTP transport; no new benchmark execution",tenantId,checks,summaries,manifest,sources,externalProviderRequests:0},null,2));console.log(JSON.stringify({status:"passed",output,checks}));
 }finally{await mcp?.close();await api.close();await database.close();}
