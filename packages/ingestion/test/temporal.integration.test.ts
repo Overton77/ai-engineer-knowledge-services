@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { ArtifactLedger, ReadExecutor } from "@aiengineer/knowledge-db-read";
 import { PostgresCanonicalRepository, TenantPostgres } from "@aiengineer/knowledge-persistence";
 import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
 import { loadWorkspace } from "@aiengineer/knowledge-schema-workspace";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { disposableDatabaseUrl } from "../../persistence/test/disposable.mjs";
 import { IngestionExecutor } from "../src/executor.js";
 import { IngestionIntentSchema, type IngestionIntentInput } from "../src/intent.js";
@@ -16,25 +16,38 @@ import { seedPriceSlot } from "./current-schema-fixture.mjs";
 import { withSnapshot } from "./snapshot-fixture.mjs";
 
 const url = disposableDatabaseUrl();
-const workspace = loadWorkspace(resolve(import.meta.dirname, "../../../../ai-engineer-db-contract/workspace"));
+let workspace: ReturnType<typeof loadWorkspace>;
 
 async function fixture() {
   const tenantId = randomUUID();
+  const activeWorkspace = workspace;
   const directory = mkdtempSync(join(tmpdir(), "ks-p1-temporal-"));
   const store = new LocalArtifactStore(directory);
   const db = new TenantPostgres({ connectionString: url! });
   const canonical = new PostgresCanonicalRepository({ connectionString: url! });
-  const prepared = await prepareCurrentSchemaFixture({ database: canonical, tenantId, store });
-  const artifacts = new ArtifactLedger({ db, store, bucket: "research-ingestion-intents", uploaded: false, executorVersion: "synthetic-temporal/1" });
-  const reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: "synthetic-temporal/1" });
-  const executor = new IngestionExecutor({ db, workspace, artifacts, executorVersion: "synthetic-temporal/1", evidence: declaredRunsOracle });
-  const locator = randomUUID();
-  await db.transaction({ tenantId }, client => client.query("insert into evidence.locator(id,tenant_id,capture_id,media_type,selector,extractor_name,extractor_version) values($1,$2,$3,'text/plain',$4::jsonb,'synthetic-temporal','1')", [locator, tenantId, prepared.captured.input.captureId, JSON.stringify({ type: "text_quote", exact: prepared.sourceText })]));
-  const close = async () => { await db.close(); await canonical.close(); };
-  return { tenantId, directory, db, reads, executor, prepared, locator, close };
+  const close = async () => {
+    try { await db.close(); }
+    finally {
+      try { await canonical.close(); }
+      finally { rmSync(directory, { recursive: true, force: true }); }
+    }
+  };
+  try {
+    const prepared = await prepareCurrentSchemaFixture({ database: canonical, tenantId, store });
+    const artifacts = new ArtifactLedger({ db, store, bucket: "research-ingestion-intents", uploaded: false, executorVersion: "synthetic-temporal/1" });
+    const reads = new ReadExecutor({ db, workspace: activeWorkspace, artifacts, executorVersion: "synthetic-temporal/1" });
+    const executor = new IngestionExecutor({ db, workspace: activeWorkspace, artifacts, executorVersion: "synthetic-temporal/1", evidence: declaredRunsOracle });
+    const locator = randomUUID();
+    await db.transaction({ tenantId }, client => client.query("insert into evidence.locator(id,tenant_id,capture_id,media_type,selector,extractor_name,extractor_version) values($1,$2,$3,'text/plain',$4::jsonb,'synthetic-temporal','1')", [locator, tenantId, prepared.captured.input.captureId, JSON.stringify({ type: "text_quote", exact: prepared.sourceText })]));
+    return { tenantId, directory, db, reads, executor, prepared, locator, close };
+  } catch (error) {
+    await close();
+    throw error;
+  }
 }
 
 describe.skipIf(!url)("P1 temporal current-schema proof (explicit synthetic admission adapter)", () => {
+  beforeAll(() => { workspace = loadWorkspace(resolve(import.meta.dirname, "../../../../ai-engineer-db-contract/workspace")); });
   it("T05/T06/T08 corrects one legacy slot over a bounded interval and preserves K0 and adjacent evidence", async () => {
     const f = await fixture();
     try {

@@ -17,6 +17,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [skill-knowledge-evaluation](../docs/agents/CODE-MAP.md#skill-knowledge-evaluation) | Frozen-version evaluation procedure: reviewed retrieval cases, experiment runs, comparisons and failure diagnosis that recommend, never execute, a knowledge release. | skills/knowledge-evaluation/SKILL.md |
 | [skill-knowledge-verification-recovery](../docs/agents/CODE-MAP.md#skill-knowledge-verification-recovery) | Post-failure verification recovery: read the durable case, classify items by earliest failed stage, probe, plan, claim, execute, reconcile and checkpoint on the executor; adjudication through the platform CLI. | skills/knowledge-verification-recovery/SKILL.md |
 | [skill-vector-store-management](../docs/agents/CODE-MAP.md#skill-vector-store-management) | Store-class-explicit vector-store creation, document addition, evaluation, status, and guarded space publish/rollback submissions through the platform CLI. | skills/vector-store-management/SKILL.md |
+| [skill-jev-system-one](../docs/agents/CODE-MAP.md#skill-jev-system-one) | Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition. | skills/jev-system-one/SKILL.md |
 
 Descriptions are maintained in `.agent-docs/modules.json` at the repository root. Do not edit this generated block.
 <!-- END GENERATED: semantic-map -->

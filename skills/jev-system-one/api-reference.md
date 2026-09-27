@@ -1,125 +1,79 @@
-# Jev API reference
+# Jev service and provider contracts
 
-Source: docs.typesafe.ai (API, Models, jaggedness pages, reviewed 2026-09-24) plus live probes against
-`jev-1.13.0` the same day. Where observed behavior differs from the docs, the observed behavior is listed.
+Checked 2026-09-26. Service schema authority: packages/contracts/src/jev.ts. External provider documentation can change.
 
-## Request
-
-```http
-POST https://api.typesafe.ai/v1/systemone
-Authorization: Bearer <JEV_API_KEY>
-Content-Type: application/json
-```
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `model` | string | yes | `jev-1.13.0` (pinned), or the aliases `jev-latest`, `jev-preview` |
-| `state` | string / object / array | yes | The content every question sees. Prefer an object with named fields |
-| `questions` | map of id → Question | yes | At least one. Ids are yours and are not shown to the model |
-
-### Question
-
-All three types take `type` and `instructions`. `instructions` may be a string, object or array; an
-object lets you put the question in one field and data it refers to in others, referenced by name in
-backticks.
-
-| `type` | `criteria` | Rules |
-|---|---|---|
-| `choice` | map option → description (string / object / array / `null`) | 1–255 options. Always include an escape option |
-| `score` | ordered array of level descriptions | 2–10 levels; index 0 is the lowest level |
-| `noul` | optional `{ "true": …, "false": … }` | `true` describes the yes case |
-
-Structured instructions example:
-
-```json
-"instructions": {
-  "candidate_claim": "Temporal retries activities with exponential backoff by default.",
-  "question": "Does `excerpt` support `candidate_claim`?"
-}
-```
-
-## Response (HTTP 200)
+## Service task
 
 ```json
 {
-  "model": "jev-1.13.0",
-  "answers": {
-    "topic":    { "type": "choice", "choice": "memory", "confidence": 0.98,
-                  "probabilities": { "memory": 0.99, "retrieval": 0.01, "other": 0.0 } },
-    "depth":    { "type": "score", "score": 1.67, "confidence": 0.51,
-                  "legend": { "0": "Marketing or surface level", "1": "Conceptual overview", "2": "Implementation detail" },
-                  "probabilities": { "0": 0.0, "1": 0.33, "2": 0.67 } },
-    "has_demo": { "type": "noul", "noul": 0.78 }
-  },
-  "usage": { "input_tokens": 435, "output_tokens": 81 }
+  "idempotencyKey": "resource-42-taxonomy-v1",
+  "input": { "type": "inline", "state": { "text": "Our pipeline reranks retrieved passages." } },
+  "provider": "gateway",
+  "questions": {
+    "topic": {
+      "type": "choice",
+      "instructions": "Choose the primary technical topic of `text`.",
+      "criteria": { "retrieval": "Search, indexing, RAG, reranking", "other": "Anything else or insufficient evidence" }
+    },
+    "has_retrieval": { "type": "noul", "instructions": "Does `text` describe retrieval work?" }
+  }
 }
 ```
 
-- `choice` is the argmax option. `probabilities` covers every option and sums to 1.
-- `score` = Σ level × probability, so it can sit between levels. Use it for thresholds and ranking,
-  **not** to interpolate an exact quantity between levels.
-- `confidence` is derived from how peaked the distribution is (1 = all mass on one outcome). It is a
-  convenience; you may compute your own measure from `probabilities`.
-- `usage.output_tokens` is reported but not billed.
-- Response header `x-typesafe-request-id` identifies the request. Record it.
-- `probabilities` key order is not stable between calls. Identical requests differ by about ±0.01.
+Provider, model, and idempotencyKey are optional. Providers: gateway or direct. Service tasks always use noul; the adapter translates Gateway's wire format. Provider-compatible model names: Gateway typesafe-ai/jev; direct jev-1.13.0 or an intentional alias.
 
-## Errors (observed)
+| Input | Shape | Meaning |
+| --- | --- | --- |
+| Direct | `{ "type":"inline", "state": ... }` | String/object/array |
+| Local | `{ "type":"file", "path":"absolute/path", "format":"text" }` | Permitted server-local UTF-8 text; json parses state |
+| Remote | `{ "type":"remote", "url":"https://allowed.example/artifact.json", "format":"json" }` | Allowed remote text/JSON |
 
-| Status | Body shape | Cause | Retry? |
-|---|---|---|---|
-| 400 | `{"detail":{"error_type":"api_usage_error","message":"Invalid request."}}` | unknown question type, malformed question | no — fix request |
-| 400 | `{"detail":{"error_type":"api_usage_error","message":"Unknown model: …"}}` | bad model name | no |
-| 400 | `{"detail":"Too many score levels. Must have at most 10 levels."}` | Score with more than 10 levels | no |
-| 400 | `{"detail":{"error_type":"max_tokens_exceeded"}}` | state + questions over the token budget | no — shrink or chunk the state |
-| 401 | — | missing or invalid key | no |
-| 422 | `{"detail":[{"type":"too_short","loc":["body","questions"],…}]}` | schema validation, e.g. empty `questions` | no |
-| 429 | — | rate limit (requests/min or tokens/s) | yes, exponential backoff, honor `retry-after` |
-| 529 | — | TypeSafe overloaded | yes, backoff |
-| 5xx | — | transient | yes, bounded |
+Paths are server-local, not automatically uploaded from the CLI machine. Allowlists default empty. Use preparation/conversion for raw media first. Byte bounds do not replace token budgets. Keep credentials out of URLs and manifests.
 
-`detail` can be a string, an object, or a list — handle all three when reporting errors.
+Service caps: 1-2,000 questions per task, 1-1,000 tasks per batch. These are schema caps, not assurances that each request fits the model context. Choice supports 1-255 criteria, Score 2-10 levels. Optional Noul criteria supply both true and false descriptions.
 
-## Limits
+## HTTP and CLI
 
-| Limit | Value |
-|---|---|
-| Tokens per request | 64k total (state + all questions) |
-| State + longest single question | 32k tokens |
-| Observed capacity | 120k characters of English prose fit (21.8k tokens); 200k failed |
-| Questions per request | no count limit observed; 1,000 short Nouls answered in 0.68 s |
-| Requests | 1,200 per minute |
-| Throughput | 250,000 tokens per second |
-| Choice options | 255 |
-| Score levels | 2–10 |
+Default HTTP base: http://127.0.0.1:4318. Use bearer JEV_SERVICE_TOKEN when configured. Non-loopback binding requires a token. CLI uses JEV_SERVICE_URL and JEV_SERVICE_TOKEN.
 
-## Model listing
+| Method/path | Purpose |
+| --- | --- |
+| POST /v1/jev/jobs | Task to queued job |
+| GET /v1/jev/jobs | Recent jobs |
+| POST /v1/jev/batches | `{ "tasks": [task, ...] }` to jobs |
+| GET /v1/jev/jobs/:id | Job and result/error |
+| POST /v1/jev/jobs/:id/cancel | Cancel |
+| GET /v1/jev/health | Queue counts and workers |
+| /mcp | MCP HTTP transport |
 
-`GET https://api.typesafe.ai/v1/models` lists only the aliases. Versioned IDs such as `jev-1.13.0`
-are accepted anyway. The response's `model` field always reports the versioned ID that answered.
+CLI: serve, submit <task.json> [--wait], batch <tasks.json> [--wait], get <id>, cancel <id>, list, workers, mcp-stdio. Batch files contain an array of tasks. Use --out <file> to save the response and --timeout <milliseconds> to bound waiting (default 120,000). Client waiting does not perform inference inside the CLI process. Failed/cancelled terminal jobs give exit code 1; command errors give exit code 2.
 
-## Vercel AI Gateway variant
+## MCP
 
-Model id `typesafe-ai/jev`, type `evaluation`, called through the AI SDK (`ai` 7.0.114 or later; the
-workspace's pre-research repo pins 7.0.66, which lacks it):
+Tools: jev_submit (task fields), jev_batch ({tasks}), jev_get ({id}), jev_list ({limit}), jev_cancel ({id}), jev_workers ({}). Poll job IDs after submission. Start stdio with `node --env-file=.env apps/jev/dist/index.js mcp-stdio`; stdout is reserved for protocol output. This starts its own host and workers, not a bridge to the running HTTP host. Give it a separate JEV_DATABASE_PATH or stop the HTTP host first. HTTP /mcp shares the existing HTTP host and queue.
 
-```ts
-import { experimental_evaluate as evaluate } from "ai";
+## Results
 
-const result = await evaluate({
-  model: "typesafe-ai/jev",
-  state: { note },
-  questions: {
-    topic: { type: "choice", instructions: "Primary topic of `note`", criteria: { durable: "…", other: "None of the above" } },
-    depth: { type: "score", instructions: "How technical is `note`?", criteria: ["Low", "Medium", "High"] },
-    prod:  { type: "boolean", instructions: "Does `note` describe a production system?" },
-  },
-});
-// result.answers.prod.probability          (Noul is renamed boolean / probability)
-// result.providerMetadata.typesafe.confidence.topic
-// result.rounding → { probabilityDecimals: 2, scoreDecimals: 2 }
-```
+States: queued, running, succeeded, failed, cancelled. Jobs contain ID, attempts, timestamps, request digest, and provenance (type, source, SHA-256, bytes, capture time). Results contain answers, input/output token usage, requested/returned model, provider, latency, request ID, and worker PID. Returned model and request ID can be unavailable.
 
-Observed on the first call: 3.4 s end to end. The Gateway tried another host first (503), then routed
-to TypeSafe. The model id is an alias, so you cannot pin `jev-1.13.0` here. Use the direct API for
-calibrated or reproducible work.
+- Choice: `{type:"choice",choice,probabilities,confidence?}`.
+- Score: `{type:"score",score,probabilities,confidence?}`; probability keys identify level indices.
+- Noul: `{type:"noul",noul}`.
+
+Confidence is optional; absence is not certainty. Probability key order has no meaning. Scores are weighted rubric positions, not extracted exact numbers. Failure records carry a code and message; invalid tasks need correction before resubmission.
+
+## External routes
+
+| Route | POST endpoint | Yes/no | Usage/metadata |
+| --- | --- | --- | --- |
+| Direct | https://api.typesafe.ai/v1/systemone | noul / noul | input_tokens, output_tokens |
+| Gateway native | https://ai-gateway.vercel.sh/v1/evaluate | boolean / probability | inputTokens, outputTokens, providerMetadata |
+| Gateway compatible | https://ai-gateway.vercel.sh/typesafe/v1/systemone | noul / noul | input_tokens, output_tokens, provider_metadata |
+
+All use JSON {model,state,questions} and bearer authentication. The service Gateway adapter uses native evaluation; compatibility is an alternative for external TypeSafe clients, not another service provider setting. Evaluation is not chat completions. [Gateway HTTP](https://vercel.com/docs/ai-gateway/modalities/evaluation), [compatibility](https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe)
+
+Direct supports structured instructions and criteria. Direct responses include model, answers, usage, Choice/Score confidence, and Score legend. [TypeSafe contract](https://docs.typesafe.ai/api)
+
+Provider context constraints: 64k total tokens, separately 32k state plus longest question. Retry 429/529 and transient failures with bounded backoff and retry hints. Authentication/schema errors need correction; oversize input needs explicit partitioning. Previously observed direct errors used detail as string/object/list; Gateway may use another envelope. Do not assume one error shape.
+
+Pin direct model versions for reproducibility. Gateway alias is not a pinned direct model. Historical SDK observations of rounding/metadata must not substitute for validating the current route.

@@ -8,7 +8,7 @@ Lifecycle: Active service repository; see deployment docs for rollout state.
 Read the relevant documents below before changing behavior. Inspect more-specific AGENTS.md files in the destination directory. Accepted docs record settled decisions; proposed, reference, and deprecated docs are labelled context. The map is navigation, not proof of implementation or deployment.
 
 - Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.
-- In-process KS servers (API, MCP, workers) call packages/application. Out-of-process callers (laptop CLI remote, Eve, Mission Control, other repos) use KnowledgeClient against the HTTP API. CLI local demo/attestation stay application-direct. Do not add MCP apiClient methods; new use cases go through application.
+- API, MCP, and workers call packages/application. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct. Never add MCP apiClient methods.
 - Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.
 - Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.
 - Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.
@@ -51,8 +51,9 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 
 ### Task routes
 
-- [accepted] Final package/app/skill layout, host transport rule, unit specs; start here for cleanup: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
-- [proposed] Dated package and app cleanup proposal, phase instructions, recommendations, and feature sequence: `docs/operations/package-cleanup/README.md`
+- [reference] Unit 1 continuation after Jev merge; exact baseline exception: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
+- [accepted] Accepted cleanup layout, transport rule, and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
+- [reference] Current cleanup index and historical archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Post-sprint module review, exemplars, and developer-overridable delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
 - [proposed] Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last: `docs/operations/internal-fallbacks-and-application-order.md`
 - [accepted] Acquisition HTTP, upload, and sealed-byte inspection review record: `docs/operations/reviews/acquisition.md`
@@ -80,6 +81,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - [reference] Verification executor intent, skill, example and consumer pin review: `docs/operations/reviews/verification-executor.md`
 - [reference] Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples: `packages/verification/CAPABILITIES.md`
 - [reference] Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits: `apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`
+- [reference] Jev processes, API, MCP, CLI and research: `docs/architecture/modules/jev.md`
 
 ### Validation
 
@@ -93,8 +95,9 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |.:{README.md}
 |apps/verification-executor/examples:{CAPABILITIES-ACQUISITION.md}
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
+|docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,README.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

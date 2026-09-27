@@ -1,10 +1,16 @@
 # Knowledge Services final layout
 
+> Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
+
 Status: accepted (2026-09-27, developer-approved in session).
 
-This is the target package, app, and skill layout for `ai-engineer-knowledge-services`, and the rule for how transports call application code. It supersedes the sequencing in `FEATURE-SET-SPECIFICATION.md` (S0–S7) and `ORCHESTRATION-PLAN.md` as the source of truth for **what exists and in what order it is built**. The folder-level decisions inside packages recorded in `PHASE-1-RECOMMENDATION.md` and `PHASE-2-RECOMMENDATION.md` stay valid; they become subfolders of the merged packages below.
+This is the target package, app, and skill layout for `ai-engineer-knowledge-services`, and the rule for how transports call application code. It supersedes the sequencing in the [archived feature specification](./archive/FEATURE-SET-SPECIFICATION.md) (S0–S7) and [archived orchestration plan](./archive/ORCHESTRATION-PLAN.md) as the source of truth for **what exists and in what order it is built**. The folder-level decisions inside packages recorded in the [Phase 1 memo](./archive/PHASE-1-RECOMMENDATION.md) and [Phase 2 memo](./archive/PHASE-2-RECOMMENDATION.md) stay valid; they become subfolders of the merged packages below. Consult these memos only for those retained decisions, not their superseded execution instructions.
 
-Working rule: **progress over perfection.** Each unit of work is one PR (or a short series), mechanical where possible, and is done when `corepack pnpm verify` is green. No approval memo is required for a mechanical unit; a unit that changes behavior states that in its specification.
+Working rule: **progress over perfection.** Use one branch per unit from integrated local `main`, with multiple cohesive commits as needed. Validate and merge the completed unit into local main before branching for the next unit; remote PR publication is separate. Units are mechanical where specified and are done when their acceptance checks pass, subject only to the explicit Unit 1 baseline exception in the current handoff. No approval memo is required for routine local integration; a unit that changes behavior states and tests that change in its specification. Preserve functionality while progressing toward organized packages/apps, redesigned skills, Eve adaptation and pre–Mission Control evaluation.
+
+Implementation entrypoint: [execution workspace](./workspace/README.md) and [progress ledger](./workspace/PROGRESS.md). The [final implementation review](./FINAL-REVIEW.md) records source-backed considerations. Complete [unit 0's reproducible baseline](./UNIT-0-BASELINE.md) before mechanical merges; it does not replace the seven-unit sequence.
+
+Developer clarification (2026-09-27): no live consumers currently use these services. The Eve research agent is the test consumer and intended real integration; adapt it directly to the new services and updated skills. No legacy compatibility adapters or staged production migration are required. After cleanup and Eve adaptation, run the pre–Mission Control testing with the updated skills. This clarification supersedes compatibility gates below or in historical review text wherever they imply supporting old consumers during the transition.
 
 ## 1. Why
 
@@ -16,18 +22,22 @@ A 2026-09-27 survey (source lines excluding tests, `@aiengineer/*` dependencies 
 - Four chains exist only to feed one consumer: `schema-workspace → db-read → ingestion` (only the executor); `projections`, `vector-backends`, `embeddings` → `retrieval` (only application).
 - Transports do not all follow ADR 0004: MCP still calls the API over HTTP (`createApiClient`), ownership/admission and the retrieval executor live in `apps/api`, API and worker each wire their own `*-runtime.ts` files, and the worker imports algorithm packages directly.
 
+Review correction at `9084428`: verification ownership/admission factories already exist in application, and API/MCP share `packages/persistence/src/verification-host-runtime.ts`. The API-local retrieval executor and residual HTTP shims remain. Units 2–3 reuse this shared implementation; the survey above is not a claim that all admission still lives in API.
+
 `persistence` importing `application` is correct (adapters implement application ports) and is not changed.
 
 ## 2. Organizing principle
 
 Mission Control sees Knowledge Services as **one agent capability** with tool groups. Each group has the same name at every layer: application folder, MCP tool prefix, CLI subcommand, skill.
 
+Apply this naming target through the relevant unit specifications and update Eve and its skills together with intentional interface changes. Existing names are an inventory to map, not a requirement for legacy aliases. The internal `application/src/verification` folder may remain behind the `verify` group. Capability grants use explicit descriptors, not prefix inference.
+
 | Group | Scope | MCP prefix | CLI | Skill |
 |---|---|---|---|---|
 | knowledge | sources → preparation → publication → retrieval → evidence, evaluation | `knowledge_*` | `ks knowledge …` | `knowledge-sources`, `knowledge-preparation`, `knowledge-retrieval`, `knowledge-evaluation` |
 | verify | captures, claims, reports, admission, recovery | `verify_*` (names unchanged) | `ks verify …` | `knowledge-verification` |
 | db | schema navigation, bounded reads, ingestion | `db_*` | `ks db …` | `knowledge-db` |
-| jev | Jev System One integration (upcoming) | `jev_*` | `ks jev …` | `jev-system-one` |
+| jev | Jev System One decisions and worker service (implemented; consolidation pending) | `jev_*` | `ks jev …` | `jev-system-one` |
 
 `knowledge-research` is the coordination skill over all groups. Mission Control grants groups per workflow (research/ingest: `knowledge` + `db`; a coding workflow: `verify` or read-only `db`).
 
@@ -75,9 +85,11 @@ skills/           One home. Eight skills plus the manifest Mission Control consu
 proofs/           was scripts/: proofs/verification/<feature>/…, one shared tsconfig; sprint-only proofs archived
 ```
 
-Totals: 23 → 14 packages, 5 → 4 apps, 12 → 8 skills, one MCP server, one CLI.
+Original target counts before Jev integration: 23 → 14 packages, 5 → 4 apps, 12 → 8 skills, one MCP server, one CLI. The merged checkout now has 24 packages and 6 apps, including packages/jev and apps/jev. Unit 1 produces 15 packages and retains 6 apps. Later unit specifications must reconcile the final host counts while preserving implemented Jev capabilities; these older counts do not authorize deleting Jev.
 
-Compatibility kept throughout: npm names stay `@aiengineer/knowledge-*`; public HTTP routes, MCP tool names (including `verify_*`), and `KnowledgeClient` methods do not change; persisted identity strings (for example the `packages/conversion` / `packages/chunking` procedure identities in `packages/persistence/src/preparation.ts`) do not change.
+Mechanical units preserve behavior and interfaces except for their specified package/import moves. Later surface-consolidation units may change routes, tool names, CLI commands, and client methods deliberately, with Eve and skills adapted to the new contract. Preserve persisted identity strings (for example the `packages/conversion` / `packages/chunking` procedure identities in `packages/persistence/src/preparation.ts`); the absence of live consumers does not authorize rewriting stored evidence or the populated shared database.
+
+The npm **namespace** stays; private merged packages take unit 1's new names. Folder-only renames retain npm names unless explicitly specified otherwise. Inventory executor host exports, old binaries, environment names, tarball locations, and skill paths to update Eve's integration directly (review R4). Remove obsolete interfaces as part of that coordinated change; do not build forwarding adapters solely to preserve the old test setup.
 
 ## 4. How transports call application
 
@@ -98,8 +110,10 @@ ks.activities                           // worker activity registry, keyed by op
 
 - `host` reads configuration (absorbs `packages/config`), builds persistence and storage adapters, and returns application services grouped by tool group.
 - Apps import only `@aiengineer/knowledge-host` and `@aiengineer/knowledge-contracts`. They do not import persistence, runtime, or algorithm packages.
+- This restriction concerns internal production runtime imports by API/MCP/worker and local CLI; transport libraries and test-only dependencies are allowed. Remote CLI explicitly imports `@aiengineer/knowledge-client`. Tests must not turn devDependencies into runtime dependencies.
 - Ownership, admission gates (`is*RequestAdmitted`), `CanonicalRetrievalExecutor`, and the per-app `*-runtime.ts` compositions move to application (as ports and use cases) and host (as wiring).
 - The `local` profile replaces the executor's `VERIFY_STORE_DIR` mode and serves the CLI's offline commands.
+- Profiles expose only supported capabilities. A file store alone does not make capture/judging offline; unit 5 must map those existing callers explicitly. Offline mode has no implicit network/database fallback. Host owns resource lifecycle and cleanup; remote CLI entrypoints load no local host until an offline command selects it.
 
 ### 4.2 Handler shape
 
@@ -111,6 +125,8 @@ Every API route, MCP tool, CLI command, and A2A skill does exactly four things:
 4. Map the result or error.
 
 Application raises one error-code set defined in `contracts`. Each transport maps it: HTTP status (API), MCP error (MCP), exit code `0` success / `1` quality gate failed / `2` usage, auth, network or executor error (CLI). Handlers contain no SQL and no authorization logic.
+
+Transports still extract/validate credentials and construct trusted caller context; application enforces tenant, ownership, capability and admission policy. Preserve existing error mappings during migration. Centralizing schemas/codes is not permission to change callers' failure semantics in a mechanical unit.
 
 ### 4.3 Durable work
 
@@ -133,6 +149,8 @@ Application raises one error-code set defined in `contracts`. Each transport map
 
 `packages/application/src/operations/surface.ts` is the list of operation names and schemas. Bindings stay hand-written. One test asserts every catalog operation is exposed on API, MCP, and CLI or is listed as an explicit exclusion.
 
+This is the target catalog role. Today that file describes durable steps and admission, while executor/read operations have other catalogs. Unit 4 must inventory both reads and mutations and distinguish declared, admitted, and executable operations by profile/transport. An exclusion carries a reason; a declared kind is never automatically made executable. Existing ingestion transaction/receipt semantics do not acquire a second operation ledger merely for parity.
+
 ## 5. Units of work
 
 Each unit has its own specification in this folder before it starts.
@@ -147,8 +165,10 @@ Each unit has its own specification in this folder before it starts.
 | 6 | Skills to eight; update `skills/manifest.json` and sandbox packaging's required skills | Skill names change | to write |
 | 7 | `scripts/` → `proofs/`; archive sprint-only proofs | None | to write |
 
+Unit 5 starts with dependency inversion: unit 1 leaves `knowledge-db → persistence → application`; application cannot then depend on knowledge-db until its persistence coupling is replaced by injected interfaces. Keep that prerequisite separate from unit 1's mechanical moves. Adapt Eve to the new services in unit 5 and the updated skills in unit 6; run integration smoke checks against the new contract. After cleanup is complete, run the pre–Mission Control testing. Specifications for units 2–7 are written against the preceding validated state; the workspace ledger records their entry/exit gates.
+
 Deliberately deferred until they cause a problem: unifying the three capture/parse paths (knowledge acquisition + Docling, verification capture + `services/verification-parser`, executor Firecrawl parse); renames inside `packages/verification`; the two `deterministicUuid` functions (`runtime` two-argument, `documents` one-argument).
 
 ## 6. Dated documents
 
-Review records under `docs/operations/reviews/` and the phase memos in this folder are dated records. They keep pre-merge paths (`packages/conversion`, `packages/db-read`, …); read them with the mapping in §3. Live navigation (`AGENTS.md`, `docs/agents/CODE-MAP.md`, `knowledge/*.md`, `.agent-docs/`) is updated by the unit that moves the code.
+Review records under `docs/operations/reviews/` and the phase memos under [archive/](./archive/README.md) are dated records. They keep pre-merge paths (`packages/conversion`, `packages/db-read`, …); read them with the mapping in §3. Live navigation (`AGENTS.md`, `docs/agents/CODE-MAP.md`, `knowledge/*.md`, `.agent-docs/`) is updated by the unit that moves the code.

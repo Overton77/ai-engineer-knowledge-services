@@ -11,6 +11,7 @@
  *   executor MCP tools   apps/verification-executor/src/mcp.ts  (verify_* tools) + the operations above
  *   platform CLI         apps/cli/src/commands.ts CLI_COMMANDS + apps/cli/src/index.ts local commands
  *   platform MCP tools   apps/mcp/src/index.ts
+ *   Jev MCP / CLI        apps/jev/src/{mcp,index}.ts
  * When apps/verification-executor/dist/knowledge.js exists, its `ops` output is compared against the
  * parsed executor catalog so a stale parser cannot pass silently.
  */
@@ -29,7 +30,7 @@ const die = (message) => { console.error(message); process.exit(2); };
 const read = (path) => readFileSync(path, "utf8");
 
 /** Minimum sizes: a silently empty catalog must never let a skill pass. */
-const MINIMUM = { executorOperations: 25, executorMcpTools: 35, platformCommands: 50, platformMcpTools: 20 };
+const MINIMUM = { executorOperations: 25, executorMcpTools: 35, platformCommands: 50, platformMcpTools: 20, jevMcpTools: 6, jevCommands: 8 };
 
 function executorOperationCatalog() {
   const files = ["operations.ts", "recovery-host-operations.ts", "content-link-operations.ts"].map((name) => read(join(executorRoot, "src/knowledge", name)));
@@ -84,8 +85,28 @@ const executorMcpTools = new Set([...executorOperations.keys(), ...verifyMcpTool
 const executorCommands = new Set(executorOperations.values());
 const platform = platformCommands();
 const platformTools = platformMcpTools();
+const jevSource = read(join(repoRoot, "apps/jev/src/mcp.ts"));
+const jevTools = new Set([...jevSource.matchAll(/registerTool\(\s*"(jev_[a-z0-9_]+)"/g)].map(match => match[1]));
+const jevCliSource = read(join(repoRoot, "apps/jev/src/index.ts"));
+const jevCommands = new Set([...jevCliSource.matchAll(/command\s*[!=]==\s*"([a-z][a-z-]*)"/g)].map(match => match[1]));
+const jevHttpSource = read(join(repoRoot, "apps/jev/src/http.ts"));
+const jevHttpRoutes = new Set([...jevHttpSource.matchAll(/request\.method === "(GET|POST)" && path === "([^"]+)"/g)].map(match => `${match[1]} ${match[2]}`));
+const jevHttpOperations = new Map([
+  ["jev_submit", "POST /v1/jev/jobs"], ["jev_batch", "POST /v1/jev/batches"],
+  ["jev_list", "GET /v1/jev/jobs"], ["jev_workers", "GET /v1/jev/health"],
+]);
+const jobRoutePattern = /const match = \/(.+)\/\.exec\(path\)/.exec(jevHttpSource)?.[1];
+if (!jobRoutePattern) die("Jev HTTP job route parser no longer matches source");
+const jobRoute = new RegExp(jobRoutePattern);
+if (!jobRoute.test("/v1/jev/jobs/example") || !jobRoute.test("/v1/jev/jobs/example/cancel")
+  || !jevHttpSource.includes('request.method === "GET" && !match[2]')
+  || !jevHttpSource.includes('request.method === "POST" && match[2]')) die("Jev HTTP get/cancel route source changed; update conformance parser");
+jevHttpOperations.set("jev_get", "GET /v1/jev/jobs/:id");
+jevHttpOperations.set("jev_cancel", "POST /v1/jev/jobs/:id/cancel");
+jevHttpRoutes.add("GET /v1/jev/jobs/:id");
+jevHttpRoutes.add("POST /v1/jev/jobs/:id/cancel");
 for (const [name, minimum] of Object.entries(MINIMUM)) {
-  const size = { executorOperations, executorMcpTools, platformCommands: platform, platformMcpTools: platformTools }[name].size;
+  const size = { executorOperations, executorMcpTools, platformCommands: platform, platformMcpTools: platformTools, jevMcpTools: jevTools, jevCommands }[name].size;
   if (size < minimum) die(`catalog ${name} parsed only ${size} entries (expected >= ${minimum}); the parser or the source moved`);
 }
 
@@ -103,7 +124,10 @@ const directories = readdirSync(skillsRoot, { withFileTypes: true }).filter((ent
 for (const name of directories) if (!declared.has(name)) fail(`skills/${name}/ exists but manifest.json does not declare it`);
 for (const skill of manifest.skills) if (!directories.includes(skill.id)) fail(`manifest declares ${skill.id} without a skills/${skill.id}/ directory`);
 
-const SURFACES = new Set(["executor-cli", "executor-mcp", "platform-cli", "platform-mcp", "workspace-files"]);
+const SURFACES = new Set(["executor-cli", "executor-mcp", "platform-cli", "platform-mcp", "workspace-files", "jev-cli", "jev-mcp", "jev-http"]);
+for (const surface of ["jev-cli", "jev-mcp", "jev-http"]) {
+  if (!manifest.distributions?.[surface]) fail(`manifest omits the ${surface} distribution`);
+}
 const filesOf = (directory) => {
   const files = {};
   const walk = (current) => {
@@ -137,14 +161,24 @@ for (const skill of manifest.skills) {
 
   // 1. Declared operations must exist on their declared surfaces.
   for (const operation of skill.operations ?? []) {
-    const known = executorOperations.has(operation) || executorMcpTools.has(operation) || platformTools.has(operation) || platform.has(operation);
+    const known = executorOperations.has(operation) || executorMcpTools.has(operation) || platformTools.has(operation) || platform.has(operation) || jevTools.has(operation);
     if (!known) fail(`${skill.id}: declared operation "${operation}" is not in any implemented catalog`);
+    if (jevTools.has(operation)) {
+      if (!(skill.surfaces ?? []).includes("jev-mcp")) fail(`${skill.id}: declares ${operation} without its jev-mcp surface`);
+      if ((skill.surfaces ?? []).includes("jev-cli") && !jevCommands.has(operation.slice("jev_".length))) fail(`${skill.id}: ${operation} has no matching implemented Jev CLI command`);
+      if ((skill.surfaces ?? []).includes("jev-http") && !jevHttpRoutes.has(jevHttpOperations.get(operation))) fail(`${skill.id}: ${operation} has no matching implemented Jev HTTP route`);
+    }
     if (platform.get(operation) === "unsupported") fail(`${skill.id}: declared operation "${operation}" is an explicitly unsupported platform command`);
   }
 
   // 2. Every command spelled in the text must resolve, on one of the skill's declared surfaces.
   const surfaces = new Set(skill.surfaces ?? []);
   for (const span of codeSpans(body)) {
+    const jevInvocation = /^\s*(?:\$\s+)?(?:jev|node\s+(?:--env-file=\S+\s+)?apps\/jev\/dist\/index\.js)\s+([a-z][a-z-]*)/.exec(span);
+    if (jevInvocation) {
+      if (!jevCommands.has(jevInvocation[1])) fail(`${skill.id}: Jev command "${jevInvocation[1]}" is not implemented`);
+      if (!surfaces.has("jev-cli")) fail(`${skill.id}: uses a Jev command without declaring jev-cli`);
+    }
     const invocation = /^\s*(?:\$\s+)?knowledge(?:-verify)?\s+([a-z][a-z-]*)\s+([a-z][a-z-]*)/.exec(span);
     if (!invocation) continue;
     const pair = `${invocation[1]} ${invocation[2]}`;
@@ -160,13 +194,17 @@ for (const skill of manifest.skills) {
   // 3. Every MCP tool name spelled in the text must exist, unless the skill declares it absent on purpose.
   const absent = new Set([...(skill.absentOperations ?? []), ...(skill.artifactTypes ?? [])]);
   for (const name of absent) {
-    if (executorMcpTools.has(name) || platformTools.has(name) || platform.get(name) === "admitted") fail(`${skill.id}: declares "${name}" unavailable, but it is now an admitted operation — update the skill`);
+    if (executorMcpTools.has(name) || platformTools.has(name) || jevTools.has(name) || platform.get(name) === "admitted") fail(`${skill.id}: declares "${name}" unavailable, but it is now an admitted operation — update the skill`);
   }
   for (const span of codeSpans(body)) {
     const toolText = span.replace(/"serviceIdentity"\s*:\s*"[^"]*"/g, "");
-    for (const candidate of toolText.matchAll(/\b((?:knowledge|verify|schema|db|ingest|artifact|report|recovery|content|checkpoint|source)_[a-z0-9_]+)(\*?)/g)) {
+    for (const candidate of toolText.matchAll(/\b((?:knowledge|verify|schema|db|ingest|artifact|report|recovery|content|checkpoint|source|jev)_[a-z0-9_]+)(\*?)/g)) {
       const name = candidate[1];
       if (candidate[2] === "*" || name.endsWith("_")) continue;
+      if (jevTools.has(name)) {
+        if (!surfaces.has("jev-mcp")) fail(`${skill.id}: uses ${name} without declaring jev-mcp`);
+        continue;
+      }
       if (executorMcpTools.has(name) || platformTools.has(name) || absent.has(name)) continue;
       if (/_(v1|json|md|id|ids|digest|sha256|key|dir|url|tokens|micros|schema|seq|state|kind)$/.test(name)) continue;
       fail(`${skill.id}: "${name}" looks like a tool name but is not in any implemented MCP catalog`);
@@ -175,7 +213,7 @@ for (const skill of manifest.skills) {
 
   // 3b. A skill that owns a catalog prefix must name every operation the catalog exposes under it.
   for (const prefix of skill.requireCatalogPrefix ?? []) {
-    const owned = [...executorMcpTools, ...platformTools].filter((name) => name.startsWith(prefix));
+    const owned = [...executorMcpTools, ...platformTools, ...jevTools].filter((name) => name.startsWith(prefix));
     if (!owned.length) fail(`${skill.id}: no implemented operation starts with "${prefix}"`);
     for (const name of owned) {
       if (!(skill.operations ?? []).includes(name)) fail(`${skill.id}: manifest omits catalog operation "${name}"`);
@@ -238,6 +276,6 @@ if (problems.length) {
   console.error(`${problems.length} skill conformance problem(s)`);
   process.exit(1);
 }
-const summary = { skills: report.skills.length, executorOperations: executorOperations.size, executorMcpTools: executorMcpTools.size, platformCommands: platform.size, platformMcpTools: platformTools.size };
+const summary = { skills: report.skills.length, executorOperations: executorOperations.size, executorMcpTools: executorMcpTools.size, platformCommands: platform.size, platformMcpTools: platformTools.size, jevMcpTools: jevTools.size, jevCommands: jevCommands.size };
 if (process.argv.includes("--json")) console.log(JSON.stringify({ ...summary, ...report }, null, 2));
 else console.log(`skills conformant: ${JSON.stringify(summary)}`);

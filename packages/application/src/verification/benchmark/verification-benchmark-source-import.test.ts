@@ -9,7 +9,7 @@ import { RegisteredBenchmarkSourceImportAdmission, RegisteredBenchmarkSourceImpo
 const benchmarkTenant = "11111111-1111-4111-8111-111111111111", now = "2026-09-05T12:00:00.000Z";
 const encoder = new TextEncoder(), decoder = new TextDecoder("utf8", { fatal: true });
 const catalogDirectory = new URL("../../../../../catalog/verification-benchmarks/diagnostics-companies-pilot-v4/", import.meta.url);
-const sourceDirectory = new URL("../../../../../../internal/verification-offline-source-preparation-9093b465-16c2-4cc1-b7f4-728d3958b0ed/", import.meta.url);
+const sourceDirectory = new URL("../../../../../catalog/verification-assets/50a3552cffc639a78d7789865be929baefd64d2342431e2de958e669c21f163e/", import.meta.url);
 
 interface RecordValue { registration: VerificationArtifactHandle; bytes: Uint8Array; }
 interface SourceManifest { artifacts: Array<{ file: string; handle: VerificationArtifactHandle }>; }

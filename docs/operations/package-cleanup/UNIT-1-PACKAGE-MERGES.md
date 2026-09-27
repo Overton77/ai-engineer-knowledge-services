@@ -1,6 +1,8 @@
 # Unit 1 specification: mechanical package merges
 
-Status: ready (2026-09-27). Parent: [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) §5, unit 1.
+> Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
+
+Status: specified; execution follows [unit 0](./UNIT-0-BASELINE.md)'s green baseline (2026-09-27). Parent: [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) §5, unit 1. Progress: [workspace ledger](./workspace/PROGRESS.md).
 
 ## 1. Goal
 
@@ -37,6 +39,8 @@ Out of scope for this unit; each belongs to a later unit in `FINAL-LAYOUT.md`:
   - `knowledge-db` → `contracts`, `core`, `persistence`, `@aiengineer/database-contract`, `zod`; devDependency `preparation`
   - `persistence` → `application` → `core`, `preparation`, `retrieval`, …; nothing upstream depends on `knowledge-db`.
 - **No external consumer.** All thirteen packages are `private: true` and workspace-only. Mission Control uses `KnowledgeClient` over HTTP. No compatibility shim packages are published.
+
+These are the original pre-check claims, not substitutes for before/after evidence. Recheck compiler-resolved public barrels and actual consumer references at the implementation SHA; private package metadata alone does not prove absence of sibling consumers. The graph is acyclic for **this unit**. Before unit 5 adds `application → knowledge-db`, invert the remaining `knowledge-db → persistence` dependency (final review R1). Do not mix that architectural change into these moves.
 
 ## 4. Target folder layout
 
@@ -107,13 +111,13 @@ Template for all four (mirrors the existing packages):
 - `core` and `knowledge-db` have no `examples` script or `tsconfig.examples.json`.
 - `dependencies` per §3. `knowledge-db` keeps `"@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz"` (same relative depth; the folder stays directly under `packages/`), `zod: catalog:`, and `@types/node: catalog:` as a devDependency.
 - `tsconfig.json`: `{ "extends": "../../tsconfig.base.json", "include": ["src/**/*.ts"] }`. `tsconfig.examples.json`: extends it and adds `"examples/**/*.ts"`.
-- Delete the 13 old `packages/<name>/` folders once empty.
+- Remove obsolete absorbed package folders once their tracked contents are accounted for. Keep `packages/retrieval/`, which is both a source and destination. Do not recursively delete ignored/untracked local material while moving tracked code.
 
 ## 6. Import rewrites
 
 ### 6.1 Package-name codemod (consumers outside the group)
 
-Apply across `apps/`, `packages/`, `scripts/`, `internal/` for `*.ts`, `*.mts`, `*.mjs`, and every `package.json`:
+Apply to explicitly enumerated tracked source/config files in `apps/`, `packages/`, and `scripts/` for `*.ts`, `*.mts`, `*.mjs`, and package manifests. Inspect named live `internal/` consumers from §6.3 individually. Exclude generated output, artifacts, runs, receipts, caches, dependencies, and historical material; do not recursively enumerate `internal/`:
 
 | Old specifier | New specifier |
 |---|---|
@@ -174,7 +178,7 @@ Historical proof receipts that recorded digests over old source paths will not m
 
 ## 7. Suggested commit sequence
 
-One PR, four commits (one per group), smallest blast radius first so a failure isolates to one group. Each commit must pass `corepack pnpm install && corepack pnpm typecheck && corepack pnpm test` on its own.
+One PR, four package commits plus documentation, smallest blast radius first so a failure isolates to one group. Each package commit must pass install, typecheck and tests on its own. Run commands separately in PowerShell and stop on a failed exit code; `&&` examples assume a shell that supports it.
 
 1. `knowledge-db` (schema-workspace, db-read, ingestion)
 2. `retrieval` (retrieval, projections, embeddings, vector-backends)
@@ -197,13 +201,14 @@ Update live navigation in the docs commit:
 
 1. `corepack pnpm install` succeeds; `pnpm-lock.yaml` regenerated.
 2. `corepack pnpm verify` is green (typecheck, test, build, `examples:verification`).
-3. **Test count unchanged.** Record `vitest run` test totals for the 13 old packages before the change and for the 4 new packages after; the sums match. Baseline test-file counts (2026-09-27): core group 5, preparation group 14, retrieval group 31, knowledge-db group 28.
-4. **Export surface is a superset.** After `build`, for each group: the set of `Object.keys(await import("<old>/dist/index.js"))` (taken before the change) is a subset of `Object.keys(await import("<new>/dist/index.js"))`; for type-only exports, each old `dist/index.d.ts` export name appears in the new one. Save the before snapshot in the scratch directory, not the repo.
-5. `rg -n "@aiengineer/knowledge-(domain|runtime|observability|conversion|documents|chunking|projections|embeddings|vector-backends|schema-workspace|db-read|ingestion)\b" --glob '!docs/operations/reviews/**' --glob '!docs/operations/package-cleanup/**' --glob '!docs/specifications/**' --glob '!pnpm-lock.yaml'` returns nothing.
-6. `rg -n "packages/(domain|runtime|observability|conversion|documents|chunking|projections|embeddings|vector-backends|schema-workspace|db-read|ingestion)/"` outside dated docs returns only the persisted identity strings in `packages/persistence/src/preparation.ts` (§6.4).
+3. **Test identities and outcomes preserved.** Record file/test identities and passed/failed/skipped totals for the 13 old packages and four new packages; match through the move map, with no lost tests or new skips. Original test-file counts (core 5, preparation 14, retrieval 31, knowledge-db 28) are historical hints; use unit 0's actual baseline.
+4. **Public exports preserved.** Compare built runtime export names against unit 0's snapshot. Use the TypeScript symbol/declaration graph to resolve public type exports, `export *`, and aliases; textual presence in a root `index.d.ts` is insufficient. Compile before/after consumer probes for existing type contracts. Retain compact evidence or an immutable artifact URL/digest in the ledger; raw build output can stay outside the repository.
+5. Search old package specifiers in explicitly selected tracked live sources, package manifests, root scripts/config, and live docs. No old imports or dependency keys remain. Audit the regenerated lockfile separately. Exclude historical docs/receipts and dependency/output directories; report the searched scope and deliberate exclusions.
+6. Search old filesystem paths over the same bounded inventory, including named live scripts and fixture resolution. No unresolved live paths remain. Preserve the exact procedure identity strings in `packages/persistence/src/preparation.ts` (§6.4); do not mistake these identities for paths. Keep historical evidence and review records unchanged.
 7. `node .agent-docs/cli.mjs check --repo .` passes.
 8. Integration tests that need Postgres or the sibling `ai-engineer-db-contract` checkout (`*.integration.test.ts` in knowledge-db and the executor) pass locally where those are available; if not run, the PR says so.
 9. `git log --follow` on a sample moved file (for example `packages/knowledge-db/src/db-read/read-executor.ts`) shows its pre-move history.
+10. Run the preparation and retrieval `examples` scripts explicitly (root `verify` covers verification examples only), then build and run the executor's `pack:sandbox` check and installed CLI smoke test from the baseline. Verify source-relative assets/fixtures, not only TypeScript imports.
 
 ## 10. Risks
 

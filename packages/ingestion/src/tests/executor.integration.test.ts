@@ -5,7 +5,7 @@ import { ArtifactLedger, canonicalJson, ReadExecutor } from "@aiengineer/knowled
 import { TenantPostgres, type TenantSqlClient, type TransactionScope } from "@aiengineer/knowledge-persistence";
 import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
 import { loadWorkspace } from "@aiengineer/knowledge-schema-workspace";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { classifyFailure, IngestionExecutor } from "../executor.js";
 import type { IngestionIntentInput } from "../intent.js";
 import { disposableDatabaseUrl } from "../../../persistence/test/disposable.mjs";
@@ -38,13 +38,24 @@ class InterleavedPostgres extends TenantPostgres {
 
 describe.skipIf(!url).each(workspaces)("IngestionExecutor against the disposable database (%s workspace)", (label, workspaceDir) => {
   const suffix = `${Date.now().toString(36)}${label.slice(0, 1)}`;
-  const db = new InterleavedPostgres({ connectionString: url ?? "postgresql://unused", maximumPoolSize: 2 });
-  const storeDir = mkdtempSync(join(tmpdir(), "ks-ingest-artifacts-"));
-  const workspace = loadWorkspace(workspaceDir);
-  const artifacts = new ArtifactLedger({ db, store: new LocalArtifactStore(storeDir), bucket: "research-ingestion-intents", uploaded: false, executorVersion: "knowledge-executor/test" });
-  const reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/test" });
-  const executor = new IngestionExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/synthetic-schema-fixture", evidence: declaredRunsOracle });
-  afterAll(async () => { await db.close(); rmSync(storeDir, { recursive: true, force: true }); });
+  let db!: InterleavedPostgres;
+  let storeDir: string | undefined;
+  let workspace!: ReturnType<typeof loadWorkspace>;
+  let artifacts!: ArtifactLedger;
+  let reads!: ReadExecutor;
+  let executor!: IngestionExecutor;
+  beforeAll(() => {
+    workspace = loadWorkspace(workspaceDir);
+    db = new InterleavedPostgres({ connectionString: url ?? "postgresql://unused", maximumPoolSize: 2 });
+    storeDir = mkdtempSync(join(tmpdir(), "ks-ingest-artifacts-"));
+    artifacts = new ArtifactLedger({ db, store: new LocalArtifactStore(storeDir), bucket: "research-ingestion-intents", uploaded: false, executorVersion: "knowledge-executor/test" });
+    reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/test" });
+    executor = new IngestionExecutor({ db, workspace, artifacts, executorVersion: "knowledge-executor/synthetic-schema-fixture", evidence: declaredRunsOracle });
+  });
+  afterAll(async () => {
+    try { await db?.close(); }
+    finally { if (storeDir) rmSync(storeDir, { recursive: true, force: true }); }
+  });
 
   const twoProposals = async (intentId: string, expectedKnowledgeHead: number, onStale: "fail" | "rebase_if_disjoint" = "rebase_if_disjoint"): Promise<IngestionIntentInput> => withSnapshot(reads, ({
     schemaVersion: "knowledge-ingestion-intent.v1",

@@ -6,7 +6,7 @@
   "budgetBytes": 9216,
   "rules": [
     "Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.",
-    "In-process KS servers (API, MCP, workers) call packages/application. Out-of-process callers (laptop CLI remote, Eve, Mission Control, other repos) use KnowledgeClient against the HTTP API. CLI local demo/attestation stay application-direct. Do not add MCP apiClient methods; new use cases go through application.",
+    "API, MCP, and workers call packages/application. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct. Never add MCP apiClient methods.",
     "Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.",
     "Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.",
     "Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.",
@@ -18,14 +18,19 @@
   ],
   "docs": [
     {
+      "path": "docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md",
+      "task": "Unit 1 continuation after Jev merge; exact baseline exception",
+      "status": "reference"
+    },
+    {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
-      "task": "Final package/app/skill layout, host transport rule, unit specs; start here for cleanup",
+      "task": "Accepted cleanup layout, transport rule, and sequence",
       "status": "accepted"
     },
     {
       "path": "docs/operations/package-cleanup/README.md",
-      "task": "Dated package and app cleanup proposal, phase instructions, recommendations, and feature sequence",
-      "status": "proposed"
+      "task": "Current cleanup index and historical archive",
+      "status": "reference"
     },
     {
       "path": "docs/operations/code-quality-and-delivery-process.md",
@@ -389,6 +394,19 @@
       "status": "reference",
       "modules": [
         "verification-executor"
+      ]
+    },
+    {
+      "path": "docs/architecture/modules/jev.md",
+      "task": "Jev processes, API, MCP, CLI and research",
+      "status": "reference",
+      "modules": [
+        "jev",
+        "jev-service",
+        "application",
+        "contracts",
+        "client-typescript",
+        "skill-jev-system-one"
       ]
     }
   ],

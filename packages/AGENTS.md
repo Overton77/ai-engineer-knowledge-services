@@ -30,6 +30,7 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | [testkit](../docs/agents/CODE-MAP.md#testkit) | Curated evaluation corpora, embedding bundles, retrieval fixtures, and operational test assets. | packages/testkit/src/index.ts |
 | [vector-backends](../docs/agents/CODE-MAP.md#vector-backends) | Vector-store adapters, publication and rollback mechanics, and space version-pointer and entity-link shapes for exact and Postgres search. | packages/vector-backends/src/index.ts |
 | [verification](../docs/agents/CODE-MAP.md#verification) | Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay. | packages/verification/src/index.ts |
+| [jev](../docs/agents/CODE-MAP.md#jev) | Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes. | packages/jev/src/index.ts |
 
 Descriptions are maintained in `.agent-docs/modules.json` at the repository root. Do not edit this generated block.
 <!-- END GENERATED: semantic-map -->

@@ -34,7 +34,7 @@ describe("broad retrieval evaluation corpus", () => {
     const result = await runBroadEvaluation(await createProvisionalCorpus());
     expect(result.experiment.arms.map(({ arm }) => arm.id)).toEqual(["hybrid-control", "lexical-only", "vector-only", "unfiltered-hybrid", "graph-hybrid", "reranked-hybrid"]);
     expect(result.falseAcceptanceCases).toEqual([]);
-    expect(result.controlGate.passed).toBe(true);
+    expect(result.controlGate.passed, JSON.stringify(result.controlGate)).toBe(true);
     expect(result.regressionGate.passed).toBe(true);
     expect(result.rollbackProof.passed).toBe(true);
   }, 30_000);

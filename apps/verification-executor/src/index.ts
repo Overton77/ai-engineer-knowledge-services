@@ -1,5 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { realpathSync } from "node:fs";
 import { basename, extname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { mediaTypeForFilename } from "./capture.js";
 import { loadExecutorConfig, VerificationExecutor } from "./executor.js";
@@ -280,8 +282,10 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
 const invokedDirectly = (() => {
   try {
-    const entry = process.argv[1] ?? "";
-    return /verification-executor[\\/](dist|src)[\\/]index\.(js|ts)$/.test(entry) || /knowledge-verify(\.cmd|\.js)?$/.test(entry) || /[\\/]knowledge-verify$/.test(entry);
+    if (!process.argv[1]) return false;
+    const entry = realpathSync.native(process.argv[1]);
+    const modulePath = realpathSync.native(fileURLToPath(import.meta.url));
+    return process.platform === "win32" ? entry.toLowerCase() === modulePath.toLowerCase() : entry === modulePath;
   } catch { return false; }
 })();
 

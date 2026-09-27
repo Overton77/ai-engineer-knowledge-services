@@ -76,6 +76,9 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [skill-verification-executor](#skill-verification-executor) | apps/verification-executor/skills/knowledge-verify | Executor capture, quote, claim, extraction, policy and report procedure with a shipped offline CLI scaffold. | implemented |
 | [verification-internal](#verification-internal) | packages/verification/src/internal | Package-private helpers: deep freeze, plain-record guards, and the allocation-bounded JSON walker shared by extraction, semantic, and provider preflights. | implemented |
 | [verification-prototype-compat](#verification-prototype-compat) | packages/verification/src/prototype-compat | Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle translation shapes. | implemented |
+| [jev](#jev) | packages/jev | Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes. | implemented |
+| [jev-service](#jev-service) | apps/jev | Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the public client. | implemented |
+| [skill-jev-system-one](#skill-jev-system-one) | skills/jev-system-one | Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition. | implemented |
 
 ## api
 
@@ -242,8 +245,8 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 **Enter:** [`packages/application/src/index.ts`](../../packages/application/src/index.ts), [`packages/application/src/verification/operations/verification-transport.ts`](../../packages/application/src/verification/operations/verification-transport.ts), [`packages/application/src/verification/operations/verification-ownership.ts`](../../packages/application/src/verification/operations/verification-ownership.ts)
 **Interface:** Application service facades and use-case functions; transports call these rather than implementing algorithms. verification-transport.ts owns ResolveVerificationContext, catalog/SQL admission factories, and the static context resolver. verification-ownership.ts owns the ownership resolver and read authorizer as application ports.
 **Package:** @aiengineer/knowledge-application ([`packages/application/package.json`](../../packages/application/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [chunking](#chunking), [contracts](#contracts), [conversion](#conversion), [documents](#documents), [domain](#domain), [embeddings](#embeddings), [evaluation](#evaluation), [policy](#policy), [projections](#projections), [retrieval](#retrieval), [runtime](#runtime), [vector-backends](#vector-backends), [verification](#verification)
+**Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** [acquisition](#acquisition), [chunking](#chunking), [contracts](#contracts), [conversion](#conversion), [documents](#documents), [domain](#domain), [embeddings](#embeddings), [evaluation](#evaluation), [jev](#jev), [policy](#policy), [projections](#projections), [retrieval](#retrieval), [runtime](#runtime), [vector-backends](#vector-backends), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/application/src/operations/a2a-adapter.test.ts`](../../packages/application/src/operations/a2a-adapter.test.ts), [`packages/application/src/operations/capability-admission.test.ts`](../../packages/application/src/operations/capability-admission.test.ts) Package script names: build, test, typecheck.
@@ -262,6 +265,7 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
 ## chunking
 
@@ -293,7 +297,7 @@ Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, E
 **Enter:** [`packages/client-typescript/src/index.ts`](../../packages/client-typescript/src/index.ts)
 **Interface:** KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application.
 **Package:** @aiengineer/knowledge-client ([`packages/client-typescript/package.json`](../../packages/client-typescript/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
+**Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
@@ -305,6 +309,7 @@ Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, E
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
 ## config
 
@@ -335,7 +340,7 @@ Versioned Zod schemas and types shared by transports, application composition, a
 **Enter:** [`packages/contracts/src/index.ts`](../../packages/contracts/src/index.ts)
 **Interface:** Public request/result and verification contract schemas.
 **Package:** @aiengineer/knowledge-contracts ([`packages/contracts/package.json`](../../packages/contracts/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
+**Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
@@ -345,6 +350,7 @@ Versioned Zod schemas and types shared by transports, application composition, a
 
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
 ## conversion
 
@@ -1302,4 +1308,64 @@ Frozen legacy prototype locator, hash, JSON-pointer, arithmetic, and bundle tran
 **Architecture and detailed docs:**
 
 No module-specific architecture document registered. Do not infer a design decision from the folder name.
+
+## jev
+
+**packages/jev** · package · implemented
+
+Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes.
+
+**Enter:** [`packages/jev/src/index.ts`](../../packages/jev/src/index.ts), [`packages/jev/src/service.ts`](../../packages/jev/src/service.ts), [`packages/jev/src/provider.ts`](../../packages/jev/src/provider.ts)
+**Interface:** Private application implementation; public contracts are packages/contracts /jev. One supervisor per local database; at-least-once provider execution.
+**Package:** @aiengineer/knowledge-jev ([`packages/jev/package.json`](../../packages/jev/package.json))
+**Export subpaths:** .. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** [contracts](#contracts)
+**Other runtime dependencies:** zod
+**Reviewed runtime/data relationships:** [contracts](#contracts)
+**Checks:** [`packages/jev/src/service.test.ts`](../../packages/jev/src/service.test.ts) Package script names: build, test, typecheck.
+- Single-host operator trust domain; no shared Supabase changes or distributed tenant guarantees.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+
+## jev-service
+
+**apps/jev** · app · implemented
+
+Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the public client.
+
+**Enter:** [`apps/jev/src/index.ts`](../../apps/jev/src/index.ts), [`apps/jev/src/http.ts`](../../apps/jev/src/http.ts), [`apps/jev/src/mcp.ts`](../../apps/jev/src/mcp.ts)
+**Interface:** jev serve/mcp-stdio; /v1/jev/jobs, batches, health and /mcp; jev_submit/batch/get/list/cancel/workers.
+**Package:** @aiengineer/knowledge-jev-service ([`apps/jev/package.json`](../../apps/jev/package.json))
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts)
+**Other runtime dependencies:** @modelcontextprotocol/sdk, zod
+**Reviewed runtime/data relationships:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts), [jev](#jev)
+**Checks:** [`apps/jev/src/http.test.ts`](../../apps/jev/src/http.test.ts) Package script names: build, test, typecheck.
+- HTTP/MCP call application /jev; CLI uses KnowledgeJevClient. Dedicated service is user-authorized; broader ks CLI consolidation remains separate.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+
+## skill-jev-system-one
+
+**skills/jev-system-one** · skill · implemented
+
+Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition.
+
+**Enter:** [`skills/jev-system-one/SKILL.md`](../../skills/jev-system-one/SKILL.md)
+**Interface:** jev CLI, HTTP/MCP job contracts, provider primitives and caller-orchestrated taxonomy/reranking recipes.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** [jev-service](#jev-service)
+**Checks:** No specific test anchor registered.
+- Research recommendations and historical results are not production calibration.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 <!-- END GENERATED: semantic-map -->

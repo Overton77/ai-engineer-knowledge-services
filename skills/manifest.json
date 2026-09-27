@@ -5,7 +5,10 @@
     "executor-cli": "@aiengineer/knowledge-verification-executor bin knowledge (sandbox executor; also knowledge-verify)",
     "executor-mcp": "verification executor /mcp",
     "platform-cli": "@aiengineer/knowledge-cli bin knowledge (platform API client)",
-    "platform-mcp": "@aiengineer/knowledge-mcp"
+    "platform-mcp": "@aiengineer/knowledge-mcp",
+    "jev-cli": "@aiengineer/knowledge-jev-service bin jev (HTTP client)",
+    "jev-mcp": "@aiengineer/knowledge-jev-service /mcp or dedicated mcp-stdio host",
+    "jev-http": "@aiengineer/knowledge-jev-service /v1/jev"
   },
   "skills": [
     {
@@ -324,10 +327,11 @@
     },
     {
       "id": "jev-system-one",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "jev-system-one/SKILL.md",
-      "surfaces": [],
-      "operations": [],
+      "surfaces": ["jev-cli", "jev-mcp", "jev-http"],
+      "operations": ["jev_submit", "jev_batch", "jev_get", "jev_list", "jev_cancel", "jev_workers"],
+      "requireCatalogPrefix": ["jev_"],
       "references": [
         "api-reference.md",
         "question-design.md",
