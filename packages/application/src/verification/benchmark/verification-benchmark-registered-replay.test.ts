@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
@@ -14,7 +15,8 @@ import type { RegisteredBenchmarkSourceImportResult } from "./verification-bench
 
 const encoder = new TextEncoder(), decoder = new TextDecoder("utf8", { fatal: true });
 const profileDirectory = new URL("../../../../../catalog/verification-benchmarks/diagnostics-companies-pilot-v4/", import.meta.url);
-const checkpointPath = new URL("../../../../../../internal/verification-benchmark-extraction-live-feeb824c-e4d0-597f-abd7-7667fa080869/38-gl-interested-comparison-source-luna_extractor.json", import.meta.url);
+const replayDirectory = new URL("../../../../../catalog/verification-benchmarks/diagnostics-companies-pilot-v4-extraction-replay-v1/", import.meta.url);
+const checkpointPath = new URL("records/38-gl-interested-comparison-source-luna_extractor.json", replayDirectory);
 const failedCheckpointNames = [
   "13-tru-omic-mutated-interfaze_extractor-failure.json",
   "15-tru-pace-mutated-interfaze_extractor-failure.json",
@@ -24,11 +26,20 @@ const failedCheckpointNames = [
   "29-gl-consultation-mutated-interfaze_extractor-failure.json",
   "39-gl-interested-comparison-mutated-interfaze_extractor-failure.json",
 ] as const;
-const failedCheckpointUrl = (name: string) => new URL(`../../../../../../internal/verification-benchmark-extraction-live-feeb824c-e4d0-597f-abd7-7667fa080869/${name}`, import.meta.url);
+const failedCheckpointUrl = (name: string) => new URL(`records/${name}`, replayDirectory);
 
 async function fixture(path: URL | readonly URL[] = checkpointPath) {
   const paths = Array.isArray(path) ? path : [path];
-  const checkpointBytesList = await Promise.all(paths.map(async item => new Uint8Array(await readFile(item))));
+  const replayManifest = JSON.parse(await readFile(new URL("manifest.json", replayDirectory), "utf8")) as { entries: Array<{ recordFile: string; recordSha256: string; recordBytes: number }> };
+  const checkpointBytesList = await Promise.all(paths.map(async item => {
+    const recordFile = decodeURIComponent(item.href.slice(replayDirectory.href.length));
+    const entry = replayManifest.entries.find(candidate => candidate.recordFile === recordFile);
+    if (!entry) throw new Error(`SEALED_CHECKPOINT_MISSING:${recordFile}`);
+    const bytes = new Uint8Array(await readFile(new URL(entry.recordFile, replayDirectory)));
+    const digest = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+    if (bytes.byteLength !== entry.recordBytes || digest !== entry.recordSha256) throw new Error(`SEALED_CHECKPOINT_MISMATCH:${recordFile}`);
+    return bytes;
+  }));
   const checkpoints = checkpointBytesList.map(bytes => JSON.parse(decoder.decode(bytes)));
   const checkpoint = checkpoints[0]!;
   const tenantId = checkpoint.artifacts[0].handle.tenantId as string;
@@ -288,7 +299,7 @@ describe("registered benchmark replay", () => {
   });
 
   it("deduplicates successful and failed checkpoints across the same case and role", async () => {
-    const success = new URL("../../../../../../internal/verification-benchmark-extraction-live-feeb824c-e4d0-597f-abd7-7667fa080869/13-tru-omic-mutated-luna_extractor.json", import.meta.url);
+    const success = new URL("records/13-tru-omic-mutated-luna_extractor.json", replayDirectory);
     const value = await fixture([success, failedCheckpointUrl(failedCheckpointNames[0])]);
     const changed = structuredClone(value.checkpoints[1]);
     Object.assign(changed, { role: "luna_extractor", provider: "gateway", model: "openai/gpt-5.6-luna" });
@@ -304,7 +315,7 @@ describe("registered benchmark replay", () => {
   });
 
   it("requires exact source binding across successful and failed roles for one case", async () => {
-    const success = new URL("../../../../../../internal/verification-benchmark-extraction-live-feeb824c-e4d0-597f-abd7-7667fa080869/13-tru-omic-mutated-luna_extractor.json", import.meta.url);
+    const success = new URL("records/13-tru-omic-mutated-luna_extractor.json", replayDirectory);
     const value = await fixture([success, failedCheckpointUrl(failedCheckpointNames[0])]);
     const changed = structuredClone(value.checkpoints[1]);
     changed.sourceBinding = { ...changed.sourceBinding, locatorValid: !changed.sourceBinding.locatorValid };
