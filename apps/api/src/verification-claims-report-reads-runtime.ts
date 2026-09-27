@@ -3,7 +3,7 @@ import { UuidSchema,type Actor,type VerificationClaimsTerminalResource,type Veri
 import { PostgresClaimsReportReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createEd25519Verifier } from "@aiengineer/knowledge-verification";
-import { parseBenchmarkReadPublicKeys } from "./verification-benchmark-reads-runtime.js";
+import { parseBenchmarkReadPublicKeys } from "@aiengineer/knowledge-application";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";
 
 type ReadInput={tenantId:string;operationId:string;actor:Actor};

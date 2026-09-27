@@ -3,7 +3,7 @@ import {PostgresStructuredExtractionReadRepository,PostgresVerificationRepositor
 import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {UuidSchema,type Actor} from "@aiengineer/knowledge-contracts";
-import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";
+import { parseBenchmarkReadPublicKeys } from "@aiengineer/knowledge-application";
 import {createVerificationOperationReadAuthorizer} from "./verification-ownership.js";
 
 export function createVerificationStructuredExtractionReads(database:PostgresCanonicalRepository|undefined,environment:Readonly<Record<string,string|undefined>>){

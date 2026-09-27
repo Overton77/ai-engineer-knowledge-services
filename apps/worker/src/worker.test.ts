@@ -37,7 +37,9 @@ describe("worker bootstrap", () => {
     await expect(startWorker({ KNOWLEDGE_PERSISTENCE_MODE:"memory", NODE_ENV:"production" })).rejects.toThrow("IN_MEMORY_PERSISTENCE_NOT_ADMITTED");
     const running = await startWorker({ KNOWLEDGE_PERSISTENCE_MODE:"memory", NODE_ENV:"test", WORKER_POLL_MS:"60000" });
     expect(running.mode).toBe("memory");
-    await running.stop("test");
+    const stopping = running.stop("test");
+    expect(running.stop("again")).toBe(stopping);
+    await stopping;
   });
 
   it("defaults to canonical persistence and fails closed when its tenant/config is absent", async () => {
