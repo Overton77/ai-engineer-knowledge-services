@@ -200,7 +200,7 @@ export function convertTextToNodes(
     source = stripHtml(source);
   }
   const transcript = looksLikeTranscript(mediaType, source);
-  const headings: string[] = [];
+  const headings: { level: number; label: string }[] = [];
   let cursor = 0;
   for (const raw of source.split(/\n{2,}/)) {
     const text = raw.trim();
@@ -211,14 +211,16 @@ export function convertTextToNodes(
       ? classifyTranscriptBlock(text)
       : classifyProseBlock(text);
     if (classified.kind === "heading" && classified.label && classified.headingLevel) {
-      headings.length = classified.headingLevel - 1;
-      headings.push(classified.label);
+      while (headings.at(-1) && headings.at(-1)!.level >= classified.headingLevel) {
+        headings.pop();
+      }
+      headings.push({ level: classified.headingLevel, label: classified.label });
     }
     const locator = withTranscriptTimes(
       {
         startOffset,
         endOffset: startOffset + text.length,
-        sectionPath: headings.slice(),
+        sectionPath: headings.map((heading) => heading.label),
       },
       classified,
     );

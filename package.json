@@ -45,7 +45,7 @@
     "prove:hnsw-local": "tsx scripts/prove-local-hnsw.ts",
     "prove:canonical-retrieval-api": "tsx scripts/prove-canonical-retrieval-api.ts",
     "prove:verification-persistence": "tsx --env-file=.env scripts/prove-verification-persistence.ts",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=1 -- --maxWorkers=2",
     "test:live:gateway": "tsx --env-file=.env scripts/live-gateway-embeddings.ts",
     "test:live:judge": "tsx --env-file=.env scripts/live-gateway-judge.ts",
     "test:live:gate1": "tsx --env-file=../.env scripts/live-gate1.ts",
