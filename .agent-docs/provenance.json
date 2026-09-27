@@ -165,7 +165,7 @@
       "apps/verification-executor/skills/knowledge-verify/examples/offline.mjs": "dad79d48458bbbe09c20b1d7a341240002ca02cc9f02e9e84640def9d3957399",
       "apps/verification-executor/skills/knowledge-verify/SKILL.md": "835431bc5371a962cbddc328a71f92eeb27c9909b63f788726d2242f1d87fa99",
       "apps/verification-executor/src/executor.ts": "5294ae6664086b561d71b30700e9eaeb53d0572eccb8e1be45ab4e8eaefda085",
-      "apps/verification-executor/src/index.ts": "12d044579c1b32e6447169a0844b02972a218c3cf85392d8ace286252e2f6e8b",
+      "apps/verification-executor/src/index.ts": "03c9ee4112f40e70764baa4d1c88d2165c29573c640e97b57d59988fd825b8e1",
       "apps/verification-executor/src/intents.test.ts": "708798b1ae633ec832b61958db81945d874890085a4d5366a2fbaf0dd8b504c5",
       "apps/verification-executor/src/knowledge/cli.test.ts": "f709090061b29e5d58c0135956edccd643fae472fa2eac6afa3e17b0dadf64df",
       "apps/verification-executor/src/knowledge/cli.ts": "e4313556cbd80b31c3354aea21691ea83ebcc3f7e8656942c955b0270801c66d",
