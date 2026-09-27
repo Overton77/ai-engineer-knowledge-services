@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
-import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
+import { isKnowledgeError } from "@aiengineer/knowledge-db";
 import { RemoteExecutor, RemoteExecutorError } from "../remote.js";
 import { UnknownOperationError, type AnyOperation } from "../operations/define.js";
 import { createKnowledgeFromEnv, describeRunning, startExecutorServer } from "../serve.js";

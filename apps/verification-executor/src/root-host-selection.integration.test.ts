@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, it, expect } from "vitest";
-import { ArtifactLedger } from "@aiengineer/knowledge-db-read";
+import { ArtifactLedger } from "@aiengineer/knowledge-db";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../packages/persistence/test/disposable.mjs";

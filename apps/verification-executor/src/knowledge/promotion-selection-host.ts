@@ -1,4 +1,4 @@
-import type { ArtifactLedger } from "@aiengineer/knowledge-db-read";
+import type { ArtifactLedger } from "@aiengineer/knowledge-db";
 import type { PromotionSelectionArtifact, PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";
 import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
 import type { PromotionSelectionProgress, PromotionSelectionReference } from "@aiengineer/knowledge-application";

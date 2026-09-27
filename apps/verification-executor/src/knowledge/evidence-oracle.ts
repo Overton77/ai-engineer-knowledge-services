@@ -3,7 +3,7 @@ import { SemanticAssessmentRecordSchema, VerificationPolicyDecisionSchema, Verif
 import { canonicalizeJson, digestCanonicalJson, inspectAuditBundle, validateRecordedPolicyInputsArtifact, resolveEvidenceSelector, projectionSelectorResolver, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { evaluateVerificationPolicy } from "@aiengineer/knowledge-policy";
 
-import type { AuthoritativeClaim, EvidenceOracle, IngestionIntent } from "@aiengineer/knowledge-ingestion";
+import type { AuthoritativeClaim, EvidenceOracle, IngestionIntent } from "@aiengineer/knowledge-db";
 import { ClaimsIntentSchema } from "../intents.js";
 
 export interface VerificationEvidenceReader {

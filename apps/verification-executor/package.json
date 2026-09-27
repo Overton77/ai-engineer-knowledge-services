@@ -30,15 +30,13 @@
     "examples": "node skills/knowledge-verify/examples/offline.mjs dist/index.js"
   },
   "dependencies": {
-    "@aiengineer/knowledge-application": "workspace:*",
     "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz",
+    "@aiengineer/knowledge-application": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-db-read": "workspace:*",
-    "@aiengineer/knowledge-ingestion": "workspace:*",
+    "@aiengineer/knowledge-db": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-policy": "workspace:*",
     "@aiengineer/knowledge-runtime": "workspace:*",
-    "@aiengineer/knowledge-schema-workspace": "workspace:*",
     "@aiengineer/knowledge-verification": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "pg": "8.16.3",

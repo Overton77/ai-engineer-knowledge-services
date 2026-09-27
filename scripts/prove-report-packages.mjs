@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { ArtifactLedger } from "../packages/db-read/dist/index.js";
+import { ArtifactLedger } from "../packages/knowledge-db/dist/index.js";
 import { TenantPostgres } from "../packages/persistence/dist/index.js";
 import { SupabaseArtifactStore } from "../packages/runtime/dist/index.js";
-import { REPORT_BUCKET, ReportService } from "../packages/ingestion/dist/index.js";
+import { REPORT_BUCKET, ReportService } from "../packages/knowledge-db/dist/index.js";
 
 const projectRef = "wkythqbofmckbuoothhn";
 if (!process.argv.includes(`--project-ref=${projectRef}`)) throw new Error("Explicit --project-ref=wkythqbofmckbuoothhn required");

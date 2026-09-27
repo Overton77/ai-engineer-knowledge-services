@@ -7,7 +7,7 @@ import { ContentLinkIntentSchema, ContentLinkOperationSchema, JsonValueSchema, P
   type OperationKind, type PromotionSelection, type SelectedCandidateIndexInput, type ServiceIdentity,
   type VerificationBundle } from "@aiengineer/knowledge-contracts";
 import { IngestionIntentSchema, contentEvidenceAssessmentDigest, deterministicId, proposalEffect,
-  type ContentLinkReceipt } from "@aiengineer/knowledge-ingestion";
+  type ContentLinkReceipt } from "@aiengineer/knowledge-db";
 import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
@@ -17,8 +17,8 @@ import { PostgresCanonicalRepository, PostgresGovernedIndexRepository, PostgresK
   type PromotionSelectionConfiguration, type PublishedQueryMode } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
 import { digestCanonicalJson, verifyAssertionSemantics } from "@aiengineer/knowledge-verification";
-import { withSnapshot } from "../../../../packages/ingestion/test/snapshot-fixture.mjs";
-import { contentLinkEffect } from "../../../../packages/ingestion/src/content-links/operations.js";
+import { withSnapshot } from "../../../../packages/knowledge-db/test/ingestion/snapshot-fixture.mjs";
+import { contentLinkEffect } from "../../../../packages/knowledge-db/src/ingestion/content-links/operations.js";
 import { DeterministicFakeEmbeddingAdapter } from "../../../../packages/embeddings/src/index.js";
 import { VerificationExecutor, loadExecutorConfig } from "../executor.js";
 import { PolicyDefinitionInputSchema } from "../intents.js";

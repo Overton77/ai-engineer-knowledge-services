@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ManagedSourceDiscoveryRequestSchema, ImportedSourceDiscoveryReceiptSchema, SourceDiscoveryAttemptSchema, SourceDiscoveryAttemptReadSchema, SourceDiscoverySelectionRequestSchema, SourceDiscoverySelectionReceiptSchema } from "@aiengineer/knowledge-contracts";
-import { getPage, materializeScope, searchWorkspace } from "@aiengineer/knowledge-schema-workspace";
+import { getPage, materializeScope, searchWorkspace } from "@aiengineer/knowledge-db";
 import { defineOperation, OperationRegistry, type OperationDefinition } from "../operations/define.js";
 import type { KnowledgeServices } from "./context.js";
 import { CheckpointCommitRequestSchema, CheckpointRestoreRequestSchema, CheckpointScopeSchema, CheckpointReceiptSchema, CheckpointRestoreResultSchema, CheckpointTombstoneRequestSchema } from "@aiengineer/knowledge-contracts";

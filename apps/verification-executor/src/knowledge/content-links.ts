@@ -1,4 +1,4 @@
-import { authenticateCanonicalContentEvidence, type ContentLinkAuthority } from "@aiengineer/knowledge-ingestion";
+import { authenticateCanonicalContentEvidence, type ContentLinkAuthority } from "@aiengineer/knowledge-db";
 import type { VerificationExecutor } from "../executor.js";
 import { loadSealedContentClaim } from "./evidence-oracle.js";
 

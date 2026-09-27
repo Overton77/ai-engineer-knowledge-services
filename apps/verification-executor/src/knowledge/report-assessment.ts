@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { ArtifactLedger, sha256Hex } from "@aiengineer/knowledge-db-read";
-import { ReportService, ReportStructureSchema, renderReport, type ReportStructure, type RenderedAssertion, type ReportPackageRead } from "@aiengineer/knowledge-ingestion";
+import { ArtifactLedger, sha256Hex } from "@aiengineer/knowledge-db";
+import { ReportService, ReportStructureSchema, renderReport, type ReportStructure, type RenderedAssertion, type ReportPackageRead } from "@aiengineer/knowledge-db";
 import { assertSignedReportSourceDependencies, type TenantPostgres } from "@aiengineer/knowledge-persistence";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
-import { domainError } from "@aiengineer/knowledge-schema-workspace";
+import { domainError } from "@aiengineer/knowledge-db";
 import type { VerificationExecutor } from "../executor.js";
 import { loadSealedReportEvidence, type ReportEvidenceClaim, type SealedReportEvidence } from "./evidence-oracle.js";
 

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import type { ArtifactLedger } from "@aiengineer/knowledge-db-read";
+import type { ArtifactLedger } from "@aiengineer/knowledge-db";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
 import { JsonValueSchema } from "@aiengineer/knowledge-contracts";
-import { authenticateCanonicalContentEvidence, ContentSourceReader, readContentLinkReceipt } from "@aiengineer/knowledge-ingestion";
+import { authenticateCanonicalContentEvidence, ContentSourceReader, readContentLinkReceipt } from "@aiengineer/knowledge-db";
 import type { PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";
 import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
 import type { CanonicalEvidenceClaim, CanonicalEvidenceReader } from "../evidence-reader.js";

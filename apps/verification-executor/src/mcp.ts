@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
+import { isKnowledgeError } from "@aiengineer/knowledge-db";
 import { z } from "zod";
 import type { VerificationExecutor } from "./executor.js";
 import { ClaimsIntentSchema, ExtractionIntentSchema, ReportIntentSchema, PolicyDefinitionInputSchema } from "./intents.js";

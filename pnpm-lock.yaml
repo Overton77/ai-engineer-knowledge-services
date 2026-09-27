@@ -130,15 +130,9 @@ importers:
       '@aiengineer/knowledge-client':
         specifier: workspace:*
         version: link:../../packages/client-typescript
-      '@aiengineer/knowledge-db-read':
+      '@aiengineer/knowledge-db':
         specifier: workspace:*
-        version: link:../../packages/db-read
-      '@aiengineer/knowledge-ingestion':
-        specifier: workspace:*
-        version: link:../../packages/ingestion
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../../packages/schema-workspace
+        version: link:../../packages/knowledge-db
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -206,7 +200,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   apps/mcp:
     dependencies:
@@ -259,12 +253,9 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aiengineer/knowledge-db-read':
+      '@aiengineer/knowledge-db':
         specifier: workspace:*
-        version: link:../../packages/db-read
-      '@aiengineer/knowledge-ingestion':
-        specifier: workspace:*
-        version: link:../../packages/ingestion
+        version: link:../../packages/knowledge-db
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
@@ -274,9 +265,6 @@ importers:
       '@aiengineer/knowledge-runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../../packages/schema-workspace
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../../packages/verification
@@ -557,34 +545,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/db-read:
-    dependencies:
-      '@aiengineer/knowledge-persistence':
-        specifier: workspace:*
-        version: link:../persistence
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../schema-workspace
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.4.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
   packages/documents:
     dependencies:
       '@aiengineer/knowledge-contracts':
@@ -658,23 +618,42 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/ingestion:
+  packages/jev:
     dependencies:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-db-read':
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
+  packages/knowledge-db:
+    dependencies:
+      '@aiengineer/database-contract':
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
+      '@aiengineer/knowledge-contracts':
         specifier: workspace:*
-        version: link:../db-read
+        version: link:../contracts
       '@aiengineer/knowledge-domain':
         specifier: workspace:*
         version: link:../domain
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../persistence
-      '@aiengineer/knowledge-schema-workspace':
+      '@aiengineer/knowledge-runtime':
         specifier: workspace:*
-        version: link:../schema-workspace
+        version: link:../runtime
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -696,26 +675,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/jev:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   packages/observability:
     dependencies:
@@ -848,28 +808,6 @@ importers:
         specifier: workspace:*
         version: link:../domain
     devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/schema-workspace:
-    dependencies:
-      '@aiengineer/database-contract':
-        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
-        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.4.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
