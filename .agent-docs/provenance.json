@@ -142,7 +142,7 @@
   "semantic": {
     "inputs": {
       ".agent-docs/modules.json": "b530e6780a8ea0a887d330cde40262e07eda0c54634a597844a15b4adf2844f0",
-      "apps/api/package.json": "714b71a6d4dd110785b77b49acacc76aeb91a677989912702ba3be717ebdd5db",
+      "apps/api/package.json": "f0931c6e2e89e90465bfb3e8ea5150266df23302dd729147b1ad78fc2c5f7fe4",
       "apps/api/src/index.ts": "f2c7eb6dfd2f6102f2f1fa4565b2d1e13f15baaa3ae37654ea2cd34a331d4647",
       "apps/api/src/server.ts": "b6bf460467f260ae89f1c41b742f519d37a7bd704ef4f97e36770e612446b881",
       "apps/api/src/tests/server.test.ts": "427a9929ec7e4a03b736db5fc7730e85d648fdd3c1c623d5c1dec3476cdf0e94",
