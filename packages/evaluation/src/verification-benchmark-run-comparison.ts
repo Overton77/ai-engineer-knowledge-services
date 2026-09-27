@@ -5,7 +5,7 @@ import type {
   VerificationBenchmarkDataset,
 } from "@aiengineer/knowledge-contracts";
 import { VerificationBenchmarkArmSchema } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import {
   assertFrozenVerificationBenchmarkDataset,
   summarizeVerificationBenchmark,

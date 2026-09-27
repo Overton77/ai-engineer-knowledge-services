@@ -9,7 +9,7 @@ import {
   type EvidencePacket,
   type RetrievalPlan,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { apiOwnedOperationKinds } from "@aiengineer/knowledge-application";
 import {
   PostgresKnowledgeOperationService,

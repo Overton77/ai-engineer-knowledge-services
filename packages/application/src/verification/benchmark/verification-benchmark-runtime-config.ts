@@ -1,5 +1,5 @@
 import { RunBenchmarkRequestSchema, UuidSchema, VerificationBenchmarkPublicationManifestSchema } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { z } from "zod";
 import { OfflineBenchmarkInputCatalog, type OfflineBenchmarkInputGrant } from "./verification-benchmark-inputs.js";
 import { RegisteredBenchmarkProfileCatalog, type RegisteredBenchmarkProfileGrant } from "./verification-benchmark-registered-profile.js";

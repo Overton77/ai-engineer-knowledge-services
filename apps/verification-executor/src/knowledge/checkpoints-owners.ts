@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { CheckpointOperationReconciler, SourceDiscoveryApplicationService } from "@aiengineer/knowledge-application";
-import type { ArtifactLedger } from "@aiengineer/knowledge-db-read";
-import type { IngestionExecutor, ReportService } from "@aiengineer/knowledge-ingestion";
+import type { ArtifactLedger } from "@aiengineer/knowledge-db";
+import type { IngestionExecutor, ReportService } from "@aiengineer/knowledge-db";
 import type { GovernedIndexRepository, PostgresVerificationRepository, PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import type { FilesystemStore } from "../store.js";
 import { validateStoredArtifact, type ArtifactCustody } from "../store-custody.js";

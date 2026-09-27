@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../../packages/persistence/test/disposable.mjs";
 import { createSelectedCandidateFixture, type SelectedCandidateFixture } from "./selected-candidate-fixture.js";
 import { PUBLICATION_SPACE, admittedGateCount, evaluateCandidate, evaluationQueries, publicationIdFor,

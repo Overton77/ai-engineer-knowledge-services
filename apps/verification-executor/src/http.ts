@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isKnowledgeError } from "@aiengineer/knowledge-schema-workspace";
+import { isKnowledgeError } from "@aiengineer/knowledge-db";
 import type { VerificationExecutor } from "./executor.js";
 import type { KnowledgeServices } from "./knowledge/context.js";
 import { knowledgeOperations } from "./knowledge/operations.js";

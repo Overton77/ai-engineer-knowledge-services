@@ -5,7 +5,7 @@ import {resolve} from "node:path";
 import {VerificationBenchmarkComparisonApplicationService,VerificationBenchmarkComparisonProfileCatalog,RegisteredBenchmarkComparisonPublicationBuilder} from "@aiengineer/knowledge-application";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresVerificationBenchmarkReadRepository} from "@aiengineer/knowledge-persistence";
 import {PostgresVerificationBenchmarkComparisonStore,type VerificationBenchmarkComparisonIdentity} from "../packages/persistence/src/verification-benchmark-comparison.js";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import type {LeasedStep} from "@aiengineer/knowledge-persistence";
 import {canonicalizeJson,createEd25519Signer,createEd25519Verifier,digestCanonicalJson,verifyVerificationBenchmarkComparisonPublication} from "@aiengineer/knowledge-verification";
 

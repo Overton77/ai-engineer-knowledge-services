@@ -1,6 +1,6 @@
 import {VerificationProviderReconciliationResourceSchema} from "@aiengineer/knowledge-contracts";
 import {semanticReconciliationOriginalBinding,type AdmittedSemanticProviderReconciliation,type SemanticProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {canonicalizeJson} from "@aiengineer/knowledge-verification";
 import type {PostgresCanonicalRepository} from "./postgres.js";
 import type {PostgresVerificationRepository} from "./verification.js";

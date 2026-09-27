@@ -8,12 +8,12 @@ import {
   RoutedAcquisitionAdapter,
 } from "@aiengineer/knowledge-acquisition";
 import type { OperationContext,OperationKind } from "@aiengineer/knowledge-contracts";
-import { DeterministicTextConversionProvider,DoclingServeProvider,HttpDoclingServeClient } from "@aiengineer/knowledge-conversion";
-import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-domain";
+import { DeterministicTextConversionProvider,DoclingServeProvider,HttpDoclingServeClient } from "@aiengineer/knowledge-preparation";
+import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-core";
 import { canonicalPersistenceConfigFromEnvironment,createCanonicalPersistence,PostgresKnowledgeOperationService,PostgresPreparationRepository } from "@aiengineer/knowledge-persistence";
 import { createCanonicalActivityExecutor,createProductionActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
-import { SupabaseArtifactStore,type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore,type ArtifactStore } from "@aiengineer/knowledge-core";
 
 const tenantId=process.env.WORKER_TENANT_ID?.trim()||"00000000-0000-7000-8000-000000000001";
 const namespace=randomUUID();

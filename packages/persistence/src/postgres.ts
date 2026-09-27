@@ -2,8 +2,8 @@ import { Pool, type PoolConfig, type QueryResultRow } from "pg";
 import { randomUUID } from "node:crypto";
 import { EvidencePacketMemberSchema, EvidencePacketSchema, RetrievalCitationReplaySchema, RetrievalWorldScopeSchema,
   type EvidencePacket, type RetrievalCitationReplay as RetrievalCitationReplayResult } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { operationActorIdentity } from "./actor-identity.js";
 import { RetrievalCitationReplay, RetrievalSupportResolver, type ReadRetrievalArtifact, type ResolvedRetrievalSupport,
   type RetrievalSupportRequest } from "./retrieval-evidence.js";

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe,expect,it } from "vitest";
-import { ReportStructureSchema,renderReport } from "@aiengineer/knowledge-ingestion";
+import { ReportStructureSchema,renderReport } from "@aiengineer/knowledge-db";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { assessReportFidelity,rejectedAssertionText,type ReportAssessmentRequirements } from "./report-assessment.js";
 import type { ReportEvidenceClaim,SealedReportEvidence } from "./evidence-oracle.js";

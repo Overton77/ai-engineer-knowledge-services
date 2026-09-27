@@ -6,7 +6,7 @@ import { AccountedVerificationProviderSink, assertDiagnosticsProviderWireRequest
 import { verificationBenchmarkDigest } from "../packages/evaluation/dist/index.js";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { canonicalizeJson, GatewaySemanticJudgeAdapter, GatewayStructuredExtractionProvider, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, InterfazeStructuredExtractionProvider, type ProviderArtifactSink } from "@aiengineer/knowledge-verification";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 type Budget = { tenantId: string; budgetId: string; budgetKey: string; ceilingCostMicros: number };
 const root = resolve("..");

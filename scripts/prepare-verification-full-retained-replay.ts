@@ -4,7 +4,7 @@ import {readFile,readdir,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {DiagnosticsBenchmarkLiveCallCheckpointSchema,DiagnosticsBenchmarkLiveFailedCallCheckpointSchema,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
 import {PostgresCanonicalRepository,PostgresVerificationRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,digestCanonicalJson,sha256Digest} from "@aiengineer/knowledge-verification";
 import {diagnosticsBenchmarkArms} from "@aiengineer/knowledge-application";
 

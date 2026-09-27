@@ -14,7 +14,7 @@ import {
   type VerificationStructuredExtractionExecution,
   type VerificationStructuredExtractionFailure,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import {
   admitExtractionSchema,
   canonicalizeJson,

@@ -1,7 +1,7 @@
 import { StructuredExtractionFailureCodeSchema, StructuredExtractionFailureLifecycleSnapshotSchema, type StructuredExtractionFailureCode, type StructuredExtractionFailureLifecycleSnapshot, VerificationArtifactHandleSchema, VerificationStructuredExtractionFailureSchema, type VerificationArtifactHandle, type VerificationStructuredExtractionFailure } from "@aiengineer/knowledge-contracts";
 import { structuredExtractionFailureParentArtifactIds, structuredExtractionFailureTransformationSignature, structuredExtractionProviderCallDigest } from "@aiengineer/knowledge-application";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest, type AuditBundleSignatureVerifier } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { LeasedStep } from "./types.js";
 

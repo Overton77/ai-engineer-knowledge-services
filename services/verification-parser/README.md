@@ -1,6 +1,6 @@
 # Verification native parser boundary
 
-This is a separate, bounded parsing route for native PDF text/word geometry and UTF-8 HTML DOM. It does not replace Docling or perform OCR. The TypeScript entry point is `SandboxedVerificationParser` in `packages/conversion`; pure verification selectors never start processes.
+This is a separate, bounded parsing route for native PDF text/word geometry and UTF-8 HTML DOM. It does not replace Docling or perform OCR. The TypeScript entry point is `SandboxedVerificationParser` in `packages/preparation`; pure verification selectors never start processes.
 
 Build with `docker build -t aiengineer-verification-parser:v1 services/verification-parser`, then obtain its immutable local image ID with `docker image inspect --format '{{.Id}}' aiengineer-verification-parser:v1`. Configure the adapter with that ID, not the mutable tag. Deployment configuration is trusted; requests cannot choose an executable, image, URL, path, mount, environment variable, or command. The base image digest and Python dependency versions are pinned. The final image ID is included in each transformation signature; rebuilding requires admission of the resulting image.
 

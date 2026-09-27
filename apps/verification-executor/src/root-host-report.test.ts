@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { ReportStructureSchema, renderReport } from "@aiengineer/knowledge-ingestion";
+import { ReportStructureSchema, renderReport } from "@aiengineer/knowledge-db";
 import { deriveRootReportRequirements, createRootReportAuthority, ROOT_REPORT_FORMAT } from "./root-host-report.js";
 
 function fixture() {

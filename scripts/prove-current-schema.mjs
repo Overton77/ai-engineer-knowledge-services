@@ -21,8 +21,8 @@ if (head !== manifest.build.migration_head) throw new Error("CURRENT_SCHEMA_HEAD
 
 const selections = [
   { name: "preparation", package: "@aiengineer/knowledge-persistence", tests: ["src/preparation.test.ts", "src/preparation-vocabulary.test.ts", "test/disposable.test.ts"] },
-  { name: "read", package: "@aiengineer/knowledge-db-read", tests: ["src/read-executor.integration.test.ts", "src/snapshot.integration.test.ts", "src/snapshot.test.ts"] },
-  { name: "ingestion", package: "@aiengineer/knowledge-ingestion", tests: ["src/executor.integration.test.ts", "test/current-schema.integration.test.ts", "test/temporal.integration.test.ts", "src/plan.test.ts", "src/evidence-admission.test.ts"] },
+  { name: "read", package: "@aiengineer/knowledge-db", tests: ["src/db-read/read-executor.integration.test.ts", "src/db-read/snapshot.integration.test.ts", "src/db-read/snapshot.test.ts"] },
+  { name: "ingestion", package: "@aiengineer/knowledge-db", tests: ["src/ingestion/tests/executor.integration.test.ts", "test/ingestion/current-schema.integration.test.ts", "test/ingestion/temporal.integration.test.ts", "src/ingestion/tests/plan.test.ts", "src/ingestion/tests/evidence-admission.test.ts"] },
   { name: "admission", package: "@aiengineer/knowledge-verification-executor", tests: ["src/knowledge/evidence-oracle.test.ts", "src/knowledge/admission.integration.test.ts", "src/serve.test.ts", "src/knowledge/cli.test.ts"] },
 ];
 const results = [];

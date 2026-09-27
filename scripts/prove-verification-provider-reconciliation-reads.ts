@@ -3,7 +3,7 @@ import {randomUUID,createHash} from "node:crypto";
 import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresProviderReconciliationReadRepository,PostgresProviderReconciliationStore} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {ProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
 import {VerificationProviderReconciliationSchema,VerificationArtifactHandleSchema} from "@aiengineer/knowledge-contracts";
 import {createEd25519Verifier,type TrustedArtifactResolver} from "@aiengineer/knowledge-verification";

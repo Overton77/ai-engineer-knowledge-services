@@ -12,8 +12,8 @@ import {
   type RetrievalUnsupportedCapability,
   type RetrievalUnsupportedResponse,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import {
   RETRIEVAL_SUPPORT_LIMITS,
   type HybridSearchResult,
@@ -21,7 +21,7 @@ import {
   type ResolvedRetrievalSupport,
   type RetrievalEvidenceRecord,
 } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { LocalApiIdentity } from "./auth.js";
 
 const RuntimePolicySchema = z.strictObject({

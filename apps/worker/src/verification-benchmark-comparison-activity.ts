@@ -17,7 +17,7 @@ import {
   type PostgresVerificationBenchmarkComparisonStore,
   type VerificationBenchmarkComparisonIdentity,
 } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import { CanonicalActivityError, type CanonicalActivityHandler } from "./activity-registry.js";

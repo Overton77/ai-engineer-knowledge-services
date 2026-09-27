@@ -2,7 +2,7 @@
 
 Status: reference. Current execution index.
 
-Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Jev and baseline repairs are merged locally; proceed to Unit 1 with the exact documented missing-input exception.
+Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Unit 1 is merged into local main under its exact exception; acceptance evidence is recorded in the ledger. The exact missing-input exception remains visible.
 
 ## Start here
 
@@ -15,7 +15,8 @@ Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Jev 
 
 - [FINAL-REVIEW.md](./FINAL-REVIEW.md): source-backed findings and implementation considerations, including the developer's subsequent clarification.
 - [UNIT-0-BASELINE.md](./UNIT-0-BASELINE.md): establish reproducible verification before package moves.
-- [UNIT-1-PACKAGE-MERGES.md](./UNIT-1-PACKAGE-MERGES.md): first mechanical implementation unit. Write specifications for units 2–7 as their turn arrives.
+- [UNIT-1-PACKAGE-MERGES.md](./UNIT-1-PACKAGE-MERGES.md): mechanical package merges and their preservation gates.
+- [UNIT-2-HOST-COMPOSITION.md](./UNIT-2-HOST-COMPOSITION.md): next bounded specification; implementation remains queued. Write specifications for units 3–7 as their turn arrives.
 
 No live consumers require compatibility support. Adapt Eve directly to the new services and skills, then run pre–Mission Control testing after cleanup. Preserve stored evidence and the populated shared database.
 

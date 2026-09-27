@@ -3,7 +3,7 @@ import {readFile,writeFile} from "node:fs/promises";
 import {createHash,randomUUID} from "node:crypto";
 import {resolve} from "node:path";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresVerificationBenchmarkReadRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {VerificationBenchmarkDatasetSchema,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
 import {compareVerificationBenchmarkRuns} from "../packages/evaluation/src/verification-benchmark-run-comparison.js";

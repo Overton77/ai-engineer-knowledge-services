@@ -1,7 +1,7 @@
 import { createPublicKey, verify } from "node:crypto";
 import { parseBenchmarkReadPublicKeys, VerificationBenchmarkReadService } from "@aiengineer/knowledge-application";
 import { PostgresVerificationBenchmarkReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 export { parseBenchmarkReadPublicKeys };
 

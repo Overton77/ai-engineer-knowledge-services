@@ -17,7 +17,7 @@ import {
   type VerificationSource,
   type VerificationSourceCapture,
 } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
 import {
   AccountedVerificationProviderSink,
   assertDiagnosticsExtractionWireRequest,
@@ -36,7 +36,7 @@ import {
   type VerificationAdmissionRepositoryPort,
 } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   GatewaySemanticJudgeAdapter,

@@ -1,6 +1,6 @@
 import type { VerificationBenchmarkDataset, VerificationBenchmarkV1CandidatePool } from "@aiengineer/knowledge-contracts";
 import { VerificationBenchmarkV1CandidatePoolSchema } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset, verificationBenchmarkDigest } from "./verification-benchmark.js";
 
 type Digest = `sha256:${string}`;

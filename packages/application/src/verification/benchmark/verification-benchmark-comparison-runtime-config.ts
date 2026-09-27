@@ -1,7 +1,7 @@
 import {createPublicKey} from "node:crypto";
 import {z} from "zod";
 import {UuidSchema,VerificationBenchmarkComparisonProfileIdSchema,VerificationBenchmarkComparisonProfileArtifactReferenceSchema,VerificationBenchmarkComparisonPublicationSchema} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {VerificationBenchmarkComparisonProfileCatalog} from "./verification-benchmark-comparison.js";
 
 const schema=z.strictObject({

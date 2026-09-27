@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ReportStructureSchema, renderReport, type ReportStructure } from "@aiengineer/knowledge-ingestion";
+import { ReportStructureSchema, renderReport, type ReportStructure } from "@aiengineer/knowledge-db";
 import { canonicalizeJson, inspectAuditBundle, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import {
   ReportAssessmentRequirementsSchema,

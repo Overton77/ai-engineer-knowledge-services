@@ -5,7 +5,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { admissionIssues, proposalEffect, IngestionIntentSchema } from "@aiengineer/knowledge-ingestion";
+import { admissionIssues, proposalEffect, IngestionIntentSchema } from "@aiengineer/knowledge-db";
 import { SemanticAssessmentRecordSchema, type VerificationBundle, type DeterministicVerificationResult, type VerificationRecordedPolicyInputs } from "@aiengineer/knowledge-contracts";
 import { loadExecutorConfig, VerificationExecutor } from "../executor.js";
 import { verificationStoreOracle } from "./evidence-oracle.js";

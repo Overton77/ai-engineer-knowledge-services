@@ -2,7 +2,7 @@
 
 > Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
 
-Status: specified; execution follows [unit 0](./UNIT-0-BASELINE.md)'s green baseline (2026-09-27). Parent: [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) §5, unit 1. Progress: [workspace ledger](./workspace/PROGRESS.md).
+Status: landed locally on main; acceptance evidence is recorded in the ledger (2026-09-27), under the exact Unit 1 missing-fixture exception. Parent: [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) §5, unit 1. Progress: [workspace ledger](./workspace/PROGRESS.md).
 
 ## 1. Goal
 

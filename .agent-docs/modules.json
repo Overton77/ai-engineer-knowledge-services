@@ -56,16 +56,14 @@
       "task": "Debug worker retry or persistence",
       "modules": [
         "worker",
-        "runtime",
+        "core",
         "persistence"
       ]
     },
     {
       "task": "Change parsing and conversion",
       "modules": [
-        "conversion",
-        "chunking",
-        "documents",
+        "preparation",
         "verification-parser",
         "docling"
       ]
@@ -74,8 +72,6 @@
       "task": "Change retrieval or embedding",
       "modules": [
         "retrieval",
-        "embeddings",
-        "vector-backends",
         "policy"
       ]
     },
@@ -90,9 +86,7 @@
     {
       "task": "Change schema workspace, knowledge read, or ingestion",
       "modules": [
-        "schema-workspace",
-        "db-read",
-        "ingestion",
+        "knowledge-db",
         "verification-executor"
       ]
     }
@@ -202,9 +196,7 @@
         "Agent claim/extraction intents select exact text quotes; native projection selector support in the library does not imply executor media admission."
       ],
       "uses": [
-        "schema-workspace",
-        "db-read",
-        "ingestion"
+        "knowledge-db"
       ],
       "packageJson": "apps/verification-executor/package.json"
     },
@@ -278,31 +270,45 @@
       "packageJson": "packages/application/package.json"
     },
     {
-      "id": "chunking",
-      "path": "packages/chunking",
+      "id": "preparation",
+      "path": "packages/preparation",
       "kind": "package",
       "state": "implemented",
-      "summary": "Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA.",
+      "summary": "Artifact conversion, immutable document nodes, admitted chunk profiles and reconstructable-span quality checks.",
       "entrypoints": [
-        "packages/chunking/src/index.ts",
-        "packages/chunking/src/profiles/definitions.ts",
-        "packages/chunking/src/chunker/chunk-document.ts",
-        "packages/chunking/src/qa/validate-chunks.ts"
+        "packages/preparation/src/index.ts",
+        "packages/preparation/src/documents/index.ts",
+        "packages/preparation/src/documents/nodes/structural-document.ts",
+        "packages/preparation/src/documents/locators/source-locator.ts",
+        "packages/preparation/src/chunking/index.ts",
+        "packages/preparation/src/chunking/profiles/definitions.ts",
+        "packages/preparation/src/chunking/chunker/chunk-document.ts",
+        "packages/preparation/src/chunking/qa/validate-chunks.ts",
+        "packages/preparation/src/conversion/index.ts",
+        "packages/preparation/src/conversion/route.ts"
       ],
       "interface": [
-        "ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts."
+        "convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, and the document-specific one-argument deterministicUuid; core retains its distinct two-argument helper.",
+        "ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts.",
+        "ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser."
       ],
       "tests": [
-        "packages/chunking/src/profiles/registry.test.ts",
-        "packages/chunking/src/chunker/chunk-document.test.ts",
-        "packages/chunking/src/qa/validate-chunks.test.ts",
-        "packages/chunking/examples/01-select-profiles-for-space.test.ts",
-        "packages/chunking/examples/02-chunk-and-reconstruct.test.ts",
-        "packages/chunking/examples/03-qa-failure-next-profile.test.ts"
+        "packages/preparation/src/documents/nodes/structural-document.test.ts",
+        "packages/preparation/src/documents/locators/source-locator.test.ts",
+        "packages/preparation/src/documents/identity/deterministic-uuid.test.ts",
+        "packages/preparation/examples/documents/01-build-nodes-and-verify-locators.test.ts",
+        "packages/preparation/src/chunking/profiles/registry.test.ts",
+        "packages/preparation/src/chunking/chunker/chunk-document.test.ts",
+        "packages/preparation/src/chunking/qa/validate-chunks.test.ts",
+        "packages/preparation/examples/chunking/02-chunk-and-reconstruct.test.ts",
+        "packages/preparation/examples/chunking/03-qa-failure-next-profile.test.ts",
+        "packages/preparation/src/conversion/conversion.test.ts",
+        "packages/preparation/src/conversion/verification-parser.test.ts",
+        "packages/preparation/examples/conversion/examples.test.ts"
       ],
       "constraints": [],
       "uses": [],
-      "packageJson": "packages/chunking/package.json"
+      "packageJson": "packages/preparation/package.json"
     },
     {
       "id": "client-typescript",
@@ -364,158 +370,121 @@
       "packageJson": "packages/contracts/package.json"
     },
     {
-      "id": "conversion",
-      "path": "packages/conversion",
+      "id": "knowledge-db",
+      "path": "packages/knowledge-db",
       "kind": "package",
       "state": "implemented",
-      "summary": "Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser.",
+      "summary": "Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers.",
       "entrypoints": [
-        "packages/conversion/src/index.ts",
-        "packages/conversion/src/route.ts"
+        "packages/knowledge-db/src/index.ts",
+        "packages/knowledge-db/src/schema-workspace/index.ts",
+        "packages/knowledge-db/src/db-read/index.ts",
+        "packages/knowledge-db/src/db-read/read-executor.ts",
+        "packages/knowledge-db/src/db-read/sql-guard.ts",
+        "packages/knowledge-db/src/db-read/space-manifest.ts",
+        "packages/knowledge-db/src/ingestion/index.ts",
+        "packages/knowledge-db/src/ingestion/plan.ts",
+        "packages/knowledge-db/src/ingestion/apply.ts",
+        "packages/knowledge-db/src/ingestion/executor.ts",
+        "packages/knowledge-db/src/ingestion/duplicate.ts"
       ],
       "interface": [
-        "ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser."
-      ],
-      "tests": [
-        "packages/conversion/src/conversion.test.ts",
-        "packages/conversion/src/verification-parser.test.ts",
-        "packages/conversion/examples/examples.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/conversion/package.json"
-    },
-    {
-      "id": "db-read",
-      "path": "packages/db-read",
-      "kind": "package",
-      "state": "partial",
-      "summary": "Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard, artifact ledger, and the space manifest read.",
-      "entrypoints": [
-        "packages/db-read/src/index.ts",
-        "packages/db-read/src/read-executor.ts",
-        "packages/db-read/src/sql-guard.ts",
-        "packages/db-read/src/space-manifest.ts"
-      ],
-      "interface": [
+        "loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/.",
         "ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH.",
-        "buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[]."
-      ],
-      "tests": [
-        "packages/db-read/src/db-read.test.ts",
-        "packages/db-read/src/read-executor.integration.test.ts",
-        "packages/db-read/src/space-manifest.test.ts"
-      ],
-      "constraints": [
-        "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.",
-        "space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3)."
-      ],
-      "uses": [
-        "schema-workspace"
-      ],
-      "packageJson": "packages/db-read/package.json"
-    },
-    {
-      "id": "documents",
-      "path": "packages/documents",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity.",
-      "entrypoints": [
-        "packages/documents/src/index.ts",
-        "packages/documents/src/nodes/structural-document.ts",
-        "packages/documents/src/locators/source-locator.ts"
-      ],
-      "interface": [
-        "convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, deterministicUuid (identity/, duplicate of runtime's two-argument helper until Phase 3)."
-      ],
-      "tests": [
-        "packages/documents/src/nodes/structural-document.test.ts",
-        "packages/documents/src/locators/source-locator.test.ts",
-        "packages/documents/src/identity/deterministic-uuid.test.ts",
-        "packages/documents/examples/01-build-nodes-and-verify-locators.test.ts",
-        "packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/documents/package.json"
-    },
-    {
-      "id": "domain",
-      "path": "packages/domain",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Shared digest, identity, idempotency, error, authority, and state-machine primitives.",
-      "entrypoints": [
-        "packages/domain/src/index.ts"
-      ],
-      "interface": [
-        "Small pure invariants and value helpers."
-      ],
-      "tests": [
-        "packages/domain/src/domain.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/domain/package.json"
-    },
-    {
-      "id": "embeddings",
-      "path": "packages/embeddings",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Embedding adapter requests, cache/route identity, bounded batches, and receipts.",
-      "entrypoints": [
-        "packages/embeddings/src/index.ts",
-        "packages/embeddings/src/gateway.ts",
-        "packages/embeddings/src/vectors.ts",
-        "packages/embeddings/src/fake.ts"
-      ],
-      "interface": [
-        "EmbeddingAdapter with discoverModel, embedOne, and embedMany; VercelAiGatewayEmbeddingAdapter and DeterministicFakeEmbeddingAdapter implement it; validateVector and vectorDigest bound output."
-      ],
-      "tests": [
-        "packages/embeddings/src/vectors.test.ts",
-        "packages/embeddings/src/cache.test.ts",
-        "packages/embeddings/src/gateway.test.ts",
-        "packages/embeddings/src/fake.test.ts",
-        "packages/embeddings/examples/01-deterministic-batch.test.ts",
-        "packages/embeddings/examples/02-cache-and-retry.test.ts",
-        "packages/embeddings/examples/03-reject-bad-output.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/embeddings/package.json"
-    },
-    {
-      "id": "ingestion",
-      "path": "packages/ingestion",
-      "kind": "package",
-      "state": "partial",
-      "summary": "Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling.",
-      "entrypoints": [
-        "packages/ingestion/src/index.ts",
-        "packages/ingestion/src/plan.ts",
-        "packages/ingestion/src/apply.ts",
-        "packages/ingestion/src/executor.ts",
-        "packages/ingestion/src/duplicate.ts"
-      ],
-      "interface": [
+        "buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[].",
         "IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf."
       ],
       "tests": [
-        "packages/ingestion/src/tests/plan.test.ts",
-        "packages/ingestion/src/tests/duplicate.test.ts",
-        "packages/ingestion/src/tests/executor.integration.test.ts"
+        "packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts",
+        "packages/knowledge-db/src/db-read/db-read.test.ts",
+        "packages/knowledge-db/src/db-read/read-executor.integration.test.ts",
+        "packages/knowledge-db/src/db-read/space-manifest.test.ts",
+        "packages/knowledge-db/src/ingestion/tests/plan.test.ts",
+        "packages/knowledge-db/src/ingestion/tests/duplicate.test.ts",
+        "packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts"
       ],
       "constraints": [
+        "Consumes the committed workspace tree; it does not regenerate IR from the live database at request time.",
+        "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.",
+        "space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3).",
         "Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row."
       ],
-      "uses": [
-        "db-read",
-        "schema-workspace"
+      "uses": [],
+      "packageJson": "packages/knowledge-db/package.json"
+    },
+    {
+      "id": "core",
+      "path": "packages/core",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Shared identity, digest, authority and state primitives; artifact custody, operation lifecycle and in-memory telemetry.",
+      "entrypoints": [
+        "packages/core/src/index.ts",
+        "packages/core/src/domain/index.ts",
+        "packages/core/src/runtime/index.ts",
+        "packages/core/src/observability/index.ts"
       ],
-      "packageJson": "packages/ingestion/package.json"
+      "interface": [
+        "Small pure invariants and value helpers.",
+        "Artifact stores and ledger interfaces; in-memory implementations are not deployment authority.",
+        "InMemoryTelemetry and reconcileManifests; not a full external telemetry deployment."
+      ],
+      "tests": [
+        "packages/core/src/domain/domain.test.ts",
+        "packages/core/src/runtime/eve-runtime-attestation.test.ts",
+        "packages/core/src/runtime/runtime.test.ts",
+        "packages/core/src/observability/index.test.ts"
+      ],
+      "constraints": [],
+      "uses": [],
+      "packageJson": "packages/core/package.json"
+    },
+    {
+      "id": "retrieval",
+      "path": "packages/retrieval",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Policy-scoped search, evidence-bound projections, embedding routes and receipts, and vector publication and rollback.",
+      "entrypoints": [
+        "packages/retrieval/src/index.ts",
+        "packages/retrieval/src/vector-backends/backends/in-memory-exact.ts",
+        "packages/retrieval/src/vector-backends/backends/postgres.ts",
+        "packages/retrieval/src/vector-backends/publication/coordinator.ts",
+        "packages/retrieval/src/vector-backends/spaces/link.ts",
+        "packages/retrieval/src/search/retrieve.ts",
+        "packages/retrieval/src/search/plan/build-plan.ts",
+        "packages/retrieval/src/search/spaces/admission.ts",
+        "packages/retrieval/src/embeddings/gateway.ts",
+        "packages/retrieval/src/projections/validation/evidence-support.ts",
+        "packages/retrieval/src/projections/projection/create-projection.ts",
+        "packages/retrieval/src/projections/classification/disposition-spaces.ts"
+      ],
+      "interface": [
+        "Backend types, in-memory exact adapter, Postgres adapter, ExploratoryPublicationCoordinator (publish, rollback, reconcile), and the VectorItemEntityLink shape with validateVectorItemEntityLink.",
+        "The search submodule exports buildRetrievalPlan and retrieve; its plan, space-admission, lexical, semantic, graph and rerank stages remain internal. The package root also exports the preserved projection, embedding and vector-backend interfaces.",
+        "EmbeddingAdapter with discoverModel, embedOne, and embedMany; VercelAiGatewayEmbeddingAdapter and DeterministicFakeEmbeddingAdapter implement it; validateVector and vectorDigest bound output.",
+        "validateEvidenceSupport over EvidenceSupport, createProjection into the contract DomainProjection union, and classifyProjectionSpaces mapping dispositions to spaces."
+      ],
+      "tests": [
+        "packages/retrieval/src/vector-backends/backends/postgres.test.ts",
+        "packages/retrieval/src/vector-backends/publication/coordinator.test.ts",
+        "packages/retrieval/src/vector-backends/publication/verification.test.ts",
+        "packages/retrieval/src/vector-backends/spaces/link.test.ts",
+        "packages/retrieval/src/search/retrieve.test.ts",
+        "packages/retrieval/src/search/plan/build-plan.test.ts",
+        "packages/retrieval/src/search/spaces/admission.test.ts",
+        "packages/retrieval/src/embeddings/vectors.test.ts",
+        "packages/retrieval/src/embeddings/gateway.test.ts",
+        "packages/retrieval/src/projections/validation/evidence-support.test.ts",
+        "packages/retrieval/src/projections/projection/create-projection.test.ts",
+        "packages/retrieval/src/projections/classification/disposition-spaces.test.ts"
+      ],
+      "constraints": [
+        "src/vector-backends/spaces/link.ts is a shape only: no relational row binds a vector item to its projection target and admission in database contract 0.4.16. It has no caller until the S2 publication host.",
+        "Not on the canonical HTTP retrieval path: apps/api serves retrieval through packages/persistence. The search submodule backs the in-memory exploratory index and evaluation corpora."
+      ],
+      "uses": [],
+      "packageJson": "packages/retrieval/package.json"
     },
     {
       "id": "evaluation",
@@ -536,25 +505,6 @@
       "constraints": [],
       "uses": [],
       "packageJson": "packages/evaluation/package.json"
-    },
-    {
-      "id": "observability",
-      "path": "packages/observability",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "In-memory operation telemetry, SLO summaries, and manifest reconciliation.",
-      "entrypoints": [
-        "packages/observability/src/index.ts"
-      ],
-      "interface": [
-        "InMemoryTelemetry and reconcileManifests; not a full external telemetry deployment."
-      ],
-      "tests": [
-        "packages/observability/src/index.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/observability/package.json"
     },
     {
       "id": "persistence",
@@ -606,107 +556,6 @@
       "packageJson": "packages/policy/package.json"
     },
     {
-      "id": "projections",
-      "path": "packages/projections",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Produces domain projections whose assertions remain bound to source evidence.",
-      "entrypoints": [
-        "packages/projections/src/index.ts",
-        "packages/projections/src/validation/evidence-support.ts",
-        "packages/projections/src/projection/create-projection.ts",
-        "packages/projections/src/classification/disposition-spaces.ts"
-      ],
-      "interface": [
-        "validateEvidenceSupport over EvidenceSupport, createProjection into the contract DomainProjection union, and classifyProjectionSpaces mapping dispositions to spaces."
-      ],
-      "tests": [
-        "packages/projections/src/validation/evidence-support.test.ts",
-        "packages/projections/src/projection/create-projection.test.ts",
-        "packages/projections/src/classification/disposition-spaces.test.ts",
-        "packages/projections/examples/01-validate-and-build.test.ts",
-        "packages/projections/examples/02-source-native-fidelity.test.ts",
-        "packages/projections/examples/03-classify-dispositions.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/projections/package.json"
-    },
-    {
-      "id": "retrieval",
-      "path": "packages/retrieval",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval.",
-      "entrypoints": [
-        "packages/retrieval/src/index.ts",
-        "packages/retrieval/src/retrieve.ts",
-        "packages/retrieval/src/plan/build-plan.ts",
-        "packages/retrieval/src/spaces/admission.ts"
-      ],
-      "interface": [
-        "buildRetrievalPlan and retrieve are the only public names; the plan, space-admission, lexical, semantic, graph and rerank stage folders are internal primitives the pipeline calls."
-      ],
-      "tests": [
-        "packages/retrieval/src/retrieve.test.ts",
-        "packages/retrieval/src/plan/build-plan.test.ts",
-        "packages/retrieval/src/spaces/admission.test.ts",
-        "packages/retrieval/src/lexical/scoring.test.ts",
-        "packages/retrieval/src/semantic/cosine.test.ts",
-        "packages/retrieval/src/graph/expand.test.ts",
-        "packages/retrieval/src/rerank/fuse.test.ts",
-        "packages/retrieval/examples/01-plan-and-admission.test.ts",
-        "packages/retrieval/examples/02-fuse-channels.test.ts",
-        "packages/retrieval/examples/03-abstain-and-omit.test.ts"
-      ],
-      "constraints": [
-        "Not on the canonical HTTP retrieval path: apps/api serves retrieval through packages/persistence. This package backs the in-memory exploratory index and evaluation corpora."
-      ],
-      "uses": [],
-      "packageJson": "packages/retrieval/package.json"
-    },
-    {
-      "id": "runtime",
-      "path": "packages/runtime",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Content-addressed artifacts and operation/step/lease/event/receipt primitives.",
-      "entrypoints": [
-        "packages/runtime/src/index.ts"
-      ],
-      "interface": [
-        "Artifact stores and ledger interfaces; in-memory implementations are not deployment authority."
-      ],
-      "tests": [
-        "packages/runtime/src/eve-runtime-attestation.test.ts",
-        "packages/runtime/src/runtime.test.ts"
-      ],
-      "constraints": [],
-      "uses": [],
-      "packageJson": "packages/runtime/package.json"
-    },
-    {
-      "id": "schema-workspace",
-      "path": "packages/schema-workspace",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles.",
-      "entrypoints": [
-        "packages/schema-workspace/src/index.ts"
-      ],
-      "interface": [
-        "loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/."
-      ],
-      "tests": [
-        "packages/schema-workspace/src/schema-workspace.test.ts"
-      ],
-      "constraints": [
-        "Consumes the committed workspace tree; it does not regenerate IR from the live database at request time."
-      ],
-      "uses": [],
-      "packageJson": "packages/schema-workspace/package.json"
-    },
-    {
       "id": "testkit",
       "path": "packages/testkit",
       "kind": "package",
@@ -725,38 +574,6 @@
       "constraints": [],
       "uses": [],
       "packageJson": "packages/testkit/package.json"
-    },
-    {
-      "id": "vector-backends",
-      "path": "packages/vector-backends",
-      "kind": "package",
-      "state": "implemented",
-      "summary": "Vector-store adapters, publication and rollback mechanics, and space version-pointer and entity-link shapes for exact and Postgres search.",
-      "entrypoints": [
-        "packages/vector-backends/src/index.ts",
-        "packages/vector-backends/src/backends/in-memory-exact.ts",
-        "packages/vector-backends/src/backends/postgres.ts",
-        "packages/vector-backends/src/publication/coordinator.ts",
-        "packages/vector-backends/src/spaces/link.ts"
-      ],
-      "interface": [
-        "Backend types, in-memory exact adapter, Postgres adapter, ExploratoryPublicationCoordinator (publish, rollback, reconcile), and the VectorItemEntityLink shape with validateVectorItemEntityLink."
-      ],
-      "tests": [
-        "packages/vector-backends/src/backends/in-memory-exact.test.ts",
-        "packages/vector-backends/src/backends/postgres.test.ts",
-        "packages/vector-backends/src/publication/coordinator.test.ts",
-        "packages/vector-backends/src/publication/verification.test.ts",
-        "packages/vector-backends/src/spaces/link.test.ts",
-        "packages/vector-backends/examples/01-exact-search.test.ts",
-        "packages/vector-backends/examples/02-publish-and-rollback.test.ts",
-        "packages/vector-backends/examples/03-reconcile-drift.test.ts"
-      ],
-      "constraints": [
-        "spaces/link.ts is a shape only: no relational row binds a vector item to its projection target and admission in database contract 0.4.16. It has no caller until the S2 publication host."
-      ],
-      "uses": [],
-      "packageJson": "packages/vector-backends/package.json"
     },
     {
       "id": "verification",
@@ -1046,7 +863,7 @@
         "Docling is not orchestration or publication authority."
       ],
       "uses": [
-        "conversion"
+        "preparation"
       ]
     },
     {
@@ -1067,7 +884,7 @@
         "Selectors never start processes. Deployment configuration, not request input, selects the admitted image."
       ],
       "uses": [
-        "conversion"
+        "preparation"
       ]
     },
     {
@@ -1170,7 +987,7 @@
         "Does not query the database; use knowledge-db."
       ],
       "uses": [
-        "schema-workspace",
+        "knowledge-db",
         "verification-executor"
       ]
     },
@@ -1191,7 +1008,7 @@
         "Never writes; catalog queries are evidence, ad-hoc SQL is not."
       ],
       "uses": [
-        "db-read",
+        "knowledge-db",
         "verification-executor"
       ]
     },
@@ -1212,7 +1029,7 @@
         "The agent never writes SQL; the executor writes as executor_service."
       ],
       "uses": [
-        "ingestion",
+        "knowledge-db",
         "verification-executor"
       ]
     },
@@ -1284,8 +1101,7 @@
         "Converts stored artifacts only and never fetches a URL; no session-local splitter; promotion_selection_select and promotion select are absent operations."
       ],
       "uses": [
-        "conversion",
-        "chunking",
+        "preparation",
         "application",
         "verification-executor",
         "cli",
@@ -1376,7 +1192,7 @@
         "Submissions grant no activation or rollback authority; store search and space rebuild are absent; the platform MCP catalog has no publication or space activation tool."
       ],
       "uses": [
-        "vector-backends",
+        "retrieval",
         "application",
         "cli"
       ]

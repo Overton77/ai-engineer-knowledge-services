@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { createApiRuntime } from "../apps/api/src/index.js";
 import { startWorker } from "../apps/worker/src/index.js";
 import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 
 type SourceProof = { namespace: string; tenantId: string; publicKeyPem: string; projection: { captureId: string; projectionArtifact: { artifactId: string }; transformationArtifact: { artifactId: string } }; results: { claimsRecovery: { operationId: string; manifestArtifact: { artifactId: string; digest: string } }; reportRecovery: { operationId: string; manifestArtifact: { artifactId: string; digest: string } } } };
 type PacketProof = { results: readonly { kind: "claims" | "report"; operationId: string; subjectId: string; packetArtifact: { artifactId: string; digest: string } }[] };

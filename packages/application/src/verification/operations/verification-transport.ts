@@ -12,7 +12,7 @@ import type {
   VerifyReportRequest,
 } from "@aiengineer/knowledge-contracts";
 import { OperationContextSchema } from "@aiengineer/knowledge-contracts";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { parseVerificationBenchmarkComparisonRuntimeConfig } from "../benchmark/verification-benchmark-comparison-runtime-config.js";
 import type { parseVerificationBenchmarkRuntimeConfig } from "../benchmark/verification-benchmark-runtime-config.js";
 import type { VerificationClaimsProjectionGrantCatalog } from "./verification-claims.js";

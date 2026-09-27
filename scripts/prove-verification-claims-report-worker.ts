@@ -19,7 +19,7 @@ import {
   PostgresVerificationRepository,
   type LeasedStep,
 } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   VerificationAdmissionService,
   VerificationClaimsApplicationService,
@@ -27,7 +27,7 @@ import {
   VerificationSealPolicyCatalog,
   replayVerificationAudit,
 } from "@aiengineer/knowledge-application";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import {
   canonicalizeJson,
   createEd25519Signer,

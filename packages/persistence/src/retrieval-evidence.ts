@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { VerificationSelectorSchema } from "@aiengineer/knowledge-contracts";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson, resolveEvidenceSelector } from "@aiengineer/knowledge-verification";
 import type { TenantSqlClient } from "./postgres.js";
 import { readRepresentationDependencies } from "./representation-dependency.js";

@@ -11,8 +11,8 @@ import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresKnowl
 import {PostgresVerificationProviderResponseCaptureStore} from "../packages/persistence/src/verification-provider-response-capture.js";
 import {PostgresVerificationProviderAccounting} from "../packages/persistence/src/verification-provider-accounting.js";
 import {PostgresStructuredExtractionLifecycleStore,type StructuredExtractionLifecycleIdentity} from "../packages/persistence/src/verification-structured-extraction-lifecycle.js";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
-import {SandboxedVerificationParser,VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-conversion";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
+import {SandboxedVerificationParser,VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-preparation";
 import {GatewayStructuredExtractionProvider,InterfazeStructuredExtractionProvider} from "@aiengineer/knowledge-verification";
 
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;

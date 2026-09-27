@@ -1,6 +1,6 @@
 import { VerificationAuditInspectionReadService } from "@aiengineer/knowledge-application";
 import { PostgresAuditInspectionReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { UuidSchema, type Actor } from "@aiengineer/knowledge-contracts";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";
 

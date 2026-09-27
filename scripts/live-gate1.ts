@@ -11,9 +11,9 @@ import {
   ConversionRouter,
   DeterministicTextConversionProvider,
   type DocumentConversionProvider,
-} from "../packages/conversion/src/index.js";
-import { canonicalJson, sha256Digest } from "../packages/domain/src/index.js";
-import { InMemoryArtifactStore } from "../packages/runtime/src/index.js";
+} from "../packages/preparation/src/conversion/index.js";
+import { canonicalJson, sha256Digest } from "../packages/core/src/domain/index.js";
+import { InMemoryArtifactStore } from "../packages/core/src/runtime/index.js";
 
 const officialUrl = "https://docs.langchain.com/oss/python/langchain/overview";
 const tenantId = "00000000-0000-7000-8000-000000000001";

@@ -1,5 +1,5 @@
 import { VerificationBenchmarkDatasetSchema, type VerificationBenchmarkDataset } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset, diffVerificationBenchmarkDatasets, verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
 
 type Digest = `sha256:${string}`;

@@ -5,8 +5,8 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { dirname, resolve } from "node:path";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, parseEveRuntimeAttestation } from "@aiengineer/knowledge-runtime";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { deterministicUuid, parseEveRuntimeAttestation } from "@aiengineer/knowledge-core";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
 

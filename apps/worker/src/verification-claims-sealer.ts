@@ -15,7 +15,7 @@ import type { RuntimePrincipalBinding } from "@aiengineer/knowledge-verification
 import type { ClaimsVerificationResult, ReportVerificationResult, VerificationSealPolicyCatalog } from "@aiengineer/knowledge-application";
 import { evaluateVerificationPolicy } from "@aiengineer/knowledge-policy";
 import type { RegisterContentAddressedVerificationArtifactInput, VerificationRunLease } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   applyReportWideMechanicalGates,

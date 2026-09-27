@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {DeterministicFakeEmbeddingAdapter} from "@aiengineer/knowledge-embeddings";
+import {DeterministicFakeEmbeddingAdapter} from "@aiengineer/knowledge-retrieval";
 import {loadEmbeddingBundles} from "@aiengineer/knowledge-testkit";
 import {AgenticKnowledgeService} from "./knowledge.js";
 

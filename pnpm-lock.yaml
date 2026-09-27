@@ -50,21 +50,18 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:packages/contracts
-      '@aiengineer/knowledge-conversion':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:packages/conversion
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:packages/domain
-      '@aiengineer/knowledge-embeddings':
-        specifier: workspace:*
-        version: link:packages/embeddings
+        version: link:packages/core
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:packages/persistence
-      '@aiengineer/knowledge-runtime':
+      '@aiengineer/knowledge-preparation':
         specifier: workspace:*
-        version: link:packages/runtime
+        version: link:packages/preparation
+      '@aiengineer/knowledge-retrieval':
+        specifier: workspace:*
+        version: link:packages/retrieval
       '@aiengineer/knowledge-testkit':
         specifier: workspace:*
         version: link:packages/testkit
@@ -105,18 +102,15 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../../packages/domain
-      '@aiengineer/knowledge-embeddings':
-        specifier: workspace:*
-        version: link:../../packages/embeddings
+        version: link:../../packages/core
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
-      '@aiengineer/knowledge-runtime':
+      '@aiengineer/knowledge-retrieval':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/retrieval
       '@aiengineer/knowledge-testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
@@ -130,15 +124,9 @@ importers:
       '@aiengineer/knowledge-client':
         specifier: workspace:*
         version: link:../../packages/client-typescript
-      '@aiengineer/knowledge-db-read':
+      '@aiengineer/knowledge-db':
         specifier: workspace:*
-        version: link:../../packages/db-read
-      '@aiengineer/knowledge-ingestion':
-        specifier: workspace:*
-        version: link:../../packages/ingestion
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../../packages/schema-workspace
+        version: link:../../packages/knowledge-db
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -206,7 +194,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   apps/mcp:
     dependencies:
@@ -259,24 +247,18 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aiengineer/knowledge-db-read':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../../packages/db-read
-      '@aiengineer/knowledge-ingestion':
+        version: link:../../packages/core
+      '@aiengineer/knowledge-db':
         specifier: workspace:*
-        version: link:../../packages/ingestion
+        version: link:../../packages/knowledge-db
       '@aiengineer/knowledge-persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
       '@aiengineer/knowledge-policy':
         specifier: workspace:*
         version: link:../../packages/policy
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../../packages/schema-workspace
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../../packages/verification
@@ -290,15 +272,9 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
-      '@aiengineer/knowledge-chunking':
+      '@aiengineer/knowledge-preparation':
         specifier: workspace:*
-        version: link:../../packages/chunking
-      '@aiengineer/knowledge-documents':
-        specifier: workspace:*
-        version: link:../../packages/documents
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
+        version: link:../../packages/preparation
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.0
@@ -326,24 +302,12 @@ importers:
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../../packages/application
-      '@aiengineer/knowledge-chunking':
-        specifier: workspace:*
-        version: link:../../packages/chunking
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aiengineer/knowledge-conversion':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../../packages/conversion
-      '@aiengineer/knowledge-documents':
-        specifier: workspace:*
-        version: link:../../packages/documents
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
-      '@aiengineer/knowledge-embeddings':
-        specifier: workspace:*
-        version: link:../../packages/embeddings
+        version: link:../../packages/core
       '@aiengineer/knowledge-evaluation':
         specifier: workspace:*
         version: link:../../packages/evaluation
@@ -353,9 +317,12 @@ importers:
       '@aiengineer/knowledge-policy':
         specifier: workspace:*
         version: link:../../packages/policy
-      '@aiengineer/knowledge-runtime':
+      '@aiengineer/knowledge-preparation':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/preparation
+      '@aiengineer/knowledge-retrieval':
+        specifier: workspace:*
+        version: link:../../packages/retrieval
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../../packages/verification
@@ -378,12 +345,9 @@ importers:
 
   packages/acquisition:
     dependencies:
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
+        version: link:../core
     devDependencies:
       tsup:
         specifier: 'catalog:'
@@ -400,24 +364,12 @@ importers:
       '@aiengineer/knowledge-acquisition':
         specifier: workspace:*
         version: link:../acquisition
-      '@aiengineer/knowledge-chunking':
-        specifier: workspace:*
-        version: link:../chunking
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-conversion':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../conversion
-      '@aiengineer/knowledge-documents':
-        specifier: workspace:*
-        version: link:../documents
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-embeddings':
-        specifier: workspace:*
-        version: link:../embeddings
+        version: link:../core
       '@aiengineer/knowledge-evaluation':
         specifier: workspace:*
         version: link:../evaluation
@@ -427,18 +379,12 @@ importers:
       '@aiengineer/knowledge-policy':
         specifier: workspace:*
         version: link:../policy
-      '@aiengineer/knowledge-projections':
+      '@aiengineer/knowledge-preparation':
         specifier: workspace:*
-        version: link:../projections
+        version: link:../preparation
       '@aiengineer/knowledge-retrieval':
         specifier: workspace:*
         version: link:../retrieval
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      '@aiengineer/knowledge-vector-backends':
-        specifier: workspace:*
-        version: link:../vector-backends
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../verification
@@ -449,28 +395,6 @@ importers:
       '@aiengineer/knowledge-testkit':
         specifier: workspace:*
         version: link:../testkit
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/chunking:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@aiengineer/knowledge-documents':
-        specifier: workspace:*
-        version: link:../documents
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-    devDependencies:
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -538,73 +462,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/conversion:
-    dependencies:
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/db-read:
-    dependencies:
-      '@aiengineer/knowledge-persistence':
-        specifier: workspace:*
-        version: link:../persistence
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../schema-workspace
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.4.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/documents:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/domain:
+  packages/core:
     dependencies:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
@@ -618,76 +476,20 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/embeddings:
-    dependencies:
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   packages/evaluation:
     dependencies:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../core
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../verification
     devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/ingestion:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@aiengineer/knowledge-db-read':
-        specifier: workspace:*
-        version: link:../db-read
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-persistence':
-        specifier: workspace:*
-        version: link:../persistence
-      '@aiengineer/knowledge-schema-workspace':
-        specifier: workspace:*
-        version: link:../schema-workspace
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@aiengineer/knowledge-chunking':
-        specifier: workspace:*
-        version: link:../chunking
-      '@aiengineer/knowledge-documents':
-        specifier: workspace:*
-        version: link:../documents
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.4.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -717,12 +519,30 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/observability:
+  packages/knowledge-db:
     dependencies:
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/database-contract':
+        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
+        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
+      '@aiengineer/knowledge-contracts':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../contracts
+      '@aiengineer/knowledge-core':
+        specifier: workspace:*
+        version: link:../core
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../persistence
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-preparation':
+        specifier: workspace:*
+        version: link:../preparation
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.4.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -744,12 +564,9 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-runtime':
-        specifier: workspace:*
-        version: link:../runtime
+        version: link:../core
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../verification
@@ -778,9 +595,9 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../core
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../verification
@@ -795,17 +612,14 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/projections:
+  packages/preparation:
     dependencies:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-documents':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../documents
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
+        version: link:../core
     devDependencies:
       tsup:
         specifier: 'catalog:'
@@ -822,54 +636,13 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
-      '@aiengineer/knowledge-vector-backends':
+        version: link:../core
+      '@aiengineer/knowledge-preparation':
         specifier: workspace:*
-        version: link:../vector-backends
+        version: link:../preparation
     devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/runtime:
-    dependencies:
-      '@aiengineer/knowledge-contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/schema-workspace:
-    dependencies:
-      '@aiengineer/database-contract':
-        specifier: file:../../vendor/aiengineer-database-contract-0.4.16.tgz
-        version: file:vendor/aiengineer-database-contract-0.4.16.tgz
-      zod:
-        specifier: 'catalog:'
-        version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.4.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -882,31 +655,15 @@ importers:
 
   packages/testkit:
     dependencies:
-      '@aiengineer/knowledge-domain':
+      '@aiengineer/knowledge-core':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../core
       '@aiengineer/knowledge-evaluation':
         specifier: workspace:*
         version: link:../evaluation
       '@aiengineer/knowledge-retrieval':
         specifier: workspace:*
         version: link:../retrieval
-    devDependencies:
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
-
-  packages/vector-backends:
-    dependencies:
-      '@aiengineer/knowledge-domain':
-        specifier: workspace:*
-        version: link:../domain
     devDependencies:
       tsup:
         specifier: 'catalog:'

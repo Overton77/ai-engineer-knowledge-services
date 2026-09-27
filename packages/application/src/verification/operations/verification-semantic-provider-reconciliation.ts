@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { SemanticBlindedInputSchema, VerificationArtifactHandleSchema, VerificationSemanticProviderReconciliationSchema, type VerificationArtifactHandle, type VerificationSemanticProviderReconciliation } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, prepareGatewaySemanticRequest, sha256Digest, type AuditBundleSignatureVerifier, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { SemanticJudgeProfileSchema } from "./verification-semantic-profile.js";
 

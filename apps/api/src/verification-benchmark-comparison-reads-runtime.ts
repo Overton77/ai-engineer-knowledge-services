@@ -1,7 +1,7 @@
 import {createPublicKey,verify} from "node:crypto";
 import {VerificationBenchmarkComparisonReadService} from "@aiengineer/knowledge-application";
 import {PostgresVerificationBenchmarkComparisonReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";
 export function createVerificationBenchmarkComparisonReads(database:PostgresCanonicalRepository|undefined,environment:Readonly<Record<string,string|undefined>>){
   const raw=environment.VERIFICATION_BENCHMARK_COMPARISON_READ_PUBLIC_KEYS_JSON?.trim();if(!raw)return undefined;

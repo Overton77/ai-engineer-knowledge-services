@@ -1,7 +1,7 @@
 import { UuidSchema, VerificationArtifactHandleSchema, VerificationStructuredExtractionPublicationSchema, VerificationStructuredExtractionFailureSchema, VerificationStructuredExtractionResultSchema, VerificationStructuredExtractionFailureResultSchema } from "@aiengineer/knowledge-contracts";
 import { createStructuredExtractionOperationResult, createStructuredExtractionFailureOperationResult } from "@aiengineer/knowledge-application";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest, type TrustedArtifactResolver, type AuditBundleSignatureVerifier } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository } from "./postgres.js";
 import type { RecoveredStructuredExtractionPublication } from "./verification-structured-extraction-recovery.js";
 

@@ -21,8 +21,8 @@ import {
   type VerifiedClaimsReportReadPort,
   type VerificationClaimsReportReadState,
 } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deepFreeze } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   digestCanonicalJson,

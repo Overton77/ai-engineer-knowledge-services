@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getPage, searchWorkspace } from "@aiengineer/knowledge-schema-workspace";
+import { getPage, searchWorkspace } from "@aiengineer/knowledge-db";
 import { ScopedAccessError, scopedCustodyOperations, type ScopedOperation } from "../access.js";
 import type { KnowledgeServices } from "./context.js";
 

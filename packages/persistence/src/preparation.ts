@@ -1,4 +1,4 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type {
   PersistCaptureInput,
   PersistChunkSetInput,
@@ -171,6 +171,7 @@ export class PostgresPreparationRepository implements PreparationRepository {
         || digestHex(captureLink.resolution_evidence)!==digestHex({deterministic:true})) throw new Error("DOCUMENT_CAPTURE_LINK_CONFLICT");
       const parameters = { providerKey:input.providerKey,providerVersion:input.providerVersion,profileDigest:input.profileDigest,
         documentKind:input.documentKind,transformationKind:"structural_conversion" };
+      // Persisted procedure identity; not a filesystem path. Do not rename.
       await client.query(`insert into content.transformation_run
         (id,tenant_id,transformation_kind,contract_version,code_ref,provider_route,parameters,parameters_sha256,operation_id,status,idempotency_key,input_manifest_sha256,output_manifest_sha256,receipt,resource_observations,cost_usd,started_at,ended_at)
         values($1,$2,'structural_parse','knowledge.transformation/v1','packages/conversion',$3,$4::jsonb,$5,$6,'succeeded',$7,$8,$9,$10::jsonb,$11::jsonb,0,$12,$12) on conflict(tenant_id,idempotency_key) do nothing`,[
@@ -292,11 +293,13 @@ export class PostgresPreparationRepository implements PreparationRepository {
         (id,tenant_id,slug,version,supported_content_classes,tokenizer,schema_contract,code_sha256,defaults,limits,status)
         values($1,$2,$3,$4,$5::jsonb,$6,$7::jsonb,$8,$9::jsonb,$10::jsonb,'admitted') on conflict(tenant_id,slug,version) do nothing`,[
         input.procedureVersionId,tenantId,input.procedureSlug,input.procedureVersion,JSON.stringify(["structural_extraction"]),input.tokenizer,
+        // Persisted procedure identity; not a filesystem path. Do not rename.
         JSON.stringify({schemaVersion:"knowledge.chunk-set/v1"}),digestHex("packages/chunking"),JSON.stringify(input.profile),JSON.stringify({}),
       ]);
       const procedure = (await client.query<Row>("select * from retrieval.chunking_procedure_version where tenant_id=$1 and slug=$2 and version=$3",[tenantId,input.procedureSlug,input.procedureVersion])).rows[0];
       if (!procedure || String(procedure.tokenizer)!==input.tokenizer
         || digestHex(procedure.defaults)!==digestHex(input.profile)
+        // Persisted procedure identity; not a filesystem path. Do not rename.
         || String(procedure.code_sha256)!==digestHex("packages/chunking") || procedure.status!=="admitted") throw new Error("CHUNK_PROCEDURE_CONFLICT");
       await client.query(`insert into retrieval.chunk_set
         (id,tenant_id,representation_id,procedure_version_id,frozen_config,tokenizer,input_manifest_sha256,output_manifest_sha256,chunk_set_sha256,status)

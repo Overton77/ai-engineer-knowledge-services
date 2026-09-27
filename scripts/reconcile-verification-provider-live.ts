@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { admitOutputSchema, canonicalizeJson, sha256Digest, validateOutputAgainstSchema } from "@aiengineer/knowledge-verification";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 const root = resolve("..");
 const originalPath = resolve(root, "internal", "verification-provider-live-conformance-6659519f-5a87-4422-86a6-cc8455631158.json");

@@ -1,4 +1,4 @@
-import { SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { PostgresCanonicalRepository, type PostgresPersistenceConfig } from "./postgres.js";
 
 export interface CanonicalPersistenceConfig {

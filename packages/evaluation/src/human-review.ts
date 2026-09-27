@@ -1,4 +1,4 @@
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { evaluateRetrieval, type EvaluationCaseOutput, type FrozenEvaluationCase, type FrozenEvaluationDataset } from "./index.js";
 
 /**

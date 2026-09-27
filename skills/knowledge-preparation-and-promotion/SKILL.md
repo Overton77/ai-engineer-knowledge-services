@@ -31,7 +31,7 @@ Knowledge Services converts **already stored** artifacts. It does not fetch a UR
 | Docling Serve (`docling-serve`) | Default binary fallback for PDF / Office / hard HTML. Costs the box, not a vendor invoice. |
 | Unstructured Transform | Only when `managedProcessingAllowed` is true and budget says yes. Cite their [agent guide](https://docs.unstructured.io/agent-guide). |
 
-The routing receipt records `candidateRoute`, typed `attempts`, `selectedProviderKey`, and `fallbackUsed`. Secrets never appear in the receipt. Runnable mocked copies: `packages/conversion/examples`.
+The routing receipt records `candidateRoute`, typed `attempts`, `selectedProviderKey`, and `fallbackUsed`. Secrets never appear in the receipt. Runnable mocked copies: `packages/preparation/examples`.
 
 Vendor MCP stays in the **agent** toolbox. After their skill runs, `source import` the self-reported receipt, then convert the stored markdown or native bytes. Do not wrap Transform inside `@aiengineer/knowledge-mcp`.
 

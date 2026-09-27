@@ -7,7 +7,7 @@ import {
 import { DurableVerificationRecoveryService, type CheckpointApplicationService } from "@aiengineer/knowledge-application";
 import { PostgresDurableVerificationRecoveryStore, PostgresKnowledgeOperationService,
   type PostgresCanonicalRepository, type PostgresClaimsReportReadRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import type { FilesystemStore } from "../store.js";
 import type { ArtifactCustody } from "../store-custody.js";

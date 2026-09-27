@@ -8,8 +8,8 @@ import type { PostgresCanonicalRepository } from "@aiengineer/knowledge-persiste
 import {
   createEveRuntimeAttestation,
   deterministicUuid,
-} from "@aiengineer/knowledge-runtime";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+} from "@aiengineer/knowledge-core";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 
 const resolveEveBinding = vi.hoisted(() => vi.fn());
 vi.mock("@aiengineer/knowledge-persistence", async (importOriginal) => ({

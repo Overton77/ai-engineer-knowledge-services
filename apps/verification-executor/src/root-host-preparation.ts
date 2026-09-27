@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-conversion";
+import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-preparation";
 import { ExactHttpAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
 import { PostgresPreparationRepository, PostgresKnowledgeOperationService, type PostgresCanonicalRepository,
   type PersistedPreparationArtifact } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { createCanonicalActivityExecutor, createProductionActivityRegistry } from "../../worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../../worker/src/canonical-worker.js";
 import type { VerificationExecutor } from "./executor.js";

@@ -28,7 +28,7 @@ import {
 import {
   createGatewayEmbeddingAdapterFromEnvironment,
   type EmbeddingAdapter,
-} from "@aiengineer/knowledge-embeddings";
+} from "@aiengineer/knowledge-retrieval";
 import {
   createDoclingServeClientFromEnvironment,
   DeterministicTextConversionProvider,
@@ -38,7 +38,7 @@ import {
   SandboxedVerificationParser,
   VERIFICATION_PARSER_LIMITS,
   type DocumentConversionProvider,
-} from "@aiengineer/knowledge-conversion";
+} from "@aiengineer/knowledge-preparation";
 import {
   canonicalPersistenceConfigFromEnvironment,
   createCanonicalPersistence,
@@ -54,7 +54,7 @@ import {
 import {
   SupabaseArtifactStore,
   type ArtifactStore,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import {
   createCanonicalActivityExecutor,
   createProductionActivityRegistry,

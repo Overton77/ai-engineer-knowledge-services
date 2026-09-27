@@ -10,7 +10,7 @@ sources:
     resource: ../docs/verification/README.md
     title: Verification Module Guide
   - id: admission-implementation
-    resource: ../packages/ingestion/src/evidence-admission.ts
+    resource: ../packages/knowledge-db/src/ingestion/evidence-admission.ts
     title: Evidence admission implementation
   - id: verification-transport
     resource: ../packages/application/src/verification/operations/verification-transport.ts
@@ -109,9 +109,9 @@ while algorithm entry points live in
   superseded, and duplicate/no-op effects.
 
 These controls are implemented by
-[`evidence-admission.ts`](../packages/ingestion/src/evidence-admission.ts) and
-the deterministic [planner](../packages/ingestion/src/plan.ts), before the
-[apply path](../packages/ingestion/src/apply.ts) writes through the pinned
+[`evidence-admission.ts`](../packages/knowledge-db/src/ingestion/evidence-admission.ts) and
+the deterministic [planner](../packages/knowledge-db/src/ingestion/plan.ts), before the
+[apply path](../packages/knowledge-db/src/ingestion/apply.ts) writes through the pinned
 database contract. Admission does not grant schema ownership to this service.
 
 ## Examples
@@ -143,7 +143,7 @@ Admission is fail-closed. Typical outcomes are `EVIDENCE_REQUIRED`,
 `PROPOSAL_REVERIFICATION_REQUIRED`, and `REPORT_BINDING_REQUIRED`. These are
 planning decisions, not a signal to synthesize replacement evidence.
 
-The focused [admission tests](../packages/ingestion/src/tests/evidence-admission.test.ts)
+The focused [admission tests](../packages/knowledge-db/src/ingestion/tests/evidence-admission.test.ts)
 cover empty evidence, intended-use mismatches, altered inline fields, new
 subject identity bindings, effect changes, report bindings, and independent
 closures. The [integration guide](../docs/verification/INTEGRATION-GUIDE.md)

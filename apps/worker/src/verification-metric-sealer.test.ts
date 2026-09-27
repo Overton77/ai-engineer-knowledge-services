@@ -2,7 +2,7 @@ import type { OperationContext, VerificationArtifactHandle, VerificationBundle, 
 import type { VerificationMetricServiceResult } from "@aiengineer/knowledge-application";
 import type { RegisterContentAddressedVerificationArtifactInput } from "@aiengineer/knowledge-persistence";
 import { VerificationSealPolicyCatalog } from "@aiengineer/knowledge-application";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, sha256Digest, verifyDeterministicBundle, type RuntimePrincipalBinding, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { describe, expect, it } from "vitest";
 import { createVerificationMetricAuditSealer, type VerificationMetricAuditSealerRepository } from "./verification-metric-sealer.js";

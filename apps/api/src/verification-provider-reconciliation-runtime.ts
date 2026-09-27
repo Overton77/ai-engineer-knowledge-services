@@ -3,7 +3,7 @@ import {ActorSchema,UuidSchema,VerificationArtifactHandleSchema,type Actor,type 
 import {actorsMatch} from "@aiengineer/knowledge-config";
 import {ProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
 import {PostgresProviderReconciliationStore,PostgresProviderReconciliationReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {createVerificationOperationReadAuthorizer} from "./verification-ownership.js";
 import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";

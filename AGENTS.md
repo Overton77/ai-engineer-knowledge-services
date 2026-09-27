@@ -13,7 +13,7 @@ Read the relevant documents below before changing behavior. Inspect more-specifi
 - Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.
 - Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.
 - Search explicit source paths first. Do not recursively enumerate artifacts, outputs, runs, receipts, caches, dependencies, or private notes. Read an individual artifact only when the task calls for it.
-- Knowledge schema/read/ingest live in packages/schema-workspace, packages/db-read, packages/ingestion and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation.
+- Knowledge schema/read/ingest live in packages/knowledge-db and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation.
 
 ### Business logic and workflows (OKF)
 
@@ -43,15 +43,16 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - `skills/AGENTS.md`: Agent skills for schema navigation, bounded reads, and ingestion.
 - Change an HTTP/MCP/CLI verification surface: contracts → application → api → mcp → cli
 - Change locator or evidence verification: verification → verification-evidence-selection → verification-deterministic → verification-semantic
-- Debug worker retry or persistence: worker → runtime → persistence
-- Change parsing and conversion: conversion → chunking → documents → verification-parser → docling
-- Change retrieval or embedding: retrieval → embeddings → vector-backends → policy
+- Debug worker retry or persistence: worker → core → persistence
+- Change parsing and conversion: preparation → verification-parser → docling
+- Change retrieval or embedding: retrieval → policy
 - Find proof and evaluation commands: script-proofs → script-evaluation → script-reconciliation
-- Change schema workspace, knowledge read, or ingestion: schema-workspace → db-read → ingestion → verification-executor
+- Change schema workspace, knowledge read, or ingestion: knowledge-db → verification-executor
 
 ### Task routes
 
-- [reference] Unit 1 continuation after Jev merge; exact baseline exception: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
+- [reference] Unit 1 delivery record and next-unit handoff: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
+- [proposed] Next unit: host composition and lifecycle: `docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`
 - [accepted] Accepted cleanup layout, transport rule, and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Current cleanup index and historical archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Post-sprint module review, exemplars, and developer-overridable delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
@@ -97,7 +98,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-2-HOST-COMPOSITION.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

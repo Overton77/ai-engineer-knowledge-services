@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 
 const FIXTURE_ROWS = 6_000;

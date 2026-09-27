@@ -1,5 +1,5 @@
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { AttachVectorStoreDocumentsInput, AttachedVectorStoreDocuments, CanonicalVectorStoreResource, PersistVectorStoreInput, VectorStoreIngestionStage, VectorStoreIngestionStageResult, VectorStoreLifecycleRepository, VerifyVectorStoreIngestionInput } from "./types.js";
 

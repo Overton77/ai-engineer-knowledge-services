@@ -1,9 +1,9 @@
 import { ContentLinkIntentSchema, JsonValueSchema, PromotionSelectionSchema, type ContentLinkIntent, type ContentLinkOperation, type PromotionSelection } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "./postgres.js";
 import { operationActorIdentity } from "./actor-identity.js";
 import { readContentRepresentationAdmission } from "./content-representation-admission.js";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { createHash } from "node:crypto";
 import type { GovernedProjectionProposal, GovernedProjectionProposalInput } from "./types.js";
 

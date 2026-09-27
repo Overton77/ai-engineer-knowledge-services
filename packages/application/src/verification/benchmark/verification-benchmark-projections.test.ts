@@ -1,5 +1,5 @@
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { freezeVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { describe, expect, it, vi } from "vitest";

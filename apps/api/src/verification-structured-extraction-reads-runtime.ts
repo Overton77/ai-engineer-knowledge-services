@@ -1,6 +1,6 @@
 import {VerificationStructuredExtractionReadService} from "@aiengineer/knowledge-application";
 import {PostgresStructuredExtractionReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {UuidSchema,type Actor} from "@aiengineer/knowledge-contracts";
 import {parseBenchmarkReadPublicKeys} from "./verification-benchmark-reads-runtime.js";

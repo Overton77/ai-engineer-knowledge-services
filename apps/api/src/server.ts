@@ -104,7 +104,7 @@ import Fastify, {
 } from "fastify";
 import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
-import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { loadEmbeddingBundles } from "@aiengineer/knowledge-testkit";
 import { z, ZodError, type ZodType } from "zod";
 import {

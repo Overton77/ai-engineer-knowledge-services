@@ -4,7 +4,7 @@ import {
   structuredExtractionArtifactTransformationSignature,
   type RetainedStructuredExtractionCandidate,
 } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { LeasedStep } from "./types.js";

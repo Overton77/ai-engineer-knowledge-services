@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { VerificationArtifactHandle, VerificationSource, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
 import { canonicalizeJson, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, sha256Digest } from "@aiengineer/knowledge-verification";
 import { VerificationAdmissionService, type VerificationAdmissionRepositoryPort } from "../packages/application/src/verification/admission/verification-admission.js";
 import { loadDiagnosticsOfflineCatalog } from "../packages/application/src/diagnostics/verification-diagnostics-offline-catalog.js";

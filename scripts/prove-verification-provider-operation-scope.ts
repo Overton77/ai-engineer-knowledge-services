@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, type LeasedStep } from "../packages/persistence/src/index.js";
 import { PostgresVerificationProviderAccounting } from "../packages/persistence/src/verification-provider-accounting.js";
-import { SupabaseArtifactStore } from "../packages/runtime/src/artifacts.js";
+import { SupabaseArtifactStore } from "../packages/core/src/runtime/artifacts.js";
 import { VerificationProviderArtifactComposer } from "../packages/application/src/verification/operations/verification-provider.js";
 import { canonicalizeJson, sha256Digest } from "../packages/verification/src/index.js";
 

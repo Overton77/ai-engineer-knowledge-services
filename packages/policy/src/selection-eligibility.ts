@@ -1,5 +1,5 @@
 import type { StoreClass, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 
 /**
  * `evidence.claim.status = verified` means policy-admitted official knowledge

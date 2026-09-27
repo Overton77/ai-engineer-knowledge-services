@@ -4,13 +4,13 @@ import { ReportAssessmentService, ReportAssessmentAuthorityPinSchema, type Repor
 import { createEd25519Verifier, digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { PolicyDefinitionInputSchema } from "../intents.js";
 import { verificationStoreOracle } from "./evidence-oracle.js";
-import { ArtifactLedger, ReadExecutor } from "@aiengineer/knowledge-db-read";
-import { ContentLinkExecutor, ContentSummaryPreparer, IngestionExecutor, ReportService, REPORT_BUCKET } from "@aiengineer/knowledge-ingestion";
+import { ArtifactLedger, ReadExecutor } from "@aiengineer/knowledge-db";
+import { ContentLinkExecutor, ContentSummaryPreparer, IngestionExecutor, ReportService, REPORT_BUCKET } from "@aiengineer/knowledge-db";
 import { createContentLinkAuthority } from "./content-links.js";
 import { TenantPostgres, PostgresCanonicalRepository, PostgresSourceDiscoveryStore, PostgresCheckpointStore, PostgresGovernedIndexRepository, PostgresClaimsReportReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SourceDiscoveryApplicationService, CheckpointApplicationService, type SourceDiscoveryHost } from "@aiengineer/knowledge-application";
-import { LocalArtifactStore, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-runtime";
-import { loadWorkspace, resolveWorkspaceDir, type Workspace } from "@aiengineer/knowledge-schema-workspace";
+import { LocalArtifactStore, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
+import { loadWorkspace, resolveWorkspaceDir, type Workspace } from "@aiengineer/knowledge-db";
 import { loadExecutorConfig, type VerificationExecutor } from "../executor.js";
 import { createExecutorCustody } from "../store-custody-postgres.js";
 import { createSourceDiscoveryHost, type DiscoveryHostConfig } from "./source-discovery-host.js";

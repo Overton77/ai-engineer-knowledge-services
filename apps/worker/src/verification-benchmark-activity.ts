@@ -20,7 +20,7 @@ import {
   PostgresVerificationBenchmarkRunStore,
   type OperationsRepository,
 } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { z } from "zod";
 import { CanonicalActivityError, type CanonicalActivityHandler } from "./activity-registry.js";
 

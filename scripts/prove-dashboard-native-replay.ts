@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createApiRuntime } from "../apps/api/src/index.js";
 import { startWorker } from "../apps/worker/src/index.js";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 
 const local = await (await import("../../internal/verification-local-direct-config.mjs")).loadVerifiedLocalDevelopmentConfig();

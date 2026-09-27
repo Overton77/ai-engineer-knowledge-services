@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { deterministicUuid } from "../packages/runtime/dist/index.js";
+import { deterministicUuid } from "../packages/core/dist/index.js";
 import { diffVerificationBenchmarkDatasets, freezeVerificationBenchmarkDataset, verificationBenchmarkDigest } from "../packages/evaluation/dist/index.js";
 
 type Json = Record<string, any>;

@@ -11,7 +11,7 @@
     "Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.",
     "Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.",
     "Search explicit source paths first. Do not recursively enumerate artifacts, outputs, runs, receipts, caches, dependencies, or private notes. Read an individual artifact only when the task calls for it.",
-    "Knowledge schema/read/ingest live in packages/schema-workspace, packages/db-read, packages/ingestion and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation."
+    "Knowledge schema/read/ingest live in packages/knowledge-db and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation."
   ],
   "commands": [
     "corepack pnpm verify"
@@ -19,8 +19,22 @@
   "docs": [
     {
       "path": "docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md",
-      "task": "Unit 1 continuation after Jev merge; exact baseline exception",
+      "task": "Unit 1 delivery record and next-unit handoff",
       "status": "reference"
+    },
+    {
+      "path": "docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md",
+      "task": "Next unit: host composition and lifecycle",
+      "status": "proposed",
+      "modules": [
+        "config",
+        "persistence",
+        "api",
+        "mcp",
+        "worker",
+        "jev",
+        "jev-service"
+      ]
     },
     {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
@@ -44,9 +58,7 @@
       "modules": [
         "acquisition",
         "application",
-        "conversion",
-        "chunking",
-        "documents",
+        "preparation",
         "skill-knowledge-ingest",
         "api",
         "mcp",
@@ -70,7 +82,7 @@
       "task": "Conversion route (text, Docling, gated Unstructured) and receipt review record",
       "status": "reference",
       "modules": [
-        "conversion",
+        "preparation",
         "worker"
       ]
     },
@@ -87,7 +99,7 @@
       "task": "Vector-backends package review record",
       "status": "reference",
       "modules": [
-        "vector-backends"
+        "retrieval"
       ]
     },
     {
@@ -95,7 +107,7 @@
       "task": "Projections package review record",
       "status": "reference",
       "modules": [
-        "projections"
+        "retrieval"
       ]
     },
     {
@@ -103,7 +115,7 @@
       "task": "Embeddings package review record",
       "status": "reference",
       "modules": [
-        "embeddings"
+        "retrieval"
       ]
     },
     {
@@ -119,7 +131,7 @@
       "task": "Bounded read executor and space manifest review record",
       "status": "reference",
       "modules": [
-        "db-read"
+        "knowledge-db"
       ]
     },
     {
@@ -127,9 +139,7 @@
       "task": "Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters",
       "status": "proposed",
       "modules": [
-        "conversion",
-        "chunking",
-        "documents",
+        "preparation",
         "application",
         "docling"
       ]
@@ -152,9 +162,7 @@
       "task": "Read a bounded knowledge snapshot or apply evidence-backed changes",
       "status": "reference",
       "modules": [
-        "schema-workspace",
-        "db-read",
-        "ingestion",
+        "knowledge-db",
         "verification-executor"
       ]
     },
@@ -164,9 +172,9 @@
       "status": "reference",
       "modules": [
         "application",
-        "ingestion",
+        "knowledge-db",
         "persistence",
-        "vector-backends",
+        "retrieval",
         "policy"
       ]
     },
@@ -179,8 +187,7 @@
         "contracts",
         "api",
         "persistence",
-        "policy",
-        "vector-backends"
+        "policy"
       ]
     },
     {
@@ -189,7 +196,7 @@
       "status": "reference",
       "modules": [
         "verification",
-        "ingestion",
+        "knowledge-db",
         "application",
         "policy",
         "verification-executor",
@@ -202,7 +209,7 @@
       "status": "reference",
       "modules": [
         "worker",
-        "runtime",
+        "core",
         "persistence",
         "application",
         "verification-executor"
@@ -218,9 +225,7 @@
         "worker",
         "verification-executor",
         "application",
-        "schema-workspace",
-        "db-read",
-        "ingestion"
+        "knowledge-db"
       ]
     },
     {
@@ -240,12 +245,10 @@
       "task": "Preparation pipeline",
       "modules": [
         "acquisition",
-        "conversion",
-        "documents",
-        "chunking",
-        "projections",
+        "preparation",
+        "retrieval",
         "application",
-        "runtime"
+        "core"
       ],
       "status": "accepted"
     },
@@ -253,12 +256,10 @@
       "path": "docs/architecture/0003-embedding-retrieval-evaluation.md",
       "task": "Embedding, retrieval, evaluation",
       "modules": [
-        "embeddings",
         "retrieval",
         "evaluation",
-        "vector-backends",
         "policy",
-        "observability",
+        "core",
         "testkit"
       ],
       "status": "accepted"
@@ -343,10 +344,9 @@
       "path": "docs/operations/runbooks.md",
       "task": "Worker restart, leases, callbacks, incidents",
       "modules": [
-        "runtime",
+        "core",
         "worker",
-        "persistence",
-        "observability"
+        "persistence"
       ]
     },
     {
@@ -413,16 +413,15 @@
   "watch": [
     "package.json",
     "apps/worker/src/worker.ts",
-    "packages/runtime/src/ledger.ts",
-    "packages/db-read/src/read-executor.ts",
-    "packages/ingestion/src/executor.ts",
+    "packages/core/src/runtime/ledger.ts",
+    "packages/knowledge-db/src/db-read/read-executor.ts",
+    "packages/knowledge-db/src/ingestion/executor.ts",
     "apps/verification-executor/src/knowledge/operations.ts"
   ],
   "decisions": [
     "A knowledge-read retrieval operation is accepted in the intent schema but skipped as RETRIEVAL_UNAVAILABLE; catalog query retrieval.hybrid_search is pending an embedding.",
     "Ingestion records orchestration.operation_intent/receipt and does not write a knowledge_service.operation row or outbox.",
-    "The database-contract pin is a local link: path, not a git ref. Cloud deployment of the km_13–km_15 contract additions is not verified by this map.",
-    "skills/ also contains vector-store-management, knowledge-evaluation, knowledge-retrieval-and-evidence, knowledge-preparation-and-promotion, and knowledge-acquisition-and-vetting; those were not registered in this update.",
+    "The database-contract pin is the vendored 0.4.16 tarball, not an unpinned sibling checkout. Cloud deployment of its schema additions is not verified by this map.",
     "Accepted ADR 0004: in-process KS servers call application; out-of-process callers use KnowledgeClient HTTP. MCP verification mutations, operation/status, and retrieval.plan_validate are in-process; decision/reconciliation/retrieval-evidence-eval reads and record-decision without the decision gate still HTTP-shim. Do not add apiClient methods."
   ],
   "ciWorkflow": ".github/workflows/agent-docs.yml",

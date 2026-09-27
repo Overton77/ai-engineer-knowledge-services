@@ -6,7 +6,7 @@ import {
 } from "@aiengineer/knowledge-application";
 import type { AcquisitionAdapter, AcquisitionRequest } from "@aiengineer/knowledge-acquisition";
 import { normalizePaperIdentifier } from "@aiengineer/knowledge-acquisition";
-import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
+import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import {
   A2AOperationBindingSchema,
   DocumentNodeSchema,
@@ -29,11 +29,11 @@ import {
   type ConversionProfile,
   type ConversionRoutingReceipt,
   type DocumentConversionProvider,
-} from "@aiengineer/knowledge-conversion";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
-import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-documents";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-preparation";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
+import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-preparation";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   evaluateRetrieval,
   createExperimentMatrix,
@@ -53,7 +53,7 @@ import type {
   VectorStoreLifecycleRepository,
 } from "@aiengineer/knowledge-persistence";
 import { sameActorIdentity } from "@aiengineer/knowledge-persistence";
-import { digestBytes, type ArtifactStore, type StoredArtifact } from "@aiengineer/knowledge-runtime";
+import { digestBytes, type ArtifactStore, type StoredArtifact } from "@aiengineer/knowledge-core";
 import { z, ZodError } from "zod";
 
 const durableStepInputSchema = z.strictObject({

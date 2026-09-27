@@ -1,5 +1,5 @@
 import {CompareBenchmarkRunsRequestSchema,UuidSchema,VerificationArtifactHandleSchema,VerificationBenchmarkComparisonPublicationSchema,type VerificationArtifactHandle,type VerificationBenchmarkComparisonPublication} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,digestCanonicalJson,sha256Digest,sealVerificationBenchmarkComparisonPublication,type AuditBundleSigner} from "@aiengineer/knowledge-verification";
 import {assertPreparedVerificationBenchmarkComparison,type PreparedVerificationBenchmarkComparison} from "./verification-benchmark-comparison.js";
 import type {BenchmarkPublicationArtifactPort} from "./verification-benchmark-publication.js";

@@ -34,8 +34,8 @@ const expectedDirectPath = "packages/persistence/src/verification.ts";
 const genericPreparationPaths = new Set([
   "apps/worker/src/index.ts",
   "packages/application/src/preparation.ts",
-  "packages/conversion/src/deterministic.ts",
-  "packages/conversion/src/providers.ts",
+  "packages/preparation/src/conversion/deterministic.ts",
+  "packages/preparation/src/conversion/providers.ts",
 ]);
 const genericAcquisitionPrefix = "packages/acquisition/src/";
 const classifiedDirectWrites = directWrites.map((record) => ({

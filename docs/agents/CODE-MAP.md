@@ -9,11 +9,11 @@ Paths below are repository-relative. Use the task routes, then search the module
 
 - Change an HTTP/MCP/CLI verification surface: [contracts](#contracts) → [application](#application) → [api](#api) → [mcp](#mcp) → [cli](#cli)
 - Change locator or evidence verification: [verification](#verification) → [verification-evidence-selection](#verification-evidence-selection) → [verification-deterministic](#verification-deterministic) → [verification-semantic](#verification-semantic)
-- Debug worker retry or persistence: [worker](#worker) → [runtime](#runtime) → [persistence](#persistence)
-- Change parsing and conversion: [conversion](#conversion) → [chunking](#chunking) → [documents](#documents) → [verification-parser](#verification-parser) → [docling](#docling)
-- Change retrieval or embedding: [retrieval](#retrieval) → [embeddings](#embeddings) → [vector-backends](#vector-backends) → [policy](#policy)
+- Debug worker retry or persistence: [worker](#worker) → [core](#core) → [persistence](#persistence)
+- Change parsing and conversion: [preparation](#preparation) → [verification-parser](#verification-parser) → [docling](#docling)
+- Change retrieval or embedding: [retrieval](#retrieval) → [policy](#policy)
 - Find proof and evaluation commands: [script-proofs](#script-proofs) → [script-evaluation](#script-evaluation) → [script-reconciliation](#script-reconciliation)
-- Change schema workspace, knowledge read, or ingestion: [schema-workspace](#schema-workspace) → [db-read](#db-read) → [ingestion](#ingestion) → [verification-executor](#verification-executor)
+- Change schema workspace, knowledge read, or ingestion: [knowledge-db](#knowledge-db) → [verification-executor](#verification-executor)
 
 ## Modules
 
@@ -26,26 +26,17 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [worker](#worker) | apps/worker | Durable knowledge-operation execution, activity dispatch, and verification runtime wiring. | implemented |
 | [acquisition](#acquisition) | packages/acquisition | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | implemented |
 | [application](#application) | packages/application | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | implemented |
-| [chunking](#chunking) | packages/chunking | Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA. | implemented |
+| [preparation](#preparation) | packages/preparation | Artifact conversion, immutable document nodes, admitted chunk profiles and reconstructable-span quality checks. | implemented |
 | [client-typescript](#client-typescript) | packages/client-typescript | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
 | [config](#config) | packages/config | Validates server, authentication, and semantic-provider configuration. | implemented |
 | [contracts](#contracts) | packages/contracts | Versioned Zod schemas and types shared by transports, application composition, and clients. | implemented |
-| [conversion](#conversion) | packages/conversion | Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser. | implemented |
-| [db-read](#db-read) | packages/db-read | Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard, artifact ledger, and the space manifest read. | partial |
-| [documents](#documents) | packages/documents | Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity. | implemented |
-| [domain](#domain) | packages/domain | Shared digest, identity, idempotency, error, authority, and state-machine primitives. | implemented |
-| [embeddings](#embeddings) | packages/embeddings | Embedding adapter requests, cache/route identity, bounded batches, and receipts. | implemented |
-| [ingestion](#ingestion) | packages/ingestion | Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling. | partial |
+| [knowledge-db](#knowledge-db) | packages/knowledge-db | Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers. | implemented |
+| [core](#core) | packages/core | Shared identity, digest, authority and state primitives; artifact custody, operation lifecycle and in-memory telemetry. | implemented |
+| [retrieval](#retrieval) | packages/retrieval | Policy-scoped search, evidence-bound projections, embedding routes and receipts, and vector publication and rollback. | implemented |
 | [evaluation](#evaluation) | packages/evaluation | Retrieval evaluations, benchmark statistics/comparisons, and human review structures. | implemented |
-| [observability](#observability) | packages/observability | In-memory operation telemetry, SLO summaries, and manifest reconciliation. | implemented |
 | [persistence](#persistence) | packages/persistence | Postgres, storage, operation ledger, verification records, and runtime wiring adapters, including the shared verification host. | implemented |
 | [policy](#policy) | packages/policy | Authorization, capability, retrieval, promotion, selection-eligibility, and verification admission decisions. | implemented |
-| [projections](#projections) | packages/projections | Produces domain projections whose assertions remain bound to source evidence. | implemented |
-| [retrieval](#retrieval) | packages/retrieval | Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval. | implemented |
-| [runtime](#runtime) | packages/runtime | Content-addressed artifacts and operation/step/lease/event/receipt primitives. | implemented |
-| [schema-workspace](#schema-workspace) | packages/schema-workspace | Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles. | implemented |
 | [testkit](#testkit) | packages/testkit | Curated evaluation corpora, embedding bundles, retrieval fixtures, and operational test assets. | implemented |
-| [vector-backends](#vector-backends) | packages/vector-backends | Vector-store adapters, publication and rollback mechanics, and space version-pointer and entity-link shapes for exact and Postgres search. | implemented |
 | [verification](#verification) | packages/verification | Evidence verification algorithms: canonical primitives, staged deterministic bundle engine, selector resolution, extraction, report gates, evidence-closed semantic judging, providers, and provenance seal/replay. | implemented |
 | [verification-canonical](#verification-canonical) | packages/verification/src/canonical | RFC 8785 canonical JSON and prefixed SHA-256 digests shared by every stage. | implemented |
 | [verification-decimal](#verification-decimal) | packages/verification/src/decimal | Exact rational-decimal parsing, replay, tolerance, and rounding. | implemented |
@@ -90,7 +81,7 @@ Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime 
 **Interface:** Versioned HTTP endpoints backed by application services. The shared verification host supplies ownership, admission, and the verification operation port; read, decision, and reconciliation runtimes stay API-local.
 **Package:** @aiengineer/knowledge-api ([`apps/api/package.json`](../../apps/api/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [config](#config), [contracts](#contracts), [domain](#domain), [embeddings](#embeddings), [persistence](#persistence), [runtime](#runtime), [testkit](#testkit)
+**Declared internal package dependencies:** [application](#application), [config](#config), [contracts](#contracts), [core](#core), [persistence](#persistence), [retrieval](#retrieval), [testkit](#testkit)
 **Other runtime dependencies:** fastify, zod
 **Reviewed runtime/data relationships:** [persistence](#persistence)
 **Checks:** [`apps/api/src/tests/server.test.ts`](../../apps/api/src/tests/server.test.ts), [`apps/api/src/tests/verification-routes.test.ts`](../../apps/api/src/tests/verification-routes.test.ts), [`apps/api/src/tests/verification-ownership.test.ts`](../../apps/api/src/tests/verification-ownership.test.ts) Package script names: build, dev, start, test, typecheck.
@@ -98,6 +89,7 @@ Fastify HTTP transport. createApiRuntime composes createVerificationHostRuntime 
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
@@ -151,6 +143,7 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes createVerificati
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
@@ -169,9 +162,9 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 **Interface:** knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP.
 **Package:** @aiengineer/knowledge-verification-executor ([`apps/verification-executor/package.json`](../../apps/verification-executor/package.json))
 **Export subpaths:** ./evidence-reader/v1, ./root-host/v1, ./scoped-host/v1. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [db-read](#db-read), [ingestion](#ingestion), [persistence](#persistence), [policy](#policy), [runtime](#runtime), [schema-workspace](#schema-workspace), [verification](#verification)
+**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [knowledge-db](#knowledge-db), [persistence](#persistence), [policy](#policy), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, @modelcontextprotocol/sdk, pg, zod
-**Reviewed runtime/data relationships:** [schema-workspace](#schema-workspace), [db-read](#db-read), [ingestion](#ingestion)
+**Reviewed runtime/data relationships:** [knowledge-db](#knowledge-db)
 **Checks:** [`apps/verification-executor/src/knowledge/cli.test.ts`](../../apps/verification-executor/src/knowledge/cli.test.ts), [`apps/verification-executor/src/locate.test.ts`](../../apps/verification-executor/src/locate.test.ts), [`apps/verification-executor/src/intents.test.ts`](../../apps/verification-executor/src/intents.test.ts) Package script names: build, dev, dev:knowledge, examples, pack:sandbox, test, typecheck.
 - Distinct from apps/api's durable service transport; preserve the explicit sandbox capability model. Knowledge services are absent when no database URL is configured.
 - Agent claim/extraction intents select exact text quotes; native projection selector support in the library does not imply executor media admission.
@@ -197,13 +190,14 @@ Durable knowledge-operation execution, activity dispatch, and verification runti
 **Interface:** Worker loop and activity registry; preserve lease ownership and idempotent terminal receipts.
 **Package:** @aiengineer/knowledge-worker ([`apps/worker/package.json`](../../apps/worker/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [application](#application), [chunking](#chunking), [contracts](#contracts), [conversion](#conversion), [documents](#documents), [domain](#domain), [embeddings](#embeddings), [evaluation](#evaluation), [persistence](#persistence), [policy](#policy), [runtime](#runtime), [verification](#verification)
+**Declared internal package dependencies:** [acquisition](#acquisition), [application](#application), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [persistence](#persistence), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`apps/worker/src/worker.test.ts`](../../apps/worker/src/worker.test.ts), [`apps/worker/src/activity-registry.test.ts`](../../apps/worker/src/activity-registry.test.ts) Package script names: build, dev, start, test, typecheck.
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
 - [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
 - [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
@@ -225,7 +219,7 @@ HTTP and local-upload acquisition wired; inspect library for sealed bytes; repos
 **Interface:** Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection.
 **Package:** @aiengineer/knowledge-acquisition ([`packages/acquisition/package.json`](../../packages/acquisition/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain), [runtime](#runtime)
+**Declared internal package dependencies:** [core](#core)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/acquisition/src/http/adapter.test.ts`](../../packages/acquisition/src/http/adapter.test.ts), [`packages/acquisition/src/http/deadline.test.ts`](../../packages/acquisition/src/http/deadline.test.ts), [`packages/acquisition/src/route.test.ts`](../../packages/acquisition/src/route.test.ts), [`packages/acquisition/src/inspect/inspect.test.ts`](../../packages/acquisition/src/inspect/inspect.test.ts), [`packages/acquisition/examples/examples.test.ts`](../../packages/acquisition/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
@@ -246,7 +240,7 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 **Interface:** Application service facades and use-case functions; transports call these rather than implementing algorithms. verification-transport.ts owns ResolveVerificationContext, catalog/SQL admission factories, and the static context resolver. verification-ownership.ts owns the ownership resolver and read authorizer as application ports.
 **Package:** @aiengineer/knowledge-application ([`packages/application/package.json`](../../packages/application/package.json))
 **Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [chunking](#chunking), [contracts](#contracts), [conversion](#conversion), [documents](#documents), [domain](#domain), [embeddings](#embeddings), [evaluation](#evaluation), [jev](#jev), [policy](#policy), [projections](#projections), [retrieval](#retrieval), [runtime](#runtime), [vector-backends](#vector-backends), [verification](#verification)
+**Declared internal package dependencies:** [acquisition](#acquisition), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [jev](#jev), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/application/src/operations/a2a-adapter.test.ts`](../../packages/application/src/operations/a2a-adapter.test.ts), [`packages/application/src/operations/capability-admission.test.ts`](../../packages/application/src/operations/capability-admission.test.ts) Package script names: build, test, typecheck.
@@ -267,24 +261,25 @@ Composes knowledge use cases, capability admission, preparation, and verificatio
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
-## chunking
+## preparation
 
-**packages/chunking** · package · implemented
+**packages/preparation** · package · implemented
 
-Admitted chunk profile table (chunk-profile-table.v1), deterministic chunkDocument over sealed nodes, and reconstructable-span QA.
+Artifact conversion, immutable document nodes, admitted chunk profiles and reconstructable-span quality checks.
 
-**Enter:** [`packages/chunking/src/index.ts`](../../packages/chunking/src/index.ts), [`packages/chunking/src/profiles/definitions.ts`](../../packages/chunking/src/profiles/definitions.ts), [`packages/chunking/src/chunker/chunk-document.ts`](../../packages/chunking/src/chunker/chunk-document.ts), [`packages/chunking/src/qa/validate-chunks.ts`](../../packages/chunking/src/qa/validate-chunks.ts)
-**Interface:** ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts.
-**Package:** @aiengineer/knowledge-chunking ([`packages/chunking/package.json`](../../packages/chunking/package.json))
+**Enter:** [`packages/preparation/src/index.ts`](../../packages/preparation/src/index.ts), [`packages/preparation/src/documents/index.ts`](../../packages/preparation/src/documents/index.ts), [`packages/preparation/src/documents/nodes/structural-document.ts`](../../packages/preparation/src/documents/nodes/structural-document.ts), [`packages/preparation/src/documents/locators/source-locator.ts`](../../packages/preparation/src/documents/locators/source-locator.ts), [`packages/preparation/src/chunking/index.ts`](../../packages/preparation/src/chunking/index.ts), [`packages/preparation/src/chunking/profiles/definitions.ts`](../../packages/preparation/src/chunking/profiles/definitions.ts), [`packages/preparation/src/chunking/chunker/chunk-document.ts`](../../packages/preparation/src/chunking/chunker/chunk-document.ts), [`packages/preparation/src/chunking/qa/validate-chunks.ts`](../../packages/preparation/src/chunking/qa/validate-chunks.ts), [`packages/preparation/src/conversion/index.ts`](../../packages/preparation/src/conversion/index.ts), [`packages/preparation/src/conversion/route.ts`](../../packages/preparation/src/conversion/route.ts)
+**Interface:** convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, and the document-specific one-argument deterministicUuid; core retains its distinct two-argument helper., ChunkProfileRegistry over CHUNK_PROFILE_TABLE (forSpace, forSpaceAndNodeKinds), chunkDocument, tokenize, reconstructChunk, validateChunks; ChunkProfile comes from contracts., ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser.
+**Package:** @aiengineer/knowledge-preparation ([`packages/preparation/package.json`](../../packages/preparation/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [documents](#documents), [domain](#domain)
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/chunking/src/profiles/registry.test.ts`](../../packages/chunking/src/profiles/registry.test.ts), [`packages/chunking/src/chunker/chunk-document.test.ts`](../../packages/chunking/src/chunker/chunk-document.test.ts), [`packages/chunking/src/qa/validate-chunks.test.ts`](../../packages/chunking/src/qa/validate-chunks.test.ts), [`packages/chunking/examples/01-select-profiles-for-space.test.ts`](../../packages/chunking/examples/01-select-profiles-for-space.test.ts), [`packages/chunking/examples/02-chunk-and-reconstruct.test.ts`](../../packages/chunking/examples/02-chunk-and-reconstruct.test.ts), [`packages/chunking/examples/03-qa-failure-next-profile.test.ts`](../../packages/chunking/examples/03-qa-failure-next-profile.test.ts) Package script names: build, examples, test, typecheck.
+**Checks:** [`packages/preparation/src/documents/nodes/structural-document.test.ts`](../../packages/preparation/src/documents/nodes/structural-document.test.ts), [`packages/preparation/src/documents/locators/source-locator.test.ts`](../../packages/preparation/src/documents/locators/source-locator.test.ts), [`packages/preparation/src/documents/identity/deterministic-uuid.test.ts`](../../packages/preparation/src/documents/identity/deterministic-uuid.test.ts), [`packages/preparation/examples/documents/01-build-nodes-and-verify-locators.test.ts`](../../packages/preparation/examples/documents/01-build-nodes-and-verify-locators.test.ts), [`packages/preparation/src/chunking/profiles/registry.test.ts`](../../packages/preparation/src/chunking/profiles/registry.test.ts), [`packages/preparation/src/chunking/chunker/chunk-document.test.ts`](../../packages/preparation/src/chunking/chunker/chunk-document.test.ts), [`packages/preparation/src/chunking/qa/validate-chunks.test.ts`](../../packages/preparation/src/chunking/qa/validate-chunks.test.ts), [`packages/preparation/examples/chunking/02-chunk-and-reconstruct.test.ts`](../../packages/preparation/examples/chunking/02-chunk-and-reconstruct.test.ts), [`packages/preparation/examples/chunking/03-qa-failure-next-profile.test.ts`](../../packages/preparation/examples/chunking/03-qa-failure-next-profile.test.ts), [`packages/preparation/src/conversion/conversion.test.ts`](../../packages/preparation/src/conversion/conversion.test.ts), [`packages/preparation/src/conversion/verification-parser.test.ts`](../../packages/preparation/src/conversion/verification-parser.test.ts), [`packages/preparation/examples/conversion/examples.test.ts`](../../packages/preparation/examples/conversion/examples.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
+- [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
@@ -328,6 +323,7 @@ Validates server, authentication, and semantic-provider configuration.
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -352,133 +348,82 @@ Versioned Zod schemas and types shared by transports, application composition, a
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
-## conversion
+## knowledge-db
 
-**packages/conversion** · package · implemented
+**packages/knowledge-db** · package · implemented
 
-Converts stored artifacts: deterministic text, Docling default, gated Unstructured, plus the isolated verification parser.
+Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers.
 
-**Enter:** [`packages/conversion/src/index.ts`](../../packages/conversion/src/index.ts), [`packages/conversion/src/route.ts`](../../packages/conversion/src/route.ts)
-**Interface:** ConversionRouter (text → Docling → gated Unstructured), providers, HTTP clients, and SandboxedVerificationParser.
-**Package:** @aiengineer/knowledge-conversion ([`packages/conversion/package.json`](../../packages/conversion/package.json))
+**Enter:** [`packages/knowledge-db/src/index.ts`](../../packages/knowledge-db/src/index.ts), [`packages/knowledge-db/src/schema-workspace/index.ts`](../../packages/knowledge-db/src/schema-workspace/index.ts), [`packages/knowledge-db/src/db-read/index.ts`](../../packages/knowledge-db/src/db-read/index.ts), [`packages/knowledge-db/src/db-read/read-executor.ts`](../../packages/knowledge-db/src/db-read/read-executor.ts), [`packages/knowledge-db/src/db-read/sql-guard.ts`](../../packages/knowledge-db/src/db-read/sql-guard.ts), [`packages/knowledge-db/src/db-read/space-manifest.ts`](../../packages/knowledge-db/src/db-read/space-manifest.ts), [`packages/knowledge-db/src/ingestion/index.ts`](../../packages/knowledge-db/src/ingestion/index.ts), [`packages/knowledge-db/src/ingestion/plan.ts`](../../packages/knowledge-db/src/ingestion/plan.ts), [`packages/knowledge-db/src/ingestion/apply.ts`](../../packages/knowledge-db/src/ingestion/apply.ts), [`packages/knowledge-db/src/ingestion/executor.ts`](../../packages/knowledge-db/src/ingestion/executor.ts), [`packages/knowledge-db/src/ingestion/duplicate.ts`](../../packages/knowledge-db/src/ingestion/duplicate.ts)
+**Interface:** loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/., ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH., buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[]., IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf.
+**Package:** @aiengineer/knowledge-db ([`packages/knowledge-db/package.json`](../../packages/knowledge-db/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain), [runtime](#runtime)
-**Other runtime dependencies:** none declared
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core), [persistence](#persistence)
+**Other runtime dependencies:** @aiengineer/database-contract, zod
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/conversion/src/conversion.test.ts`](../../packages/conversion/src/conversion.test.ts), [`packages/conversion/src/verification-parser.test.ts`](../../packages/conversion/src/verification-parser.test.ts), [`packages/conversion/examples/examples.test.ts`](../../packages/conversion/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
-
-**Architecture and detailed docs:**
-
-- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
-- [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
-- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
-- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
-
-## db-read
-
-**packages/db-read** · package · partial
-
-Executes knowledge-read-intent.v1 into a digested snapshot under bounded read-only roles, with a SQL guard, artifact ledger, and the space manifest read.
-
-**Enter:** [`packages/db-read/src/index.ts`](../../packages/db-read/src/index.ts), [`packages/db-read/src/read-executor.ts`](../../packages/db-read/src/read-executor.ts), [`packages/db-read/src/sql-guard.ts`](../../packages/db-read/src/sql-guard.ts), [`packages/db-read/src/space-manifest.ts`](../../packages/db-read/src/space-manifest.ts)
-**Interface:** ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH., buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[].
-**Package:** @aiengineer/knowledge-db-read ([`packages/db-read/package.json`](../../packages/db-read/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [persistence](#persistence), [runtime](#runtime), [schema-workspace](#schema-workspace)
-**Other runtime dependencies:** zod
-**Reviewed runtime/data relationships:** [schema-workspace](#schema-workspace)
-**Checks:** [`packages/db-read/src/db-read.test.ts`](../../packages/db-read/src/db-read.test.ts), [`packages/db-read/src/read-executor.integration.test.ts`](../../packages/db-read/src/read-executor.integration.test.ts), [`packages/db-read/src/space-manifest.test.ts`](../../packages/db-read/src/space-manifest.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts`](../../packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts), [`packages/knowledge-db/src/db-read/db-read.test.ts`](../../packages/knowledge-db/src/db-read/db-read.test.ts), [`packages/knowledge-db/src/db-read/read-executor.integration.test.ts`](../../packages/knowledge-db/src/db-read/read-executor.integration.test.ts), [`packages/knowledge-db/src/db-read/space-manifest.test.ts`](../../packages/knowledge-db/src/db-read/space-manifest.test.ts), [`packages/knowledge-db/src/ingestion/tests/plan.test.ts`](../../packages/knowledge-db/src/ingestion/tests/plan.test.ts), [`packages/knowledge-db/src/ingestion/tests/duplicate.test.ts`](../../packages/knowledge-db/src/ingestion/tests/duplicate.test.ts), [`packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts`](../../packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts) Package script names: build, test, typecheck.
+- Consumes the committed workspace tree; it does not regenerate IR from the live database at request time.
 - Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.
 - space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3).
+- Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row.
 
 **Architecture and detailed docs:**
 
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
+- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
+- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 
-## documents
+## core
 
-**packages/documents** · package · implemented
+**packages/core** · package · implemented
 
-Constructs immutable document nodes and quote-bound source locators from structural blocks; content-derived node identity.
+Shared identity, digest, authority and state primitives; artifact custody, operation lifecycle and in-memory telemetry.
 
-**Enter:** [`packages/documents/src/index.ts`](../../packages/documents/src/index.ts), [`packages/documents/src/nodes/structural-document.ts`](../../packages/documents/src/nodes/structural-document.ts), [`packages/documents/src/locators/source-locator.ts`](../../packages/documents/src/locators/source-locator.ts)
-**Interface:** convertStructuralDocument, normalizeDocumentText, createSourceLocator, reconstructNodeSpan, verifyNodeLocators, deterministicUuid (identity/, duplicate of runtime's two-argument helper until Phase 3).
-**Package:** @aiengineer/knowledge-documents ([`packages/documents/package.json`](../../packages/documents/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [domain](#domain)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/documents/src/nodes/structural-document.test.ts`](../../packages/documents/src/nodes/structural-document.test.ts), [`packages/documents/src/locators/source-locator.test.ts`](../../packages/documents/src/locators/source-locator.test.ts), [`packages/documents/src/identity/deterministic-uuid.test.ts`](../../packages/documents/src/identity/deterministic-uuid.test.ts), [`packages/documents/examples/01-build-nodes-and-verify-locators.test.ts`](../../packages/documents/examples/01-build-nodes-and-verify-locators.test.ts), [`packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts`](../../packages/documents/examples/02-reject-cycle-and-invalid-span.test.ts) Package script names: build, examples, test, typecheck.
-
-**Architecture and detailed docs:**
-
-- [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last
-- [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
-- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
-
-## domain
-
-**packages/domain** · package · implemented
-
-Shared digest, identity, idempotency, error, authority, and state-machine primitives.
-
-**Enter:** [`packages/domain/src/index.ts`](../../packages/domain/src/index.ts)
-**Interface:** Small pure invariants and value helpers.
-**Package:** @aiengineer/knowledge-domain ([`packages/domain/package.json`](../../packages/domain/package.json))
+**Enter:** [`packages/core/src/index.ts`](../../packages/core/src/index.ts), [`packages/core/src/domain/index.ts`](../../packages/core/src/domain/index.ts), [`packages/core/src/runtime/index.ts`](../../packages/core/src/runtime/index.ts), [`packages/core/src/observability/index.ts`](../../packages/core/src/observability/index.ts)
+**Interface:** Small pure invariants and value helpers., Artifact stores and ledger interfaces; in-memory implementations are not deployment authority., InMemoryTelemetry and reconcileManifests; not a full external telemetry deployment.
+**Package:** @aiengineer/knowledge-core ([`packages/core/package.json`](../../packages/core/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/domain/src/domain.test.ts`](../../packages/domain/src/domain.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/core/src/domain/domain.test.ts`](../../packages/core/src/domain/domain.test.ts), [`packages/core/src/runtime/eve-runtime-attestation.test.ts`](../../packages/core/src/runtime/eve-runtime-attestation.test.ts), [`packages/core/src/runtime/runtime.test.ts`](../../packages/core/src/runtime/runtime.test.ts), [`packages/core/src/observability/index.test.ts`](../../packages/core/src/observability/index.test.ts) Package script names: build, test, typecheck.
 
 **Architecture and detailed docs:**
 
-No module-specific architecture document registered. Do not infer a design decision from the folder name.
+- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
+- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
+- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
+- [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 
-## embeddings
+## retrieval
 
-**packages/embeddings** · package · implemented
+**packages/retrieval** · package · implemented
 
-Embedding adapter requests, cache/route identity, bounded batches, and receipts.
+Policy-scoped search, evidence-bound projections, embedding routes and receipts, and vector publication and rollback.
 
-**Enter:** [`packages/embeddings/src/index.ts`](../../packages/embeddings/src/index.ts), [`packages/embeddings/src/gateway.ts`](../../packages/embeddings/src/gateway.ts), [`packages/embeddings/src/vectors.ts`](../../packages/embeddings/src/vectors.ts), [`packages/embeddings/src/fake.ts`](../../packages/embeddings/src/fake.ts)
-**Interface:** EmbeddingAdapter with discoverModel, embedOne, and embedMany; VercelAiGatewayEmbeddingAdapter and DeterministicFakeEmbeddingAdapter implement it; validateVector and vectorDigest bound output.
-**Package:** @aiengineer/knowledge-embeddings ([`packages/embeddings/package.json`](../../packages/embeddings/package.json))
+**Enter:** [`packages/retrieval/src/index.ts`](../../packages/retrieval/src/index.ts), [`packages/retrieval/src/vector-backends/backends/in-memory-exact.ts`](../../packages/retrieval/src/vector-backends/backends/in-memory-exact.ts), [`packages/retrieval/src/vector-backends/backends/postgres.ts`](../../packages/retrieval/src/vector-backends/backends/postgres.ts), [`packages/retrieval/src/vector-backends/publication/coordinator.ts`](../../packages/retrieval/src/vector-backends/publication/coordinator.ts), [`packages/retrieval/src/vector-backends/spaces/link.ts`](../../packages/retrieval/src/vector-backends/spaces/link.ts), [`packages/retrieval/src/search/retrieve.ts`](../../packages/retrieval/src/search/retrieve.ts), [`packages/retrieval/src/search/plan/build-plan.ts`](../../packages/retrieval/src/search/plan/build-plan.ts), [`packages/retrieval/src/search/spaces/admission.ts`](../../packages/retrieval/src/search/spaces/admission.ts), [`packages/retrieval/src/embeddings/gateway.ts`](../../packages/retrieval/src/embeddings/gateway.ts), [`packages/retrieval/src/projections/validation/evidence-support.ts`](../../packages/retrieval/src/projections/validation/evidence-support.ts), [`packages/retrieval/src/projections/projection/create-projection.ts`](../../packages/retrieval/src/projections/projection/create-projection.ts), [`packages/retrieval/src/projections/classification/disposition-spaces.ts`](../../packages/retrieval/src/projections/classification/disposition-spaces.ts)
+**Interface:** Backend types, in-memory exact adapter, Postgres adapter, ExploratoryPublicationCoordinator (publish, rollback, reconcile), and the VectorItemEntityLink shape with validateVectorItemEntityLink., The search submodule exports buildRetrievalPlan and retrieve; its plan, space-admission, lexical, semantic, graph and rerank stages remain internal. The package root also exports the preserved projection, embedding and vector-backend interfaces., EmbeddingAdapter with discoverModel, embedOne, and embedMany; VercelAiGatewayEmbeddingAdapter and DeterministicFakeEmbeddingAdapter implement it; validateVector and vectorDigest bound output., validateEvidenceSupport over EvidenceSupport, createProjection into the contract DomainProjection union, and classifyProjectionSpaces mapping dispositions to spaces.
+**Package:** @aiengineer/knowledge-retrieval ([`packages/retrieval/package.json`](../../packages/retrieval/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain)
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core), [preparation](#preparation)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/embeddings/src/vectors.test.ts`](../../packages/embeddings/src/vectors.test.ts), [`packages/embeddings/src/cache.test.ts`](../../packages/embeddings/src/cache.test.ts), [`packages/embeddings/src/gateway.test.ts`](../../packages/embeddings/src/gateway.test.ts), [`packages/embeddings/src/fake.test.ts`](../../packages/embeddings/src/fake.test.ts), [`packages/embeddings/examples/01-deterministic-batch.test.ts`](../../packages/embeddings/examples/01-deterministic-batch.test.ts), [`packages/embeddings/examples/02-cache-and-retry.test.ts`](../../packages/embeddings/examples/02-cache-and-retry.test.ts), [`packages/embeddings/examples/03-reject-bad-output.test.ts`](../../packages/embeddings/examples/03-reject-bad-output.test.ts) Package script names: build, examples, test, typecheck.
+**Checks:** [`packages/retrieval/src/vector-backends/backends/postgres.test.ts`](../../packages/retrieval/src/vector-backends/backends/postgres.test.ts), [`packages/retrieval/src/vector-backends/publication/coordinator.test.ts`](../../packages/retrieval/src/vector-backends/publication/coordinator.test.ts), [`packages/retrieval/src/vector-backends/publication/verification.test.ts`](../../packages/retrieval/src/vector-backends/publication/verification.test.ts), [`packages/retrieval/src/vector-backends/spaces/link.test.ts`](../../packages/retrieval/src/vector-backends/spaces/link.test.ts), [`packages/retrieval/src/search/retrieve.test.ts`](../../packages/retrieval/src/search/retrieve.test.ts), [`packages/retrieval/src/search/plan/build-plan.test.ts`](../../packages/retrieval/src/search/plan/build-plan.test.ts), [`packages/retrieval/src/search/spaces/admission.test.ts`](../../packages/retrieval/src/search/spaces/admission.test.ts), [`packages/retrieval/src/embeddings/vectors.test.ts`](../../packages/retrieval/src/embeddings/vectors.test.ts), [`packages/retrieval/src/embeddings/gateway.test.ts`](../../packages/retrieval/src/embeddings/gateway.test.ts), [`packages/retrieval/src/projections/validation/evidence-support.test.ts`](../../packages/retrieval/src/projections/validation/evidence-support.test.ts), [`packages/retrieval/src/projections/projection/create-projection.test.ts`](../../packages/retrieval/src/projections/projection/create-projection.test.ts), [`packages/retrieval/src/projections/classification/disposition-spaces.test.ts`](../../packages/retrieval/src/projections/classification/disposition-spaces.test.ts) Package script names: build, examples, test, typecheck.
+- src/vector-backends/spaces/link.ts is a shape only: no relational row binds a vector item to its projection target and admission in database contract 0.4.16. It has no caller until the S2 publication host.
+- Not on the canonical HTTP retrieval path: apps/api serves retrieval through packages/persistence. The search submodule backs the in-memory exploratory index and evaluation corpora.
 
 **Architecture and detailed docs:**
 
+- [reference] [`docs/operations/reviews/retrieval.md`](../../docs/operations/reviews/retrieval.md) — Retrieval package review record
+- [reference] [`docs/operations/reviews/vector-backends.md`](../../docs/operations/reviews/vector-backends.md) — Vector-backends package review record
+- [reference] [`docs/operations/reviews/projections.md`](../../docs/operations/reviews/projections.md) — Projections package review record
 - [reference] [`docs/operations/reviews/embeddings.md`](../../docs/operations/reviews/embeddings.md) — Embeddings package review record
-- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
-
-## ingestion
-
-**packages/ingestion** · package · partial
-
-Deterministic planner and apply of knowledge-ingestion-intent.v1 through temporal.* helpers, with receipts and duplicate handling.
-
-**Enter:** [`packages/ingestion/src/index.ts`](../../packages/ingestion/src/index.ts), [`packages/ingestion/src/plan.ts`](../../packages/ingestion/src/plan.ts), [`packages/ingestion/src/apply.ts`](../../packages/ingestion/src/apply.ts), [`packages/ingestion/src/executor.ts`](../../packages/ingestion/src/executor.ts), [`packages/ingestion/src/duplicate.ts`](../../packages/ingestion/src/duplicate.ts)
-**Interface:** IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf.
-**Package:** @aiengineer/knowledge-ingestion ([`packages/ingestion/package.json`](../../packages/ingestion/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [db-read](#db-read), [domain](#domain), [persistence](#persistence), [schema-workspace](#schema-workspace)
-**Other runtime dependencies:** zod
-**Reviewed runtime/data relationships:** [db-read](#db-read), [schema-workspace](#schema-workspace)
-**Checks:** [`packages/ingestion/src/tests/plan.test.ts`](../../packages/ingestion/src/tests/plan.test.ts), [`packages/ingestion/src/tests/duplicate.test.ts`](../../packages/ingestion/src/tests/duplicate.test.ts), [`packages/ingestion/src/tests/executor.integration.test.ts`](../../packages/ingestion/src/tests/executor.integration.test.ts) Package script names: build, test, typecheck.
-- Writes orchestration.operation_intent/receipt; does not write a knowledge_service.operation row.
-
-**Architecture and detailed docs:**
-
-- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
-- [reference] [`knowledge/verification-and-admission.md`](../../knowledge/verification-and-admission.md) — Verify claims and admit exact downstream effects
-- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
+- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
+- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
+- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 
 ## evaluation
 
@@ -490,7 +435,7 @@ Retrieval evaluations, benchmark statistics/comparisons, and human review struct
 **Interface:** Evaluation cases and benchmark/review functions.
 **Package:** @aiengineer/knowledge-evaluation ([`packages/evaluation/package.json`](../../packages/evaluation/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [domain](#domain), [verification](#verification)
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core), [verification](#verification)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/evaluation/src/index.test.ts`](../../packages/evaluation/src/index.test.ts), [`packages/evaluation/src/verification-benchmark-run-comparison.test.ts`](../../packages/evaluation/src/verification-benchmark-run-comparison.test.ts) Package script names: build, test, typecheck.
@@ -498,26 +443,6 @@ Retrieval evaluations, benchmark statistics/comparisons, and human review struct
 **Architecture and detailed docs:**
 
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
-
-## observability
-
-**packages/observability** · package · implemented
-
-In-memory operation telemetry, SLO summaries, and manifest reconciliation.
-
-**Enter:** [`packages/observability/src/index.ts`](../../packages/observability/src/index.ts)
-**Interface:** InMemoryTelemetry and reconcileManifests; not a full external telemetry deployment.
-**Package:** @aiengineer/knowledge-observability ([`packages/observability/package.json`](../../packages/observability/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/observability/src/index.test.ts`](../../packages/observability/src/index.test.ts) Package script names: build, test, typecheck.
-
-**Architecture and detailed docs:**
-
-- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
-- [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 
 ## persistence
 
@@ -529,7 +454,7 @@ Postgres, storage, operation ledger, verification records, and runtime wiring ad
 **Interface:** Persistence implementations; schema migrations remain in the database-contract repository. createVerificationHostRuntime is the shared API/MCP host for ownership, catalog/SQL admission, and the verification operation port.
 **Package:** @aiengineer/knowledge-persistence ([`packages/persistence/package.json`](../../packages/persistence/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [domain](#domain), [runtime](#runtime), [verification](#verification)
+**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, pg, zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/persistence/src/eve-verification-binding.test.ts`](../../packages/persistence/src/eve-verification-binding.test.ts), [`packages/persistence/src/operation-service.test.ts`](../../packages/persistence/src/operation-service.test.ts) Package script names: build, test, typecheck.
@@ -537,6 +462,7 @@ Postgres, storage, operation ledger, verification records, and runtime wiring ad
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
@@ -556,7 +482,7 @@ Authorization, capability, retrieval, promotion, selection-eligibility, and veri
 **Interface:** Policy functions; successful execution alone does not authorize publication., evaluateSelectionEligibility is a pure representation-eligibility read returning reasons, diversity group and per-space budget effect; it never enforces membership or budget.
 **Package:** @aiengineer/knowledge-policy ([`packages/policy/package.json`](../../packages/policy/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [domain](#domain), [verification](#verification)
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core), [verification](#verification)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/policy/src/policy.test.ts`](../../packages/policy/src/policy.test.ts), [`packages/policy/src/verification-policy.test.ts`](../../packages/policy/src/verification-policy.test.ts), [`packages/policy/src/selection-eligibility.test.ts`](../../packages/policy/src/selection-eligibility.test.ts) Package script names: build, test, typecheck.
@@ -572,90 +498,6 @@ Authorization, capability, retrieval, promotion, selection-eligibility, and veri
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
-## projections
-
-**packages/projections** · package · implemented
-
-Produces domain projections whose assertions remain bound to source evidence.
-
-**Enter:** [`packages/projections/src/index.ts`](../../packages/projections/src/index.ts), [`packages/projections/src/validation/evidence-support.ts`](../../packages/projections/src/validation/evidence-support.ts), [`packages/projections/src/projection/create-projection.ts`](../../packages/projections/src/projection/create-projection.ts), [`packages/projections/src/classification/disposition-spaces.ts`](../../packages/projections/src/classification/disposition-spaces.ts)
-**Interface:** validateEvidenceSupport over EvidenceSupport, createProjection into the contract DomainProjection union, and classifyProjectionSpaces mapping dispositions to spaces.
-**Package:** @aiengineer/knowledge-projections ([`packages/projections/package.json`](../../packages/projections/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [documents](#documents), [domain](#domain)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/projections/src/validation/evidence-support.test.ts`](../../packages/projections/src/validation/evidence-support.test.ts), [`packages/projections/src/projection/create-projection.test.ts`](../../packages/projections/src/projection/create-projection.test.ts), [`packages/projections/src/classification/disposition-spaces.test.ts`](../../packages/projections/src/classification/disposition-spaces.test.ts), [`packages/projections/examples/01-validate-and-build.test.ts`](../../packages/projections/examples/01-validate-and-build.test.ts), [`packages/projections/examples/02-source-native-fidelity.test.ts`](../../packages/projections/examples/02-source-native-fidelity.test.ts), [`packages/projections/examples/03-classify-dispositions.test.ts`](../../packages/projections/examples/03-classify-dispositions.test.ts) Package script names: build, examples, test, typecheck.
-
-**Architecture and detailed docs:**
-
-- [reference] [`docs/operations/reviews/projections.md`](../../docs/operations/reviews/projections.md) — Projections package review record
-- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
-
-## retrieval
-
-**packages/retrieval** · package · implemented
-
-Plans and executes policy-scoped lexical, semantic, graph, rerank, and diversity retrieval.
-
-**Enter:** [`packages/retrieval/src/index.ts`](../../packages/retrieval/src/index.ts), [`packages/retrieval/src/retrieve.ts`](../../packages/retrieval/src/retrieve.ts), [`packages/retrieval/src/plan/build-plan.ts`](../../packages/retrieval/src/plan/build-plan.ts), [`packages/retrieval/src/spaces/admission.ts`](../../packages/retrieval/src/spaces/admission.ts)
-**Interface:** buildRetrievalPlan and retrieve are the only public names; the plan, space-admission, lexical, semantic, graph and rerank stage folders are internal primitives the pipeline calls.
-**Package:** @aiengineer/knowledge-retrieval ([`packages/retrieval/package.json`](../../packages/retrieval/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [domain](#domain), [vector-backends](#vector-backends)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/retrieval/src/retrieve.test.ts`](../../packages/retrieval/src/retrieve.test.ts), [`packages/retrieval/src/plan/build-plan.test.ts`](../../packages/retrieval/src/plan/build-plan.test.ts), [`packages/retrieval/src/spaces/admission.test.ts`](../../packages/retrieval/src/spaces/admission.test.ts), [`packages/retrieval/src/lexical/scoring.test.ts`](../../packages/retrieval/src/lexical/scoring.test.ts), [`packages/retrieval/src/semantic/cosine.test.ts`](../../packages/retrieval/src/semantic/cosine.test.ts), [`packages/retrieval/src/graph/expand.test.ts`](../../packages/retrieval/src/graph/expand.test.ts), [`packages/retrieval/src/rerank/fuse.test.ts`](../../packages/retrieval/src/rerank/fuse.test.ts), [`packages/retrieval/examples/01-plan-and-admission.test.ts`](../../packages/retrieval/examples/01-plan-and-admission.test.ts), [`packages/retrieval/examples/02-fuse-channels.test.ts`](../../packages/retrieval/examples/02-fuse-channels.test.ts), [`packages/retrieval/examples/03-abstain-and-omit.test.ts`](../../packages/retrieval/examples/03-abstain-and-omit.test.ts) Package script names: build, examples, test, typecheck.
-- Not on the canonical HTTP retrieval path: apps/api serves retrieval through packages/persistence. This package backs the in-memory exploratory index and evaluation corpora.
-
-**Architecture and detailed docs:**
-
-- [reference] [`docs/operations/reviews/retrieval.md`](../../docs/operations/reviews/retrieval.md) — Retrieval package review record
-- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
-- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
-
-## runtime
-
-**packages/runtime** · package · implemented
-
-Content-addressed artifacts and operation/step/lease/event/receipt primitives.
-
-**Enter:** [`packages/runtime/src/index.ts`](../../packages/runtime/src/index.ts)
-**Interface:** Artifact stores and ledger interfaces; in-memory implementations are not deployment authority.
-**Package:** @aiengineer/knowledge-runtime ([`packages/runtime/package.json`](../../packages/runtime/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [domain](#domain)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/runtime/src/eve-runtime-attestation.test.ts`](../../packages/runtime/src/eve-runtime-attestation.test.ts), [`packages/runtime/src/runtime.test.ts`](../../packages/runtime/src/runtime.test.ts) Package script names: build, test, typecheck.
-
-**Architecture and detailed docs:**
-
-- [reference] [`knowledge/durable-execution-and-recovery.md`](../../knowledge/durable-execution-and-recovery.md) — Understand fenced worker execution and bounded recovery
-- [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
-- [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
-
-## schema-workspace
-
-**packages/schema-workspace** · package · implemented
-
-Loads and searches the pinned db-contract schema workspace, compares migration heads, and materializes scoped bundles.
-
-**Enter:** [`packages/schema-workspace/src/index.ts`](../../packages/schema-workspace/src/index.ts)
-**Interface:** loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/.
-**Package:** @aiengineer/knowledge-schema-workspace ([`packages/schema-workspace/package.json`](../../packages/schema-workspace/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** none declared
-**Other runtime dependencies:** @aiengineer/database-contract, zod
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/schema-workspace/src/schema-workspace.test.ts`](../../packages/schema-workspace/src/schema-workspace.test.ts) Package script names: build, test, typecheck.
-- Consumes the committed workspace tree; it does not regenerate IR from the live database at request time.
-
-**Architecture and detailed docs:**
-
-- [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
-- [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
-
 ## testkit
 
 **packages/testkit** · package · implemented
@@ -666,36 +508,13 @@ Curated evaluation corpora, embedding bundles, retrieval fixtures, and operation
 **Interface:** Fixture loaders and test helpers; some bundle sources are sibling-repository inputs.
 **Package:** @aiengineer/knowledge-testkit ([`packages/testkit/package.json`](../../packages/testkit/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain), [evaluation](#evaluation), [retrieval](#retrieval)
+**Declared internal package dependencies:** [core](#core), [evaluation](#evaluation), [retrieval](#retrieval)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/testkit/src/broad-evaluation-corpus.test.ts`](../../packages/testkit/src/broad-evaluation-corpus.test.ts), [`packages/testkit/src/embedding-bundles.test.ts`](../../packages/testkit/src/embedding-bundles.test.ts) Package script names: build, test, typecheck.
 
 **Architecture and detailed docs:**
 
-- [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
-
-## vector-backends
-
-**packages/vector-backends** · package · implemented
-
-Vector-store adapters, publication and rollback mechanics, and space version-pointer and entity-link shapes for exact and Postgres search.
-
-**Enter:** [`packages/vector-backends/src/index.ts`](../../packages/vector-backends/src/index.ts), [`packages/vector-backends/src/backends/in-memory-exact.ts`](../../packages/vector-backends/src/backends/in-memory-exact.ts), [`packages/vector-backends/src/backends/postgres.ts`](../../packages/vector-backends/src/backends/postgres.ts), [`packages/vector-backends/src/publication/coordinator.ts`](../../packages/vector-backends/src/publication/coordinator.ts), [`packages/vector-backends/src/spaces/link.ts`](../../packages/vector-backends/src/spaces/link.ts)
-**Interface:** Backend types, in-memory exact adapter, Postgres adapter, ExploratoryPublicationCoordinator (publish, rollback, reconcile), and the VectorItemEntityLink shape with validateVectorItemEntityLink.
-**Package:** @aiengineer/knowledge-vector-backends ([`packages/vector-backends/package.json`](../../packages/vector-backends/package.json))
-**Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [domain](#domain)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/vector-backends/src/backends/in-memory-exact.test.ts`](../../packages/vector-backends/src/backends/in-memory-exact.test.ts), [`packages/vector-backends/src/backends/postgres.test.ts`](../../packages/vector-backends/src/backends/postgres.test.ts), [`packages/vector-backends/src/publication/coordinator.test.ts`](../../packages/vector-backends/src/publication/coordinator.test.ts), [`packages/vector-backends/src/publication/verification.test.ts`](../../packages/vector-backends/src/publication/verification.test.ts), [`packages/vector-backends/src/spaces/link.test.ts`](../../packages/vector-backends/src/spaces/link.test.ts), [`packages/vector-backends/examples/01-exact-search.test.ts`](../../packages/vector-backends/examples/01-exact-search.test.ts), [`packages/vector-backends/examples/02-publish-and-rollback.test.ts`](../../packages/vector-backends/examples/02-publish-and-rollback.test.ts), [`packages/vector-backends/examples/03-reconcile-drift.test.ts`](../../packages/vector-backends/examples/03-reconcile-drift.test.ts) Package script names: build, examples, test, typecheck.
-- spaces/link.ts is a shape only: no relational row binds a vector item to its projection target and admission in database contract 0.4.16. It has no caller until the S2 publication host.
-
-**Architecture and detailed docs:**
-
-- [reference] [`docs/operations/reviews/vector-backends.md`](../../docs/operations/reviews/vector-backends.md) — Vector-backends package review record
-- [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
-- [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 
 ## verification
@@ -938,7 +757,7 @@ Pinned Docling Serve conversion deployment boundary.
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [conversion](#conversion)
+**Reviewed runtime/data relationships:** [preparation](#preparation)
 **Checks:** No specific test anchor registered.
 - Docling is not orchestration or publication authority.
 
@@ -961,7 +780,7 @@ Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [conversion](#conversion)
+**Reviewed runtime/data relationships:** [preparation](#preparation)
 **Checks:** No specific test anchor registered.
 - Selectors never start processes. Deployment configuration, not request input, selects the admitted image.
 
@@ -1060,7 +879,7 @@ Progressive-disclosure procedure for navigating the pinned schema workspace with
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [schema-workspace](#schema-workspace), [verification-executor](#verification-executor)
+**Reviewed runtime/data relationships:** [knowledge-db](#knowledge-db), [verification-executor](#verification-executor)
 **Checks:** No specific test anchor registered.
 - Does not query the database; use knowledge-db.
 
@@ -1080,7 +899,7 @@ Procedure for catalog reads and reproducible knowledge-read snapshots that an in
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [db-read](#db-read), [verification-executor](#verification-executor)
+**Reviewed runtime/data relationships:** [knowledge-db](#knowledge-db), [verification-executor](#verification-executor)
 **Checks:** No specific test anchor registered.
 - Never writes; catalog queries are evidence, ad-hoc SQL is not.
 
@@ -1100,7 +919,7 @@ Procedure for composing, planning, applying, and verifying knowledge-ingestion i
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [ingestion](#ingestion), [verification-executor](#verification-executor)
+**Reviewed runtime/data relationships:** [knowledge-db](#knowledge-db), [verification-executor](#verification-executor)
 **Checks:** No specific test anchor registered.
 - The agent never writes SQL; the executor writes as executor_service.
 
@@ -1160,7 +979,7 @@ Conversion route, node inspection, admitted chunk-profile preview, content linki
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [conversion](#conversion), [chunking](#chunking), [application](#application), [verification-executor](#verification-executor), [cli](#cli), [mcp](#mcp)
+**Reviewed runtime/data relationships:** [preparation](#preparation), [application](#application), [verification-executor](#verification-executor), [cli](#cli), [mcp](#mcp)
 **Checks:** No specific test anchor registered.
 - Converts stored artifacts only and never fetches a URL; no session-local splitter; promotion_selection_select and promotion select are absent operations.
 
@@ -1240,7 +1059,7 @@ Store-class-explicit vector-store creation, document addition, evaluation, statu
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [vector-backends](#vector-backends), [application](#application), [cli](#cli)
+**Reviewed runtime/data relationships:** [retrieval](#retrieval), [application](#application), [cli](#cli)
 **Checks:** No specific test anchor registered.
 - Submissions grant no activation or rollback authority; store search and space rebuild are absent; the platform MCP catalog has no publication or space activation tool.
 
@@ -1327,6 +1146,7 @@ Jev decision provider adapters, captured input snapshots, local SQLite queue and
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
 ## jev-service
@@ -1347,6 +1167,7 @@ Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`](../../docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md) — Next unit: host composition and lifecycle
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
 
 ## skill-jev-system-one

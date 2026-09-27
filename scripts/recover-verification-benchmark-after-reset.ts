@@ -5,7 +5,7 @@ import { DiagnosticsBenchmarkProviderObservationSchema, DiagnosticsBenchmarkSupp
 import { assertDiagnosticsProviderWireRequest, loadDiagnosticsProviderGrant } from "@aiengineer/knowledge-application";
 import { verificationBenchmarkDigest } from "../packages/evaluation/dist/index.js";
 import { createVerificationArtifactHandle, PostgresCanonicalRepository, PostgresVerificationRepository, type RegisterContentAddressedVerificationArtifactInput } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, providerDigest, sha256Digest } from "@aiengineer/knowledge-verification";
 
 type Digest = `sha256:${string}`;

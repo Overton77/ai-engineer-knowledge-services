@@ -5,8 +5,8 @@ import {
   type VerificationSourceCapture,
 } from "@aiengineer/knowledge-contracts";
 import { KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION, VerificationAcquisitionReceiptSchema, type VerificationAdmissionService } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deepFreeze } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import type { PostgresCanonicalRepository } from "./postgres.js";

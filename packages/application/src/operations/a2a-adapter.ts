@@ -10,8 +10,8 @@ import {
   type JsonValue,
   type OperationKind,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { KnowledgeOperationPort } from "./surface.js";
 

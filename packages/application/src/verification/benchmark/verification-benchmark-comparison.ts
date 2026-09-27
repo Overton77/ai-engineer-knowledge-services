@@ -15,7 +15,7 @@ import {
   type VerificationBenchmarkEngineeringMetric,
   type VerificationBenchmarkPublicationManifest,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import {
   compareVerificationBenchmarkRuns,
   createVerificationBenchmarkCheckpointPlan,

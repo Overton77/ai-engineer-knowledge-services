@@ -1,6 +1,6 @@
 import {UuidSchema,VerificationStructuredExtractionResultSchema,VerificationStructuredExtractionFailureResultSchema,VerificationStructuredExtractionResourceSchema,
   VerificationStructuredExtractionPublicationSchema,VerificationStructuredExtractionFailureSchema,type VerificationStructuredExtractionResource} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 
 /** Implementations must authenticate canonical terminal receipts and original signed Storage bytes. */
 export interface VerifiedStructuredExtractionReadPort {

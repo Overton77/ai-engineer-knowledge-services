@@ -1,5 +1,5 @@
 import { UuidSchema } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { verificationBenchmarkDigest, type VerificationBenchmarkExecutor } from "@aiengineer/knowledge-evaluation";
 import type { RegisteredBenchmarkInputAdmission } from "./verification-benchmark-inputs.js";
 import type { RegisteredBenchmarkProfileAdmission } from "./verification-benchmark-registered-profile.js";

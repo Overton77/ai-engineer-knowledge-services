@@ -15,7 +15,7 @@ import {
   parseVerificationAuditInspectionPublicKeys,
   type PostgresCanonicalRepository,
 } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";
 
 type Environment = Readonly<Record<string, string | undefined>>;

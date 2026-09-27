@@ -26,7 +26,7 @@ import {
 import {
   deterministicUuid,
   type ArtifactStore,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 
 type VerificationRunInsert = Database["evidence"]["Tables"]["verification_run"]["Insert"];

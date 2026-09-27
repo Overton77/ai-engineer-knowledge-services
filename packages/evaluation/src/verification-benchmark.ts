@@ -7,7 +7,7 @@ import type {
   VerificationBenchmarkDataset,
 } from "@aiengineer/knowledge-contracts";
 import { VerificationBenchmarkAdjudicationSchema, VerificationBenchmarkAnnotationSchema, VerificationBenchmarkCaseResultSchema, VerificationBenchmarkDatasetSchema } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { holmAdjustment, mcnemarExact, pairedClusterBootstrap, pairedSignFlipTest, wilson95 } from "./verification-statistics.js";
 

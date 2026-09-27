@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {UuidSchema,VerificationArtifactHandleSchema,VerificationBenchmarkPublicationManifestSchema,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {digestCanonicalJson} from "@aiengineer/knowledge-verification";
 import type {PostgresCanonicalRepository,TenantSqlClient} from "./postgres.js";
 import type {LeasedStep} from "./types.js";

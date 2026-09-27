@@ -15,7 +15,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-evaluation": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*"
   },

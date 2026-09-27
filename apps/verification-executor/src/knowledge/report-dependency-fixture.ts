@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { JsonValueSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresGovernedIndexRepository, PostgresPreparationRepository,
   type PersistedPreparationArtifact } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import type { VerificationExecutor } from "../executor.js";
 
 /** Actual preparation and independent review for an already sealed native report source. */

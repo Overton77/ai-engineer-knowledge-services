@@ -1,5 +1,5 @@
 import { mkdir,writeFile } from "node:fs/promises";
-import { createGatewayEmbeddingAdapterFromEnvironment,DEFAULT_EMBEDDING_MODEL } from "../packages/embeddings/src/index.js";
+import { createGatewayEmbeddingAdapterFromEnvironment,DEFAULT_EMBEDDING_MODEL } from "../packages/retrieval/src/embeddings/index.js";
 import { KnowledgePreparationService } from "../packages/application/src/index.js";
 import { loadEmbeddingBundles } from "../packages/testkit/src/index.js";
 

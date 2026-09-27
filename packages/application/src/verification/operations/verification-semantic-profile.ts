@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { SemanticJudgeIdentitySchema, VerificationArtifactHandleSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 
 export const SemanticJudgeProfileSchema = z.strictObject({ schemaVersion: z.literal("verification-semantic-judge-profile.v1"), identity: SemanticJudgeIdentitySchema });
 const grantSchema = z.strictObject({ tenantId: z.uuid(), operationId: z.uuid(), host: z.enum(["claims","report"]), role: z.enum(["primary","cross_family"]), profileArtifact: VerificationArtifactHandleSchema, identity: SemanticJudgeIdentitySchema });

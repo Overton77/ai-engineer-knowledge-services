@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { ImmutableRepositoryAcquisitionAdapter } from "./adapter.js";
 import type { AcquisitionRequest } from "../types.js";
 

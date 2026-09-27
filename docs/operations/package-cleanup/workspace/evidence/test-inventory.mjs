@@ -75,8 +75,10 @@ function runPackage(name, layout, group, tempDirectory) {
   };
 }
 
-function validateCapture(capture, layout) {
-  const expected = layout === "before" ? Object.values(groups).flat() : Object.keys(groups);
+function validateCapture(capture, layout, selectedGroup) {
+  const expected = layout === "before" ?
+    (selectedGroup ? groups[selectedGroup] : Object.values(groups).flat()) :
+    (selectedGroup ? [selectedGroup] : Object.keys(groups));
   if (capture.schema !== 1 || capture.layout !== layout || !Array.isArray(capture.runs)) {
     throw new Error(`Invalid ${layout} test inventory`);
   }
@@ -124,9 +126,13 @@ function testOutcomes(capture) {
   return outcomes;
 }
 
-function compare(before, after) {
-  validateCapture(before, "before");
-  validateCapture(after, "after");
+function compare(before, after, selectedGroup) {
+  if (selectedGroup) {
+    const members = groups[selectedGroup];
+    before = { ...before, runs: before.runs.filter((run) => members.includes(run.package)) };
+  }
+  validateCapture(before, "before", selectedGroup);
+  validateCapture(after, "after", selectedGroup);
   const beforeByIdentity = testOutcomes(before);
   const afterByIdentity = testOutcomes(after);
   return {
@@ -139,15 +145,17 @@ function compare(before, after) {
 }
 
 const [command, ...arguments_] = process.argv.slice(2);
-if (command === "collect") {
-  const [layout, output] = arguments_;
+if (command === "collect" || command === "collect-group") {
+  const [selectedGroup, layout, output] = command === "collect-group" ? arguments_ : [undefined, ...arguments_];
+  if (selectedGroup && !groups[selectedGroup]) throw new Error(`Unknown package group: ${selectedGroup}`);
   if (!["before", "after"].includes(layout) || !output) {
     throw new Error("Usage: node test-inventory.mjs collect before|after output.json");
   }
   const tempDirectory = mkdtempSync(join(tmpdir(), "ks-test-inventory-"));
   try {
     const runs = [];
-    for (const [group, members] of Object.entries(groups)) {
+    for (const [group, members] of Object.entries(groups).filter(([group]) =>
+      !selectedGroup || group === selectedGroup)) {
       for (const name of layout === "before" ? members : [group]) {
         console.log(`Running ${name} with at most two Vitest workers`);
         runs.push(runPackage(name, layout, group, tempDirectory));
@@ -156,6 +164,7 @@ if (command === "collect") {
     const result = {
       schema: 1,
       layout,
+      ...(selectedGroup ? { group: selectedGroup } : {}),
       sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: repository, encoding: "utf8" }).trim(),
       dirty: Boolean(execFileSync("git", ["status", "--porcelain"], { cwd: repository, encoding: "utf8" }).trim()),
       command: "node node_modules/vitest/vitest.mjs run --maxWorkers=2 --reporter=json",
@@ -166,11 +175,12 @@ if (command === "collect") {
   } finally {
     rmSync(tempDirectory, { recursive: true, force: true });
   }
-} else if (command === "compare") {
-  const [beforePath, afterPath] = arguments_;
+} else if (command === "compare" || command === "compare-group") {
+  const [selectedGroup, beforePath, afterPath] = command === "compare-group" ? arguments_ : [undefined, ...arguments_];
+  if (selectedGroup && !groups[selectedGroup]) throw new Error(`Unknown package group: ${selectedGroup}`);
   if (!beforePath || !afterPath) throw new Error("Usage: node test-inventory.mjs compare before.json after.json");
   const changes = compare(JSON.parse(readFileSync(resolve(beforePath), "utf8")),
-    JSON.parse(readFileSync(resolve(afterPath), "utf8")));
+    JSON.parse(readFileSync(resolve(afterPath), "utf8")), selectedGroup);
   console.log(JSON.stringify(changes, null, 2));
   if (Object.values(changes).some((items) => items.length)) process.exitCode = 1;
 } else {

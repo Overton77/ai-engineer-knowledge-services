@@ -14,7 +14,7 @@ import {
   PostgresVerificationRepository,
   type LeasedStep,
 } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   createEd25519Verifier,

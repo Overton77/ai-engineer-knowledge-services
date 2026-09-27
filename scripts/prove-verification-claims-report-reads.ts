@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { VerificationClaimsReportReadService } from "@aiengineer/knowledge-application";
 import { ClaimsReportReadError, PostgresCanonicalRepository, PostgresClaimsReportReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, createEd25519Verifier, digestCanonicalJson, sha256Digest, type AuditBundleSignatureVerifier, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 
 type JsonRecord = Record<string, any>;

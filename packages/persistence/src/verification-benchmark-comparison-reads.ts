@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 import {JsonValueSchema,UuidSchema,VerificationArtifactHandleSchema,VerificationBenchmarkComparisonProfileSchema,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
 import {VerificationBenchmarkComparisonReadError,type VerifiedBenchmarkComparisonReadPort,type VerifiedBenchmarkComparisonReadSnapshot} from "@aiengineer/knowledge-application";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,digestCanonicalJson,verifyVerificationBenchmarkComparisonPublication,type AuditBundleSignatureVerifier} from "@aiengineer/knowledge-verification";
 import type {PostgresCanonicalRepository} from "./postgres.js";
 import type {PostgresVerificationRepository} from "./verification.js";

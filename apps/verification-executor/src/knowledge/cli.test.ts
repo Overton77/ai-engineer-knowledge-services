@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { KnowledgeError } from "@aiengineer/knowledge-schema-workspace";
+import { KnowledgeError } from "@aiengineer/knowledge-db";
 import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { defineOperation, OperationRegistry, type AnyOperation } from "../operations/define.js";

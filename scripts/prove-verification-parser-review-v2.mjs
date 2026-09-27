@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
-import { SandboxedVerificationParser } from "../packages/conversion/dist/index.js";
+import { SandboxedVerificationParser } from "../packages/preparation/dist/index.js";
 import { sha256Digest } from "../packages/verification/dist/index.js";
 
 const execute = promisify(execFile);
@@ -17,8 +17,8 @@ const namespace = `verification-parser-resource-v2-${randomUUID()}`;
 const output = resolve(process.env.VERIFICATION_PARSER_PROOF_OUTPUT ?? resolve(root, "internal", `verification-parser-resource-proof-v2-${namespace.slice(-36)}.json`));
 const snapshotDirectory = resolve(root, "internal", `verification-parser-resource-proof-v2-source-${namespace.slice(-36)}`);
 const sourceFiles = Object.freeze([
-  "packages/conversion/src/verification-parser.ts",
-  "packages/conversion/dist/index.js",
+  "packages/preparation/src/conversion/verification-parser.ts",
+  "packages/preparation/dist/index.js",
   "services/verification-parser/parser.py",
   "services/verification-parser/requirements.txt",
   "services/verification-parser/Dockerfile",

@@ -7,7 +7,7 @@ import {
   type DiagnosticsBenchmarkProviderObservation,
   type VerificationArtifactHandle,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, providerDigest, sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";

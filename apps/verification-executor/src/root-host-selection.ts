@@ -1,9 +1,9 @@
 import { JsonValueSchema, PromotionProposalInputSchema, SelectedCandidateIndexInputSchema,
   SelectedCandidateEvaluationInputSchema, UuidSchema, type JsonValue, type OperationKind } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { PostgresGovernedIndexRepository, PostgresKnowledgeOperationService, sameActorIdentity,
   type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { z } from "zod";
 import { createCanonicalActivityExecutor, createProductionActivityRegistry,
   type ProductionActivityDependencies } from "../../worker/src/activity-registry.js";

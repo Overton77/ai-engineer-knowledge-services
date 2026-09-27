@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { ArtifactLedger } from "@aiengineer/knowledge-db-read";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import type { ArtifactLedger } from "@aiengineer/knowledge-db";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { PromotionProposalInputSchema } from "@aiengineer/knowledge-contracts";
 import {
   composePromotionSelectionHost,

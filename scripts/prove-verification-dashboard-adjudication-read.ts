@@ -7,9 +7,9 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { VerificationClaimsOperationResultSchema, VerificationReportOperationResultSchema, type Actor, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { VerificationAdmissionService, VerificationAuditInspectionGrantCatalog, VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationAdjudicationReads } from "../apps/api/src/verification-adjudication-reads-runtime.js";
 

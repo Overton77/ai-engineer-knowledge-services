@@ -1,6 +1,6 @@
 import { posix } from "node:path";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { digestBytes, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { digestBytes, type ArtifactStore } from "@aiengineer/knowledge-core";
 import type {
   AcquisitionPlan,
   AcquisitionRequest,

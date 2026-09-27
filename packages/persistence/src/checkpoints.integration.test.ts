@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { CheckpointApplicationService, checkpointScopeId, type CheckpointCustody, type CheckpointPolicy, type CheckpointOperationReconciler } from "@aiengineer/knowledge-application";
 import { CheckpointManifestSchema, CheckpointSemanticHandoffSchema, type CheckpointCommitRequest, type CheckpointScope, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../test/disposable.mjs";
 import { PostgresCanonicalRepository, type TenantSqlClient } from "./postgres.js";

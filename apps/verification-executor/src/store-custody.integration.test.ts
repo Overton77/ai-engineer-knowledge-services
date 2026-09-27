@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { digestBytes, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { digestBytes, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../packages/persistence/test/disposable.mjs";
 import { FilesystemStore } from "./store.js";
 import { createExecutorCustody } from "./store-custody-postgres.js";

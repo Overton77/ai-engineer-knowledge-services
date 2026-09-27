@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { readFile,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { OperationContext,OperationKind } from "@aiengineer/knowledge-contracts";
-import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
-import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-domain";
+import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
+import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-core";
 import { canonicalPersistenceConfigFromEnvironment,createCanonicalPersistence,PostgresGovernedIndexRepository,PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { createCanonicalActivityExecutor,createProductionActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
 
