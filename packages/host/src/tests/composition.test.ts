@@ -34,6 +34,7 @@ vi.mock("@aiengineer/knowledge-persistence", async (importOriginal) => {
 });
 
 const database = { POSTGRES_URL: "postgres://user:secret@127.0.0.1:54322/knowledge", CANONICAL_LOCAL_ONLY: "1" };
+const noPublicOrigin = () => undefined;
 const unusedSeams = {
   createCanonicalRetrievalExecutor: () => {
     throw new Error("RETRIEVAL_SEAM_NOT_EXPECTED");
@@ -81,7 +82,8 @@ describe("host import and profile admission", () => {
 describe("API host composition", () => {
   it("exposes no persistence-backed capability when none is configured", async () => {
     const { createHost } = await import("../index.js");
-    const host = await createHost({ profile: "server", role: "api", environment: { NODE_ENV: "test" }, seams: unusedSeams });
+    const host = await createHost({ profile: "server", role: "api",
+        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test" }, seams: unusedSeams });
     expect(host.capabilities).toEqual({ persistence: false, retrieval: false, citationReplay: false, verification: false });
     expect(host.operations).toBeUndefined();
     expect(host.knowledge).toEqual({});
@@ -112,6 +114,7 @@ describe("API host composition", () => {
       createHost({
         profile: "server",
         role: "api",
+        resolvePublicOrigin: noPublicOrigin,
         environment: { NODE_ENV: "test", ...database, VERIFICATION_DRIFT_REVALIDATION_ENABLED: "1" },
         seams: unusedSeams,
       }),
@@ -120,6 +123,7 @@ describe("API host composition", () => {
       createHost({
         profile: "server",
         role: "api",
+        resolvePublicOrigin: noPublicOrigin,
         environment: { NODE_ENV: "test", ...database },
         seams: {
           ...unusedSeams,
@@ -134,7 +138,8 @@ describe("API host composition", () => {
 
   it("composes durable ports with persistence and releases the pool exactly once", async () => {
     const { createHost } = await import("../index.js");
-    const host = await createHost({ profile: "server", role: "api", environment: { NODE_ENV: "test", ...database }, seams: unusedSeams });
+    const host = await createHost({ profile: "server", role: "api",
+        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test", ...database }, seams: unusedSeams });
     expect(host.capabilities).toMatchObject({ persistence: true, retrieval: false });
     expect(host.operations).toBeDefined();
     expect(host.knowledge.resources).toBeDefined();

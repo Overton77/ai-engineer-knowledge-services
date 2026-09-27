@@ -59,8 +59,8 @@ export interface ApiHostOptions<TRetrieval, TDrift, TVerification> {
   readonly profile: "server";
   readonly role: "api";
   readonly environment: HostEnvironment;
-  /** Transport-owned public-origin validation, applied before any resource opens. */
-  readonly resolvePublicOrigin?: (config: ServerConfig) => string | undefined;
+  /** Transport-owned public-origin validation, applied before any resource opens. Required so production cannot skip it. */
+  readonly resolvePublicOrigin: (config: ServerConfig) => string | undefined;
   readonly seams: ApiCompositionSeams<TRetrieval, TDrift, TVerification>;
 }
 
@@ -153,7 +153,7 @@ export async function createApiHost<TRetrieval, TDrift, TVerification>(
   const production = config.NODE_ENV === "production";
   const connectionString = environment.POSTGRES_URL?.trim();
   if (production && !connectionString) throw new Error("POSTGRES_URL_REQUIRED");
-  const publicOrigin = options.resolvePublicOrigin?.(config);
+  const publicOrigin = options.resolvePublicOrigin(config);
   const { value, resources } = await constructWithResources((resources) => {
     const database = connectionString ? openCanonicalRepository(resources, connectionString, environment) : undefined;
     let driftRevalidation: TDrift | undefined;

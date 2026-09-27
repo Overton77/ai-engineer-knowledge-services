@@ -1196,9 +1196,14 @@ export default handler;
 
 async function main() {
   const runtime = await createMcpRuntime();
-  const shutdown = () => void runtime.close().catch(() => {
-    process.exitCode = 1;
-  });
+  const shutdown = () =>
+    void runtime.close().catch((error) => {
+      process.stderr.write(
+        `${JSON.stringify({ event: "knowledge.mcp.shutdown_failed", error: error instanceof Error ? error.message : "unknown" })}
+`,
+      );
+      process.exitCode = 1;
+    });
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
   try {
