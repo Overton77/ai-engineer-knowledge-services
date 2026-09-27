@@ -14,7 +14,7 @@ import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {VerificationClaimsOperationResultSchema,VerificationReportOperationResultSchema,VerificationAdjudicationTerminalResourceSchema,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
 import {VerificationAdmissionService,VerificationAuditInspectionGrantCatalog,VerificationClaimsProjectionGrantCatalog,VerificationAdjudicationReadService} from "@aiengineer/knowledge-application";
-import {VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-conversion";
+import {VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-preparation";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresVerificationAdjudicationReadRepository} from "@aiengineer/knowledge-persistence";
 import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
 import {canonicalizeJson,digestCanonicalJson} from "@aiengineer/knowledge-verification";

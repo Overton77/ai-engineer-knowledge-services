@@ -1,9 +1,9 @@
 {
-  "name": "@aiengineer/knowledge-db",
+  "name": "@aiengineer/knowledge-preparation",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Loads schema workspaces, executes bounded knowledge reads, and applies deterministic ingestion intents.",
+  "description": "Builds immutable document nodes, chunks them under admitted profiles, and converts sealed source artifacts.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,19 +13,15 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm && tsc --emitDeclarationOnly --rootDir src --outDir dist",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "examples": "tsc --noEmit -p tsconfig.examples.json"
   },
   "dependencies": {
-    "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-domain": "workspace:*",
-    "@aiengineer/knowledge-persistence": "workspace:*",
-    "@aiengineer/knowledge-runtime": "workspace:*",
-    "zod": "catalog:"
+    "@aiengineer/knowledge-runtime": "workspace:*"
   },
   "devDependencies": {
-    "@aiengineer/knowledge-preparation": "workspace:*",
-    "@types/node": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

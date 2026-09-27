@@ -4,7 +4,7 @@ import { createHash,randomUUID } from "node:crypto";
 import { readFile,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
-import { SandboxedVerificationParser } from "../packages/conversion/dist/index.js";
+import { SandboxedVerificationParser } from "../packages/preparation/dist/index.js";
 import { sha256Digest } from "../packages/verification/dist/index.js";
 
 const execute=promisify(execFile),expectedImage="sha256:9dff779c9d5df3b80876b1017da24befdd241bdc28950e084c504e158e08c906";

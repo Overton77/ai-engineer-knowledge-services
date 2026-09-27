@@ -6,7 +6,7 @@ import {
 } from "@aiengineer/knowledge-application";
 import type { AcquisitionAdapter, AcquisitionRequest } from "@aiengineer/knowledge-acquisition";
 import { normalizePaperIdentifier } from "@aiengineer/knowledge-acquisition";
-import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
+import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import {
   A2AOperationBindingSchema,
   DocumentNodeSchema,
@@ -29,10 +29,10 @@ import {
   type ConversionProfile,
   type ConversionRoutingReceipt,
   type DocumentConversionProvider,
-} from "@aiengineer/knowledge-conversion";
+} from "@aiengineer/knowledge-preparation";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
-import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-documents";
+import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-preparation";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
 import {
   evaluateRetrieval,

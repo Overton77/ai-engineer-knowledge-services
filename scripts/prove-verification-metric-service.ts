@@ -12,7 +12,7 @@ import {
   replayVerificationMetricAudit,
   replayVerificationAudit,
 } from "@aiengineer/knowledge-application";
-import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationMetricRuntimePrincipals, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { canonicalizeJson, projectionSelectorResolver, sha256Digest, type VerificationArtifactHandle } from "@aiengineer/knowledge-verification";

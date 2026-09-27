@@ -1,5 +1,5 @@
 import { describe,expect,it,vi } from "vitest";
-import type { VerificationParserOutput,VerificationParserRequest } from "@aiengineer/knowledge-conversion";
+import type { VerificationParserOutput,VerificationParserRequest } from "@aiengineer/knowledge-preparation";
 import type { OperationContext,VerificationArtifactHandle,VerificationSource,VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
 import { admitExtractionSchema,canonicalizeJson,digestCanonicalJson,sha256Digest,type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";

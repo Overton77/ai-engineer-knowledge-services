@@ -8,8 +8,8 @@ import { ContentLinkIntentSchema, ContentLinkOperationSchema, JsonValueSchema, P
   type VerificationBundle } from "@aiengineer/knowledge-contracts";
 import { IngestionIntentSchema, contentEvidenceAssessmentDigest, deterministicId, proposalEffect,
   type ContentLinkReceipt } from "@aiengineer/knowledge-db";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
-import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
+import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
+import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
 import { PostgresCanonicalRepository, PostgresGovernedIndexRepository, PostgresKnowledgeOperationService,
   PostgresPreparationRepository, TenantPostgres, type GovernedProjectionProposal, type GovernedPublishedAnswer,

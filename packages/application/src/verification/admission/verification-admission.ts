@@ -1,6 +1,6 @@
 import type { VerificationArtifactHandle, VerificationSelector, VerificationSource, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import {VerificationExtractionFieldEvidenceResultSchema} from "@aiengineer/knowledge-contracts";
-import type { VerificationParserOutput, VerificationParserRequest } from "@aiengineer/knowledge-conversion";
+import type { VerificationParserOutput, VerificationParserRequest } from "@aiengineer/knowledge-preparation";
 import {
   canonicalizeJson,
   digestCanonicalJson,

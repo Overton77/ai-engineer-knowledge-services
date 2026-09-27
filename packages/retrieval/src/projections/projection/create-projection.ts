@@ -1,6 +1,6 @@
 import { DomainProjectionSchema, type DomainProjection } from "@aiengineer/knowledge-contracts";
 import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-documents";
+import { deterministicUuid } from "@aiengineer/knowledge-preparation";
 import { validateEvidenceSupport } from "../validation/index.js";
 import type { ProjectionInput } from "../types.js";
 

@@ -7,7 +7,7 @@ import {
 } from "./space-manifest.js";
 import type { ReadExecutor } from "./read-executor.js";
 
-// The real chunk-profile-table.v1 values (packages/chunking/src/profiles/definitions.ts),
+// The real chunk-profile-table.v1 values (packages/preparation/src/chunking/profiles/definitions.ts),
 // copied here as plain data — not imported — so this test proves the manifest reports what
 // the chunker would actually admit, without db-read taking a dependency on chunking or
 // contracts. `CHUNK_PROFILE_TABLE` satisfies `SpaceManifestProfileTable<Space>` structurally.

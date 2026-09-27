@@ -5,7 +5,7 @@ import { basename,resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { VerificationAuditInspectionResourceSchema,VerificationClaimsOperationResultSchema,VerificationReportOperationResultSchema,type Actor,type InspectAuditBundleRequest,type OperationContext,type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { VerificationAdmissionService,VerificationAuditInspectionGrantCatalog,VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository,PostgresKnowledgeOperationService,PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { canonicalizeJson,digestCanonicalJson } from "@aiengineer/knowledge-verification";

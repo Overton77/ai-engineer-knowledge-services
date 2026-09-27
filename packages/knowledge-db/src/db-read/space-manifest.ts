@@ -15,7 +15,7 @@ export const SPACE_MANIFEST_SCHEMA_VERSION = "space-manifest.v1";
  * Structural profile input. This is deliberately **not** an import of `ChunkProfile` /
  * `ChunkProfileTable` from `@aiengineer/knowledge-contracts` — `db-read` takes no new
  * dependency on `contracts` or `chunking`. `chunk-profile-table.v1`
- * (`packages/chunking/src/profiles/definitions.ts`) is the only source of profile↔space
+ * (`packages/preparation/src/chunking/profiles/definitions.ts`) is the only source of profile↔space
  * bindings; its `CHUNK_PROFILE_TABLE` value satisfies this interface structurally, and the
  * caller (the executor operation) passes it straight in. This file must never grow its own
  * copy of that table.

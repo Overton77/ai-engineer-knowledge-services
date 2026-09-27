@@ -1,4 +1,4 @@
-import { ConversionRouter } from "../src/index.js";
+import { ConversionRouter } from "../../src/index.js";
 import {
   countingProvider,
   exampleStore,

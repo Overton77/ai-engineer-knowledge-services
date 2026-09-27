@@ -1,5 +1,5 @@
 import type { DocumentNode, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { defaultChunkProfileRegistry } from "../src/index.js";
+import { defaultChunkProfileRegistry } from "../../src/index.js";
 import { paperWithoutTables, printJson } from "./fixtures.js";
 
 /**

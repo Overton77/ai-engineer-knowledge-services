@@ -19,7 +19,7 @@
     "@aiengineer/knowledge-application": "workspace:*",
     "@aiengineer/knowledge-client": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-conversion": "workspace:*",
+    "@aiengineer/knowledge-preparation": "workspace:*",
     "@aiengineer/knowledge-domain": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",

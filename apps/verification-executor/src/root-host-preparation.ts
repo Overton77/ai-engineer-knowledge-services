@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-conversion";
+import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-preparation";
 import { ExactHttpAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
 import { PostgresPreparationRepository, PostgresKnowledgeOperationService, type PostgresCanonicalRepository,
   type PersistedPreparationArtifact } from "@aiengineer/knowledge-persistence";

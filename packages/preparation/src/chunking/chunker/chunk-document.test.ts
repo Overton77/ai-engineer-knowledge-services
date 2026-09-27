@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
+import { convertStructuralDocument } from "../../documents/index.js";
 import { defaultChunkProfileRegistry } from "../profiles/index.js";
 import { reconstructChunk } from "../qa/index.js";
 import { chunkDocument } from "./chunk-document.js";

@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-documents": "workspace:*",
-    "@aiengineer/knowledge-domain": "workspace:*"
+    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-preparation": "workspace:*"
   },
   "devDependencies": {
     "tsup": "catalog:",

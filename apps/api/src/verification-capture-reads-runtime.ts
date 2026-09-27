@@ -1,6 +1,6 @@
 import { VerificationAdmissionService, VerificationCaptureReadApplicationService } from "@aiengineer/knowledge-application";
 import { UuidSchema, type Actor } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCaptureReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
-import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
+import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
+import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { verifyContentChunkManifest } from "./chunk-manifest.js";
 import { sha256Digest } from "@aiengineer/knowledge-domain";

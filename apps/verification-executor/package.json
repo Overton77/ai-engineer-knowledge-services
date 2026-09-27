@@ -43,9 +43,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@aiengineer/knowledge-chunking": "workspace:*",
-    "@aiengineer/knowledge-documents": "workspace:*",
     "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-preparation": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "8.15.5",
     "tsup": "catalog:",

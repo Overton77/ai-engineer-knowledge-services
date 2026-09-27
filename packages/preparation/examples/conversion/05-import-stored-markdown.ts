@@ -1,4 +1,4 @@
-import { DeterministicTextConversionProvider } from "../src/index.js";
+import { DeterministicTextConversionProvider } from "../../src/index.js";
 import { EXAMPLE_TENANT, exampleStore, printJson } from "./helpers.js";
 
 export async function runImportStoredMarkdownExample() {

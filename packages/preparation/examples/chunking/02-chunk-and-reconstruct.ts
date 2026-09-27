@@ -1,4 +1,4 @@
-import { chunkDocument, defaultChunkProfileRegistry, reconstructChunk } from "../src/index.js";
+import { chunkDocument, defaultChunkProfileRegistry, reconstructChunk } from "../../src/index.js";
 import { paperWithoutTables, printJson } from "./fixtures.js";
 
 /**

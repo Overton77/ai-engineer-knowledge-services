@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { VerificationArtifactHandle, VerificationSource, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
 import { sha256Digest } from "@aiengineer/knowledge-verification";
 import { VerificationAdmissionService, type VerificationAdmissionRepositoryPort } from "../verification/admission/verification-admission.js";
 import { DIAGNOSTICS_COMPANY_FIELD_DEFINITIONS, executeDiagnosticsCompanyFieldPlan, type DiagnosticsCompanyFieldSlot } from "./verification-diagnostics-company-fields.js";

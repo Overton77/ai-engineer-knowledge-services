@@ -6,7 +6,7 @@ import { dirname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { VerificationAdmissionService, VerificationServiceCatalog, TrustedVerificationSourceAcquirer, VerificationSourceAcquisitionCatalog } from "@aiengineer/knowledge-application";
-import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { sha256Digest } from "@aiengineer/knowledge-verification";

@@ -1,4 +1,4 @@
-import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "../src/index.js";
+import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "../../src/index.js";
 import { printJson, transcriptWithRunOnTurn } from "./fixtures.js";
 
 /**

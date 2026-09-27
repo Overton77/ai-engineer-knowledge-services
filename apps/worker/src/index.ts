@@ -38,7 +38,7 @@ import {
   SandboxedVerificationParser,
   VERIFICATION_PARSER_LIMITS,
   type DocumentConversionProvider,
-} from "@aiengineer/knowledge-conversion";
+} from "@aiengineer/knowledge-preparation";
 import {
   canonicalPersistenceConfigFromEnvironment,
   createCanonicalPersistence,

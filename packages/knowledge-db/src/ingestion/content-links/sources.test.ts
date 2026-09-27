@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
-import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-chunking";
+import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
+import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import type { ArtifactLedger } from "../../db-read/index.js";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";

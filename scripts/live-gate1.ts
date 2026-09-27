@@ -11,7 +11,7 @@ import {
   ConversionRouter,
   DeterministicTextConversionProvider,
   type DocumentConversionProvider,
-} from "../packages/conversion/src/index.js";
+} from "../packages/preparation/src/conversion/index.js";
 import { canonicalJson, sha256Digest } from "../packages/domain/src/index.js";
 import { InMemoryArtifactStore } from "../packages/runtime/src/index.js";
 

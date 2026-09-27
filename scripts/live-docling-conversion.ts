@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { DoclingServeProvider, createDoclingServeClientFromEnvironment } from "@aiengineer/knowledge-conversion";
+import { DoclingServeProvider, createDoclingServeClientFromEnvironment } from "@aiengineer/knowledge-preparation";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
 

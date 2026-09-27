@@ -1,4 +1,4 @@
-import { ConversionRouter, UnstructuredTransformProvider } from "../src/index.js";
+import { ConversionRouter, UnstructuredTransformProvider } from "../../src/index.js";
 import {
   EXAMPLE_TENANT,
   countingProvider,

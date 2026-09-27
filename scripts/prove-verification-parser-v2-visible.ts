@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { SandboxedVerificationParser } from "../packages/conversion/src/verification-parser.js";
+import { SandboxedVerificationParser } from "../packages/preparation/src/conversion/verification-parser.js";
 import { canonicalizeJson, sha256Digest } from "../packages/verification/src/deterministic/canonical.js";
 import { parseCanonicalProjection } from "../packages/verification/src/evidence-selection/projections.js";
 import { projectionSelectorResolver } from "../packages/verification/src/evidence-selection/projection-resolver.js";

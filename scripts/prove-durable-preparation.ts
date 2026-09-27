@@ -8,7 +8,7 @@ import {
   RoutedAcquisitionAdapter,
 } from "@aiengineer/knowledge-acquisition";
 import type { OperationContext,OperationKind } from "@aiengineer/knowledge-contracts";
-import { DeterministicTextConversionProvider,DoclingServeProvider,HttpDoclingServeClient } from "@aiengineer/knowledge-conversion";
+import { DeterministicTextConversionProvider,DoclingServeProvider,HttpDoclingServeClient } from "@aiengineer/knowledge-preparation";
 import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-domain";
 import { canonicalPersistenceConfigFromEnvironment,createCanonicalPersistence,PostgresKnowledgeOperationService,PostgresPreparationRepository } from "@aiengineer/knowledge-persistence";
 import { createCanonicalActivityExecutor,createProductionActivityRegistry } from "../apps/worker/src/activity-registry.js";

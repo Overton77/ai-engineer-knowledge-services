@@ -1,8 +1,8 @@
 import type { DocumentNode, SourceLocator, VectorSpace } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
-import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "@aiengineer/knowledge-chunking";
-import { DeterministicTextConversionProvider, type ConversionNode, type ConversionOutput } from "@aiengineer/knowledge-conversion";
-import { convertStructuralDocument, deterministicUuid, verifyNodeLocators, type StructuralBlock, type StructuralDocument } from "@aiengineer/knowledge-documents";
+import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "@aiengineer/knowledge-preparation";
+import { DeterministicTextConversionProvider, type ConversionNode, type ConversionOutput } from "@aiengineer/knowledge-preparation";
+import { convertStructuralDocument, deterministicUuid, verifyNodeLocators, type StructuralBlock, type StructuralDocument } from "@aiengineer/knowledge-preparation";
 import { createProjection, type EvidenceSupport } from "@aiengineer/knowledge-retrieval";
 import { InMemoryArtifactStore, InMemoryOperationLedger, type ArtifactStore, type OperationContext } from "@aiengineer/knowledge-runtime";
 

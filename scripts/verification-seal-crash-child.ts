@@ -4,7 +4,7 @@ import {
   VerificationMetricProfileCatalog,
   VerificationSealPolicyCatalog,
 } from "@aiengineer/knowledge-application";
-import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationMetricRuntimePrincipals, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { projectionSelectorResolver } from "@aiengineer/knowledge-verification";

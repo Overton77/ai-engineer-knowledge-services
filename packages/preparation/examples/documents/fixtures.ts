@@ -1,4 +1,4 @@
-import type { StructuralDocumentInput } from "../src/index.js";
+import type { StructuralDocumentInput } from "../../src/index.js";
 
 export const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 

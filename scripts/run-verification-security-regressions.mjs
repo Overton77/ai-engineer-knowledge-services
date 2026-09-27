@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const plan=[
  {boundary:'SSRF, redirects, pinned DNS, bounded acquisition',cwd:'packages/acquisition',files:['src/acquisition.test.ts','src/mapped-address.test.ts','src/deadline.test.ts']},
- {boundary:'Hostile document pre-execution admission',cwd:'packages/conversion',files:['src/verification-parser.test.ts']},
+ {boundary:'Hostile document pre-execution admission',cwd:'packages/preparation',files:['src/conversion/verification-parser.test.ts']},
  {boundary:'Admitted source lineage and provider classification/custody',cwd:'packages/application',files:['src/verification-admission.test.ts','src/verification-provider.test.ts','src/verification-provider-transport.test.ts','src/verification-semantic-observation.test.ts','src/verification-adjudication-decision.test.ts']},
  {boundary:'Bounded tool-free providers and strict semantic output',cwd:'packages/verification',files:['src/providers/providers.test.ts','src/providers/semantic-judge.test.ts','src/providers/gateway-semantic-observation.test.ts']},
  {boundary:'Registered artifacts, fencing and packet-bound decision authority',cwd:'packages/persistence',files:['src/verification-artifact-registration.test.ts','src/verification-fenced-artifact.test.ts','src/verification-adjudication-decision.test.ts','src/verification-adjudication-decision-preparation.test.ts']},

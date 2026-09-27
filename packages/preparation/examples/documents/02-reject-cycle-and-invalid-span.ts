@@ -1,4 +1,4 @@
-import { convertStructuralDocument, reconstructNodeSpan, verifyNodeLocators } from "../src/index.js";
+import { convertStructuralDocument, reconstructNodeSpan, verifyNodeLocators } from "../../src/index.js";
 import { pageBlocks, printJson } from "./fixtures.js";
 
 /**

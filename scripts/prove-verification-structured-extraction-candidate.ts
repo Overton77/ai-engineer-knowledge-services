@@ -8,7 +8,7 @@ import { StructuredExtractionCandidateBuilder } from "../packages/application/sr
 import { VerificationAdmissionService } from "../packages/application/src/verification/admission/verification-admission.js";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
-import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;
 for(const [value,port]of [[pgUrl,"54322"],[storageUrl,"54321"]]){const url=new URL(value!);if(!["localhost","127.0.0.1"].includes(url.hostname)||url.port!==port)throw new Error("LOCAL_ONLY_PROOF_REQUIRED");}

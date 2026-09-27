@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { convertStructuralDocument } from "@aiengineer/knowledge-documents";
+import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
 import { JsonValueSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresGovernedIndexRepository, PostgresPreparationRepository,

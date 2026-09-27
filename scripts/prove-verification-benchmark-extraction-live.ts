@@ -17,7 +17,7 @@ import {
   type VerificationSource,
   type VerificationSourceCapture,
 } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
 import {
   AccountedVerificationProviderSink,
   assertDiagnosticsExtractionWireRequest,

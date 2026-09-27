@@ -7,7 +7,7 @@ import {
   type VerificationBundle,
   type VerificationSourceCapture,
 } from "@aiengineer/knowledge-contracts";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import {
   authorizeSemanticCase,
   canonicalizeJson,

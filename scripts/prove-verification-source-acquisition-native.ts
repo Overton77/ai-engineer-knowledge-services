@@ -4,7 +4,7 @@ import { lookup } from "node:dns/promises";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { VerificationAdmissionService, VerificationServiceCatalog, VerificationOperationApplicationService, TrustedVerificationSourceAcquirer, VerificationSourceAcquisitionCatalog } from "@aiengineer/knowledge-application";
-import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
 import { sha256Digest } from "@aiengineer/knowledge-verification";

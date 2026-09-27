@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { type Actor, type OperationContext, type VerifyClaimsRequest, type VerifyReportRequest, type VerificationArtifactHandle, type VerificationPolicyDefinition } from "@aiengineer/knowledge-contracts";
 import { loadDiagnosticsV1ProviderGrant, SemanticJudgeProfileSchema, VerificationAdmissionService, VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
-import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
+import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { canonicalizeJson, digestCanonicalJson, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, prepareGatewaySemanticRequest, projectionSelectorResolver } from "@aiengineer/knowledge-verification";

@@ -1,4 +1,4 @@
-import { ConversionRouter, DeterministicTextConversionProvider } from "../src/index.js";
+import { ConversionRouter, DeterministicTextConversionProvider } from "../../src/index.js";
 import {
   EXAMPLE_TENANT,
   countingProvider,
