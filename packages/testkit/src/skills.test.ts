@@ -17,7 +17,7 @@ async function repositoryRoot() {
 }
 
 describe("versioned knowledge skills", () => {
-  it("ships the ten bounded v1 procedures", async () => {
+  it("ships the bounded v1 procedures and the external Jev skill", async () => {
     const root = await repositoryRoot();
     const manifest = JSON.parse(await readFile(join(root, "skills", "manifest.json"), "utf8")) as {
       contractVersion: string;
@@ -35,16 +35,21 @@ describe("versioned knowledge skills", () => {
       { id: "knowledge-verification", version: "1.2.0" },
       { id: "knowledge-verification-recovery", version: "1.0.0" },
       { id: "vector-store-management", version: "1.1.0" },
+      { id: "jev-system-one", version: "0.1.0" },
     ]);
     for (const skill of manifest.skills) {
       const markdown = await readFile(join(root, "skills", skill.path), "utf8");
       // Verification-family skills bind verification.v1. Platform knowledge skills bind
       // knowledge-service/v1. Executor schema/read/ingest procedures have no YAML contract field.
+      // Jev binds its external provider contract until it becomes a Knowledge Services surface.
       const verificationFamily =
         skill.id === "knowledge-verification" || skill.id === "knowledge-verification-recovery";
       const executorKnowledgeSkill =
         skill.id === "schema-explore" || skill.id === "knowledge-db" || skill.id === "knowledge-ingest";
-      if (verificationFamily) {
+      const externalProviderSkill = skill.id === "jev-system-one";
+      if (externalProviderSkill) {
+        expect(markdown).toContain('contract: "typesafe-systemone/v1');
+      } else if (verificationFamily) {
         expect(markdown).toContain('contract: "verification.v1"');
       } else if (!executorKnowledgeSkill) {
         expect(markdown).toContain('contract: "knowledge-service/v1"');
