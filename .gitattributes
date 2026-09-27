@@ -3,3 +3,5 @@ fixtures/embedding-bundle-seed-2026-09-01/videos/*/embedding-bundle.json -text w
 catalog/verification-benchmarks/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 catalog/verification-assets/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 catalog/verification-assets/**/*.bin binary
+catalog/verification-semantic-fixtures/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+catalog/verification-semantic-fixtures/**/*.bin binary
