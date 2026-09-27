@@ -3,7 +3,7 @@ import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
 import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "@aiengineer/knowledge-chunking";
 import { DeterministicTextConversionProvider, type ConversionNode, type ConversionOutput } from "@aiengineer/knowledge-conversion";
 import { convertStructuralDocument, deterministicUuid, verifyNodeLocators, type StructuralBlock, type StructuralDocument } from "@aiengineer/knowledge-documents";
-import { createProjection, type EvidenceSupport } from "@aiengineer/knowledge-projections";
+import { createProjection, type EvidenceSupport } from "@aiengineer/knowledge-retrieval";
 import { InMemoryArtifactStore, InMemoryOperationLedger, type ArtifactStore, type OperationContext } from "@aiengineer/knowledge-runtime";
 
 export interface PreparationDocument { id: string; document_kind: string; title: string; canonical_url: string; source_role: "official" | "primary" | "authoritative_secondary"; publisher: string; source_class: string; target_vector_spaces: string[]; text: string; entity_slugs: string[] }

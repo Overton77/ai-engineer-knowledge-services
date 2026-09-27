@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { OperationContext,OperationKind } from "@aiengineer/knowledge-contracts";
-import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { canonicalJson,sha256Digest } from "@aiengineer/knowledge-domain";
 import { canonicalPersistenceConfigFromEnvironment,createCanonicalPersistence,PostgresGovernedIndexRepository,PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";

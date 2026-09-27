@@ -1,8 +1,8 @@
-import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { freezeEvaluationDataset,evaluateRetrieval,type EvaluationReport } from "@aiengineer/knowledge-evaluation";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
 import { retrieve,type ImmutableEvidencePacket,type RetrievalPolicy,type RetrievalRecord } from "@aiengineer/knowledge-retrieval";
-import { InMemoryExactCosineBackend,type PublicationManifests } from "@aiengineer/knowledge-vector-backends";
+import { InMemoryExactCosineBackend,type PublicationManifests } from "@aiengineer/knowledge-retrieval";
 import { KnowledgePreparationService,type VettedBundleInput } from "./preparation.js";
 
 const TENANT="00000000-0000-7000-8000-000000000001";

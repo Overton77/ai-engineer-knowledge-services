@@ -1,42 +1,17 @@
-// Pipeline — retrieve(): stage sequencing, diversity cap, context radius, coverage,
-// abstention, and immutable evidence-packet assembly. The one orchestrator; every
-// stage folder below is a primitive it calls, none is public on its own.
-export { retrieve } from "./retrieve.js";
+// vector-backends: exact and Postgres search adapters, exploratory publication,
+// rollback, reconciliation, and space pointers.
+export * from "./vector-backends/index.js";
 
-// Plan — policy-scoped query plan assembly (space/filter admission, subquery
-// decomposition, intent inference).
-export { buildRetrievalPlan } from "./plan/index.js";
+// search: retrieve() is the pipeline orchestrator for policy-scoped planning,
+// channel fusion, diversity, coverage, and immutable evidence-packet assembly.
+// Plan and contract types are public; lexical, semantic, graph, and rerank stage
+// primitives stay internal to the pipeline.
+export * from "./search/index.js";
 
-// Space admission — ALL_SPACES, inferSpaces, assertAdmittedSpaces. Internal to the
-// pipeline; the public surface never named them, so this package does not either.
+// embeddings: adapter contracts, vector validation, cache, wired gateway,
+// and deterministic fake for offline tests and examples.
+export * from "./embeddings/index.js";
 
-// Lexical — exact/trigram/fts channel scoring. Internal.
-
-// Semantic — cosine similarity scoring. Internal.
-
-// Graph — verified-edge expansion. Internal.
-
-// Rerank — RRF fusion and candidate tie-break comparison. Internal.
-
-// Types — the retrieval contract this package promises callers. Kept as a single
-// re-export list so the public surface can be diffed against dist/index.d.ts in one
-// place (see docs/operations/reviews/retrieval.md).
-export type {
-  AdvancedRetrievalPlan,
-  EvidenceMember,
-  FilterValue,
-  GraphEdge,
-  ImmutableEvidencePacket,
-  Reranker,
-  RetrievalChannel,
-  RetrievalFilter,
-  RetrievalFlags,
-  RetrievalIntent,
-  RetrievalPolicy,
-  RetrievalRecord,
-  RetrievalStages,
-  RetrievalSubquery,
-  RetrievedCandidate,
-  RetrieveOptions,
-  StageContribution,
-} from "./types.js";
+// projections: validate evidence support, build domain projections, and classify
+// their dispositions into vector spaces.
+export * from "./projections/index.js";

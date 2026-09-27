@@ -1,4 +1,4 @@
-import { MemoryEmbeddingCache, VercelAiGatewayEmbeddingAdapter } from "../src/index.js";
+import { MemoryEmbeddingCache, VercelAiGatewayEmbeddingAdapter } from "../../src/index.js";
 
 /**
  * The gateway adapter retries a transient 503 under the same idempotency key,

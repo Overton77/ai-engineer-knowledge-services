@@ -1,7 +1,7 @@
 import { CanonicalRetrievalExecutor } from "../apps/api/src/retrieval-executor.js";
 import { buildServer } from "../apps/api/src/server.js";
 import { PostgresKnowledgeOperationService, PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
 import { FIXTURE_NAMESPACE, FIXTURE_TENANT_ID } from "./canonical-fixture.js";
 

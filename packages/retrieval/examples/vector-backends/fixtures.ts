@@ -1,4 +1,4 @@
-import type { PublicationInspection, PublicationInspector, PublicationManifests } from "../src/index.js";
+import type { PublicationInspection, PublicationInspector, PublicationManifests } from "../../src/index.js";
 
 export const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 export const createdAt = "2026-09-03T12:00:00Z";

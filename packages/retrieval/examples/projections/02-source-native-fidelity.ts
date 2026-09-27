@@ -1,4 +1,4 @@
-import { createProjection, validateEvidenceSupport, type ProjectionInput } from "../src/index.js";
+import { createProjection, validateEvidenceSupport, type ProjectionInput } from "../../src/index.js";
 import { evidenceFor, id, printJson } from "./fixtures.js";
 
 /**

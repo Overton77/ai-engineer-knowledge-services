@@ -31,7 +31,7 @@ import {
   type DocumentConversionProvider,
 } from "@aiengineer/knowledge-conversion";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
-import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-documents";
 import { deterministicUuid } from "@aiengineer/knowledge-runtime";
 import {

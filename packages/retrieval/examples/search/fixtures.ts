@@ -1,5 +1,5 @@
 import type { VectorSpace } from "@aiengineer/knowledge-contracts";
-import type { RetrievalPolicy, RetrievalRecord } from "../src/index.js";
+import type { RetrievalPolicy, RetrievalRecord } from "../../src/index.js";
 
 export const tenantId = "00000000-0000-7000-8000-000000000001";
 

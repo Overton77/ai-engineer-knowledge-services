@@ -1,4 +1,4 @@
-import { InMemoryExactCosineBackend } from "../src/index.js";
+import { InMemoryExactCosineBackend } from "../../src/index.js";
 import { id, printJson, vector } from "./fixtures.js";
 
 /**

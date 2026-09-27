@@ -1,4 +1,4 @@
-import { retrieve } from "../src/index.js";
+import { retrieve } from "../../src/index.js";
 import { locator, policy, printJson, records, spaces, tenantId } from "./fixtures.js";
 
 /**

@@ -1,5 +1,5 @@
-import type { RetrievalPolicy } from "../src/index.js";
-import { buildRetrievalPlan } from "../src/index.js";
+import type { RetrievalPolicy } from "../../src/index.js";
+import { buildRetrievalPlan } from "../../src/index.js";
 import { policy, printJson } from "./fixtures.js";
 
 function messageOf(fn: () => unknown): string {

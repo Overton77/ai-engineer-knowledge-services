@@ -1,4 +1,4 @@
-import { VercelAiGatewayEmbeddingAdapter } from "../src/index.js";
+import { VercelAiGatewayEmbeddingAdapter } from "../../src/index.js";
 
 /**
  * The gateway adapter accepts a provider response only when it is complete,

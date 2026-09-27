@@ -28,7 +28,7 @@ import {
 import {
   createGatewayEmbeddingAdapterFromEnvironment,
   type EmbeddingAdapter,
-} from "@aiengineer/knowledge-embeddings";
+} from "@aiengineer/knowledge-retrieval";
 import {
   createDoclingServeClientFromEnvironment,
   DeterministicTextConversionProvider,

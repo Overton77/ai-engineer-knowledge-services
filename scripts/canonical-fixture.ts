@@ -6,7 +6,7 @@ import {
   type EvidencePacket,
 } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
-import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import {
   PostgresCanonicalRepository,
   createCanonicalPersistence,

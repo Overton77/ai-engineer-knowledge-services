@@ -13,7 +13,7 @@ import {
   type RetrievalUnsupportedResponse,
 } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-domain";
-import type { EmbeddingAdapter } from "@aiengineer/knowledge-embeddings";
+import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import {
   RETRIEVAL_SUPPORT_LIMITS,
   type HybridSearchResult,

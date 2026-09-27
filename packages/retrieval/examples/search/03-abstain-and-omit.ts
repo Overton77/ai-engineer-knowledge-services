@@ -1,4 +1,4 @@
-import { retrieve } from "../src/index.js";
+import { retrieve } from "../../src/index.js";
 import { policy, printJson, records, tenantId } from "./fixtures.js";
 
 const otherTenant = "00000000-0000-7000-8000-999999999999";

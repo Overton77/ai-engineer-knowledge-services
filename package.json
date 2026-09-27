@@ -21,7 +21,7 @@
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-conversion": "workspace:*",
     "@aiengineer/knowledge-domain": "workspace:*",
-    "@aiengineer/knowledge-embeddings": "workspace:*",
+    "@aiengineer/knowledge-retrieval": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-runtime": "workspace:*",
     "@aiengineer/knowledge-testkit": "workspace:*",

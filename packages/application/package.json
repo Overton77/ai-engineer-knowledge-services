@@ -25,16 +25,13 @@
     "@aiengineer/knowledge-conversion": "workspace:*",
     "@aiengineer/knowledge-documents": "workspace:*",
     "@aiengineer/knowledge-domain": "workspace:*",
-    "@aiengineer/knowledge-embeddings": "workspace:*",
     "@aiengineer/knowledge-evaluation": "workspace:*",
-    "@aiengineer/knowledge-projections": "workspace:*",
+    "@aiengineer/knowledge-jev": "workspace:*",
     "@aiengineer/knowledge-policy": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
     "@aiengineer/knowledge-runtime": "workspace:*",
     "@aiengineer/knowledge-verification": "workspace:*",
-    "@aiengineer/knowledge-vector-backends": "workspace:*",
-    "zod": "catalog:",
-    "@aiengineer/knowledge-jev": "workspace:*"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@aiengineer/knowledge-testkit": "workspace:*",

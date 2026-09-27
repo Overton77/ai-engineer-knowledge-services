@@ -1,4 +1,4 @@
-import { classifyProjectionSpaces, type ClassificationProposal } from "../src/index.js";
+import { classifyProjectionSpaces, type ClassificationProposal } from "../../src/index.js";
 import { id, printJson } from "./fixtures.js";
 
 /**

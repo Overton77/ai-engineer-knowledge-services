@@ -15,7 +15,7 @@ import { digestCanonicalJson, verifyAssertionSemantics } from "@aiengineer/knowl
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../../packages/persistence/test/disposable.mjs";
 import { withSnapshot } from "../../../../packages/knowledge-db/test/ingestion/snapshot-fixture.mjs";
 import { contentLinkEffect } from "../../../../packages/knowledge-db/src/ingestion/content-links/operations.js";
-import { DeterministicFakeEmbeddingAdapter } from "../../../../packages/embeddings/src/index.js";
+import { DeterministicFakeEmbeddingAdapter } from "../../../../packages/retrieval/src/index.js";
 import { VerificationExecutor, loadExecutorConfig } from "../executor.js";
 import { PolicyDefinitionInputSchema } from "../intents.js";
 import { loadSealedContentClaim } from "./evidence-oracle.js";

@@ -1,5 +1,5 @@
-import { ExploratoryPublicationCoordinator, InMemoryPublicationRepository } from "../src/index.js";
-import type { ActivePublicationPointer, PublicationRepository, PublishExploratoryRequest } from "../src/index.js";
+import { ExploratoryPublicationCoordinator, InMemoryPublicationRepository } from "../../src/index.js";
+import type { ActivePublicationPointer, PublicationRepository, PublishExploratoryRequest } from "../../src/index.js";
 import { StubPublicationInspector, baseInspection, digest, id, manifests, printJson } from "./fixtures.js";
 
 function publishRequest(publicationId: string): PublishExploratoryRequest {

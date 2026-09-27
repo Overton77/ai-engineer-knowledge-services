@@ -1,4 +1,4 @@
-import { DeterministicFakeEmbeddingAdapter } from "../src/index.js";
+import { DeterministicFakeEmbeddingAdapter } from "../../src/index.js";
 
 /**
  * The deterministic fake adapter never calls a network. Given the same

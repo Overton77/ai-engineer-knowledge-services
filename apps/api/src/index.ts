@@ -21,7 +21,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
 import { createCallbackSigningSecretResolver } from "./a2a-http.js";
-import { createGatewayEmbeddingAdapterFromEnvironment } from "@aiengineer/knowledge-embeddings";
+import { createGatewayEmbeddingAdapterFromEnvironment } from "@aiengineer/knowledge-retrieval";
 import { CanonicalRetrievalExecutor } from "./retrieval-executor.js";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
 import { createVerificationReads } from "./verification-reads-runtime.js";
