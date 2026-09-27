@@ -1,5 +1,5 @@
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { artifactDestination, EXECUTOR_STORAGE_PROFILE } from "./store-custody-profile.js";
 import type { ArtifactCustody } from "./store-custody.js";
 import { assertSameArtifact } from "./store-custody.js";

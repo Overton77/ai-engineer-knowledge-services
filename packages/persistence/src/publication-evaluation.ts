@@ -1,6 +1,6 @@
 import { JsonValueSchema, SelectedCandidateEvaluationInputSchema, type SelectedCandidateEvaluationInput } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "./postgres.js";
 import { readContentRepresentationAdmission } from "./content-representation-admission.js";
 import { readRepresentationDependencies } from "./representation-dependency.js";

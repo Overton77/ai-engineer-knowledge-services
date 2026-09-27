@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { VerificationBenchmarkDatasetSchema, VerificationCaptureTerminalResourceSchema, type VerificationBenchmarkDataset } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 

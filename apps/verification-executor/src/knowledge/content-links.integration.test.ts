@@ -7,9 +7,9 @@ import { ContentLinkIntentSchema, ContentLinkOperationSchema, JsonValueSchema, P
 import { IngestionIntentSchema, deterministicId, proposalEffect, contentEvidenceAssessmentDigest, type ContentLinkPlan, type ContentLinkReceipt, type ContentSummaryPreparationResult } from "@aiengineer/knowledge-db";
 import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { TenantPostgres, PostgresCanonicalRepository, PostgresPreparationRepository, PostgresGovernedIndexRepository, PostgresKnowledgeOperationService, validatePromotionSelection, type PersistedPreparationArtifact, type PromotionSelectionConfiguration, type GovernedProjectionProposal } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { PromotionProposalInputSchema } from "@aiengineer/knowledge-contracts";
 import { digestCanonicalJson, verifyAssertionSemantics } from "@aiengineer/knowledge-verification";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../../packages/persistence/test/disposable.mjs";

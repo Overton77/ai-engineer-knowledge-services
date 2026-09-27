@@ -1,4 +1,4 @@
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import { conversionRequestDigests } from "../artifacts.js";
 import {
   DEFAULT_UNSTRUCTURED_POLLS,

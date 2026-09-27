@@ -1,7 +1,7 @@
 import { verificationProviderHostTuple, type VerificationProviderHost } from "./verification-provider-host.js";
 import { VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { prepareVerificationProviderTransportResponse, VerificationProviderTransportResponseSchema, type VerificationProviderTransportResponse } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { LeasedStep } from "./types.js";
 

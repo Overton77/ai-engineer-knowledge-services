@@ -10,7 +10,7 @@ import {
   type VerificationRecoveryInvalidation,
 } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest, type AuditBundleSignatureVerifier, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { compareVerifiedComponentVersions, type SealedAuditBundleArtifact } from "../operations/verification-component-drift.js";
 
 type Digest = `sha256:${string}`;

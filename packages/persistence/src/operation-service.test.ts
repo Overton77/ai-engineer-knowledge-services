@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { operationFailureSummary, PostgresKnowledgeOperationService } from "./operation-service.js";
 import type { PostgresCanonicalRepository } from "./postgres.js";
 import type { CreateCanonicalOperation } from "./types.js";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

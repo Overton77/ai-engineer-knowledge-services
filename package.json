@@ -20,10 +20,9 @@
     "@aiengineer/knowledge-client": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-preparation": "workspace:*",
-    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
-    "@aiengineer/knowledge-runtime": "workspace:*",
     "@aiengineer/knowledge-testkit": "workspace:*",
     "@aiengineer/knowledge-verification": "workspace:*"
   },

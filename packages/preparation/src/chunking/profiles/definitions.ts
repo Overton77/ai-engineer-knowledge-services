@@ -3,7 +3,7 @@ import {
   ChunkProfileTableSchema,
   type ChunkProfileTable,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 
 // One table, because the host selects from it, the skill teaches from it, and a
 // receipt cites `name@version` into it. A strategy that is not here is not

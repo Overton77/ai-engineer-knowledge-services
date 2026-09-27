@@ -1,4 +1,4 @@
-import { deepFreeze,sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze,sha256Digest } from "../domain/index.js";
 export interface OperationMetric {readonly operationId:string;readonly stage:string;readonly status:"succeeded"|"failed"|"degraded";readonly startedAt:string;readonly durationMs:number;readonly itemCount:number;readonly usageTokens:number;readonly costUsd:number;readonly attributes:Readonly<Record<string,string|number|boolean>>}
 export interface ServiceSloSnapshot {readonly availability:number;readonly p50Ms:number;readonly p95Ms:number;readonly p99Ms:number;readonly errorRate:number;readonly degradedRate:number;readonly totalCostUsd:number;readonly totalTokens:number;readonly sampleCount:number}
 export interface ReconciliationFinding {readonly kind:"missing_vector"|"orphan_vector"|"digest_mismatch"|"active_pointer_mismatch"|"count_mismatch";readonly severity:"warning"|"critical";readonly expected:string|number;readonly observed:string|number}

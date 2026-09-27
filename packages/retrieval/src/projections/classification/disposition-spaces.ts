@@ -1,5 +1,5 @@
 import type { PublicKnowledgeDomain, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { ClassificationProposal, DomainDisposition } from "../types.js";
 
 export const dispositionSpace: Readonly<Partial<Record<DomainDisposition, VectorSpace>>> = {

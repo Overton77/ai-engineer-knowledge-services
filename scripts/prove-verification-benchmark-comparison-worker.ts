@@ -15,7 +15,7 @@ import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { parseVerificationBenchmarkComparisonRuntimeConfig } from "@aiengineer/knowledge-application";
 import { VerificationBenchmarkComparisonOperationResultSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, createEd25519Verifier, digestCanonicalJson, verifyVerificationBenchmarkComparisonPublication } from "@aiengineer/knowledge-verification";
 
 type Ref = { artifactId: string; digest: string };

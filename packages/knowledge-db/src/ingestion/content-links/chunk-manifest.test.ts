@@ -3,7 +3,7 @@ import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { verifyContentChunkManifest } from "./chunk-manifest.js";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { DocumentNode } from "@aiengineer/knowledge-contracts";
 
 type Row = Record<string, unknown>;

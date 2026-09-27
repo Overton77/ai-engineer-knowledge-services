@@ -1,6 +1,6 @@
 import type { ArtifactLedger } from "@aiengineer/knowledge-db";
 import type { PromotionSelectionArtifact, PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import type { PromotionSelectionProgress, PromotionSelectionReference } from "@aiengineer/knowledge-application";
 import type { CanonicalEvidenceReader } from "../evidence-reader.js";
 import { startWorker, type RunningWorker } from "../../../worker/src/index.js";

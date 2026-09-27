@@ -1,6 +1,6 @@
 import { SemanticProviderResponseObservationSchema, VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import { mapSemanticObservation, type SemanticObservationRow } from "./verification-semantic-observation.js";
 import type { LeasedStep } from "./types.js";

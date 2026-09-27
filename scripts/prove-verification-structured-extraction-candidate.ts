@@ -7,7 +7,7 @@ import { StructuredExtractionCapturedReplayService, type StructuredExtractionRep
 import { StructuredExtractionCandidateBuilder } from "../packages/application/src/verification/operations/verification-structured-extraction-candidate.js";
 import { VerificationAdmissionService } from "../packages/application/src/verification/admission/verification-admission.js";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;

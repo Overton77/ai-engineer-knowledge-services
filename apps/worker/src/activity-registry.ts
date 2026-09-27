@@ -30,10 +30,10 @@ import {
   type ConversionRoutingReceipt,
   type DocumentConversionProvider,
 } from "@aiengineer/knowledge-preparation";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { convertStructuralDocument, verifyNodeLocators, type StructuralBlock } from "@aiengineer/knowledge-preparation";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   evaluateRetrieval,
   createExperimentMatrix,
@@ -53,7 +53,7 @@ import type {
   VectorStoreLifecycleRepository,
 } from "@aiengineer/knowledge-persistence";
 import { sameActorIdentity } from "@aiengineer/knowledge-persistence";
-import { digestBytes, type ArtifactStore, type StoredArtifact } from "@aiengineer/knowledge-runtime";
+import { digestBytes, type ArtifactStore, type StoredArtifact } from "@aiengineer/knowledge-core";
 import { z, ZodError } from "zod";
 
 const durableStepInputSchema = z.strictObject({

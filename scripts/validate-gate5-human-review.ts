@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { assertCanonicalGate5HumanReviewPacket, bindHumanReviewReferences, createHumanReviewReferenceCases, createHumanReviewSamplePacket, GATE5_HUMAN_REVIEW_SAMPLE, validateHumanReviewSubmission, type HumanReviewEvidenceItem, type HumanReviewSamplePacket, type HumanReviewSystemOutput } from "../packages/evaluation/src/index.js";
-import { sha256Digest } from "../packages/domain/src/index.js";
+import { sha256Digest } from "../packages/core/src/domain/index.js";
 import { createBroadEvaluationCorpus, runBroadHybridControlOutputs } from "../packages/testkit/src/index.js";
 
 const argumentsWithoutSeparator = process.argv.slice(2).filter((value, index) => !(index === 0 && value === "--"));

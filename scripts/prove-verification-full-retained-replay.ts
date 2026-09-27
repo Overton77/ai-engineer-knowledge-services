@@ -5,7 +5,7 @@ import {resolve} from "node:path";
 import {VerificationOperationApplicationService} from "@aiengineer/knowledge-application";
 import {VerificationBenchmarkOperationResultSchema} from "@aiengineer/knowledge-contracts";
 import {PostgresCanonicalRepository,PostgresKnowledgeOperationService,PostgresVerificationRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,createEd25519Verifier,digestCanonicalJson,verifyVerificationBenchmarkPublication} from "@aiengineer/knowledge-verification";
 import {createConfiguredVerificationBenchmarkHandler} from "../apps/worker/src/verification-benchmark-runtime.js";
 import {CanonicalActivityRegistry,createCanonicalActivityExecutor} from "../apps/worker/src/activity-registry.js";

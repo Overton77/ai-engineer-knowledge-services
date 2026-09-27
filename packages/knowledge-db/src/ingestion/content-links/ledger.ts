@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ContentLinkIntentSchema, type ContentLinkIntent } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { uuidv7, type ArtifactLedger, type ArtifactRecord, type LineageEdge } from "../../db-read/index.js";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { domainError } from "../../schema-workspace/index.js";

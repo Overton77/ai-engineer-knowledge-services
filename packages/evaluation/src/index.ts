@@ -1,4 +1,4 @@
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 
 export * from "./human-review.js";
 export * from "./verification-statistics.js";

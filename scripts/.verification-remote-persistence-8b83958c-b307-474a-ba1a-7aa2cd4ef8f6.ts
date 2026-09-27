@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Assertion, Judgment, VerificationArtifactHandle, VerificationBundle, VerificationPolicyDefinition, VerificationRunManifest } from "@aiengineer/knowledge-contracts";
 import { createOfflineVerificationPolicyReplayPort } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, createVerificationArtifactHandle } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, replayAuditBundle, sealAuditBundle, sha256Digest, verificationManifestDigest, verifyDeterministicBundle } from "@aiengineer/knowledge-verification";
 
 const postgresUrl = process.env.POSTGRES_URL?.trim();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { IdentityBoundPaperAcquisitionAdapter } from "./adapter.js";
 import { normalizePaperIdentifier } from "./identity.js";
 import type { AcquisitionRequest, PaperResolution } from "../types.js";

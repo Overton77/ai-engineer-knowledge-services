@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TenantSqlClient } from "./postgres.js";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import {
   applyPublishedQueryPlanner,
   assertPublicationDependenciesEligible,

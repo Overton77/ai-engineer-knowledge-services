@@ -1,6 +1,6 @@
 import { VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, inspectAuditBundle, sha256Digest, type AuditBundleSignatureVerifier, type TrustedArtifactResolver, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 
 export const componentDriftDimensions=["provider","model","parser","grader","policy"] as const;
 export type ComponentDriftDimension=typeof componentDriftDimensions[number];

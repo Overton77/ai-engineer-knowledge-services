@@ -7,7 +7,7 @@ import { describe,expect,it,vi } from "vitest";
 import { ArtifactLedger,ReadExecutor } from "@aiengineer/knowledge-db";
 import { ReportService,ReportStructureSchema,IngestionExecutor,IngestionIntentSchema,renderReport,type ReportStructure } from "@aiengineer/knowledge-db";
 import { TenantPostgres } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { loadWorkspace } from "@aiengineer/knowledge-db";
 import { digestCanonicalJson,sha256Digest } from "@aiengineer/knowledge-verification";
 

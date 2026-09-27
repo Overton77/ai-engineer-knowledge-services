@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SourceLocator } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { publicProjectionSpaces } from "../classification/index.js";
 import type { ProjectionInput } from "../types.js";
 import { createProjection } from "./create-projection.js";

@@ -21,13 +21,12 @@
   "dependencies": {
     "@aiengineer/knowledge-acquisition": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-evaluation": "workspace:*",
     "@aiengineer/knowledge-jev": "workspace:*",
     "@aiengineer/knowledge-policy": "workspace:*",
     "@aiengineer/knowledge-preparation": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
-    "@aiengineer/knowledge-runtime": "workspace:*",
     "@aiengineer/knowledge-verification": "workspace:*",
     "zod": "catalog:"
   },

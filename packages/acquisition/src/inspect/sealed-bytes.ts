@@ -1,4 +1,4 @@
-import { digestBytes } from "@aiengineer/knowledge-runtime";
+import { digestBytes } from "@aiengineer/knowledge-core";
 
 export function sealedCaptureDigestMatches(
   bytes: Uint8Array,

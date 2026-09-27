@@ -8,7 +8,7 @@ import {
   VerificationAdjudicationTerminalResourceSchema,
   type VerificationAdjudicationTerminalResource,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PreparedVerificationAdjudicationRequest } from "./verification-adjudication.js";
 
 export type VerificationAdjudicationReadState = "pending" | "failed" | "cancelled" | "succeeded";

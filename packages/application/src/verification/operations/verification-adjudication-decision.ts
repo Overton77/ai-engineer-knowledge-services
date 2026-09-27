@@ -4,8 +4,8 @@ import {
   type Actor, type OperationContext, type VerificationAdjudicationDecisionRequest,
   type VerificationAdjudicationTerminalResource, type VerificationAdjudicationDecisionResult,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deepFreeze } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import type { VerificationAdjudicationCommitLease, VerificationAdjudicationPacketRegistration } from "./verification-adjudication.js";

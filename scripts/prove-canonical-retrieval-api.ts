@@ -2,7 +2,7 @@ import { CanonicalRetrievalExecutor } from "../apps/api/src/retrieval-executor.j
 import { buildServer } from "../apps/api/src/server.js";
 import { PostgresKnowledgeOperationService, PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { FIXTURE_NAMESPACE, FIXTURE_TENANT_ID } from "./canonical-fixture.js";
 
 const postgresUrl=process.env.POSTGRES_URL?.trim();if(!postgresUrl)throw new Error("POSTGRES_URL_REQUIRED");

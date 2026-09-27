@@ -1,5 +1,5 @@
 import {UuidSchema,VerificationArtifactHandleSchema,VerificationProviderReconciliationSchema} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import type {ProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
 import {canonicalizeJson,type TrustedArtifactResolver} from "@aiengineer/knowledge-verification";
 import type {PostgresCanonicalRepository} from "./postgres.js";

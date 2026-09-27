@@ -11,7 +11,7 @@ import {
   KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION,
   type VerificationAdjudicationPendingSubjectCommitPort,
 } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { createVerificationArtifactHandle, type PostgresVerificationRepository } from "./verification.js";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";

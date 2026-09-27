@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ContentLinkIntentSchema, PromotionSelectionSchema } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "./postgres.js";
 import { validatePromotionSelection, type PromotionSelectionPorts } from "./promotion-selection.js";
 

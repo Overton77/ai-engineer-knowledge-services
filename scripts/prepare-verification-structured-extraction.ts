@@ -6,7 +6,7 @@ import { VerificationAdmissionService } from "../packages/application/src/verifi
 import { StructuredExtractionProfileAdmission } from "../packages/application/src/verification/operations/verification-structured-extraction-profile.js";
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, registeredProvider, sha256Digest } from "@aiengineer/knowledge-verification";
 
 const pgUrl=process.env.POSTGRES_URL!,storageUrl=process.env.SUPABASE_URL!;

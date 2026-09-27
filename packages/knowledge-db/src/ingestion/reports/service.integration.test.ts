@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ArtifactLedger, sha256Hex } from "../../db-read/index.js";
 import { TenantPostgres } from "@aiengineer/knowledge-persistence";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { afterAll, describe, expect, it } from "vitest";
 import { REPORT_BUCKET, ReportService } from "./service.js";
 import { ReportStructureSchema } from "./structure.js";

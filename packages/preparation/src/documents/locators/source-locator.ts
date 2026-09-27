@@ -1,5 +1,5 @@
 import { SourceLocatorSchema, type DocumentNode, type SourceLocator } from "@aiengineer/knowledge-contracts";
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import type { StructuralBlock } from "../types.js";
 
 // A locator carries the digest of the text it points at, so a later reader can

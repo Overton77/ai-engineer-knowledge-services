@@ -1,7 +1,7 @@
 import { JsonValueSchema, PromotionProposalInputSchema, PromotionSelectionAuthoritySchema, PromotionSelectionSchema, UuidSchema, VectorSpaceSchema } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { PostgresKnowledgeOperationService, PostgresGovernedIndexRepository, PostgresVectorStoreLifecycleRepository, validatePromotionSelection } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { z } from "zod";
 import { createProductionActivityRegistry, createCanonicalActivityExecutor } from "../../worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../../worker/src/canonical-worker.js";

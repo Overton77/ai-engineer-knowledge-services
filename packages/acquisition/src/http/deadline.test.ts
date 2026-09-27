@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { ExactHttpAcquisitionAdapter } from "./adapter.js";
 
 const request = {

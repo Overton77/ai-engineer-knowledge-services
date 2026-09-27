@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { CanonicalActivityError } from "./activity-registry.js";
 import { verificationBenchmarkComparisonActivityHandler } from "./verification-benchmark-comparison-activity.js";

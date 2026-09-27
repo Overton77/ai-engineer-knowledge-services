@@ -5,7 +5,7 @@ import {
   RegisteredBenchmarkPublicationBuilder,
 } from "@aiengineer/knowledge-application";
 import { PostgresVerificationBenchmarkPublisher, PostgresVerificationBenchmarkRunStore, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createEd25519Signer } from "@aiengineer/knowledge-verification";
 import { verificationBenchmarkActivityHandler } from "./verification-benchmark-activity.js";
 

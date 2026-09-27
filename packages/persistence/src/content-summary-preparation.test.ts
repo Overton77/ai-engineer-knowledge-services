@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { persistPreparedContentSummary, type PreparedContentSummaryInput } from "./content-summary-preparation.js";
 import type { TenantSqlClient } from "./postgres.js";
 

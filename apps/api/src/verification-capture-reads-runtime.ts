@@ -2,7 +2,7 @@ import { VerificationAdmissionService, VerificationCaptureReadApplicationService
 import { UuidSchema, type Actor } from "@aiengineer/knowledge-contracts";
 import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCaptureReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";
 
 /** Authorizes the actor before reading immutable capture custody; it cannot fetch or parse sources. */

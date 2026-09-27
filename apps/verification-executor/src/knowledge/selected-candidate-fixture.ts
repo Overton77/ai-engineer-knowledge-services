@@ -10,12 +10,12 @@ import { IngestionIntentSchema, contentEvidenceAssessmentDigest, deterministicId
   type ContentLinkReceipt } from "@aiengineer/knowledge-db";
 import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { PostgresCanonicalRepository, PostgresGovernedIndexRepository, PostgresKnowledgeOperationService,
   PostgresPreparationRepository, TenantPostgres, type GovernedProjectionProposal, type GovernedPublishedAnswer,
   type GovernedPublicationBaselineComparison, type GovernedSelectedCandidateResult, type PersistedPreparationArtifact,
   type PromotionSelectionConfiguration, type PublishedQueryMode } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson, verifyAssertionSemantics } from "@aiengineer/knowledge-verification";
 import { withSnapshot } from "../../../../packages/knowledge-db/test/ingestion/snapshot-fixture.mjs";
 import { contentLinkEffect } from "../../../../packages/knowledge-db/src/ingestion/content-links/operations.js";

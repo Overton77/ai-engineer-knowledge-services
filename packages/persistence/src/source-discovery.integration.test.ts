@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { SupabaseArtifactStore, deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { SourceDiscoveryApplicationService, type SourceDiscoveryCustody, type SourceDiscoveryHost } from "@aiengineer/knowledge-application";
 import { ManagedSourceDiscoveryRequestSchema, ImportedSourceDiscoveryReceiptSchema, SourceDiscoveryCompletionEnvelopeSchema, type VerificationArtifactHandle, type SourceDiscoveryResult } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";

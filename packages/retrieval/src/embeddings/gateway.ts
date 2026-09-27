@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { AI_GATEWAY_BASE_URL, DEFAULT_EMBEDDING_DIMENSIONS, DEFAULT_EMBEDDING_MODEL } from "./types.js";
 import type {
   EmbedBatchReceipt,

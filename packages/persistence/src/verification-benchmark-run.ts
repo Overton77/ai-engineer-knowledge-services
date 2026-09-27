@@ -1,5 +1,5 @@
 import { VerificationArtifactHandleSchema, VerificationBenchmarkCaseResultSchema, type VerificationArtifactHandle, type VerificationBenchmarkCaseResult } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import type { LeasedStep } from "./types.js";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";

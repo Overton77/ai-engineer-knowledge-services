@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { ArtifactLedger, canonicalJson, ReadExecutor } from "../../db-read/index.js";
 import { TenantPostgres, type TenantSqlClient, type TransactionScope } from "@aiengineer/knowledge-persistence";
-import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
+import { LocalArtifactStore } from "@aiengineer/knowledge-core";
 import { loadWorkspace } from "../../schema-workspace/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { classifyFailure, IngestionExecutor } from "../executor.js";

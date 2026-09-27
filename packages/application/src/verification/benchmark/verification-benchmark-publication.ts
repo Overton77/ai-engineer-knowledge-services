@@ -1,7 +1,7 @@
 import { UuidSchema, VerificationArtifactHandleSchema, VerificationBenchmarkPublicationManifestSchema, type VerificationArtifactHandle, type VerificationBenchmarkPublicationManifest } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { createVerificationBenchmarkCheckpointPlan, summarizeVerificationBenchmark, verificationBenchmarkDigest, type VerificationBenchmarkRun } from "@aiengineer/knowledge-evaluation";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sealVerificationBenchmarkPublication, sha256Digest, type AuditBundleSigner, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { assertRegisteredOfflineBenchmarkPreparation, type RegisteredOfflineBenchmarkPreparation } from "./verification-benchmark-offline-executor.js";
 import type { VerificationSealPolicyCatalog } from "../admission/verification-seal-policy.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import type { AuthoritativeClaim } from "../evidence-admission.js";
 import { authenticateCanonicalContentEvidence, contentEvidenceAssessmentDigest, type SealedContentClaim } from "./evidence.js";

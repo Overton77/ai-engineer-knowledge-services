@@ -1,5 +1,5 @@
 import type { DocumentNode, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { ChunkProfile } from "../types.js";
 import { CHUNK_PROFILE_TABLE } from "./definitions.js";
 

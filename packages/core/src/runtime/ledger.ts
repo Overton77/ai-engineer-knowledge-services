@@ -1,5 +1,5 @@
 import type { JsonValue } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "../domain/index.js";
 import { deterministicUuid } from "./artifacts.js";
 
 export type OperationState =

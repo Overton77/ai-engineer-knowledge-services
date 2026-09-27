@@ -1,7 +1,7 @@
 import {OperationContextSchema,UuidSchema,VerificationAdjudicationDecisionRequestSchema,VerificationAdjudicationDecisionResultSchema,VerificationAdjudicationDecisionTerminalResourceSchema,VerificationArtifactHandleSchema} from "@aiengineer/knowledge-contracts";
 import type {VerificationAdjudicationReadService} from "@aiengineer/knowledge-application";
 import {canonicalizeJson,digestCanonicalJson,sha256Digest,type TrustedArtifactResolver} from "@aiengineer/knowledge-verification";
-import {deterministicUuid} from "@aiengineer/knowledge-runtime";
+import {deterministicUuid} from "@aiengineer/knowledge-core";
 import {z} from "zod";
 import type {PostgresCanonicalRepository} from "./postgres.js";
 type Row=Record<string,any>;

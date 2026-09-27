@@ -6,7 +6,7 @@ import {
   type EveRuntimeAttestationEnvelope,
   type EveRuntimeAttestationPayload,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalJson } from "@aiengineer/knowledge-domain";
+import { canonicalJson } from "../domain/index.js";
 
 const HEADER_MAXIMUM_BYTES = 8_192;
 const DOMAIN = "knowledge-services:eve-runtime-attestation.v1\n";

@@ -12,7 +12,7 @@ import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { ClaimsIntentSchema, PolicyDefinitionInputSchema } from "./intents.js";
 import { PostgresCanonicalRepository, PostgresDurableVerificationRecoveryStore } from "@aiengineer/knowledge-persistence";
 import { DurableVerificationRecoveryService } from "@aiengineer/knowledge-application";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createRootCoverageEvaluator, RootCoverageScopeSchema, type RootCoverageScope } from "./root-host-coverage.js";
 import { createVerificationReceiptRecorder } from "./root-host-verification-receipts.js";
 import { readVerificationAccounting, retainVerificationAccounting, selectVerificationAccounting, type RunUsageReader } from "./root-host-accounting.js";

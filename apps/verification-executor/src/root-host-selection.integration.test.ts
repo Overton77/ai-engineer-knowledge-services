@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { ArtifactLedger } from "@aiengineer/knowledge-db";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../packages/persistence/test/disposable.mjs";
 import { createSelectedCandidateFixture, FIXTURE_POLICY_DIGEST } from "./knowledge/selected-candidate-fixture.js";
 import { createCanonicalEvidenceReader } from "./evidence-reader.js";

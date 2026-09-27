@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { digestBytes } from "@aiengineer/knowledge-runtime";
+import { digestBytes } from "@aiengineer/knowledge-core";
 import { observeSealedCapture, readSealedCapture, searchSealedCapture } from "./index.js";
 
 const text = "Public statement. token = \"super-secret-value\". Public statement.";

@@ -11,7 +11,7 @@ import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { VerificationBenchmarkComparisonResourceSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 
 type WorkerReceipt = {

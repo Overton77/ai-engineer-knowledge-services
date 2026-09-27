@@ -1,4 +1,4 @@
-import type { StoredArtifact } from "@aiengineer/knowledge-runtime";
+import type { StoredArtifact } from "@aiengineer/knowledge-core";
 
 export type ConversionNodeKind =
   | "document"

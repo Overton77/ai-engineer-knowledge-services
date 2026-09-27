@@ -1,8 +1,8 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type {
   ArtifactStore,
   StoredArtifact,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import {
   assertSafeHttpUrl,
   type DnsResolver,

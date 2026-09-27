@@ -18,9 +18,8 @@
   "dependencies": {
     "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz",
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
-    "@aiengineer/knowledge-runtime": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { GatewayStructuredExtractionProvider, InterfazeStructuredExtractionProvider, ProviderFailure, canonicalizeJson, providerDigest, sha256Digest, type ProviderArtifactSink, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { StructuredExtractionProfileAdmission, type PreparedStructuredExtraction } from "./verification-structured-extraction-profile.js";
 import { VerificationProviderTransportResponseSchema, prepareVerificationProviderTransportResponse } from "./verification-provider-transport.js";
 const digest=z.string().regex(/^sha256:[a-f0-9]{64}$/u);

@@ -14,7 +14,7 @@ import {
 } from "@aiengineer/knowledge-application";
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationMetricRuntimePrincipals, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, projectionSelectorResolver, sha256Digest, type VerificationArtifactHandle } from "@aiengineer/knowledge-verification";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";

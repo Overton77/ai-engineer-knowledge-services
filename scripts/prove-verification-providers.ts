@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { canonicalizeJson, providerDigest, sha256Digest, GatewaySemanticJudgeAdapter, GatewayStructuredExtractionProvider, InterfazeStructuredExtractionProvider, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, ProviderFailure } from "@aiengineer/knowledge-verification";
 import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 type PilotBudget = { readonly schemaVersion: "verification-provider-pilot-budget.v1"; readonly tenantId: string; readonly budgetId: string; readonly budgetKey: string; readonly ceilingCostMicros: number; readonly currency: "USD"; readonly immutable: string; };
 type Usage = { readonly costMicros?: number; readonly promptTokens?: number; readonly completionTokens?: number; readonly totalTokens?: number };

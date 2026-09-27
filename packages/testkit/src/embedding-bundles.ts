@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 
 export const EMBEDDING_BUNDLE_SCHEMA_VERSION = "ai-engineer-embedding-bundle/0.1.0" as const;
 export const EMBEDDING_BUNDLE_FIXTURE_VERSION = "embedding-bundle-seed-2026-09-01" as const;

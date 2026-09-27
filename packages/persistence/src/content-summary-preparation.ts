@@ -1,4 +1,4 @@
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { JsonValueSchema } from "@aiengineer/knowledge-contracts";
 import type { TenantSqlClient } from "./postgres.js";
 import { readContentRepresentationAdmission } from "./content-representation-admission.js";

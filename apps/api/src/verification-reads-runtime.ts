@@ -1,6 +1,6 @@
 import { VerificationCaseReadService, VerificationRunReadService } from "@aiengineer/knowledge-application";
 import { PostgresVerificationCaseReads, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 export function createVerificationReads(database:PostgresCanonicalRepository|undefined,environment:Readonly<Record<string,string|undefined>>){
   const enabled=environment.VERIFICATION_READS_ENABLED?.trim();

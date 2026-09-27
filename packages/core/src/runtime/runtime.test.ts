@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "../domain/index.js";
 import { InMemoryArtifactStore, InMemoryOperationLedger, LocalArtifactStore, SupabaseArtifactStore, digestBytes } from "./index.js";
 
 const context = { tenantId: "tenant-1", operationId: "op-1", attemptId: "attempt-1", correlationId: "corr-1", actor: "executor_service", capabilityVersion: "v1" };

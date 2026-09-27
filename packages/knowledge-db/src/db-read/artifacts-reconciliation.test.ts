@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { ArtifactLedger } from "./artifacts.js";
 
 const tenantId = "11111111-1111-4111-8111-111111111111";

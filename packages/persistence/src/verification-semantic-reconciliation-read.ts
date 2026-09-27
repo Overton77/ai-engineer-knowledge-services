@@ -1,6 +1,6 @@
 import { UuidSchema, VerificationArtifactHandleSchema, VerificationSemanticProviderReconciliationSchema } from "@aiengineer/knowledge-contracts";
 import type { SemanticProviderReconciliationAdmission } from "@aiengineer/knowledge-application";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import type { PostgresCanonicalRepository } from "./postgres.js";
 

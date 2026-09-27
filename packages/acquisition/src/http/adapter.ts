@@ -1,5 +1,5 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import type {
   AcquisitionAdapter,
   AcquisitionObservation,

@@ -1,7 +1,7 @@
 import { VerificationArtifactHandleSchema, VerificationStructuredExtractionExecutionSchema, type VerificationArtifactHandle, type VerificationStructuredExtractionExecution } from "@aiengineer/knowledge-contracts";
 import { structuredExtractionExecutionTransformationSignature } from "@aiengineer/knowledge-application";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { LeasedStep } from "./types.js";
 

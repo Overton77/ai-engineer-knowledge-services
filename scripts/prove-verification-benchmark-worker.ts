@@ -11,7 +11,7 @@ import { createVerificationOwnershipResolver } from "../apps/api/src/verificatio
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, createEd25519Verifier, verifyVerificationBenchmarkPublication } from "@aiengineer/knowledge-verification";
 import { parseVerificationBenchmarkRuntimeConfig } from "@aiengineer/knowledge-application";
 import { VerificationBenchmarkOperationResultSchema } from "@aiengineer/knowledge-contracts";

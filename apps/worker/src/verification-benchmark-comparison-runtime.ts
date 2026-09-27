@@ -1,6 +1,6 @@
 import {parseVerificationBenchmarkComparisonRuntimeConfig,VerificationBenchmarkComparisonApplicationService,RegisteredBenchmarkComparisonPublicationBuilder} from "@aiengineer/knowledge-application";
 import {PostgresVerificationRepository,PostgresVerificationBenchmarkReadRepository,PostgresVerificationBenchmarkComparisonStore,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {createEd25519Signer,createEd25519Verifier} from "@aiengineer/knowledge-verification";
 import {verificationBenchmarkComparisonActivityHandler} from "./verification-benchmark-comparison-activity.js";
 

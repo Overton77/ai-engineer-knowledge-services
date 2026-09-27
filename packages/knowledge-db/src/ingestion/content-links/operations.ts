@@ -1,6 +1,6 @@
 import { ContentLinkOperationSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { canonicalJson } from "../../db-read/index.js";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
 import { deterministicId } from "../plan.js";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SourceLocator } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { createProjection } from "../projection/index.js";
 import type { ProjectionInput } from "../types.js";
 import { validateEvidenceSupport } from "./evidence-support.js";

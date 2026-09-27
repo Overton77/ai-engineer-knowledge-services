@@ -1,8 +1,9 @@
 {
-  "name": "@aiengineer/knowledge-domain",
+  "name": "@aiengineer/knowledge-core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "Provides shared digest, identity, runtime ledger, artifact, and observability primitives.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

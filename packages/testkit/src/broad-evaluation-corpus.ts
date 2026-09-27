@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { auditDatasetPartitions, createExperimentMatrix, evaluatePromotionGate, evaluationCandidateManifestDigest, freezeEvaluationDataset, proveRollback, runExperimentMatrix, type EvaluationCaseInput, type EvaluationCaseOutput, type EvaluationDatasetInput, type EvaluationDomain, type EvaluationPartition, type EvaluationReviewArtifact, type ExperimentResult, type FrozenEvaluationCase, type FrozenEvaluationDataset, type PromotionGateResult, type QueryClass, type RollbackProof } from "@aiengineer/knowledge-evaluation";
 import { retrieve, type GraphEdge, type ImmutableEvidencePacket, type RetrievalFilter, type RetrievalPolicy, type RetrievalRecord, type RetrievalStages } from "@aiengineer/knowledge-retrieval";
 import { loadEmbeddingBundles, type EmbeddingBundle } from "./embedding-bundles.js";

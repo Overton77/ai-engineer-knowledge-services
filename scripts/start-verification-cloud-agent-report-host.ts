@@ -7,7 +7,7 @@ import { VerificationArtifactHandleSchema, VerificationReportLedgerSchema, type 
 import { loadDiagnosticsV1ProviderGrant, VerificationAdmissionService, VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
 import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationClaimsReportReads } from "../apps/api/src/verification-claims-report-reads-runtime.js";

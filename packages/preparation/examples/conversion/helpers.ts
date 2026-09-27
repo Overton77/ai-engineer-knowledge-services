@@ -1,4 +1,4 @@
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import type {
   ConversionOutput,
   ConversionRequest,

@@ -54,7 +54,7 @@ import {
 import {
   SupabaseArtifactStore,
   type ArtifactStore,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import {
   createCanonicalActivityExecutor,
   createProductionActivityRegistry,

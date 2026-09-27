@@ -18,7 +18,7 @@ import {
   PostgresVerificationClaimsRuntimePrincipals,
   PostgresVerificationRepository,
 } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   createEd25519Verifier,
   digestCanonicalJson,

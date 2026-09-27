@@ -9,7 +9,7 @@ import {
   type VerificationBenchmarkDataset,
   type VerificationBenchmarkExperimentDefinition,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 

@@ -1,5 +1,5 @@
 import type { DocumentNode } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { ChunkProfile, ChunkQaResult, PreparedChunk } from "../types.js";
 
 export function reconstructChunk(chunk: PreparedChunk, nodes: readonly DocumentNode[]): string {

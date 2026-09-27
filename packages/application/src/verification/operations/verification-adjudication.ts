@@ -12,8 +12,8 @@ import {
   type VerificationArtifactHandle,
   type VerificationAuditInspectionResult,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deepFreeze } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 

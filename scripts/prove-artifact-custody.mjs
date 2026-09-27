@@ -10,7 +10,7 @@ const databaseUrl = disposableDatabaseUrl({ ...process.env, KS_REQUIRE_CURRENT_S
 const storage = disposableStorageConfig({ ...process.env, KS_REQUIRE_CURRENT_SCHEMA: "1" });
 const output = resolve(process.env.KS_CUSTODY_PROOF_OUTPUT); mkdirSync(output, { recursive: true });
 const selections = [
-  { name: "runtime", package: "@aiengineer/knowledge-runtime", tests: ["src/runtime.test.ts", "src/artifacts-missing-object.test.ts"] },
+  { name: "runtime", package: "@aiengineer/knowledge-core", tests: ["src/runtime.test.ts", "src/artifacts-missing-object.test.ts"] },
   { name: "registration", package: "@aiengineer/knowledge-persistence", tests: ["src/verification-artifact-registration.test.ts", "src/verification-fenced-artifact.test.ts"] },
   { name: "executor", package: "@aiengineer/knowledge-verification-executor", tests: ["src/store-custody.test.ts", "src/store-custody.integration.test.ts", "src/serve.test.ts", "src/knowledge/evidence-oracle.test.ts"] },
 ];

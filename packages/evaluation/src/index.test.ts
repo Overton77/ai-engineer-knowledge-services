@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import {
   MAX_HUMAN_REVIEW_EVIDENCE_CHARS, assertCanonicalGate5HumanReviewPacket, bindHumanReviewReferences, createEvaluationReviewArtifact, createExperimentMatrix, createHumanReviewReferenceCases, createHumanReviewSamplePacket, createHumanReviewSubmissionTemplate, evaluatePromotionGate, evaluateRetrieval, freezeEvaluationDataset, proveRollback, runExperimentMatrix, validateHumanReviewSubmission,
   type EvaluationCaseOutput, type EvaluationDatasetInput, type PromotionGateDefinition,

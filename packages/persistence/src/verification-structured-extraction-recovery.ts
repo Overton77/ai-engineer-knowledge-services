@@ -8,7 +8,7 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import { createStructuredExtractionOperationResult, createStructuredExtractionFailureOperationResult } from "@aiengineer/knowledge-application";
 import { canonicalizeJson, sha256Digest, type TrustedArtifactResolver, type AuditBundleSignatureVerifier } from "@aiengineer/knowledge-verification";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";
 import type { LeasedStep } from "./types.js";
 

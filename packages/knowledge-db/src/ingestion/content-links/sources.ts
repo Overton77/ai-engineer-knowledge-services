@@ -1,5 +1,5 @@
 import type { ContentLinkOperation, JsonValue } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger } from "../../db-read/index.js";
 import { readContentRepresentationAdmission, type TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { domainError } from "../../schema-workspace/index.js";

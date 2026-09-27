@@ -1,5 +1,5 @@
 import { VerificationArtifactHandleSchema, VerificationBenchmarkDatasetSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import type { LeasedStep } from "./types.js";
 import type { PostgresCanonicalRepository, TenantSqlClient } from "./postgres.js";

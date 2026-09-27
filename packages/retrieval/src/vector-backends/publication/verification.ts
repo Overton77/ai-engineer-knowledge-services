@@ -1,4 +1,4 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { CANONICAL_EMBEDDING_DIMENSIONS, VectorBackendError } from "../types.js";
 import type { Digest, ExploratoryPublication, PublicationInspection, PublicationManifests, ReconciliationFinding } from "./types.js";
 

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { LeasedStep, PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { VerificationStructuredExtractionFailureResultSchema, type OperationKind } from "@aiengineer/knowledge-contracts";
 import { activityFailureClass, CanonicalActivityError, retryableActivityFailure } from "./activity-registry.js";

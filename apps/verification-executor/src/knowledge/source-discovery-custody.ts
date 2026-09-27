@@ -1,7 +1,7 @@
 import type { SourceDiscoveryCustody } from "@aiengineer/knowledge-application";
 import { SourceDiscoveryCompletionEnvelopeSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import type { FilesystemStore } from "../store.js";
 import { assertSameArtifact, validateStoredArtifact, type ArtifactCustody } from "../store-custody.js";
 import { validateManagedDiscoveryRequest } from "./source-discovery-host.js";

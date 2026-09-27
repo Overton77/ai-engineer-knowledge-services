@@ -9,7 +9,7 @@ import {randomUUID,generateKeyPairSync,createHash} from "node:crypto";
 import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {PostgresCanonicalRepository,PostgresVerificationRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {VerificationArtifactHandleSchema,VerificationProviderReconciliationSchema} from "@aiengineer/knowledge-contracts";
 import {ProviderReconciliationAdmission,providerReconciliationParents,providerReconciliationTransformationSignature} from "@aiengineer/knowledge-application";
 import {canonicalizeJson,digestCanonicalJson,createEd25519Signer,createEd25519Verifier} from "@aiengineer/knowledge-verification";

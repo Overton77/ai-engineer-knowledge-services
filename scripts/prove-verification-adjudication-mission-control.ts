@@ -7,7 +7,7 @@ import { VerificationAdjudicationTerminalResourceSchema,VerificationClaimsOperat
 import { VerificationAdmissionService,VerificationAuditInspectionGrantCatalog,VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
 import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository,PostgresVerificationAdjudicationRepository,PostgresKnowledgeOperationService,PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson,digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationAdjudicationReads } from "../apps/api/src/verification-adjudication-reads-runtime.js";

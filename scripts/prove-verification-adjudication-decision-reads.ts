@@ -11,7 +11,7 @@ import {VerificationClaimsOperationResultSchema,VerificationReportOperationResul
 import {VerificationAdmissionService,VerificationAuditInspectionGrantCatalog,VerificationClaimsProjectionGrantCatalog,VerificationAdjudicationReadService} from "@aiengineer/knowledge-application";
 import {VERIFICATION_PARSER_LIMITS} from "@aiengineer/knowledge-preparation";
 import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresVerificationAdjudicationReadRepository} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,digestCanonicalJson} from "@aiengineer/knowledge-verification";
 import {createVerificationAdjudicationRequestService} from "../apps/worker/src/verification-adjudication-runtime.js";
 const proofPath=resolve(process.argv[2]??"../internal/verification-claims-report-worker-22c6b3e4-b5d6-4d34-923b-4846e37fdfaa.json");

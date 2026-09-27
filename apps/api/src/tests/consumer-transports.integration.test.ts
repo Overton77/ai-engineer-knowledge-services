@@ -9,7 +9,7 @@ import {
   EvidencePacketSchema,
   type RetrievalPlan,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { apiOwnedOperationKinds } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import {

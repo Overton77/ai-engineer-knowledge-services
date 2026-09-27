@@ -1,4 +1,4 @@
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { exactScore, ftsScore, score, tokenize, trigramScore } from "./lexical/index.js";
 import { buildRetrievalPlan } from "./plan/index.js";
 import { compareCandidate, rrfContribution, sum } from "./rerank/index.js";

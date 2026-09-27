@@ -1,5 +1,5 @@
 import type { TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import { domainError, infrastructureError } from "../schema-workspace/index.js";
 import { canonicalJson, sha256Hex, type Digest } from "./canonical.js";
 import { uuidv7 } from "./uuid.js";

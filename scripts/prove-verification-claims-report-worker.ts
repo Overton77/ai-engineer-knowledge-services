@@ -19,7 +19,7 @@ import {
   PostgresVerificationRepository,
   type LeasedStep,
 } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   VerificationAdmissionService,
   VerificationClaimsApplicationService,

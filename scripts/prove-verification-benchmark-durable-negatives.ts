@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { VerificationBenchmarkCaseResultSchema } from "@aiengineer/knowledge-contracts";
 import { createVerificationBenchmarkCheckpointPlan, verificationBenchmarkDigest } from "../packages/evaluation/src/verification-benchmark.js";
 import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-inputs.js";

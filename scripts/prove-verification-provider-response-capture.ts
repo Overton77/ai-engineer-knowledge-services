@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "../packages/persistence/src/index.js";
 import { PostgresVerificationProviderAccounting } from "../packages/persistence/src/verification-provider-accounting.js";
 import { PostgresVerificationProviderResponseCaptureStore } from "../packages/persistence/src/verification-provider-response-capture.js";
-import { SupabaseArtifactStore } from "../packages/runtime/src/artifacts.js";
+import { SupabaseArtifactStore } from "../packages/core/src/runtime/artifacts.js";
 import { AccountedVerificationProviderSink, VerificationProviderArtifactComposer } from "../packages/application/src/verification/operations/verification-provider.js";
 import { GatewayStructuredExtractionProvider } from "../packages/verification/src/providers/gateway.js";
 import { canonicalizeJson } from "../packages/verification/src/index.js";

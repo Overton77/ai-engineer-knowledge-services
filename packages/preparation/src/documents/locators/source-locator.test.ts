@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { convertStructuralDocument } from "../nodes/index.js";
 import { createSourceLocator, locatorDigestValue, reconstructNodeSpan, verifyNodeLocators } from "./source-locator.js";
 

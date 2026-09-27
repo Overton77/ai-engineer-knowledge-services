@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { VerificationAdmissionService, VerificationServiceCatalog, TrustedVerificationSourceAcquirer, VerificationSourceAcquisitionCatalog } from "@aiengineer/knowledge-application";
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { sha256Digest } from "@aiengineer/knowledge-verification";
 import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";

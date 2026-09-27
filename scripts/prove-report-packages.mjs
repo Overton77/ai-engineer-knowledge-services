@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ArtifactLedger } from "../packages/knowledge-db/dist/index.js";
 import { TenantPostgres } from "../packages/persistence/dist/index.js";
-import { SupabaseArtifactStore } from "../packages/runtime/dist/index.js";
+import { SupabaseArtifactStore } from "../packages/core/dist/index.js";
 import { REPORT_BUCKET, ReportService } from "../packages/knowledge-db/dist/index.js";
 
 const projectRef = "wkythqbofmckbuoothhn";

@@ -1,4 +1,4 @@
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { normalize } from "../lexical/index.js";
 import { assertAdmittedSpaces, inferSpaces } from "../spaces/index.js";
 import type {

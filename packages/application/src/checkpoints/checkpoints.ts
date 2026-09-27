@@ -7,7 +7,7 @@ import {
   type CheckpointScope, type CheckpointTombstoneRequest, type VerificationArtifactHandle,
 } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { CheckpointCustody, CheckpointOperationReconciler, CheckpointPolicy, CheckpointStore } from "./checkpoints-ports.js";
 export type { CheckpointCustody, CheckpointOperationReconciler, CheckpointPolicy, CheckpointStore, CheckpointStoredRecord } from "./checkpoints-ports.js";
 export function checkpointScopeId(scope: CheckpointScope): string {

@@ -5,7 +5,7 @@ import {
   EvidencePacketSchema,
   type EvidencePacket,
 } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import {
   PostgresCanonicalRepository,
@@ -18,7 +18,7 @@ import {
   deterministicUuid,
   digestBytes,
   type ArtifactDigest,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import {
   EMBEDDING_BUNDLE_VIDEO_IDS,
   loadEmbeddingBundles,

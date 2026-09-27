@@ -1,5 +1,5 @@
 import type { ModelAuthoredProposal, PromotionDecision, PromotionGateResult } from "@aiengineer/knowledge-contracts";
-import { assertDecisionAuthority, DomainInvariantError } from "@aiengineer/knowledge-domain";
+import { assertDecisionAuthority, DomainInvariantError } from "@aiengineer/knowledge-core";
 
 export function validatePromotionDecision(proposal: ModelAuthoredProposal, decision: PromotionDecision, gates: readonly PromotionGateResult[]): void {
   assertDecisionAuthority(proposal, decision);

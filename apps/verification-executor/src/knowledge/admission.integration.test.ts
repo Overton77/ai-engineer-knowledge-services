@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ArtifactLedger, ReadExecutor } from "@aiengineer/knowledge-db";
 import { IngestionExecutor, IngestionIntentSchema, proposalEffect } from "@aiengineer/knowledge-db";
 import { PostgresCanonicalRepository, TenantPostgres } from "@aiengineer/knowledge-persistence";
-import { LocalArtifactStore } from "@aiengineer/knowledge-runtime";
+import { LocalArtifactStore } from "@aiengineer/knowledge-core";
 import { loadWorkspace } from "@aiengineer/knowledge-db";
 import { type DeterministicVerificationResult, type VerificationBundle } from "@aiengineer/knowledge-contracts";
 import { digestCanonicalJson, sha256Digest, verifyAssertionSemantics } from "@aiengineer/knowledge-verification";

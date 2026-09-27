@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { EmbedManyRequest } from "./types.js";
 
 export function validateVector(vector: readonly number[], dimensions: number): void {

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { spawn,type ChildProcess } from "node:child_process";
 import { VerificationOperationApplicationService,parseVerificationBenchmarkRuntimeConfig } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository,PostgresKnowledgeOperationService,PostgresVerificationRepository,type LeasedStep } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore,deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore,deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson,sha256Digest } from "@aiengineer/knowledge-verification";
 
 const postgres=process.env.POSTGRES_URL!,storage=process.env.SUPABASE_URL!,key=process.env.SUPABASE_SECRET_KEY!;

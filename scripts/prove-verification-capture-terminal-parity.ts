@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { VerificationAdmissionService, VerificationServiceCatalog, VerificationOperationApplicationService, ParseArtifactApplicationService } from "@aiengineer/knowledge-application";
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { VerificationParseArtifactResultSchema } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";

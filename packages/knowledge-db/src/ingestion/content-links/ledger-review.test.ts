@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ContentLinkIntentSchema, type JsonValue } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger, ArtifactRecord, LineageEdge, PutArtifactInput } from "../../db-read/index.js";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { beginContentLedger, finishContentLedger, findContentLedger } from "./ledger.js";

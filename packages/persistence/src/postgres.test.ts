@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PostgresCanonicalRepository } from "./postgres.js";
 

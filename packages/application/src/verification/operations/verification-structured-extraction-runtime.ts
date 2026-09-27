@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {ExtractStructuredDataRequestSchema,VerificationStructuredExtractionRuntimeSchema,type ExtractStructuredDataRequest} from "@aiengineer/knowledge-contracts";
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {StructuredExtractionRuntimeGrantSchema} from "./verification-structured-extraction-profile.js";
 
 const schema=z.strictObject({schemaVersion:z.literal("verification-structured-extraction-runtime.v1"),tenantId:z.uuid(),

@@ -1,4 +1,4 @@
-import {deepFreeze} from "@aiengineer/knowledge-domain";
+import {deepFreeze} from "@aiengineer/knowledge-core";
 import {canonicalizeJson} from "@aiengineer/knowledge-verification";
 import type {ProviderReconciliationAdmission,AdmittedProviderReconciliation} from "@aiengineer/knowledge-application";
 import type {PostgresCanonicalRepository} from "./postgres.js";

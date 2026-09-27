@@ -1,7 +1,7 @@
 import { parseSemanticJudgeProfileCatalog, type SemanticJudgeProfileCatalog, type SemanticJudgeProfileGrant, type VerificationClaimsApplicationService } from "@aiengineer/knowledge-application";
 import { SemanticBlindedInputSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { createNativeSemanticGatewayCall, type PostgresCanonicalRepository, type PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson, prepareGatewaySemanticRequest, sha256Digest, type SemanticJudgeAdapter } from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 import { recoverySemanticProfiles } from "./verification-claims-recovery-profile.js";

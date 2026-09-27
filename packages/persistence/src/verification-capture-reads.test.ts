@@ -1,5 +1,5 @@
 import { KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION } from "@aiengineer/knowledge-application";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { describe, expect, it, vi } from "vitest";
 import { CaptureReadPersistenceError, PostgresCaptureReadRepository } from "./verification-capture-reads.js";

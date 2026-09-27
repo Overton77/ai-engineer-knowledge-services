@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { ExactHttpAcquisitionAdapter } from "./http/index.js";
 import { RoutedAcquisitionAdapter } from "./route.js";
 import { BoundedManualUploadAdapter } from "./upload/index.js";

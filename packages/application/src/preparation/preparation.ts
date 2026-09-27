@@ -1,10 +1,10 @@
 import type { DocumentNode, SourceLocator, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { chunkDocument, defaultChunkProfileRegistry, type ChunkingResult } from "@aiengineer/knowledge-preparation";
 import { DeterministicTextConversionProvider, type ConversionNode, type ConversionOutput } from "@aiengineer/knowledge-preparation";
 import { convertStructuralDocument, deterministicUuid, verifyNodeLocators, type StructuralBlock, type StructuralDocument } from "@aiengineer/knowledge-preparation";
 import { createProjection, type EvidenceSupport } from "@aiengineer/knowledge-retrieval";
-import { InMemoryArtifactStore, InMemoryOperationLedger, type ArtifactStore, type OperationContext } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore, InMemoryOperationLedger, type ArtifactStore, type OperationContext } from "@aiengineer/knowledge-core";
 
 export interface PreparationDocument { id: string; document_kind: string; title: string; canonical_url: string; source_role: "official" | "primary" | "authoritative_secondary"; publisher: string; source_class: string; target_vector_spaces: string[]; text: string; entity_slugs: string[] }
 export interface PreparationClaim { id: string; statement: string; claim_role: string; problem?: string; mechanism?: string; applicability?: string; limitations?: string; attribution: string; locator_excerpt: string; related_entities: string[] }

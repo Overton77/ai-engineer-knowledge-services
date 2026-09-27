@@ -3,8 +3,8 @@ import { PromotionSelectionApplication, type PromotionSelectionApplicationPorts,
 import { JsonValueSchema, OperationContextSchema, PromotionProposalInputSchema, PromotionSelectionAuthoritySchema,
   SelectedCandidateIndexInputSchema, Sha256DigestSchema, UuidSchema, VectorSpaceSchema,
   type PromotionProposalInput, type OperationKind } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { PostgresKnowledgeOperationService, sameActorIdentity, validatePromotionSelection, type PostgresCanonicalRepository,
   type PostgresGovernedIndexRepository, type PromotionSelectionArtifact, type PromotionSelectionConfiguration,
   type PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";

@@ -1,5 +1,5 @@
 import { UuidSchema, type VerificationArtifactHandle, type VerificationSource, type VerificationSourceCapture, type VerificationBenchmarkDataset } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { projectionSelectorResolver, sha256Digest } from "@aiengineer/knowledge-verification";
 import type { AdmittedOfflineBenchmarkInputs } from "./verification-benchmark-inputs.js";

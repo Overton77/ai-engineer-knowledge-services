@@ -36,7 +36,7 @@ import {
   type VerificationAdmissionRepositoryPort,
 } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   GatewaySemanticJudgeAdapter,

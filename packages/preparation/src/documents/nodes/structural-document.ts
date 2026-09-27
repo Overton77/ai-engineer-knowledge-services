@@ -1,5 +1,5 @@
 import { DocumentNodeSchema, type DocumentNode } from "@aiengineer/knowledge-contracts";
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { deterministicUuid } from "../identity/index.js";
 import { createSourceLocator, locatorDigestValue } from "../locators/index.js";
 import type { StructuralBlock, StructuralDocument, StructuralDocumentInput } from "../types.js";

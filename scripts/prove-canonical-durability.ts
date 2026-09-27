@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 
 const startedAt=new Date().toISOString();
 const proofRunNamespace=`gate6-canonical-durability-v7:${startedAt}:${randomBytes(8).toString("hex")}`;

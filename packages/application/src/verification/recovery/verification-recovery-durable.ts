@@ -6,7 +6,7 @@ import {
   type VerificationRecoveryPlan,
 } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, digestCanonicalJson } from "@aiengineer/knowledge-verification";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { composeVerificationFailureSet, admitVerificationRecoveryPlan, reconcileVerificationRecoveryReceipt,
   type VerificationRecoveryAuthority } from "./verification-recovery.js";
 import type { DurableRecoveryCheckpoints, DurableRecoveryCustody, DurableRecoveryEvidenceAuthority,

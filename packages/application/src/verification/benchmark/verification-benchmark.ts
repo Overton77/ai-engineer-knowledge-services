@@ -18,7 +18,7 @@ import { resolve } from "node:path";
 import type { DiagnosticsBenchmarkExtractionExperimentManifest, DiagnosticsBenchmarkExtractionOutput, DiagnosticsBenchmarkProviderObservation, SemanticJudgeOutput, VerificationArtifactHandle, VerificationBenchmarkArm, VerificationBenchmarkCase, VerificationBenchmarkCaseResult, VerificationBenchmarkDataset, VerificationSource, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import { DiagnosticsBenchmarkExtractionExperimentManifestSchema, DiagnosticsBenchmarkExtractionOutputSchema, DiagnosticsBenchmarkProviderObservationSchema, DiagnosticsBenchmarkSupportOutputSchema, SemanticJudgeOutputSchema, VerificationBenchmarkDatasetSchema } from "@aiengineer/knowledge-contracts";
 import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset, compareVerificationBenchmarkExperiment, runVerificationBenchmark, summarizeVerificationBenchmark, verificationBenchmarkDigest, type VerificationBenchmarkCheckpointStore, type VerificationBenchmarkRun } from "@aiengineer/knowledge-evaluation";
 import { admitExtractionSchema, gatewaySemanticPromptDigest, gatewaySemanticOutputSchemaDigest, projectionSelectorResolver, providerDigest, sha256Digest, verifyExtractionFields } from "@aiengineer/knowledge-verification";
 import { VerificationAdmissionService, type VerificationAdmissionRepositoryPort } from "../admission/verification-admission.js";

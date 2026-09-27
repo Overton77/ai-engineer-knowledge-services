@@ -1,5 +1,5 @@
 import type { DocumentNode } from "@aiengineer/knowledge-contracts";
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { deterministicUuid } from "../../documents/index.js";
 import { validateProfile } from "../profiles/index.js";
 import { validateChunks } from "../qa/index.js";

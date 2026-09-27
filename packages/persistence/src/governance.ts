@@ -1,5 +1,5 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { SelectedCandidateEvaluationInputSchema, SelectedCandidateIndexInputSchema, type SelectedCandidateEvaluationInput, type SelectedCandidateIndexInput } from "@aiengineer/knowledge-contracts";
 import type {
   GovernedCandidateEvaluation,GovernedEmbeddingContext,GovernedEmbeddingRun,GovernedIndexRepository,GovernedProjectionProposal,

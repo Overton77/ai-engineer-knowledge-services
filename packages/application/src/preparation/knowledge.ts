@@ -1,6 +1,6 @@
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { freezeEvaluationDataset,evaluateRetrieval,type EvaluationReport } from "@aiengineer/knowledge-evaluation";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { retrieve,type ImmutableEvidencePacket,type RetrievalPolicy,type RetrievalRecord } from "@aiengineer/knowledge-retrieval";
 import { InMemoryExactCosineBackend,type PublicationManifests } from "@aiengineer/knowledge-retrieval";
 import { KnowledgePreparationService,type VettedBundleInput } from "./preparation.js";

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { CheckpointApplicationService, VerificationClaimsApplicationService, VerificationSealPolicyCatalog, SemanticJudgeProfileCatalog } from "@aiengineer/knowledge-application";
 import { PostgresCanonicalRepository, PostgresVerificationRepository, PostgresClaimsReportReadRepository,
   PostgresVerificationClaimsRuntimePrincipals, PostgresCheckpointStore } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { createEd25519Signer, createEd25519Verifier, digestCanonicalJson, canonicalizeJson,
   gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest } from "@aiengineer/knowledge-verification";
 import { OperationContextSchema, VerificationRecoveryBatchSchema, type VerificationPolicyDefinition } from "@aiengineer/knowledge-contracts";

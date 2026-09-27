@@ -18,8 +18,8 @@ import {
   type OperationKind,
   type OperationStatus,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { PostgresCanonicalRepository } from "./postgres.js";
 import type { CanonicalOperationRecord, CanonicalStep } from "./types.js";
 

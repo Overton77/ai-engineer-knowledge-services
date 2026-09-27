@@ -1,5 +1,5 @@
 import { UuidSchema, VerificationClaimsOperationResultSchema, VerificationClaimsReportTerminalResourceSchema, VerificationReportOperationResultSchema, type VerificationArtifactHandle, type VerificationClaimsReportTerminalResource } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 export type VerificationClaimsReportReadState = "pending" | "failed" | "cancelled" | "succeeded";
 export interface VerifiedClaimsReportReadPort { loadVerifiedClaimsReport(tenantId:string,operationId:string):Promise<{readonly state:VerificationClaimsReportReadState;readonly result?:unknown;readonly reportGateArtifact?:VerificationArtifactHandle;readonly policyDecision?:{readonly outcome:"pass"|"pass_with_warnings"|"review"|"abstain"|"fail";readonly reasonCodes:readonly string[]}}>; }
 export type VerificationClaimsReportReadErrorCode="INVALID"|"NOT_FOUND"|"PENDING"|"FAILED"|"CANCELLED"|"INTEGRITY";

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 // Node ids must be stable across replays of the same representation, so they
 // are derived from content rather than generated. This one-argument helper is
 // duplicated by the two-argument `deterministicUuid(namespace, value)` in
-// packages/runtime/src/artifacts.ts; consolidating both into `domain` is
+// packages/core/src/runtime/artifacts.ts; consolidating both into `domain` is
 // deferred to Phase 3 (Phase 1 memo, decision P1-3) because it would touch
 // chunking, projections, application and runtime at once.
 export function deterministicUuid(value: string): string {

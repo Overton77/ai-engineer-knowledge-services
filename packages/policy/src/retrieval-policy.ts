@@ -1,5 +1,5 @@
 import type { RetrievalPlan, VectorSpace } from "@aiengineer/knowledge-contracts";
-import { DomainInvariantError } from "@aiengineer/knowledge-domain";
+import { DomainInvariantError } from "@aiengineer/knowledge-core";
 
 export interface RetrievalPolicy {
   allowedSpaces: readonly VectorSpace[];

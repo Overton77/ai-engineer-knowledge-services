@@ -1,7 +1,7 @@
 import { VerificationClaimsReportReadService } from "@aiengineer/knowledge-application";
 import { UuidSchema,type Actor,type VerificationClaimsTerminalResource,type VerificationReportTerminalResource } from "@aiengineer/knowledge-contracts";
 import { PostgresClaimsReportReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createEd25519Verifier } from "@aiengineer/knowledge-verification";
 import { parseBenchmarkReadPublicKeys } from "./verification-benchmark-reads-runtime.js";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { digestBytes } from "@aiengineer/knowledge-runtime";
+import { digestBytes } from "@aiengineer/knowledge-core";
 import { BoundedManualUploadAdapter } from "../src/index.js";
 import { exampleRequest, exampleStore, printJson } from "./helpers.js";
 

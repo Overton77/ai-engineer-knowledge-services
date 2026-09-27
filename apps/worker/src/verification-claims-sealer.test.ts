@@ -2,7 +2,7 @@ import { VerificationReportLedgerSchema, type OperationContext, type Verificatio
 import type { ClaimsVerificationResult, ReportVerificationResult } from "@aiengineer/knowledge-application";
 import { replayVerificationAudit, VerificationSealPolicyCatalog } from "@aiengineer/knowledge-application";
 import type { RegisterContentAddressedVerificationArtifactInput } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, inspectAuditBundle, sha256Digest, verifyDeterministicBundle, verifyReportWideFromLedger, type RuntimePrincipalBinding, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
 import { describe, expect, it } from "vitest";
 import { createVerificationClaimsAuditSealer, type ClaimsSealerOptions } from "./verification-claims-sealer.js";

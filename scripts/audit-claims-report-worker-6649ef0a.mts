@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createEd25519Verifier, inspectAuditBundle, sha256Digest } from "@aiengineer/knowledge-verification";
 const receiptPath=resolve("../internal/verification-claims-report-worker-6649ef0a-3f32-4360-9ee3-7e9fdd11f8e1.json");
 const receipt=JSON.parse(await readFile(receiptPath,"utf8"));

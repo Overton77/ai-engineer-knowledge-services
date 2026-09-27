@@ -1,4 +1,4 @@
-import type { StoredArtifact } from "@aiengineer/knowledge-runtime";
+import type { StoredArtifact } from "@aiengineer/knowledge-core";
 export type AcquisitionTarget =
   | { kind: "http"; url: string }
   | { kind: "upload"; uploadId: string; declaredOrigin: string }

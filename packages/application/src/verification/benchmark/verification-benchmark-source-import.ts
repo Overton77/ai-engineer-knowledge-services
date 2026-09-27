@@ -1,6 +1,6 @@
 import { UuidSchema, VerificationArtifactHandleSchema, VerificationSourceCaptureSchema, VerificationSourceSchema, type VerificationArtifactHandle, type VerificationSource, type VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import { VERIFICATION_PARSER_LIMITS, type VerificationParserOutput } from "@aiengineer/knowledge-preparation";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { z } from "zod";

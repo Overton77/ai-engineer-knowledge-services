@@ -1,5 +1,5 @@
 import { UuidSchema, VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset, verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
 import { sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
 import { admitDiagnosticsExtractionExperimentFiles, DIAGNOSTICS_PILOT_V4_SEAL, type DiagnosticsExtractionAuthority } from "./verification-benchmark.js";

@@ -9,7 +9,7 @@ import {
 } from "@aiengineer/knowledge-application";
 import { VerificationBenchmarkComparisonProfileSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresVerificationBenchmarkReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, createEd25519Verifier } from "@aiengineer/knowledge-verification";
 
 const postgres = process.env.POSTGRES_URL, projectUrl = process.env.SUPABASE_URL, serviceRoleKey = process.env.SUPABASE_SECRET_KEY;

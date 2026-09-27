@@ -9,7 +9,7 @@ import {
   type VerificationArtifactHandle,
   type VerificationArtifactReference,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   digestCanonicalJson,

@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { DoclingServeProvider, createDoclingServeClientFromEnvironment } from "@aiengineer/knowledge-preparation";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 
 const TENANT_ID = "00000000-0000-7000-8000-000000000001";
 const DOCLING_IMAGE = "ghcr.io/docling-project/docling-serve@sha256:f8b324448e7c9e66083049727aaa90e3e65e88f0d7796624597a29d04183198b";

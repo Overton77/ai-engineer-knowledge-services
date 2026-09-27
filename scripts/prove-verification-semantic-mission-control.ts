@@ -7,7 +7,7 @@ import { type Actor, type OperationContext, type VerifyClaimsRequest, type Verif
 import { loadDiagnosticsOfflineCatalog, loadDiagnosticsProviderGrant, createDiagnosticsProviderCaseInput, SemanticJudgeProfileSchema, VerificationAdmissionService, VerificationClaimsProjectionGrantCatalog } from "@aiengineer/knowledge-application";
 import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, prepareGatewaySemanticRequest, projectionSelectorResolver } from "@aiengineer/knowledge-verification";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationReads } from "../apps/api/src/verification-reads-runtime.js";

@@ -1,6 +1,6 @@
 import { ContentLinkOperationSchema, JsonValueSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, type ArtifactLedger, type ArtifactRecord } from "../../db-read/index.js";
-import { canonicalJson as exactCanonicalJson, sha256Digest } from "@aiengineer/knowledge-domain";
+import { canonicalJson as exactCanonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { persistPreparedContentSummary, readContentRepresentationAdmission, type TenantPostgres, type TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
 import { ContentSourceReader } from "./sources.js";

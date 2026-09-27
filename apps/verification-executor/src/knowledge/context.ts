@@ -9,7 +9,7 @@ import { ContentLinkExecutor, ContentSummaryPreparer, IngestionExecutor, ReportS
 import { createContentLinkAuthority } from "./content-links.js";
 import { TenantPostgres, PostgresCanonicalRepository, PostgresSourceDiscoveryStore, PostgresCheckpointStore, PostgresGovernedIndexRepository, PostgresClaimsReportReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SourceDiscoveryApplicationService, CheckpointApplicationService, type SourceDiscoveryHost } from "@aiengineer/knowledge-application";
-import { LocalArtifactStore, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-runtime";
+import { LocalArtifactStore, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { loadWorkspace, resolveWorkspaceDir, type Workspace } from "@aiengineer/knowledge-db";
 import { loadExecutorConfig, type VerificationExecutor } from "../executor.js";
 import { createExecutorCustody } from "../store-custody-postgres.js";

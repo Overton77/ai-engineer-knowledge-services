@@ -1,4 +1,4 @@
-import type { ArtifactStore } from "@aiengineer/knowledge-runtime";
+import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import { conversionRequestDigests } from "../artifacts.js";
 import { DOCLING_PROVIDER_KEY } from "../constants.js";
 import { isDoclingMediaType } from "../media-type.js";

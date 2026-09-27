@@ -4,12 +4,12 @@ import { FixtureAcquisitionAdapter } from "@aiengineer/knowledge-acquisition";
 import type { OperationContext, OperationKind } from "@aiengineer/knowledge-contracts";
 import { PromotionProposalInputSchema } from "@aiengineer/knowledge-contracts";
 import { DeterministicTextConversionProvider } from "@aiengineer/knowledge-preparation";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type {
   CanonicalOperationRecord, LeasedStep, PersistCaptureInput, PersistChunkSetInput, PersistedCapture,
   PersistedChunkSet, PersistedRepresentation, PersistRepresentationInput, PreparationRepository, RetrievalRepository,
 } from "@aiengineer/knowledge-persistence";
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { describe, expect, it, vi } from "vitest";
 import {
   CanonicalActivityError,

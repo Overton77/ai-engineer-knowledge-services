@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { digestBytes, InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { digestBytes, InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { BoundedManualUploadAdapter, type ManualUploadRecord } from "./adapter.js";
 import type { AcquisitionRequest } from "../types.js";
 

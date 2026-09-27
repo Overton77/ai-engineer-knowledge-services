@@ -11,7 +11,7 @@ import type { VerificationMetricServiceResult, VerificationSealPolicyCatalog } f
 import { VerificationMetricProfileSchema } from "@aiengineer/knowledge-application";
 import { evaluateVerificationPolicy } from "@aiengineer/knowledge-policy";
 import type { RegisterContentAddressedVerificationArtifactInput, VerificationRunLease } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   canonicalizeJson,
   digestCanonicalJson,

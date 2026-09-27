@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { ArtifactLedger } from "@aiengineer/knowledge-db";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { createPromotionSelectionPorts } from "./promotion-selection.js";
 
 const tenantId = randomUUID(), artifactId = randomUUID(), policyDigest = sha256Digest("pinned policy");

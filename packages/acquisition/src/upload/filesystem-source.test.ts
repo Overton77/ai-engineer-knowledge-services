@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { digestBytes, InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { digestBytes, InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import { BoundedManualUploadAdapter } from "./adapter.js";
 import { FilesystemManualUploadSource } from "./filesystem-source.js";
 

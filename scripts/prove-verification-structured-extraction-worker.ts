@@ -3,7 +3,7 @@ import {randomUUID,generateKeyPairSync,createHash} from "node:crypto";
 import {readFile,writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {PostgresCanonicalRepository,PostgresKnowledgeOperationService,PostgresVerificationRepository,type LeasedStep} from "@aiengineer/knowledge-persistence";
-import {SupabaseArtifactStore} from "@aiengineer/knowledge-runtime";
+import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {canonicalizeJson} from "@aiengineer/knowledge-verification";
 import {StructuredExtractionRuntimeGrantSchema,VerificationStructuredExtractionProducerProfileSchema,VerificationExtractionProfileSchema} from "@aiengineer/knowledge-application";
 import {createConfiguredVerificationStructuredExtractionHandler} from "../apps/worker/src/verification-structured-extraction-runtime.js";

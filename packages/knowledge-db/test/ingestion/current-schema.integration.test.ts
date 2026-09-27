@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { ArtifactLedger, ReadExecutor } from "../../src/db-read/index.js";
 import { PostgresCanonicalRepository, TenantPostgres } from "@aiengineer/knowledge-persistence";
-import { LocalArtifactStore, digestBytes } from "@aiengineer/knowledge-runtime";
+import { LocalArtifactStore, digestBytes } from "@aiengineer/knowledge-core";
 import { loadWorkspace } from "../../src/schema-workspace/index.js";
 import { describe, expect, it } from "vitest";
 import { disposableDatabaseUrl } from "../../../persistence/test/disposable.mjs";

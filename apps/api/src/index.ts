@@ -23,7 +23,7 @@ import { buildServer } from "./server.js";
 import { createCallbackSigningSecretResolver } from "./a2a-http.js";
 import { createGatewayEmbeddingAdapterFromEnvironment } from "@aiengineer/knowledge-retrieval";
 import { CanonicalRetrievalExecutor } from "./retrieval-executor.js";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { createVerificationReads } from "./verification-reads-runtime.js";
 import { createVerificationBenchmarkReads } from "./verification-benchmark-reads-runtime.js";
 import { createVerificationBenchmarkComparisonReads } from "./verification-benchmark-comparison-reads-runtime.js";

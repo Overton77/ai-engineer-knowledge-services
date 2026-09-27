@@ -3,8 +3,8 @@ import {
   type AcceptedOperation, type JsonValue, type MutationEnvelope, type OperationContext,
   type OperationKind, type OperationStatus,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { InMemoryOperationLedger, deterministicUuid, type ActivityReceipt, type Clock, type OperationLedgerSnapshot, type StepRecord } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { InMemoryOperationLedger, deterministicUuid, type ActivityReceipt, type Clock, type OperationLedgerSnapshot, type StepRecord } from "@aiengineer/knowledge-core";
 
 export const operationStepsByKind: Readonly<Record<OperationKind, readonly string[]>> = {
   source_discovery: ["discover"], source_resolution: ["resolve"], capture: ["acquire", "seal"], capture_inspection: ["inspect"], capture_comparison: ["compare"], source_vetting: ["vet"],

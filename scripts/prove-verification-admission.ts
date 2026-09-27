@@ -5,7 +5,7 @@ import { VerificationAdmissionService, OfflineBenchmarkInputCatalog, RegisteredB
 import { freezeVerificationBenchmarkDataset } from "../packages/evaluation/dist/index.js";
 import { SandboxedVerificationParser,VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository,PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { admitExtractionSchema,sha256Digest,canonicalizeJson } from "@aiengineer/knowledge-verification";
 
 const postgresUrl=process.env.POSTGRES_URL?.trim(),supabaseUrl=process.env.SUPABASE_URL?.trim(),secret=process.env.SUPABASE_SECRET_KEY?.trim();

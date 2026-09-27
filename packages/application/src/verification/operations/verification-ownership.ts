@@ -10,12 +10,12 @@ import {
   type OperationContext,
   type VerificationOperationContextHints,
 } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import {
   deterministicUuid,
   parseEveRuntimeAttestation,
   verifyEveRuntimeAttestation,
-} from "@aiengineer/knowledge-runtime";
+} from "@aiengineer/knowledge-core";
 import { createPublicKey } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";

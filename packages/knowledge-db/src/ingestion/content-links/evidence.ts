@@ -1,5 +1,5 @@
 import { canonicalJson } from "../../db-read/index.js";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { domainError } from "../../schema-workspace/index.js";
 import type { AuthoritativeClaim } from "../evidence-admission.js";

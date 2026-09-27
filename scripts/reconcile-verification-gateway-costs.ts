@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { boundedResponseBytes, canonicalizeJson, providerDigest, sha256Digest } from "@aiengineer/knowledge-verification";
 import { PostgresCanonicalRepository, PostgresVerificationProviderAccounting, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 
 const root = resolve("..");
 const originalPath = resolve(root, "internal", "verification-provider-live-conformance-6659519f-5a87-4422-86a6-cc8455631158.json");

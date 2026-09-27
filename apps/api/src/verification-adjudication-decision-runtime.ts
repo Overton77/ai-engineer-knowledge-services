@@ -1,7 +1,7 @@
 import { VerificationAdjudicationDecisionError, VerificationAdjudicationDecisionPreparationService } from "@aiengineer/knowledge-application";
 import { ActorSchema, UuidSchema, type Actor, type OperationContext, type VerificationAdjudicationDecisionRequest } from "@aiengineer/knowledge-contracts";
 import { PostgresVerificationAdjudicationDecisionPreparation, PostgresVerificationAdjudicationDecisionReadRepository, PostgresVerificationRepository, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { z } from "zod";
 import { allowsVerificationAdjudicationReadArtifact, createVerificationAdjudicationReads } from "./verification-adjudication-reads-runtime.js";
 import { createVerificationOperationReadAuthorizer } from "./verification-ownership.js";

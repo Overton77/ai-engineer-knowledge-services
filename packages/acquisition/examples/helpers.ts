@@ -1,4 +1,4 @@
-import { InMemoryArtifactStore } from "@aiengineer/knowledge-runtime";
+import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 import type { AcquisitionRequest } from "../src/index.js";
 
 export const publicResolver = { resolve: async () => ["93.184.216.34"] };

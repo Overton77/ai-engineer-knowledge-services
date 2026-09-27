@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import { PostgresPreparationRepository, PostgresGovernedIndexRepository } from "@aiengineer/knowledge-persistence";
 
 const POLICY = "synthetic-current-schema-fixture/v1";

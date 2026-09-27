@@ -1,4 +1,4 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type {
   PersistCaptureInput,
   PersistChunkSetInput,

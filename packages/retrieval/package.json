@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-domain": "workspace:*",
+    "@aiengineer/knowledge-core": "workspace:*",
     "@aiengineer/knowledge-preparation": "workspace:*"
   },
   "devDependencies": {

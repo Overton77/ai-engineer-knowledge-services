@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { VerificationCaptureReadApplicationService } from "./verification-capture-reads.js";
 

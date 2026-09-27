@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { DiagnosticsBenchmarkLiveCallCheckpointSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "@aiengineer/knowledge-verification";
 import { OfflineBenchmarkInputCatalog, RegisteredBenchmarkInputAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-inputs.js";
 import { RegisteredBenchmarkProfileCatalog, RegisteredBenchmarkProfileAdmission } from "../packages/application/src/verification/benchmark/verification-benchmark-registered-profile.js";

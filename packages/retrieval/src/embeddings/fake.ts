@@ -1,4 +1,4 @@
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import { DEFAULT_EMBEDDING_DIMENSIONS, DEFAULT_EMBEDDING_MODEL } from "./types.js";
 import type { EmbedBatchReceipt, EmbeddingAdapter, EmbedManyRequest, EmbedOneRequest, EmbedReceipt } from "./types.js";
 import { cacheKey, fakeVector, validateRequest, vectorDigest } from "./vectors.js";

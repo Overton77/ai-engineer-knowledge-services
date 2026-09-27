@@ -1,5 +1,5 @@
 import type { ServiceStatus } from "@aiengineer/knowledge-contracts";
-import { KNOWLEDGE_SERVICE_NAME } from "@aiengineer/knowledge-domain";
+import { KNOWLEDGE_SERVICE_NAME } from "@aiengineer/knowledge-core";
 
 export interface KnowledgeApplication {
   getStatus(): Promise<ServiceStatus>;

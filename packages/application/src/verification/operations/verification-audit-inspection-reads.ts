@@ -4,7 +4,7 @@ import {
   VerificationAuditInspectionResourceSchema,
   type VerificationAuditInspectionResource,
 } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 
 export type VerificationAuditInspectionReadState = "pending" | "failed" | "cancelled" | "succeeded";
 export interface VerifiedAuditInspectionReadPort {

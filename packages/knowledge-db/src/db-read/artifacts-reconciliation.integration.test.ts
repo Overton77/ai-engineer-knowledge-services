@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { TenantPostgres, type TenantSqlClient, type TransactionScope } from "@aiengineer/knowledge-persistence";
-import { SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { ArtifactLedger } from "./artifacts.js";
 import { canonicalJson, sha256Hex } from "./canonical.js";
 import { disposableDatabaseUrl, disposableStorageConfig } from "../../../persistence/test/disposable.mjs";

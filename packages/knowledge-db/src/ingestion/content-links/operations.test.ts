@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ContentLinkOperationSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
-import { sha256Digest } from "@aiengineer/knowledge-domain";
+import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { ContentSourceReader } from "./sources.js";
 import type { AuthenticatedContentEvidence } from "./types.js";

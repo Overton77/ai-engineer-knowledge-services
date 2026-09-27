@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { VerificationBenchmarkDatasetSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { assertFrozenVerificationBenchmarkDataset, verificationBenchmarkDigest } from "../packages/evaluation/dist/index.js";
 import { createVerificationArtifactHandle, PostgresCanonicalRepository, PostgresVerificationRepository, type RegisterContentAddressedVerificationArtifactInput } from "@aiengineer/knowledge-persistence";
-import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, providerDigest, sha256Digest } from "@aiengineer/knowledge-verification";
 
 type Json = Record<string, any>;

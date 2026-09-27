@@ -1,5 +1,5 @@
-import { sha256Digest } from "@aiengineer/knowledge-domain";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { sha256Digest } from "@aiengineer/knowledge-core";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import type { PostgresCanonicalRepository } from "./postgres.js";
 
 export interface ExploratoryFixtureRecord {

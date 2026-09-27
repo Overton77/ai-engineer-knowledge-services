@@ -1,4 +1,4 @@
-import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-domain";
+import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
 import type { EvidenceSupport, EvidenceValidationResult, ProjectionInput } from "../types.js";
 
 export function validateEvidenceSupport(input: ProjectionInput): EvidenceValidationResult {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { VerificationArtifactHandleSchema, type VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import { deepFreeze } from "@aiengineer/knowledge-domain";
+import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, sha256Digest, validateExtractionCandidate } from "@aiengineer/knowledge-verification";
 import type { PreparedStructuredExtraction } from "./verification-structured-extraction-profile.js";
 import { StructuredExtractionCapturedReplayService, type StructuredExtractionReplayResult } from "./verification-structured-extraction-replay.js";

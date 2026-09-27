@@ -28,7 +28,7 @@ import {
   type ReplayRunRequest,
   type ParseArtifactRequest,
 } from "@aiengineer/knowledge-contracts";
-import { deterministicUuid } from "@aiengineer/knowledge-runtime";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
 import {
   admitExtractionSchema,
   canonicalizeJson,
