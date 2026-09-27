@@ -150,7 +150,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   apps/cli:
     dependencies:
@@ -179,6 +179,34 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
+  apps/jev:
+    dependencies:
+      '@aiengineer/knowledge-application':
+        specifier: workspace:*
+        version: link:../../packages/application
+      '@aiengineer/knowledge-client':
+        specifier: workspace:*
+        version: link:../../packages/client-typescript
+      '@aiengineer/knowledge-contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.30.0(zod@4.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   apps/mcp:
     dependencies:
@@ -393,6 +421,9 @@ importers:
       '@aiengineer/knowledge-evaluation':
         specifier: workspace:*
         version: link:../evaluation
+      '@aiengineer/knowledge-jev':
+        specifier: workspace:*
+        version: link:../jev
       '@aiengineer/knowledge-policy':
         specifier: workspace:*
         version: link:../policy
@@ -657,6 +688,25 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.4.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+
+  packages/jev:
+    dependencies:
+      '@aiengineer/knowledge-contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)

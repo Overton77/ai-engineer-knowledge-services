@@ -5,7 +5,7 @@ This directory is the source of truth for the eleven versioned Knowledge Service
 but must not fork authority, evidence, tenant, or publication semantics.
 
 Every skill uses a public v1 surface: the platform HTTP/client and MCP tools, or the verification
-executor's `knowledge` CLI, HTTP routes and `/mcp`. None authorizes raw SQL beyond the guarded
+executor's `knowledge` CLI, HTTP routes and `/mcp`, or the Jev worker service's CLI, HTTP and MCP. None authorizes raw SQL beyond the guarded
 read-only capability, secrets, private bucket listing, direct vector writes, self-approval, or
 publication.
 
@@ -21,7 +21,7 @@ publication.
 | `knowledge-retrieval-and-evidence` | platform | Scoped retrieval plans, explanations and immutable evidence packets |
 | `knowledge-evaluation` | platform | Reviewed retrieval cases, ablations, release recommendations |
 | `vector-store-management` | platform | Store classes, ingestion, publication and rollback |
-| `jev-system-one` | external (TypeSafe API) | Jev typed decisions: contract, limits, question design, calibration, batch runs. Pre-integration; no platform surface yet |
+| `jev-system-one` | jev-cli, jev-mcp, jev-http | Jev typed decisions over inline, local and remote inputs; persistent single-host jobs, process workers, bounded batches and LLM composition |
 
 ## Two distributions expose `knowledge`
 
@@ -31,6 +31,10 @@ binary with the `schema_*`, `db_*`, `ingest_*`, `artifact_get`, `report_*`, `sou
 `knowledge` binary that calls the admitted API. A bare binary name is not a dependency identity: a
 run pin must name the distribution, and `manifest.json` records which surfaces each skill uses.
 
+`@aiengineer/knowledge-jev-service` ships the separate `jev` binary. Its client commands use the
+Jev HTTP interface; its `/mcp` tools share that host's queue. Dedicated `mcp-stdio` starts its own
+host and must use a separate database if an HTTP host is already running.
+
 ## Conformance
 
 ```bash
@@ -39,7 +43,7 @@ node skills/check.mjs --json   # digests per skill, for freezing onto an explici
 ```
 
 The check reads the implemented catalogs — the executor operation registry and MCP server, the
-platform `CLI_COMMANDS` table and the platform MCP tool list — and fails when a skill names a
+platform `CLI_COMMANDS` table, the platform MCP tool list, and the Jev MCP/CLI sources — and fails when a skill names a
 command or tool that is not implemented, names an explicitly unsupported platform command, uses a
 surface it did not declare, omits a catalog operation it owns, or describes a structural seal as
 admission. `absentOperations` and `artifactTypes` document names that deliberately are not

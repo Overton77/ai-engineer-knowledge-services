@@ -1451,6 +1451,79 @@
         "verification-canonical",
         "verification-evidence-selection"
       ]
+    },
+    {
+      "id": "jev",
+      "path": "packages/jev",
+      "kind": "package",
+      "state": "implemented",
+      "summary": "Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes.",
+      "entrypoints": [
+        "packages/jev/src/index.ts",
+        "packages/jev/src/service.ts",
+        "packages/jev/src/provider.ts"
+      ],
+      "interface": [
+        "Private application implementation; public contracts are packages/contracts /jev. One supervisor per local database; at-least-once provider execution."
+      ],
+      "tests": [
+        "packages/jev/src/service.test.ts"
+      ],
+      "constraints": [
+        "Single-host operator trust domain; no shared Supabase changes or distributed tenant guarantees."
+      ],
+      "uses": [
+        "contracts"
+      ],
+      "packageJson": "packages/jev/package.json"
+    },
+    {
+      "id": "jev-service",
+      "path": "apps/jev",
+      "kind": "app",
+      "state": "implemented",
+      "summary": "Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the public client.",
+      "entrypoints": [
+        "apps/jev/src/index.ts",
+        "apps/jev/src/http.ts",
+        "apps/jev/src/mcp.ts"
+      ],
+      "interface": [
+        "jev serve/mcp-stdio; /v1/jev/jobs, batches, health and /mcp; jev_submit/batch/get/list/cancel/workers."
+      ],
+      "tests": [
+        "apps/jev/src/http.test.ts"
+      ],
+      "constraints": [
+        "HTTP/MCP call application /jev; CLI uses KnowledgeJevClient. Dedicated service is user-authorized; broader ks CLI consolidation remains separate."
+      ],
+      "uses": [
+        "application",
+        "client-typescript",
+        "contracts",
+        "jev"
+      ],
+      "packageJson": "apps/jev/package.json"
+    },
+    {
+      "id": "skill-jev-system-one",
+      "path": "skills/jev-system-one",
+      "kind": "skill",
+      "state": "implemented",
+      "summary": "Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition.",
+      "entrypoints": [
+        "skills/jev-system-one/SKILL.md"
+      ],
+      "interface": [
+        "jev CLI, HTTP/MCP job contracts, provider primitives and caller-orchestrated taxonomy/reranking recipes."
+      ],
+      "tests": [],
+      "constraints": [
+        "Research recommendations and historical results are not production calibration."
+      ],
+      "uses": [
+        "jev-service"
+      ]
     }
   ]
 }

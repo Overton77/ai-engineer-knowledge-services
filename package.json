@@ -45,7 +45,7 @@
     "prove:hnsw-local": "tsx scripts/prove-local-hnsw.ts",
     "prove:canonical-retrieval-api": "tsx scripts/prove-canonical-retrieval-api.ts",
     "prove:verification-persistence": "tsx --env-file=.env scripts/prove-verification-persistence.ts",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=1 -- --maxWorkers=2",
     "test:live:gateway": "tsx --env-file=.env scripts/live-gateway-embeddings.ts",
     "test:live:judge": "tsx --env-file=.env scripts/live-gateway-judge.ts",
     "test:live:gate1": "tsx --env-file=../.env scripts/live-gate1.ts",
@@ -53,7 +53,11 @@
     "typecheck": "turbo run typecheck",
     "verify": "corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm examples:verification",
     "experiment:model-card-verification": "tsx --env-file=.env scripts/experiments/model-card-verification/run.ts",
-    "examples:verification": "corepack pnpm --filter @aiengineer/knowledge-verification examples && corepack pnpm --filter @aiengineer/knowledge-verification-executor examples"
+    "examples:verification": "corepack pnpm --filter @aiengineer/knowledge-verification examples && corepack pnpm --filter @aiengineer/knowledge-verification-executor examples",
+    "jev:build": "turbo run build --filter=@aiengineer/knowledge-jev-service...",
+    "jev:serve": "node --env-file=.env apps/jev/dist/index.js serve",
+    "jev": "node apps/jev/dist/index.js",
+    "jev:test": "pnpm --filter @aiengineer/knowledge-jev --filter @aiengineer/knowledge-jev-service --filter @aiengineer/knowledge-client test"
   },
   "devDependencies": {
     "@types/node": "catalog:",

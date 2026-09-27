@@ -1,3 +1,4 @@
+import { KnowledgeJevClient } from "./jev.js";
 import {
   ApplyProviderReconciliationRequestSchema,
   VerificationProviderReconciliationResourceSchema,
@@ -144,11 +145,13 @@ const EventPageSchema = z.object({
 });
 
 export class KnowledgeClient {
+  readonly jev: KnowledgeJevClient;
   readonly #baseUrl: URL;
   readonly #fetch: typeof globalThis.fetch;
   readonly #getAccessToken: () => string | Promise<string>;
   readonly #expectedVersions: Readonly<Record<string, string>>;
   constructor(options: KnowledgeClientOptions) {
+    this.jev = new KnowledgeJevClient(options);
     this.#baseUrl = new URL(
       options.baseUrl.endsWith("/") ? options.baseUrl : `${options.baseUrl}/`,
     );

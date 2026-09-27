@@ -6,7 +6,7 @@
   "budgetBytes": 9216,
   "rules": [
     "Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.",
-    "In-process KS servers (API, MCP, workers) call packages/application. Out-of-process callers (laptop CLI remote, Eve, Mission Control, other repos) use KnowledgeClient against the HTTP API. CLI local demo/attestation stay application-direct. Do not add MCP apiClient methods; new use cases go through application.",
+    "API, MCP, and workers call packages/application. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct. Never add MCP apiClient methods.",
     "Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.",
     "Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.",
     "Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.",
@@ -394,6 +394,19 @@
       "status": "reference",
       "modules": [
         "verification-executor"
+      ]
+    },
+    {
+      "path": "docs/architecture/modules/jev.md",
+      "task": "Jev processes, API, MCP, CLI and research",
+      "status": "reference",
+      "modules": [
+        "jev",
+        "jev-service",
+        "application",
+        "contracts",
+        "client-typescript",
+        "skill-jev-system-one"
       ]
     }
   ],
