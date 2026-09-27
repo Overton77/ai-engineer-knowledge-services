@@ -127,6 +127,18 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-client':
+        specifier: workspace:*
+        version: link:../../packages/client-typescript
+      '@aiengineer/knowledge-db-read':
+        specifier: workspace:*
+        version: link:../../packages/db-read
+      '@aiengineer/knowledge-ingestion':
+        specifier: workspace:*
+        version: link:../../packages/ingestion
+      '@aiengineer/knowledge-schema-workspace':
+        specifier: workspace:*
+        version: link:../../packages/schema-workspace
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -138,7 +150,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   apps/cli:
     dependencies:
@@ -166,7 +178,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   apps/mcp:
     dependencies:

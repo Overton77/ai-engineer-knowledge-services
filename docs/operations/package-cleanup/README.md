@@ -1,5 +1,7 @@
 # Knowledge Services package cleanup
 
+> **Current source of truth (2026-09-27):** [`FINAL-LAYOUT.md`](./FINAL-LAYOUT.md) is the accepted target layout, transport rule, and unit sequence. It supersedes the S0–S7 sequencing below. Unit specifications: [`UNIT-1-PACKAGE-MERGES.md`](./UNIT-1-PACKAGE-MERGES.md).
+
 These dated proposal documents were moved here from `ai-engineer-meta/ai-engineer-architecture/notes/proposals/knowledge-services-package-cleanup` so Knowledge Services agents can read them from this repository. They record the 2026-09-19 survey and decisions; verify their implementation claims against the current source, `AGENTS.md`, and `docs/agents/CODE-MAP.md` before acting. The local `workspace/` session handoffs remain in meta and are not required to navigate this proposal.
 
 This package answers **what order to clean up `ai-engineer-knowledge-services` packages, apps, and skills in, what to name things, and what feature gaps to close along the way** — and how to get developer approval on naming and scope before any of it gets built.

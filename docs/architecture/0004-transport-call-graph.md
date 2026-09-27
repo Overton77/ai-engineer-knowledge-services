@@ -48,3 +48,15 @@ Do not publish a verification-only client package. Split `client.ts` later as fi
 - The MCP verification HTTP loop (`createApiClient` in `apps/mcp`) is a temporary shim because ownership and some admission still live in API HTTP handlers. Unwind it; do not grow it.
 
 A dated inventory of later refactors is [transport-call-graph-refactor-snapshot-20260916.md](./transport-call-graph-refactor-snapshot-20260916.md). That file is a snapshot and will go stale.
+
+## Addendum 2026-09-27: enforcement through `packages/host`
+
+Status: accepted. Details and sequencing: [`docs/operations/package-cleanup/FINAL-LAYOUT.md`](../operations/package-cleanup/FINAL-LAYOUT.md) §4.
+
+The rule above is unchanged. What was missing is one place that builds application with its adapters, so each app wired its own runtime and logic collected in whichever app did the wiring (API-local ownership and admission gates, the API-local retrieval executor, duplicated `*-runtime.ts` files in API and worker, worker imports of algorithm packages, and the MCP `createApiClient` shim that depends on them).
+
+- `packages/host` (absorbs `packages/config`) exposes `createHost(profile)` with profiles `server` (Postgres + Supabase) and `local` (file store, offline). It returns application services grouped by tool group (`knowledge`, `verify`, `db`, `operations`) and the worker activity registry.
+- API, MCP, and worker import only `host` and `contracts`. CLI offline commands and MCP stdio use the `local` profile. CLI remote and every out-of-process caller keep using `KnowledgeClient`.
+- Handlers parse with `contracts`, build an `OperationContext`, call one application function, and map the result. Error codes live in `contracts`; handlers contain no SQL or authorization logic.
+- Durable work goes through `operations.submit`; the worker is a lease loop over the activity registry.
+- The MCP `createApiClient` shim is removed once ownership, admission, and retrieval execution are application ports (FINAL-LAYOUT unit 3).

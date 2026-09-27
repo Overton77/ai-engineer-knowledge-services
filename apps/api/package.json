@@ -23,6 +23,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aiengineer/knowledge-client": "workspace:*",
+    "@aiengineer/knowledge-db-read": "workspace:*",
+    "@aiengineer/knowledge-ingestion": "workspace:*",
+    "@aiengineer/knowledge-schema-workspace": "workspace:*",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
