@@ -1,0 +1,2 @@
+fixtures/embedding-bundle-seed-2026-09-01/outputs/catalog.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+fixtures/embedding-bundle-seed-2026-09-01/videos/*/embedding-bundle.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
