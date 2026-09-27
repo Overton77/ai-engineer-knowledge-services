@@ -6,21 +6,21 @@ Target: [FINAL-LAYOUT.md](../FINAL-LAYOUT.md). Review: [FINAL-REVIEW.md](../FINA
 
 ## Current handoff
 
-- Coordinator: GPT 6 Astra; two reusable GPT 6 Sol workers, three agents total. User resumed the mission on 2026-09-27 UTC. Maximum four total remains binding.
-- Active checkout: `C:/Users/Pinda/Proyectos/ks-package-cleanup`; branch `refactor/knowledge-services-cleanup-isolated`; latest implementation commit `82965b3` (installed executor packaging), with preceding fixture/setup repairs `9ef092a`, `3e18fd6`, `e10dc75`, `354ee23`, and `7025f26`. Prepared plan checkpoint `d3405af` is included.
-- The original checkout contains unrelated concurrent Jev work. It is preserved and excluded from cleanup validation. Intended baseline edits were copied explicitly; no package move or integration into the original checkout has occurred.
-- Unit 0 is active, not validated. Fresh frozen install, uncached typecheck, root build, all example checks, focused repaired suites and installed sandbox help/offline smoke passed. Full verification remains failed; inventories are explicitly pending. One required original judge-failure checkpoint is absent; exact input and user question are recorded in the latest session entry below. No coverage or receipt was fabricated to bypass it.
-- Unit 1 and all later units remain queued. Next structural action after a green baseline and inventories: the specified `knowledge-db` merge. No approval round is required for authorized routine work.
-- Actual pre–Mission Control plan: `ai-engineer-meta/ai-engineer-architecture/specs/knowledge-services-pre-mission-control/OPENAI_FIXTURE.md`. Human-origin gold review, completed frozen fixture/runner prerequisites, model budget and isolated deployment target are not yet available. A smoke test must not be reported as that evaluation.
-- Reservations: coordinator ledger/specs/review; implementation worker idle after validation; inventory worker idle after final captures; all worker reservations released. Workers must not edit the original checkout or run competing full suites.
-- Detailed earlier command outcomes and limitations are retained in the session log. No structural unit is complete, no PR is merged, and no deployment has been performed.
+- Active checkout: `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`; branch `refactor/knowledge-services-final-layout`. Local merge `e9829a8` integrates Jev checkpoint `dbe0c4b` and cleanup baseline through `38ff40d`. The isolated cleanup checkout is now historical. No push, main-branch merge or deployment is claimed.
+- Jev is part of Knowledge Services and is included in combined validation: core service, child workers, HTTP/MCP host, contracts/application/client entrypoints, CLI, skill and public walkthrough evidence. See [next instruction](../NEXT-PACKAGE-CLEANUP.md).
+- Unit 0 retains one missing historical judge-failure input; it is not unconditionally green. Unit 1 may proceed under the exact documented exception in the next instruction, retaining the failing test and requiring no new failures or lost coverage. No structural package merge has been performed yet.
+- Next execution: fresh merged before inventories, then knowledge-db → retrieval → preparation → core. Preserve Jev. After Unit 1, write the bounded Unit 2 specification. Units 2–7 remain queued.
+- Coordinator and two reusable workers: three agents total; maximum four total. Workers are idle and reservations released. Do not run competing full test suites.
+- Scoped safety stash `0971486d67cf7ddc32ac0f5eff952a9ebb15dfbb` preserves duplicate pre-merge baseline files and provisional evidence. Do not apply it: baseline changes are merged and its provisional before.json is obsolete.
+- Actual pre–Mission Control plan: `ai-engineer-meta/ai-engineer-architecture/specs/knowledge-services-pre-mission-control/OPENAI_FIXTURE.md`. Its human gold review, frozen fixture/runner, budget and isolated deployment prerequisites remain separate from this local merge. Cleanup smoke tests are not that evaluation.
+- Historical entries below describe the state when written. Current merge validation is recorded in the final session entry.
 ## Work board
 
 | Work | Status | Entry / scope | Exit evidence |
 |---|---|---|---|
 | Final review and ledger | validated | Inspected target against code and consumers; corrected unit 1 instructions | Review findings and linked workspace written; docs build/check and diff check passed |
-| 0 — baseline | blocked on missing replay input | [Spec](../UNIT-0-BASELINE.md); isolate fixture/setup repair | Clean-checkout verify; before test/export inventories; install and packaging evidence |
-| 1 — package merges | queued | [Spec](../UNIT-1-PACKAGE-MERGES.md); unit 0 complete | No lost tests/exports; four merged packages; examples and packaging; verify/docs checks |
+| 0 — baseline | repaired; one documented missing-input failure | [Spec](../UNIT-0-BASELINE.md); isolate fixture/setup repair | Clean-checkout verify; before test/export inventories; install and packaging evidence |
+| 1 — package merges | next, under exact baseline exception | [Continuation](../NEXT-PACKAGE-CLEANUP.md) and [spec](../UNIT-1-PACKAGE-MERGES.md) | No lost tests/exports; four merged packages; examples and packaging; verify/docs checks |
 | 2 — host composition | queued | Write spec; reuse current shared verification host (R2), define lifecycle/profile matrix (R5); move config/wiring only | Server composition parity, shutdown/startup cleanup, profile admission, no new cycles; verify |
 | 3 — application and MCP | queued | Write spec; inventory each residual HTTP shim; move retrieval execution and remaining policy checks | No sibling-HTTP calls; shared tenant/admission failures; intended new tool contracts tested and mapped for Eve; verify |
 | 4 — folders, names, catalog | queued | Write spec; make CLI client exception explicit; inventory package/service/deployment path consumers | Runtime imports obey host rule; complete profile-aware catalog; reads/mutations/exclusions tested; verify |
@@ -41,7 +41,7 @@ Units 2–7 cannot be called ready until their specs exist. Their scope and gate
 | R4 | No live consumers; adapt Eve's test integration directly, including current `scoped-host/v1` usage; no legacy adapters | 5–6 |
 | R5 | Offline is an enforced capability set; remote CLI stays client-only and lazy | 2, 5 |
 | R6 | Catalog separates declared, admitted, executable and transport/profile availability | 4 |
-| R7 | Red baseline is not a waiver; fixture repair and comparison evidence precede merges | 0–1 |
+| R7 | Preserve the exact missing-input failure; Unit 1 continuation permits only that baseline exception and requires fresh comparison evidence and no new failures | 0–1 |
 | R8 | Mechanical moves preserve tests/types/runtime identities; count targets do not prove behavior | 1, 6–7 |
 
 ## Session log
@@ -168,3 +168,24 @@ User explicitly requested continuation and completion. Existing two Sol workers 
 - Final documentation check passed (342 selected inputs) and whitespace check passed. All baseline changes are scoped local commits on the isolated branch; no push, PR, merge or deployment performed.
 - Both Sol workers are complete and idle. Three agents total were used, never more than the authorized four. No tests, services, provider calls or automation are running on this task's behalf.
 - Resume from this isolated checkout and its ledger when the missing original judge checkpoint is supplied. Preserve the original checkout's independent Jev work. Refactor, new host/application layout, Eve integration, eight-skill consolidation, proof/walkthrough updates and actual pre–Mission Control execution are not complete and must not be claimed as completed by the baseline fixes.
+
+### 2026-09-27 — Jev integration and next package-cleanup handoff
+
+Developer requested a combined local starting point and instructions for the next cleanup work. Checkpointed intended Jev changes as `dbe0c4b`, then merged cleanup branch `38ff40d` into `refactor/knowledge-services-final-layout` with merge commit `e9829a8`. Its parents are the Jev checkpoint and cleanup baseline. The sole content conflict was generated `.agent-docs/provenance.json`; regenerated it from the combined authored inputs. Enabled repository-local `core.longpaths` for Windows checkout paths. No structural package merges occurred in this integration turn.
+
+Preserved duplicate earlier cleanup files and provisional evidence in scoped stash `0971486d67cf7ddc32ac0f5eff952a9ebb15dfbb`; no application of that stale backup is needed. The merged tree contains the baseline fixture/setup/packaging repairs and the complete Jev service, worker, contracts/client/application exports, host, CLI, skill, docs and public experiments. Existing local Jev database/process state was left alone. No paid experiment, populated database operation, deployment or remote Git publication was performed.
+
+Combined validation (runtime source at `e9829a8`; subsequent edits only handoff/navigation):
+
+- `corepack pnpm install --frozen-lockfile`: passed, 31 workspace projects.
+- `corepack pnpm typecheck`: 53/53 tasks passed, zero cached.
+- `corepack pnpm exec turbo run test --continue=always --concurrency=1 -- --maxWorkers=2`: all tasks attempted; 53/54 tasks successful, zero cached. Test summaries total 2,771 passed, 126 skipped, one failed. The only failure is the existing registered replay test `replays all seven actual captured schema failures exactly once in memory`, with `SEALED_CHECKPOINT_MISSING:records/25-gl-repeatability-mutated-haiku_judge-failure.json`. Skipped integration tests are not passing evidence.
+- Included Jev tests: core 9/9, service 6/6, client 25/25 (including Jev client coverage), all passed.
+- `corepack pnpm build`: 30/30 tasks passed (23 cached).
+- `corepack pnpm examples:verification`: passed; executor offline example produced 11 receipts, zero provider calls, mechanical/extraction passed, semantic judgment not run, policy review.
+- `node skills/check.mjs`: passed, 12 skills, 6 Jev MCP tools and 9 Jev commands.
+- `corepack pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox`: passed. Tarball SHA-256 `b5fc59b466bbd480de3c0c28ab8999b57caec6ff1ee9d89ee852ff52210334c1`; runtime dependencies MCP SDK, pg and zod.
+
+[Next package-cleanup instruction](../NEXT-PACKAGE-CLEANUP.md) is the current handoff. It makes the coordinator's exact missing-input exception explicit for mechanical Unit 1, without calling Unit 0 green or weakening the test. Reassess before behavior-changing units. Fresh merged inventories are required before moves; previous pending inventory files remain historical. Updated the old green-only entrypoints to link this continuation and corrected the pre-Jev package/app count assumption. No skill consolidation or later cleanup unit is claimed complete.
+
+Installed sandbox verification also passed in a fresh temporary npm project outside the workspace: both knowledge-verify and knowledge shims returned nonempty help with exit 0; the packaged offline example passed with 11 receipts and zero provider calls. Generated agent documentation build/check passed with 354 selected inputs, and git diff --check passed.

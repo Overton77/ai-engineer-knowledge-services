@@ -1,5 +1,7 @@
 # Knowledge Services final layout
 
+> Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
+
 Status: accepted (2026-09-27, developer-approved in session).
 
 This is the target package, app, and skill layout for `ai-engineer-knowledge-services`, and the rule for how transports call application code. It supersedes the sequencing in the [archived feature specification](./archive/FEATURE-SET-SPECIFICATION.md) (S0–S7) and [archived orchestration plan](./archive/ORCHESTRATION-PLAN.md) as the source of truth for **what exists and in what order it is built**. The folder-level decisions inside packages recorded in the [Phase 1 memo](./archive/PHASE-1-RECOMMENDATION.md) and [Phase 2 memo](./archive/PHASE-2-RECOMMENDATION.md) stay valid; they become subfolders of the merged packages below. Consult these memos only for those retained decisions, not their superseded execution instructions.
@@ -35,7 +37,7 @@ Apply this naming target through the relevant unit specifications and update Eve
 | knowledge | sources → preparation → publication → retrieval → evidence, evaluation | `knowledge_*` | `ks knowledge …` | `knowledge-sources`, `knowledge-preparation`, `knowledge-retrieval`, `knowledge-evaluation` |
 | verify | captures, claims, reports, admission, recovery | `verify_*` (names unchanged) | `ks verify …` | `knowledge-verification` |
 | db | schema navigation, bounded reads, ingestion | `db_*` | `ks db …` | `knowledge-db` |
-| jev | Jev System One integration (upcoming) | `jev_*` | `ks jev …` | `jev-system-one` |
+| jev | Jev System One decisions and worker service (implemented; consolidation pending) | `jev_*` | `ks jev …` | `jev-system-one` |
 
 `knowledge-research` is the coordination skill over all groups. Mission Control grants groups per workflow (research/ingest: `knowledge` + `db`; a coding workflow: `verify` or read-only `db`).
 
@@ -83,7 +85,7 @@ skills/           One home. Eight skills plus the manifest Mission Control consu
 proofs/           was scripts/: proofs/verification/<feature>/…, one shared tsconfig; sprint-only proofs archived
 ```
 
-Totals: 23 → 14 packages, 5 → 4 apps, 12 → 8 skills, one MCP server, one CLI.
+Original target counts before Jev integration: 23 → 14 packages, 5 → 4 apps, 12 → 8 skills, one MCP server, one CLI. The merged checkout now has 24 packages and 6 apps, including packages/jev and apps/jev. Unit 1 produces 15 packages and retains 6 apps. Later unit specifications must reconcile the final host counts while preserving implemented Jev capabilities; these older counts do not authorize deleting Jev.
 
 Mechanical units preserve behavior and interfaces except for their specified package/import moves. Later surface-consolidation units may change routes, tool names, CLI commands, and client methods deliberately, with Eve and skills adapted to the new contract. Preserve persisted identity strings (for example the `packages/conversion` / `packages/chunking` procedure identities in `packages/persistence/src/preparation.ts`); the absence of live consumers does not authorize rewriting stored evidence or the populated shared database.
 

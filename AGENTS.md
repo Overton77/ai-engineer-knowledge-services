@@ -51,8 +51,8 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 
 ### Task routes
 
+- [reference] Unit 1 continuation after Jev merge; exact baseline exception: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
 - [accepted] Accepted cleanup layout, transport rule, and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
-- [reference] Cleanup ledger and readiness: `docs/operations/package-cleanup/workspace/README.md`
 - [reference] Current cleanup index and historical archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Post-sprint module review, exemplars, and developer-overridable delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
 - [proposed] Internal acquisition/inspection/conversion/chunking fallbacks, application folder order, skills last: `docs/operations/internal-fallbacks-and-application-order.md`
@@ -97,8 +97,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,README.md}
-|docs/operations/package-cleanup/workspace:{README.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

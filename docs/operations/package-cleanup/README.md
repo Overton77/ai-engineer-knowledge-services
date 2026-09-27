@@ -2,6 +2,8 @@
 
 Status: reference. Current execution index.
 
+Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Jev and baseline repairs are merged locally; proceed to Unit 1 with the exact documented missing-input exception.
+
 ## Start here
 
 1. [COORDINATOR-INSTRUCTIONS.md](./COORDINATOR-INSTRUCTIONS.md): attach to a GPT 6 Astra session; delegate bounded implementation to GPT 6 Sol.

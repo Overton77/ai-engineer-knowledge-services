@@ -18,14 +18,14 @@
   ],
   "docs": [
     {
+      "path": "docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md",
+      "task": "Unit 1 continuation after Jev merge; exact baseline exception",
+      "status": "reference"
+    },
+    {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
       "task": "Accepted cleanup layout, transport rule, and sequence",
       "status": "accepted"
-    },
-    {
-      "path": "docs/operations/package-cleanup/workspace/README.md",
-      "task": "Cleanup ledger and readiness",
-      "status": "reference"
     },
     {
       "path": "docs/operations/package-cleanup/README.md",

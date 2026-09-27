@@ -1,5 +1,7 @@
 # GPT 6 Astra coordinator: Knowledge Services final layout
 
+> Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
+
 This is the developer's execution brief for a new session. Use **GPT 6 Astra as coordinator/planner/reviewer** and **GPT 6 Sol as implementation workers**. The developer explicitly authorizes this delegation. Attaching this file does not itself change the session model: select GPT 6 Astra for the coordinator session.
 
 ## Objective and scope

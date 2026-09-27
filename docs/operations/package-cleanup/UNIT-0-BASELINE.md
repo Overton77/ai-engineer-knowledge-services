@@ -1,5 +1,7 @@
 # Unit 0: establish the cleanup baseline
 
+> Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md) records the merged Jev starting point and the exact Unit 1 missing-fixture exception; it supersedes the earlier green-only prerequisite for that failure only.
+
 Status: ready to execute. Parent: [final layout](./FINAL-LAYOUT.md). Findings: [R7–R8](./FINAL-REVIEW.md).
 
 This prerequisite does not change the seven-unit target. Its purpose is to make the first mechanical merge measurable from a clean checkout.
