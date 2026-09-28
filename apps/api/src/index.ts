@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
 import { createCallbackSigningSecretResolver } from "./a2a-http.js";
 import { apiServerOptions } from "./composition.js";
+import { loadRepositoryDemoEvaluationBundles } from "./demo-evaluation-bundles.js";
 
 // Trusted host composition injects the same accounted adapter used by selected publication.
 export { buildServer, CanonicalRetrievalExecutor };
@@ -55,6 +56,7 @@ export async function createApiRuntime(environment: Environment = process.env) {
       resolveCallbackSigningSecret: createCallbackSigningSecretResolver(
         environment.KNOWLEDGE_CALLBACK_SIGNING_KEYS,
       ),
+      loadDemoEvaluationBundles: loadRepositoryDemoEvaluationBundles,
     });
     let closing: Promise<void> | undefined;
     return {

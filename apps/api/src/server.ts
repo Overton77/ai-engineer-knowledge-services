@@ -85,7 +85,6 @@ import Fastify, {
 import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
-import { loadEmbeddingBundles } from "@aiengineer/knowledge-testkit";
 import { z, ZodError, type ZodType } from "zod";
 import {
   actorsMatch,
@@ -106,9 +105,16 @@ import {
   submitCanonicalRetrievalRun,
   type CanonicalRetrievalExecutorPort,
   type ResourceReadResult,
+  type VettedBundleInput,
 } from "@aiengineer/knowledge-application";
 
 export interface ServerOptions {
+  /**
+   * Demo-only port for POST /v1/demo/evaluations: loads the allow-listed exploratory
+   * bundles. Unset, the route answers 503 (fixture unavailable); the server never imports
+   * test fixtures itself.
+   */
+  loadDemoEvaluationBundles?: () => Promise<readonly VettedBundleInput[]>;
   service?: KnowledgeIntegrationService;
   operationService?: KnowledgeOperationPort;
   retrievalOperationService?: KnowledgeOperationPort;
@@ -2496,10 +2502,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     )
       return;
     const input = ExploratoryEvaluationInputSchema.parse(envelope.input);
-    const loaded = await loadEmbeddingBundles();
-    const byVideoId = new Map(
-      loaded.map((item) => [item.bundle.video_id, item.bundle]),
-    );
+    const loaded = options.loadDemoEvaluationBundles
+      ? await options.loadDemoEvaluationBundles()
+      : [];
+    const byVideoId = new Map(loaded.map((bundle) => [bundle.video_id, bundle]));
     const bundles = input.bundles.map(
       (descriptor) => byVideoId.get(descriptor.video_id)!,
     );
