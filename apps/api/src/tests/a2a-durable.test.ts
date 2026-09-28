@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { A2AKnowledgeAdapter } from "@aiengineer/knowledge-application";
+import { A2AKnowledgeAdapter } from "../a2a-adapter.js";
 import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import {
   PostgresCallbackReplayStore,

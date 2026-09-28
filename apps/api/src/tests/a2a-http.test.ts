@@ -1,5 +1,5 @@
+import { A2AKnowledgeAdapter } from "../a2a-adapter.js";
 import {
-  A2AKnowledgeAdapter,
   CallbackReplayGuard,
   KnowledgeIntegrationService,
 } from "@aiengineer/knowledge-application";

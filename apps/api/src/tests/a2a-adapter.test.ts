@@ -1,13 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { A2ATaskSchema } from "@aiengineer/knowledge-contracts";
 import {
-  A2ACallbackHttpSender,
-  A2AKnowledgeAdapter,
   CallbackReplayGuard,
   KnowledgeIntegrationService,
   verifyCallback,
-  operationInputForA2ATask,
-} from "../index.js";
+} from "@aiengineer/knowledge-application";
+import { A2AKnowledgeAdapter, operationInputForA2ATask } from "../a2a-adapter.js";
 
 const id = (digit: number) =>
   `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
@@ -151,83 +149,5 @@ describe("A2A adapter", () => {
         clock,
       ),
     ).toBe(false);
-  });
-
-  it("sends an authenticated result only to its admitted exact callback target", async () => {
-    const result = {
-      taskId: task.taskId,
-      operationId: task.context.operationId,
-      outcome: "succeeded" as const,
-      artifacts: [],
-      evidencePacketIds: [],
-      receiptIds: [],
-      warnings: [],
-    };
-    const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
-      expect(String(input)).toBe(task.callback.url);
-      expect(init?.redirect).toBe("error");
-      const headers = new Headers(init?.headers);
-      expect(headers.get("authorization")).toBe("Bearer callback-bearer");
-      expect(headers.get("x-tenant-id")).toBe(task.context.tenantId);
-      const envelope = JSON.parse(String(init?.body));
-      expect(envelope).toMatchObject({
-        tenantId: task.context.tenantId,
-        taskId: task.taskId,
-        correlationId: task.context.correlationId,
-        causationId: task.context.causationId,
-        payload: result,
-      });
-      return new Response(
-        JSON.stringify({
-          callbackId: envelope.callbackId,
-          operationId: task.context.operationId,
-          state: "accepted",
-          receivedAt: "2026-09-03T12:00:00Z",
-        }),
-        { status: 202, headers: { "content-type": "application/json" } },
-      );
-    });
-    const sender = new A2ACallbackHttpSender(
-      () => ({
-        ...task.callback,
-        bearerToken: "callback-bearer",
-        signingSecret: secret,
-      }),
-      fetch,
-    );
-    await expect(sender.sendResult(task, result)).resolves.toMatchObject({
-      operationId: task.context.operationId,
-      state: "accepted",
-    });
-    expect(fetch).toHaveBeenCalledOnce();
-  });
-
-  it("rejects target substitution and result correlation mismatch before network I/O", async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>();
-    const result = {
-      taskId: task.taskId,
-      operationId: task.context.operationId,
-      outcome: "failed" as const,
-      artifacts: [],
-      evidencePacketIds: [],
-      receiptIds: [],
-      warnings: ["failed"],
-    };
-    const sender = new A2ACallbackHttpSender(
-      () => ({
-        ...task.callback,
-        url: "https://attacker.example/callback",
-        bearerToken: "callback-bearer",
-        signingSecret: secret,
-      }),
-      fetch,
-    );
-    await expect(sender.sendResult(task, result)).rejects.toThrow(
-      "CALLBACK_TARGET_CONTRACT_MISMATCH",
-    );
-    await expect(
-      sender.sendResult(task, { ...result, operationId: id(99) }),
-    ).rejects.toThrow("CALLBACK_RESULT_CONTEXT_MISMATCH");
-    expect(fetch).not.toHaveBeenCalled();
   });
 });

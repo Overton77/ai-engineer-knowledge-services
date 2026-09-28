@@ -1,6 +1,5 @@
+import { A2AKnowledgeAdapter, operationEnvelopeForA2ATask } from "./a2a-adapter.js";
 import {
-  A2AKnowledgeAdapter,
-  operationEnvelopeForA2ATask,
   CallbackReplayGuard,
   authenticateCallback,
   type CallbackReplayStore,

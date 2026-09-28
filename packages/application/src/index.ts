@@ -23,9 +23,9 @@ export * from "./access/api-access.js";
 export * from "./reads/resource-read-result.js";
 export * from "./errors/transport-problem.js";
 
-// Operations: durable operation surface, admission and A2A mapping.
+// Operations: durable operation surface, admission and A2A callback signing (the task binding lives in apps/api).
 export * from "./operations/surface.js";
-export * from "./operations/a2a-adapter.js";
+export * from "./operations/a2a-callbacks.js";
 
 // Knowledge tool group: preparation, source discovery, checkpoints, promotion selection, retrieval and reads.
 export * from "./knowledge/preparation/preparation.js";
