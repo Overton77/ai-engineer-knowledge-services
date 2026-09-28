@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createVerificationAdjudicationDecisionRuntime as create } from "../verification-adjudication-decision-runtime.js";
+import { createVerificationAdjudicationDecisionRuntime as create } from "./verification-adjudication-decision-runtime.js";
 
 describe("decision API runtime configuration", () => {
   it("requires explicit enablement and refuses dormant authority", () => {

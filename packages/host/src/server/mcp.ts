@@ -6,9 +6,9 @@ import {
 import { PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { loadServerConfig, type ServerConfig } from "../config/index.js";
 import { constructWithResources } from "../lifecycle/resources.js";
-import { createVerificationHostRuntime, type VerificationHostRuntime } from "../verification/host-runtime.js";
 import { composeKnowledgeServices, type KnowledgeServices } from "./knowledge.js";
 import { openCanonicalRepository, type HostEnvironment } from "./shared.js";
+import { composeVerificationServices, type VerificationServices } from "./verification.js";
 
 export interface McpHostOptions {
   readonly profile: "server";
@@ -18,6 +18,10 @@ export interface McpHostOptions {
   readonly resolveApiOrigin: (config: ServerConfig) => string;
 }
 
+/**
+ * The API role's knowledge, verify and operations groups minus transport-only pieces
+ * (callback replay, the service-only drift queue and API public-origin handling).
+ */
 export interface McpHost {
   readonly profile: "server";
   readonly role: "mcp";
@@ -29,11 +33,9 @@ export interface McpHost {
     /** Admits the API-owned synchronous kinds (retrieval_run), exactly as the API role does. */
     readonly retrieval: KnowledgeOperationPort;
   };
-  /** The same knowledge services the API role composes. */
   readonly knowledge: KnowledgeServices;
-  readonly verify: {
-    /** Shared admission gates; the same factories the API host composes. */
-    readonly runtime: VerificationHostRuntime;
+  readonly verify: VerificationServices & {
+    /** Verification submissions whose accepted links are rooted at the API origin. */
     readonly operations?: VerificationOperationApplicationService;
   };
   close(): Promise<void>;
@@ -50,9 +52,10 @@ export async function createMcpHost(options: McpHostOptions): Promise<McpHost> {
     const database = openCanonicalRepository(resources, connectionString, environment);
     const operationService = new PostgresKnowledgeOperationService(database);
     const knowledge = composeKnowledgeServices(database, environment);
-    const runtime = createVerificationHostRuntime(database, environment, {
+    const verify = composeVerificationServices(database, environment, {
       production: config.NODE_ENV === "production",
     });
+    const { runtime } = verify;
     return {
       operations: {
         service: operationService,
@@ -60,7 +63,7 @@ export async function createMcpHost(options: McpHostOptions): Promise<McpHost> {
       },
       knowledge,
       verify: {
-        runtime,
+        ...verify,
         ...(runtime.verificationOperationService
           ? {
               operations: new VerificationOperationApplicationService(

@@ -18,7 +18,7 @@ const {loadVerifiedLocalDevelopmentConfig}=await import("../../internal/verifica
 const local=await loadVerifiedLocalDevelopmentConfig();for(const [value,port] of [[local.DB_URL,"54322"],[local.API_URL,"54321"]] as const){const url=new URL(value);if(!["localhost","127.0.0.1"].includes(url.hostname)||url.port!==port)throw new Error("LOCAL_ONLY_AUDIT_PROOF_REQUIRED");}
 import {KnowledgeClient} from "@aiengineer/knowledge-client";
 import {buildServer} from "../apps/api/src/server.js";
-import {createVerificationAdjudicationReads} from "../apps/api/src/verification-adjudication-reads-runtime.js";
+import {createVerificationAdjudicationReads} from "../packages/host/src/verification/api/verification-adjudication-reads-runtime.js";
 import {dispatchCliCommand,resolveCommand} from "../apps/cli/src/commands.js";
 import {createAdjudicationReadMcpExecutor} from "../apps/mcp/src/index.js";
 let server:ReturnType<typeof buildServer>|undefined;
@@ -79,7 +79,7 @@ try{const before=await counts();
   ["cancelled",native.cancelledOperationId,token,tenantId,422],
  ] as const){const r=await fetch(`${baseUrl}/v1/verification/adjudications/${id}`,{headers:{authorization:`Bearer ${auth}`,"x-tenant-id":tenant,"x-correlation-id":"negative-adjudication"}});assert.equal(r.status,expected,name);assert.equal(JSON.stringify(await r.json()).includes('"output"'),false);hostileChecks.push(name);}
  const after=await counts();assert.deepEqual(after,before);
- const paths=["packages/contracts/src/verification/adjudication-reads.ts","packages/application/src/verification/operations/verification-adjudication-reads.ts","packages/persistence/src/verification-adjudication-reads.ts","apps/api/src/verification-adjudication-reads-runtime.ts","apps/api/src/verification-ownership.ts","packages/persistence/src/verification-audit-runtime.ts","packages/persistence/src/verification-adjudication-runtime.ts","apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-adjudication-public-reads.ts"];
+ const paths=["packages/contracts/src/verification/adjudication-reads.ts","packages/application/src/verification/operations/verification-adjudication-reads.ts","packages/persistence/src/verification-adjudication-reads.ts","packages/host/src/verification/api/verification-adjudication-reads-runtime.ts","packages/host/src/verification/api/verification-ownership.ts","packages/persistence/src/verification-audit-runtime.ts","packages/persistence/src/verification-adjudication-runtime.ts","apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-adjudication-public-reads.ts"];
  const sourceFiles=await Promise.all(paths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const out=resolve("../internal",`verification-adjudication-public-reads-${randomUUID()}.json`);
  const receipt={schemaVersion:"verification-adjudication-public-reads-proof.v1",nativeProof:{path:nativePath,sha256:createHash("sha256").update(await readFile(nativePath)).digest("hex")},readOnly:true,results,hostileChecks,unchangedCounts:after,sourceFiles,limitations:["Local API, client, CLI dispatch and MCP executor; no external deployed server","Existing retained run targets; no human decision or admission mutation"]};

@@ -9,7 +9,7 @@ import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 import {VerificationExtractionFieldEvidenceResultSchema} from "@aiengineer/knowledge-contracts";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";

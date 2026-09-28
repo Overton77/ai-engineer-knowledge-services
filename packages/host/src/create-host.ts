@@ -11,8 +11,8 @@ export interface LocalHostOptions {
   readonly role?: string;
 }
 
-export type HostOptions<TDrift = unknown, TVerification = unknown> =
-  | ApiHostOptions<TDrift, TVerification>
+export type HostOptions =
+  | ApiHostOptions
   | McpHostOptions
   | WorkerHostOptions
   | LocalHostOptions;
@@ -25,13 +25,11 @@ export class HostProfileUnavailableError extends Error {
 }
 
 /** Composes the services a role actually constructs; the return type follows the role. */
-export function createHost<TDrift, TVerification>(
-  options: ApiHostOptions<TDrift, TVerification>,
-): Promise<ApiHost<TDrift, TVerification>>;
+export function createHost(options: ApiHostOptions): Promise<ApiHost>;
 export function createHost(options: McpHostOptions): Promise<McpHost>;
 export function createHost(options: WorkerHostOptions): Promise<WorkerHost>;
 export function createHost(options: LocalHostOptions): Promise<never>;
-export async function createHost(options: HostOptions): Promise<ApiHost<unknown, unknown> | McpHost | WorkerHost> {
+export async function createHost(options: HostOptions): Promise<ApiHost | McpHost | WorkerHost> {
   if (options.profile !== "server") throw new HostProfileUnavailableError(options.profile);
   switch (options.role) {
     case "api":

@@ -1,4 +1,4 @@
-import {createVerificationAdjudicationDecisionRuntime} from "../apps/api/src/verification-adjudication-decision-runtime.js";
+import {createVerificationAdjudicationDecisionRuntime} from "../packages/host/src/verification/api/verification-adjudication-decision-runtime.js";
 import {buildServer} from "../apps/api/src/server.js";
 import {KnowledgeClient} from "../packages/client-typescript/src/index.js";
 import {dispatchCliCommand,resolveCommand} from "../apps/cli/src/commands.js";

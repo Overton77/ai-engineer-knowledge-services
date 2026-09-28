@@ -4,11 +4,11 @@ import {pathToFileURL} from "node:url";
 import {OperationContextSchema} from "@aiengineer/knowledge-contracts";
 import {PostgresKnowledgeOperationService} from "@aiengineer/knowledge-persistence";
 import {buildKnowledgeMcpApp} from "../apps/mcp/src/index.js";
-import {createVerificationProviderReconciliationService} from "../apps/api/src/verification-provider-reconciliation-runtime.js";
+import {createVerificationProviderReconciliationService} from "../packages/host/src/verification/api/verification-provider-reconciliation-runtime.js";
 import {PostgresStructuredExtractionReadRepository} from "@aiengineer/knowledge-persistence";
 import {KnowledgeClient} from "@aiengineer/knowledge-client";
 import {buildServer} from "../apps/api/src/server.js";
-import {createVerificationStructuredExtractionReads} from "../apps/api/src/verification-structured-extraction-reads-runtime.js";
+import {createVerificationStructuredExtractionReads} from "../packages/host/src/verification/api/verification-structured-extraction-reads-runtime.js";
 import {PostgresProviderReconciliationStore,PostgresVerificationProviderAccounting} from "@aiengineer/knowledge-persistence";
 import assert from "node:assert/strict";
 import {randomUUID,generateKeyPairSync,createHash} from "node:crypto";
@@ -103,6 +103,6 @@ try{
   checks[`${provider.provider_id}_${item.scenario}_publication_receipt_operation_and_public_read_unchanged`]=true;
   results.push({publicationBefore,publicationAfter,publicBefore,publicAfter,operationId:item.operationId,scenario:item.scenario,providerAttemptId:provider.id,receipt:retained.receipt,artifact:retained.artifact,result:first,budgetBefore,budgetAfter,providerBefore:provider,providerAfter:settled});
  }
- const sourceFiles=await Promise.all(["packages/contracts/src/verification/provider-reconciliation.ts","packages/application/src/verification/operations/verification-provider-reconciliation.ts","packages/persistence/src/verification-provider-reconciliation.ts","scripts/prove-verification-provider-reconciliation-transports.ts","apps/api/src/verification-provider-reconciliation-runtime.ts","apps/api/src/server.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","apps/api/src/verification-ownership.ts","apps/api/src/index.ts","packages/client-typescript/src/client.ts","packages/persistence/src/verification-provider-reconciliation-reads.ts"].map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
+ const sourceFiles=await Promise.all(["packages/contracts/src/verification/provider-reconciliation.ts","packages/application/src/verification/operations/verification-provider-reconciliation.ts","packages/persistence/src/verification-provider-reconciliation.ts","scripts/prove-verification-provider-reconciliation-transports.ts","packages/host/src/verification/api/verification-provider-reconciliation-runtime.ts","apps/api/src/server.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","packages/host/src/verification/api/verification-ownership.ts","apps/api/src/index.ts","packages/client-typescript/src/client.ts","packages/persistence/src/verification-provider-reconciliation-reads.ts"].map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
  const output=resolve(`../internal/verification-provider-reconciliation-transports-${namespace}.json`);await writeFile(output,JSON.stringify({schemaVersion:"verification-provider-reconciliation-transports-proof.v1",fixtureName,tenantId,publicKeyPem,checks,results,sourceFiles,supplierRequests:0,limitations:["Synthetic operator decisions only; no supplier billing or redispatch","Successful candidates and captured HTTP failures reconciled; original publications remain historical accounting snapshots","Actual built CLI process and MCP Streamable HTTP settlement/read; production deployment remains pending"]},null,2)+"\n");console.log(JSON.stringify({output,checks}));
 }finally{await closeProtocol?.();await mcpApp?.close();await api?.close();await database.close();}

@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PostgresCanonicalRepository } from "../packages/persistence/src/postgres.js";
 import { PostgresKnowledgeOperationService } from "../packages/persistence/src/operation-service.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { buildServer } from "../apps/api/src/server.js";
 
 const connectionString = process.env.POSTGRES_URL;
@@ -69,7 +69,7 @@ try {
     const drift=await api.inject({...request,payload:{...payload,captureIds:[randomUUID()]}});assert.equal(drift.statusCode,409,drift.body);checks.httpPayloadDriftDenied=true;
   } finally {await api.close();}
   const sourceHashes:Record<string,string>={};
-  for(const file of ["packages/persistence/src/operation-service.ts","apps/api/src/verification-ownership.ts","scripts/prove-verification-operation-ownership.ts"])
+  for(const file of ["packages/persistence/src/operation-service.ts","packages/host/src/verification/api/verification-ownership.ts","scripts/prove-verification-operation-ownership.ts"])
     sourceHashes[file]=createHash("sha256").update(await readFile(file)).digest("hex");
   const receipt=resolve("..","internal",`${namespace}.json`);
   await writeFile(receipt,JSON.stringify({capturedAt:new Date().toISOString(),scope:"Real local Postgres durable ownership and idempotency; no worker execution or Storage claim",tenantId,missionId,workItemId,attemptId,operationId:accepted.operationId,checks,sourceHashes,providerDispatches:0,passed:true},null,2),{flag:"wx"});

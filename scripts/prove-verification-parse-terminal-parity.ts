@@ -14,7 +14,7 @@ import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
 import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 

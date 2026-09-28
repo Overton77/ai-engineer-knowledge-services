@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync } from "node:crypto";
-import { createVerificationSemanticReconciliationService } from "../verification-semantic-reconciliation-runtime.js";
+import { createVerificationSemanticReconciliationService } from "./verification-semantic-reconciliation-runtime.js";
 
 const id = (value: number) =>
   `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;

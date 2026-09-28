@@ -85,3 +85,12 @@ export class VerificationAdjudicationDecisionPreparationService {
       decisionDigest:sha256Digest(decisionBytes),rationaleDigest:sha256Digest(request.rationale),parentArtifactIds:[request.packetArtifact.artifactId]}),decisionBytes};
   }
 }
+
+/**
+ * Models, and services other than the dedicated human-reviewer identity, may not record
+ * an adjudication decision; they are rejected before decision admission is consulted.
+ * Shared by every in-process transport.
+ */
+export function isAdjudicationDecisionReviewerActor(actor: Actor): boolean {
+  return !(actor.kind === "model" || (actor.kind === "service" && actor.serviceIdentity !== "human_reviewer"));
+}

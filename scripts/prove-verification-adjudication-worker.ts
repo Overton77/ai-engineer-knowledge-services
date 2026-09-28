@@ -10,7 +10,7 @@ import { deterministicUuid,SupabaseArtifactStore } from "@aiengineer/knowledge-c
 import { canonicalizeJson,digestCanonicalJson } from "@aiengineer/knowledge-verification";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 import { CanonicalActivityRegistry,createCanonicalActivityExecutor } from "../apps/worker/src/activity-registry.js";

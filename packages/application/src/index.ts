@@ -114,3 +114,6 @@ export * from "./retrieval/canonical-retrieval-run.js";
 export * from "./reads/resource-read-result.js";
 export * from "./reads/knowledge-resource-reads.js";
 export * from "./reads/verification-resource-reads.js";
+export * from "./verification/operations/verification-drift-revalidation-queue.js";
+export * from "./verification/benchmark/verification-benchmark-capture-profile.js";
+export * from "./verification/operations/verification-context-binding.js";

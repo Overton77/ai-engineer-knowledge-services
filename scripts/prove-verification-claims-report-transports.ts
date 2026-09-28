@@ -7,7 +7,7 @@ import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { AcceptedOperationSchema, OperationContextSchema } from "@aiengineer/knowledge-contracts";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
@@ -58,7 +58,7 @@ try {
   checks.authorized_operations_queued_without_worker_provider_or_parser = true;
   for (const operationId of operations) { await database.cancelOperation(tenantId, operationId, { actorIdentity: namespace, correlationId: namespace }); assert.equal((await database.getOperation(tenantId, operationId))?.status, "cancelled"); }
   checks.all_proof_operations_cancelled_before_success_receipt = true;
-  const sourceFiles = await Promise.all(["apps/api/src/server.ts", "apps/api/src/verification-ownership.ts", "packages/client-typescript/src/client.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "scripts/prove-verification-claims-report-transports.ts"].map(async path => ({ path, sha256: createHash("sha256").update(await readFile(path)).digest("hex") })));
+  const sourceFiles = await Promise.all(["apps/api/src/server.ts", "packages/host/src/verification/api/verification-ownership.ts", "packages/client-typescript/src/client.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "scripts/prove-verification-claims-report-transports.ts"].map(async path => ({ path, sha256: createHash("sha256").update(await readFile(path)).digest("hex") })));
   const output = resolve("../internal", `verification-claims-report-transports-${namespace}.json`);
   await writeFile(output, JSON.stringify({ schemaVersion: "verification-claims-report-transports-proof.v1", createdAt: new Date().toISOString(), namespace, fixtureName, tenantId, checks, startupJournal, admittedThenCancelledOperationIds: operations, sourceFiles, parserDispatches: 0, providerDispatches: 0, limitations: ["Configured loopback HTTP/client and in-process CLI/MCP adapters submit retained registered inputs", "Claims/report expose no public typed terminal-receipt/result read route, so cross-transport terminal-result parity is unsupported and not asserted", "Queued proof operations are cancelled and verified before this receipt; no worker, parser, provider, or remote service is started"] }, null, 2) + "\n", { flag: "wx" });
   console.log(JSON.stringify({ output, checks }));

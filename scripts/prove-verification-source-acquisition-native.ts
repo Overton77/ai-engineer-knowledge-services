@@ -11,9 +11,9 @@ import { sha256Digest } from "@aiengineer/knowledge-verification";
 import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
-import { createVerificationCaptureReads } from "../apps/api/src/verification-capture-reads-runtime.js";
+import { createVerificationCaptureReads } from "../packages/host/src/verification/api/verification-capture-reads-runtime.js";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationBenchmarkCaptureProfileResolver } from "../apps/api/src/verification-benchmark-capture-profile.js";
+import { createVerificationBenchmarkCaptureProfileResolver } from "../packages/host/src/verification/api/verification-benchmark-capture-profile.js";
 
 const connectionString = process.env.POSTGRES_URL!, projectUrl = process.env.SUPABASE_URL!, serviceRoleKey = process.env.SUPABASE_SECRET_KEY!;
 assert.ok(connectionString && projectUrl && serviceRoleKey);

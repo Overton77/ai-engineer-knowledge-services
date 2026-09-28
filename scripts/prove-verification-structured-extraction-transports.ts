@@ -10,8 +10,8 @@ import {KnowledgeClient} from "@aiengineer/knowledge-client";
 import {AcceptedOperationSchema,OperationContextSchema,VerificationStructuredExtractionResourceSchema} from "@aiengineer/knowledge-contracts";
 import {createStructuredExtractionRequestAdmission,parseVerificationStructuredExtractionRuntimeConfig} from "@aiengineer/knowledge-application";
 import {buildServer} from "../apps/api/src/server.js";
-import {createVerificationStructuredExtractionReads} from "../apps/api/src/verification-structured-extraction-reads-runtime.js";
-import {createVerificationOwnershipResolver} from "../apps/api/src/verification-ownership.js";
+import {createVerificationStructuredExtractionReads} from "../packages/host/src/verification/api/verification-structured-extraction-reads-runtime.js";
+import {createVerificationOwnershipResolver} from "../packages/host/src/verification/api/verification-ownership.js";
 import {dispatchCliCommand,resolveCommand} from "../apps/cli/src/commands.js";
 import {buildKnowledgeMcpApp,createStructuredExtractionReadMcpExecutor,createVerificationMcpToolExecutor} from "../apps/mcp/src/index.js";
 
@@ -87,7 +87,7 @@ try{
   }
   checks.http_cli_mcp_canonical_admission_and_idempotency=true;
   assert.throws(()=>VerificationStructuredExtractionResourceSchema.parse({...publicResults[0] as object,objectKey:"private"}));checks.public_contract_rejects_private_extensions=true;
-  const sourcePaths=["packages/contracts/src/verification/structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-runtime.ts","apps/api/src/verification-structured-extraction-reads-runtime.ts","apps/api/src/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/host/src/server/api.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-structured-extraction-transports.ts"];
+  const sourcePaths=["packages/contracts/src/verification/structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-runtime.ts","packages/host/src/verification/api/verification-structured-extraction-reads-runtime.ts","packages/host/src/verification/api/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/host/src/server/api.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-structured-extraction-transports.ts"];
   const sourceFiles=await Promise.all(sourcePaths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
   for(const operationId of operations)await database.cancelOperation(tenantId,operationId,{actorIdentity:namespace,correlationId:namespace});
   const report={schemaVersion:"verification-structured-extraction-transports-proof.v1",createdAt:new Date().toISOString(),fixtureName,tenantId,checks,publicResults,admittedThenCancelledOperationIds:operations,sourceFiles,supplierRequests:0,

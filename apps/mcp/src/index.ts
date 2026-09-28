@@ -14,7 +14,10 @@ import { pathToFileURL } from "node:url";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   assertOperationKindAdmitted,
+  bindResolvedVerificationContext,
   createKnowledgeResourceReads,
+  isAdjudicationDecisionReviewerActor,
+  createVerificationResourceReads,
   productionWorkerOperationKinds,
   retrievalExecutionProblem,
   submitCanonicalRetrievalRun,
@@ -24,6 +27,7 @@ import {
   type KnowledgeResourceReads,
   type ResolveVerificationContext,
   type ResourceReadResult,
+  type VerificationResourceReads,
 } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import {
@@ -31,6 +35,7 @@ import {
   createHost,
   createLocalIdentityResolver,
   isAuthorized,
+  verificationReadServices,
   requiredSubmissionAction,
   type LocalApiIdentity,
   type ResolveApiIdentity,
@@ -94,6 +99,8 @@ export interface KnowledgeMcpServerOptions {
   readonly verificationAdmission?: VerificationHostAdmission;
   /** In-process knowledge reads and canonical retrieval; absent capabilities are not admitted. */
   readonly knowledge?: KnowledgeMcpServices;
+  /** In-process verification reads, decisions reads and reconciliation; absent means not admitted. */
+  readonly verificationReads?: VerificationResourceReads;
   readonly incomingRequest?: {
     readonly headers: Record<string, unknown>;
     readonly body: unknown;
@@ -292,10 +299,21 @@ async function executeVerificationInProcess(input: {
     useCase: verificationToolUseCases[name],
     hints: parsed.context,
   });
-  if (!resolved) return toolError("FORBIDDEN");
+  // The API route's trusted-context binding: tenant, correlation, idempotency, actor and hints.
+  const binding = bindResolvedVerificationContext({
+    resolved,
+    tenantId: parsed.context.tenantId,
+    actor: options.identity.actor,
+    correlationId: parsed.context.correlationId,
+    idempotencyKey: parsed.context.idempotencyKey,
+    hints: parsed.context,
+    ...(options.incomingRequest ? { request: options.incomingRequest } : {}),
+  });
+  if (!binding.ok) return toolError("FORBIDDEN");
+  const context = binding.context;
   const admission = await admitVerificationMcpRequest({
     name,
-    tenantId: resolved.tenantId,
+    tenantId: context.tenantId,
     request: parsed.request,
     admission: options.verificationAdmission,
   });
@@ -304,9 +322,10 @@ async function executeVerificationInProcess(input: {
     const gate = options.verificationAdmission?.isAdjudicationDecisionAdmitted;
     if (!gate) return toolError("CAPABILITY_NOT_ADMITTED");
     if (
+      !isAdjudicationDecisionReviewerActor(context.actor) ||
       !(await gate({
         request: parsed.request as never,
-        context: resolved,
+        context,
       }))
     )
       return toolError("FORBIDDEN");
@@ -314,7 +333,7 @@ async function executeVerificationInProcess(input: {
   const result = await VERIFICATION_IN_PROCESS_SUBMIT[name](
     options.verificationOperations!,
     parsed.request,
-    resolved,
+    context,
   );
   return {
     content: [{ type: "text" as const, text: JSON.stringify(result) }],
@@ -333,69 +352,16 @@ export function createVerificationMcpToolExecutor(
       context = parsed.context;
     if (!isAuthorized(options.identity, context.tenantId, "operation.submit"))
       return toolError("FORBIDDEN");
+    // Submission is in process only. Without trusted operations, ownership resolution
+    // or (for record-decision) decision admission, the capability is not admitted.
     if (
-      options.verificationOperations &&
-      options.resolveVerificationContext &&
-      (name !== "knowledge_record_adjudication_decision" ||
-        options.verificationAdmission?.isAdjudicationDecisionAdmitted)
+      !options.verificationOperations ||
+      !options.resolveVerificationContext ||
+      (name === "knowledge_record_adjudication_decision" &&
+        !options.verificationAdmission?.isAdjudicationDecisionAdmitted)
     )
-      return executeVerificationInProcess({ name, parsed, options });
-    const client = options.apiClient;
-    if (!client) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result =
-      name === "knowledge_extract_structured_data"
-        ? await client.extractStructuredData(parsed.request as never, context)
-        : name === "knowledge_compare_benchmark_runs"
-          ? await client.compareBenchmarkRuns(parsed.request as never, context)
-          : name === "knowledge_run_benchmark"
-            ? await client.runBenchmark(parsed.request as never, context)
-            : name === "knowledge_verify_claims"
-              ? await client.verifyClaims(parsed.request as never, context)
-              : name === "knowledge_verify_report"
-                ? await client.verifyReport(parsed.request as never, context)
-                : name === "knowledge_verify_metric"
-                  ? await client.verifyMetricObservation(
-                      parsed.request as never,
-                      context,
-                    )
-                  : name === "knowledge_capture_source"
-                    ? await client.captureVerificationSource(
-                        parsed.request as never,
-                        context,
-                      )
-                    : name === "knowledge_parse_artifact"
-                      ? await client.parseArtifact(
-                          parsed.request as never,
-                          context,
-                        )
-                      : name === "knowledge_verify_extraction"
-                        ? await client.verifyExtraction(
-                            parsed.request as never,
-                            context,
-                          )
-                        : name === "knowledge_request_adjudication"
-                          ? await client.requestAdjudication(
-                              parsed.request as never,
-                              context,
-                            )
-                          : name === "knowledge_record_adjudication_decision"
-                            ? await client.recordAdjudicationDecision(
-                                parsed.request as never,
-                                context,
-                              )
-                            : name === "knowledge_inspect_audit_bundle"
-                              ? await client.inspectAuditBundle(
-                                  parsed.request as never,
-                                  context,
-                                )
-                              : await client.replayVerificationRun(
-                                  parsed.request as never,
-                                  context,
-                                );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
+      return toolError("CAPABILITY_NOT_ADMITTED");
+    return executeVerificationInProcess({ name, parsed, options });
   };
 }
 
@@ -434,26 +400,23 @@ export function createProviderReconciliationMcpExecutor(
       )
     )
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result =
-      "artifact" in parsed
-        ? await options.apiClient.applyProviderReconciliation(
-            parsed.operationId,
-            parsed.providerAttemptId,
-            ApplyProviderReconciliationRequestSchema.parse({
-              artifact: parsed.artifact,
-            }),
-            parsed.context,
-          )
-        : await options.apiClient.getProviderReconciliation(
-            parsed.operationId,
-            parsed.providerAttemptId,
-            parsed.context,
-          );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.providerReconciliation({
+        tenantId: parsed.context.tenantId,
+        actor: options.identity.actor,
+        operationId: parsed.operationId,
+        providerAttemptId: parsed.providerAttemptId,
+        ...("artifact" in parsed
+          ? {
+              artifact: ApplyProviderReconciliationRequestSchema.parse({
+                artifact: parsed.artifact,
+              }).artifact,
+            }
+          : {}),
+      }),
+    );
   };
 }
 const extractionReadSchema = z.strictObject({
@@ -467,15 +430,15 @@ export function createStructuredExtractionReadMcpExecutor(
     const { context, operationId } = extractionReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getStructuredExtraction(
-      operationId,
-      context,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.structuredExtraction({
+        tenantId: context.tenantId,
+        operationId,
+        actor: options.identity.actor,
+      }),
     );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
   };
 }
 export function createAuditInspectionReadMcpExecutor(
@@ -485,15 +448,15 @@ export function createAuditInspectionReadMcpExecutor(
     const { context, operationId } = extractionReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getAuditInspection(
-      operationId,
-      context,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.auditInspection({
+        tenantId: context.tenantId,
+        operationId,
+        actor: options.identity.actor,
+      }),
     );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
   };
 }
 export function createClaimsReportReadMcpExecutor(
@@ -504,21 +467,16 @@ export function createClaimsReportReadMcpExecutor(
     const { context, operationId } = extractionReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result =
-      family === "claims"
-        ? await options.apiClient.getVerificationClaimsResult(
-            operationId,
-            context,
-          )
-        : await options.apiClient.getVerificationReportResult(
-            operationId,
-            context,
-          );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    const input = {
+      tenantId: context.tenantId,
+      operationId,
+      actor: options.identity.actor,
     };
+    return family === "claims"
+      ? readToolResult(await reads.claims(input))
+      : readToolResult(await reads.report(input));
   };
 }
 export function createAdjudicationReadMcpExecutor(
@@ -528,15 +486,15 @@ export function createAdjudicationReadMcpExecutor(
     const { context, operationId } = extractionReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getAdjudicationSubject(
-      operationId,
-      context,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.adjudicationSubject({
+        tenantId: context.tenantId,
+        operationId,
+        actor: options.identity.actor,
+      }),
     );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
   };
 }
 export function createAdjudicationDecisionReadMcpExecutor(
@@ -546,15 +504,15 @@ export function createAdjudicationDecisionReadMcpExecutor(
     const { context, operationId } = extractionReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getAdjudicationDecision(
-      operationId,
-      context,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.adjudicationDecision({
+        tenantId: context.tenantId,
+        operationId,
+        actor: options.identity.actor,
+      }),
     );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
   };
 }
 export function createBenchmarkComparisonReadMcpExecutor(
@@ -564,15 +522,11 @@ export function createBenchmarkComparisonReadMcpExecutor(
     const { context, comparisonId } = comparisonReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result = await options.apiClient.getBenchmarkComparison(
-      comparisonId,
-      context,
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    return readToolResult(
+      await reads.benchmarkComparison({ tenantId: context.tenantId, comparisonId }),
     );
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
   };
 }
 export function createBenchmarkReadMcpExecutor(
@@ -585,15 +539,12 @@ export function createBenchmarkReadMcpExecutor(
     const { context, runId } = benchmarkReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
       return toolError("FORBIDDEN");
-    if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-    const result =
-      name === "knowledge_get_benchmark_run"
-        ? await options.apiClient.getBenchmarkRun(runId, context)
-        : await options.apiClient.getBenchmarkRunManifest(runId, context);
-    return {
-      content: [{ type: "text" as const, text: JSON.stringify(result) }],
-      structuredContent: result as unknown as Record<string, unknown>,
-    };
+    const reads = options.verificationReads;
+    if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+    const input = { tenantId: context.tenantId, runId };
+    return name === "knowledge_get_benchmark_run"
+      ? readToolResult(await reads.benchmarkRun(input))
+      : readToolResult(await reads.benchmarkManifest(input));
   };
 }
 
@@ -605,6 +556,7 @@ export interface KnowledgeMcpAppOptions {
   readonly resolveVerificationContext?: ResolveVerificationContext;
   readonly verificationAdmission?: VerificationHostAdmission;
   readonly knowledge?: KnowledgeMcpServices;
+  readonly verificationReads?: VerificationResourceReads;
   readonly createApiClient?: (
     accessToken: string,
   ) => KnowledgeMcpServerOptions["apiClient"];
@@ -888,7 +840,7 @@ export function createKnowledgeMcpServer(options: KnowledgeMcpServerOptions) {
       name,
       {
         description:
-          "Read a completed, signed benchmark through the authenticated API with compact engineering metadata.",
+          "Read a completed, signed benchmark with compact engineering metadata under the caller's tenant read authority.",
         inputSchema: benchmarkReadSchema.shape,
       },
       async (value: unknown) => executeBenchmarkRead(name, value),
@@ -1007,7 +959,7 @@ export function createKnowledgeMcpServer(options: KnowledgeMcpServerOptions) {
       tool.name,
       {
         description:
-          "Read authored verification cases or compact artifact-backed evidence through the authenticated API.",
+          "Read authored verification cases or compact artifact-backed evidence under the caller's tenant read authority.",
         inputSchema: tool.schema.shape,
       },
       async (value: unknown) => {
@@ -1020,34 +972,29 @@ export function createKnowledgeMcpServer(options: KnowledgeMcpServerOptions) {
           )
         )
           return toolError("FORBIDDEN");
-        if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-        const result =
-          "runId" in parsed
-            ? await options.apiClient.listVerificationRunCases(
-                parsed.runId,
-                {
-                  ...(parsed.pageSize === undefined
-                    ? {}
-                    : { pageSize: parsed.pageSize }),
-                  ...(parsed.cursor === undefined
-                    ? {}
-                    : { cursor: parsed.cursor }),
-                },
-                parsed.context,
+        const reads = options.verificationReads;
+        if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+        const tenantId = parsed.context.tenantId;
+        return "runId" in parsed
+          ? readToolResult(
+              await reads.runCases({
+                tenantId,
+                runId: parsed.runId,
+                ...(parsed.pageSize === undefined
+                  ? {}
+                  : { pageSize: parsed.pageSize }),
+                ...(parsed.cursor === undefined
+                  ? {}
+                  : { cursor: parsed.cursor }),
+              }),
+            )
+          : "caseRunId" in parsed
+            ? readToolResult(
+                await reads.case({ tenantId, caseRunId: parsed.caseRunId }),
               )
-            : "caseRunId" in parsed
-              ? await options.apiClient.getVerificationCase(
-                  parsed.caseRunId,
-                  parsed.context,
-                )
-              : await options.apiClient.getVerificationEvidence(
-                  parsed.evidenceId,
-                  parsed.context,
-                );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result) }],
-          structuredContent: result as unknown as Record<string, unknown>,
-        };
+            : readToolResult(
+                await reads.evidence({ tenantId, evidenceId: parsed.evidenceId }),
+              );
       },
     );
   }
@@ -1073,18 +1020,12 @@ export function createKnowledgeMcpServer(options: KnowledgeMcpServerOptions) {
         const { context, runId } = verificationReadSchema.parse(value);
         if (!isAuthorized(options.identity, context.tenantId, "knowledge.read"))
           return toolError("FORBIDDEN");
-        if (!options.apiClient) return toolError("CAPABILITY_NOT_ADMITTED");
-        const result =
-          name === "knowledge_get_verification_run"
-            ? await options.apiClient.getVerificationRun(runId, context)
-            : await options.apiClient.getVerificationRunManifest(
-                runId,
-                context,
-              );
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(result) }],
-          structuredContent: result as unknown as Record<string, unknown>,
-        };
+        const reads = options.verificationReads;
+        if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
+        const input = { tenantId: context.tenantId, runId };
+        return name === "knowledge_get_verification_run"
+          ? readToolResult(await reads.run(input))
+          : readToolResult(await reads.runManifest(input));
       },
     );
   }
@@ -1101,7 +1042,7 @@ export function createKnowledgeMcpServer(options: KnowledgeMcpServerOptions) {
     server.registerTool(
       name,
       {
-        description: `Bounded ${name} workflow through the authenticated verification HTTP client.`,
+        description: `Bounded ${name} workflow through in-process verification admission.`,
         inputSchema: verificationToolSchemas[name].shape,
       },
       async (value: unknown) => executeVerification(name, value),
@@ -1162,6 +1103,9 @@ export function buildKnowledgeMcpApp(
         ? { verificationAdmission: options.verificationAdmission }
         : {}),
       ...(options.knowledge ? { knowledge: options.knowledge } : {}),
+      ...(options.verificationReads
+        ? { verificationReads: options.verificationReads }
+        : {}),
       apiClient: options.createApiClient?.(token!),
     });
     const transport = new StreamableHTTPServerTransport({
@@ -1242,7 +1186,19 @@ export async function createMcpRuntime(environment: Environment = process.env) {
       ...(verify.runtime.resolveVerificationContext
         ? { resolveVerificationContext: verify.runtime.resolveVerificationContext }
         : {}),
-      verificationAdmission: verify.runtime,
+      // The API's admission gates, including opt-in adjudication decision admission.
+      verificationAdmission: {
+        ...verify.runtime,
+        ...(verify.decisions
+          ? {
+              isAdjudicationDecisionAdmitted:
+                verify.decisions.isAdjudicationDecisionAdmitted,
+            }
+          : {}),
+      },
+      verificationReads: createVerificationResourceReads(
+        verificationReadServices(verify),
+      ),
       // Temporary HTTP shim; Unit 3 replaces these calls with application ports.
       createApiClient: (accessToken) =>
         new KnowledgeClient({

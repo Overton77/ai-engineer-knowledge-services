@@ -13,8 +13,8 @@ import { sha256Digest } from "@aiengineer/knowledge-verification";
 import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
-import { createVerificationCaptureReads } from "../apps/api/src/verification-capture-reads-runtime.js";
-import { createVerificationBenchmarkCaptureProfileResolver } from "../apps/api/src/verification-benchmark-capture-profile.js";
+import { createVerificationCaptureReads } from "../packages/host/src/verification/api/verification-capture-reads-runtime.js";
+import { createVerificationBenchmarkCaptureProfileResolver } from "../packages/host/src/verification/api/verification-benchmark-capture-profile.js";
 import { buildServer } from "../apps/api/src/server.js";
 
 const connectionString=process.env.POSTGRES_URL!,projectUrl=process.env.SUPABASE_URL!,serviceRoleKey=process.env.SUPABASE_SECRET_KEY!;
@@ -55,7 +55,7 @@ try{
   const address=await server.listen({host:"127.0.0.1",port:0});
   workerTask=(async()=>{const completed=new Set<string>();while(!stopping){for(const id of operationIds){if(completed.has(id))continue;try{const result=await worker.runOperationOnce(id);if(result?.operation&&["succeeded","failed","cancelled"].includes(result.operation.status)){completed.add(id);terminalOperations.push({operationId:id,status:result.operation.status,receipt:result.receipt});}}catch(error){workerErrors.push(error instanceof Error?error.name:"UNKNOWN");}}await delay(100);}})();
   const inherited=Object.fromEntries(Object.entries(process.env).filter(([name])=>/^(path|systemroot|windir|temp|tmp)$/iu.test(name)));
-  const sourceSnapshot=await Promise.all(["apps/cli/dist/index.js","packages/application/dist/index.js","packages/persistence/dist/index.js","apps/api/src/server.ts","apps/api/src/verification-benchmark-capture-profile.ts","apps/api/src/verification-capture-reads-runtime.ts","scripts/prove-verification-benchmark-refresh-native.ts"].map(async path=>({path,digest:sha256Digest(await readFile(path))})));
+  const sourceSnapshot=await Promise.all(["apps/cli/dist/index.js","packages/application/dist/index.js","packages/persistence/dist/index.js","apps/api/src/server.ts","packages/host/src/verification/api/verification-benchmark-capture-profile.ts","packages/host/src/verification/api/verification-capture-reads-runtime.ts","scripts/prove-verification-benchmark-refresh-native.ts"].map(async path=>({path,digest:sha256Digest(await readFile(path))})));
   const snapshotDirectory=resolve(proposalDirectory,"..","executed-source");
   for(const item of sourceSnapshot){const bytes=await readFile(item.path);assert.equal(sha256Digest(bytes),item.digest);const target=resolve(snapshotDirectory,item.path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:"wx"});}
   await writeFile(resolve(snapshotDirectory,"manifest.json"),JSON.stringify(sourceSnapshot,null,2),{flag:"wx"});

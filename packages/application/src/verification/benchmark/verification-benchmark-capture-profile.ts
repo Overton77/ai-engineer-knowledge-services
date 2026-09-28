@@ -1,8 +1,7 @@
 import { ActorSchema, OperationContextSchema, UuidSchema, type OperationContext } from "@aiengineer/knowledge-contracts";
-import { actorsMatch, isAuthorized, type LocalApiIdentity } from "@aiengineer/knowledge-host";
-import type { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { z } from "zod";
-import { createVerificationOwnershipResolver } from "./verification-ownership.js";
+import { actorsMatch, isAuthorized, type LocalApiIdentity } from "../../access/api-access.js";
+import type { ResolveVerificationContext } from "../operations/verification-transport.js";
 
 const profileSchema = z.strictObject({
   profileName: z.string().regex(/^[a-z][a-z0-9-]{0,63}$/u),
@@ -14,22 +13,18 @@ const profileSchema = z.strictObject({
 });
 
 type Profile = z.infer<typeof profileSchema>;
-type OwnershipResolver = ReturnType<typeof createVerificationOwnershipResolver>;
 
 /**
  * Resolves a named deployment profile to existing canonical ownership.
  * Profile contents never originate in a CLI request; bearer identity remains
  * the authority for both actor and tenant action access.
  */
-export class ServerOwnedBenchmarkCaptureProfileResolver {
+export class BenchmarkCaptureProfileResolver {
   readonly #profiles: readonly Profile[];
-  readonly #ownership: OwnershipResolver;
+  readonly #ownership: ResolveVerificationContext;
 
-  constructor(
-    database: Pick<PostgresCanonicalRepository, "transaction">,
-    rawProfiles: string,
-    rawOwnershipGrants: string,
-  ) {
+  /** Profiles are validated before the ownership resolver is created, preserving configuration-failure order. */
+  constructor(rawProfiles: string, createOwnership: () => ResolveVerificationContext) {
     if (Buffer.byteLength(rawProfiles) > 262_144) throw new Error("VERIFICATION_BENCHMARK_CLI_PROFILE_CONFIG_TOO_LARGE");
     const profiles = z.array(profileSchema).min(1).max(256).parse(JSON.parse(rawProfiles));
     const names = new Set<string>();
@@ -38,7 +33,7 @@ export class ServerOwnedBenchmarkCaptureProfileResolver {
       names.add(profile.profileName);
     }
     this.#profiles = Object.freeze(profiles.map(profile => Object.freeze({ ...profile })));
-    this.#ownership = createVerificationOwnershipResolver(database, rawOwnershipGrants);
+    this.#ownership = createOwnership();
   }
 
   async resolve(
@@ -61,14 +56,4 @@ export class ServerOwnedBenchmarkCaptureProfileResolver {
     });
     return resolved === undefined ? undefined : OperationContextSchema.parse(resolved);
   }
-}
-
-export function createVerificationBenchmarkCaptureProfileResolver(
-  database: Pick<PostgresCanonicalRepository, "transaction">,
-  rawProfiles: string,
-  rawOwnershipGrants: string,
-) {
-  const resolver = new ServerOwnedBenchmarkCaptureProfileResolver(database, rawProfiles, rawOwnershipGrants);
-  return (input: { readonly profileName: string; readonly identity: LocalApiIdentity; readonly correlationId: string; readonly idempotencyKey: string }) =>
-    resolver.resolve(input.profileName, input.identity, input.correlationId, input.idempotencyKey);
 }

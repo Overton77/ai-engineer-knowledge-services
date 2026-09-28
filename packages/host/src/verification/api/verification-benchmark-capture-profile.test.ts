@@ -1,6 +1,6 @@
-import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
+import type { LocalApiIdentity } from "@aiengineer/knowledge-application";
 import { describe, expect, it, vi } from "vitest";
-import { ServerOwnedBenchmarkCaptureProfileResolver } from "../verification-benchmark-capture-profile.js";
+import { ServerOwnedBenchmarkCaptureProfileResolver } from "./verification-benchmark-capture-profile.js";
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

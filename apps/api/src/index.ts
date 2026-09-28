@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
 import { createCallbackSigningSecretResolver } from "./a2a-http.js";
-import { apiCompositionSeams, apiServerOptions } from "./composition.js";
+import { apiServerOptions } from "./composition.js";
 
 // Trusted host composition injects the same accounted adapter used by selected publication.
 export { buildServer, CanonicalRetrievalExecutor };
@@ -45,7 +45,6 @@ export async function createApiRuntime(environment: Environment = process.env) {
         environment.KNOWLEDGE_API_URL,
         config.NODE_ENV === "production",
       ),
-    seams: apiCompositionSeams,
   });
   try {
     const server = buildServer({

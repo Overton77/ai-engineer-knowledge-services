@@ -176,7 +176,7 @@ export function createVerificationResourceReads(services: VerificationResourceRe
       read("missing", bind(services.runReads, (service) => service.getRunManifest(input)),
         VerificationRunManifestResourceSchema,
         (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
-    runCases: (input: { tenantId: string; runId: string; pageSize?: number; cursor?: string }) =>
+    runCases: (input: { tenantId: string; runId: string; pageSize?: number | undefined; cursor?: string | undefined }) =>
       read("missing",
         bind(services.caseReads, (service) => service.listRunCases({
           tenantId: input.tenantId,

@@ -1,5 +1,4 @@
 import {
-  VerificationCaptureTerminalResourceSchema,
   VerificationProfileCaptureAcceptedSchema,
 } from "@aiengineer/knowledge-contracts";
 import {
@@ -7,13 +6,17 @@ import {
   type VerificationAdjudicationDecisionRequest,
 } from "@aiengineer/knowledge-contracts";
 import {
-  VerificationAdjudicationDecisionTerminalResourceSchema,
   type VerificationAdjudicationDecisionTerminalResource,
 } from "@aiengineer/knowledge-contracts";
-import { isVerifiedEveRuntimeRetry } from "./verification-ownership.js";
+import {
+  bindResolvedVerificationContext,
+  createVerificationResourceReads,
+  isAdjudicationDecisionReviewerActor,
+  type VerificationContextBindingFailure,
+  type VerificationResourceReadServices,
+} from "@aiengineer/knowledge-application";
 import {
   ApplyProviderReconciliationRequestSchema,
-  VerificationProviderReconciliationResourceSchema,
 } from "@aiengineer/knowledge-contracts";
 import {
   ExtractStructuredDataRequestSchema,
@@ -60,19 +63,6 @@ import {
   VectorStoreDocumentsInputSchema,
   VectorStoreIngestionInputSchema,
   UuidSchema,
-  VerificationClaimsTerminalResourceSchema,
-  VerificationReportTerminalResourceSchema,
-  VerificationAdjudicationTerminalResourceSchema,
-  VerificationStructuredExtractionResourceSchema,
-  VerificationAuditInspectionResourceSchema,
-  VerificationBenchmarkComparisonResourceSchema,
-  VerificationBenchmarkRunSummaryResourceSchema,
-  VerificationBenchmarkRunManifestResourceSchema,
-  VerificationRunSummaryResourceSchema,
-  VerificationRunManifestResourceSchema,
-  VerificationRunCasesResourceSchema,
-  VerificationCaseResourceSchema,
-  VerificationEvidenceResourceSchema,
   type EvidencePacket,
   type RetrievalCitationReplay,
   type OperationKind,
@@ -154,16 +144,8 @@ export interface ServerOptions {
     VerificationBenchmarkComparisonReadService,
     "getComparison"
   >;
-  verificationProviderReconciliation?: NonNullable<
-    ReturnType<
-      typeof import("./verification-provider-reconciliation-runtime.js").createVerificationProviderReconciliationService
-    >
-  >;
-  verificationSemanticReconciliation?: NonNullable<
-    ReturnType<
-      typeof import("./verification-semantic-reconciliation-runtime.js").createVerificationSemanticReconciliationService
-    >
-  >;
+  verificationProviderReconciliation?: VerificationResourceReadServices["providerReconciliation"];
+  verificationSemanticReconciliation?: VerificationResourceReadServices["semanticReconciliation"];
   verificationStructuredExtractionReads?: {
     getExtraction(input: {
       tenantId: string;
@@ -346,6 +328,14 @@ export interface ServerOptions {
   observeRoute?: (method: string, path: string) => void;
 }
 type Params = { id: string };
+const VERIFICATION_CONTEXT_BINDING_TITLES: Readonly<
+  Record<VerificationContextBindingFailure, string>
+> = {
+  ownership_denied: "Verification operation ownership denied",
+  context_mismatch: "Trusted verification context mismatch",
+  ownership_binding_mismatch: "Trusted verification ownership binding mismatch",
+  external_execution_mismatch: "Trusted external execution binding mismatch",
+};
 const collectionKinds: Record<string, OperationKind> = {
   "vector-stores": "vector_store_create",
   captures: "capture",
@@ -626,28 +616,6 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       );
     return undefined;
   };
-  const boundedResource = (
-    request: FastifyRequest,
-    reply: FastifyReply,
-    value: unknown,
-  ) => {
-    const maximumBytes = options.maximumResourceResponseBytes ?? 1_048_576;
-    if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1)
-      throw new Error("INVALID_RESOURCE_RESPONSE_LIMIT");
-    if (Buffer.byteLength(JSON.stringify(value), "utf8") > maximumBytes)
-      return reply
-        .status(413)
-        .type("application/problem+json")
-        .send(
-          problem(
-            413,
-            "LIMIT_EXCEEDED",
-            "Stored resource exceeds the bounded response contract",
-            correlationId(request),
-          ),
-        );
-    return value;
-  };
   const knowledgeReads = createKnowledgeResourceReads({
     ...(options.resourceReader ? { resources: options.resourceReader } : {}),
     operations: operationService,
@@ -691,6 +659,85 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     return reply
       .status(404)
       .send(problem(404, "NOT_FOUND", notFound, correlationId(request)));
+  };
+  const verificationReads = createVerificationResourceReads({
+    ...(options.verificationStructuredExtractionReads
+      ? { structuredExtractionReads: options.verificationStructuredExtractionReads }
+      : {}),
+    ...(options.verificationAuditInspectionReads
+      ? { auditInspectionReads: options.verificationAuditInspectionReads }
+      : {}),
+    ...(options.verificationAdjudicationReadService
+      ? { adjudicationReads: options.verificationAdjudicationReadService }
+      : {}),
+    ...(options.verificationAdjudicationDecisionReadService
+      ? { adjudicationDecisionReads: options.verificationAdjudicationDecisionReadService }
+      : {}),
+    ...(options.isAdjudicationDecisionReadAdmitted
+      ? { isAdjudicationDecisionReadAdmitted: options.isAdjudicationDecisionReadAdmitted }
+      : {}),
+    ...(options.verificationCaptureReads
+      ? { captureReads: options.verificationCaptureReads }
+      : {}),
+    ...(options.verificationClaimsReportReads
+      ? { claimsReportReads: options.verificationClaimsReportReads }
+      : {}),
+    ...(options.verificationBenchmarkComparisonReads
+      ? { benchmarkComparisonReads: options.verificationBenchmarkComparisonReads }
+      : {}),
+    ...(options.verificationBenchmarkReads
+      ? { benchmarkReads: options.verificationBenchmarkReads }
+      : {}),
+    ...(options.verificationReads ? { runReads: options.verificationReads } : {}),
+    ...(options.verificationCaseReads
+      ? { caseReads: options.verificationCaseReads }
+      : {}),
+    ...(options.verificationProviderReconciliation
+      ? { providerReconciliation: options.verificationProviderReconciliation }
+      : {}),
+    ...(options.verificationSemanticReconciliation
+      ? { semanticReconciliation: options.verificationSemanticReconciliation }
+      : {}),
+    ...(options.maximumResourceResponseBytes === undefined
+      ? {}
+      : { maximumResponseBytes: options.maximumResourceResponseBytes }),
+  });
+  /** Maps a shared verification read onto the route's historical problem titles. */
+  const sendVerificationRead = (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    result: ResourceReadResult<unknown>,
+    titles: {
+      readonly unavailable: string;
+      readonly notFound: string;
+      readonly integrity: string;
+      readonly pending?: string;
+      readonly terminal?: (state: string) => string;
+    },
+  ) => {
+    if (result.ok) return result.value;
+    const { failure } = result;
+    const title =
+      failure.reason === "unavailable"
+        ? titles.unavailable
+        : failure.reason === "not_found"
+          ? titles.notFound
+          : failure.reason === "pending" && titles.pending
+            ? titles.pending
+            : failure.reason === "terminal" && titles.terminal
+              ? titles.terminal(failure.state ?? "")
+              : failure.reason === "too_large"
+                ? "Stored resource exceeds the bounded response contract"
+                : titles.integrity;
+    return reply
+      .status(failure.status)
+      .type("application/problem+json")
+      .send(problem(failure.status, failure.code, title, correlationId(request)));
+  };
+  const reconciliationTitles = {
+    unavailable: "Reconciliation unavailable",
+    notFound: "Reconciliation not found",
+    integrity: "Reconciliation unavailable",
   };
   const verificationContext = async (
     request: FastifyRequest,
@@ -781,7 +828,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       useCase,
       hints,
     });
-    if (!resolved) {
+    const binding = bindResolvedVerificationContext({
+      resolved,
+      tenantId: access.tenant,
+      actor: access.identity.actor,
+      correlationId: correlationId(request),
+      idempotencyKey,
+      hints,
+      request,
+    });
+    if (!binding.ok) {
       await reply
         .status(403)
         .type("application/problem+json")
@@ -789,73 +845,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           problem(
             403,
             "FORBIDDEN",
-            "Verification operation ownership denied",
+            VERIFICATION_CONTEXT_BINDING_TITLES[binding.failure],
             correlationId(request),
           ),
         );
       return undefined;
     }
-    const context = OperationContextSchema.parse(resolved);
-    if (
-      context.tenantId !== access.tenant ||
-      context.correlationId !== correlationId(request) ||
-      context.idempotencyKey !== idempotencyKey ||
-      !actorsMatch(access.identity.actor, context.actor)
-    ) {
-      await reply
-        .status(403)
-        .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Trusted verification context mismatch",
-            correlationId(request),
-          ),
-        );
-      return undefined;
-    }
-    for (const key of [
-      "attemptId",
-      "workItemId",
-      "missionId",
-      "causationId",
-    ] as const)
-      if (hints[key] !== undefined && context[key] !== hints[key]) {
-        await reply
-          .status(403)
-          .type("application/problem+json")
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Trusted verification ownership binding mismatch",
-              correlationId(request),
-            ),
-          );
-        return undefined;
-      }
-    // Only the production resolver can attest a newly observed Eve invocation
-    // and bind it to the original immutable operation context for a retry.
-    if (
-      hints.externalExecution !== undefined &&
-      JSON.stringify(context.externalExecution) !==
-        JSON.stringify(hints.externalExecution) &&
-      !isVerifiedEveRuntimeRetry(request, context)
-    ) {
-      await reply
-        .status(403)
-        .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Trusted external execution binding mismatch",
-            correlationId(request),
-          ),
-        );
-      return undefined;
-    }
+    const { context } = binding;
     return {
       access,
       context,
@@ -1166,57 +1162,15 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             method === "POST"
               ? ApplyProviderReconciliationRequestSchema.parse(request.body)
               : undefined;
-          if (!options.verificationSemanticReconciliation)
-            return reply
-              .status(503)
-              .type("application/problem+json")
-              .send(
-                problem(
-                  503,
-                  "CAPABILITY_NOT_ADMITTED",
-                  "Reconciliation unavailable",
-                  correlationId(request),
-                ),
-              );
-          try {
-            const resource =
-              VerificationProviderReconciliationResourceSchema.parse(
-                body
-                  ? await options.verificationSemanticReconciliation.applyDecision(
-                      { ...scoped, ...body },
-                    )
-                  : await options.verificationSemanticReconciliation.getDecision(
-                      scoped,
-                    ),
-              );
-            if (
-              resource.tenantId !== scoped.tenantId ||
-              resource.operationId !== scoped.operationId ||
-              resource.providerAttemptId !== scoped.providerAttemptId
-            )
-              throw new Error(
-                "VERIFICATION_PROVIDER_RECONCILIATION_READ_SCOPE_MISMATCH",
-              );
-            return boundedResource(request, reply, resource);
-          } catch (error) {
-            const missing =
-              error instanceof Error &&
-              "code" in error &&
-              error.code === "NOT_FOUND";
-            return reply
-              .status(missing ? 404 : 503)
-              .type("application/problem+json")
-              .send(
-                problem(
-                  missing ? 404 : 503,
-                  missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-                  missing
-                    ? "Reconciliation not found"
-                    : "Reconciliation unavailable",
-                  correlationId(request),
-                ),
-              );
-          }
+          return sendVerificationRead(
+            request,
+            reply,
+            await verificationReads.semanticReconciliation({
+              ...scoped,
+              ...(body ? { artifact: body.artifact } : {}),
+            }),
+            reconciliationTitles,
+          );
         },
       });
     }
@@ -1244,57 +1198,15 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           method === "POST"
             ? ApplyProviderReconciliationRequestSchema.parse(request.body)
             : undefined;
-        if (!options.verificationProviderReconciliation)
-          return reply
-            .status(503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                503,
-                "CAPABILITY_NOT_ADMITTED",
-                "Reconciliation unavailable",
-                correlationId(request),
-              ),
-            );
-        try {
-          const resource =
-            VerificationProviderReconciliationResourceSchema.parse(
-              body
-                ? await options.verificationProviderReconciliation.applyDecision(
-                    { ...scoped, ...body },
-                  )
-                : await options.verificationProviderReconciliation.getDecision(
-                    scoped,
-                  ),
-            );
-          if (
-            resource.tenantId !== scoped.tenantId ||
-            resource.operationId !== scoped.operationId ||
-            resource.providerAttemptId !== scoped.providerAttemptId
-          )
-            throw new Error(
-              "VERIFICATION_PROVIDER_RECONCILIATION_READ_SCOPE_MISMATCH",
-            );
-          return boundedResource(request, reply, resource);
-        } catch (error) {
-          const missing =
-            error instanceof Error &&
-            "code" in error &&
-            error.code === "NOT_FOUND";
-          return reply
-            .status(missing ? 404 : 503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                missing ? 404 : 503,
-                missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-                missing
-                  ? "Reconciliation not found"
-                  : "Reconciliation unavailable",
-                correlationId(request),
-              ),
-            );
-        }
+        return sendVerificationRead(
+          request,
+          reply,
+          await verificationReads.providerReconciliation({
+            ...scoped,
+            ...(body ? { artifact: body.artifact } : {}),
+          }),
+          reconciliationTitles,
+        );
       },
     });
   }
@@ -1305,51 +1217,20 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const operationId = UuidSchema.parse(request.params.operationId);
-      if (!options.verificationStructuredExtractionReads)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Extraction reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        const resource = VerificationStructuredExtractionResourceSchema.parse(
-          await options.verificationStructuredExtractionReads.getExtraction({
-            tenantId: access.tenant,
-            operationId,
-            actor: access.identity.actor,
-          }),
-        );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.operationId !== operationId
-        )
-          throw new Error("VERIFICATION_EXTRACTION_READ_SCOPE_MISMATCH");
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const missing =
-          error instanceof Error &&
-          "code" in error &&
-          error.code === "NOT_FOUND";
-        return reply
-          .status(missing ? 404 : 503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              missing ? 404 : 503,
-              missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-              missing
-                ? "Extraction not found"
-                : "Extraction integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.structuredExtraction({
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        }),
+        {
+          unavailable: "Extraction reads unavailable",
+          notFound: "Extraction not found",
+          integrity: "Extraction integrity unavailable",
+        },
+      );
     },
   );
   server.get<{ Params: { operationId: string } }>(
@@ -1359,73 +1240,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const operationId = UuidSchema.parse(request.params.operationId);
-      if (!options.verificationAuditInspectionReads)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Audit inspection reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        const resource = VerificationAuditInspectionResourceSchema.parse(
-          await options.verificationAuditInspectionReads.getInspection({
-            tenantId: access.tenant,
-            operationId,
-            actor: access.identity.actor,
-          }),
-        );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.operationId !== operationId
-        )
-          throw new Error("VERIFICATION_AUDIT_INSPECTION_READ_SCOPE_MISMATCH");
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const code =
-          error instanceof Error &&
-          "code" in error &&
-          typeof error.code === "string"
-            ? error.code
-            : "INTEGRITY";
-        const status =
-          code === "NOT_FOUND"
-            ? 404
-            : code === "PENDING"
-              ? 409
-              : code === "FAILED" || code === "CANCELLED"
-                ? 422
-                : 503;
-        const problemCode =
-          status === 404
-            ? "NOT_FOUND"
-            : status === 409
-              ? "CONFLICT"
-              : status === 422
-                ? "INVALID_STATE_TRANSITION"
-                : "INTERNAL_ERROR";
-        return reply
-          .status(status)
-          .type("application/problem+json")
-          .send(
-            problem(
-              status,
-              problemCode,
-              status === 404
-                ? "Audit inspection not found"
-                : status === 409
-                  ? "Audit inspection is not terminal"
-                  : status === 422
-                    ? `Audit inspection terminal state: ${code.toLowerCase()}`
-                    : "Audit inspection integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.auditInspection({
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        }),
+        {
+          unavailable: "Audit inspection reads unavailable",
+          notFound: "Audit inspection not found",
+          pending: "Audit inspection is not terminal",
+          terminal: (state) => `Audit inspection terminal state: ${state}`,
+          integrity: "Audit inspection integrity unavailable",
+        },
+      );
     },
   );
   server.get<{ Params: { operationId: string } }>(
@@ -1435,93 +1265,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const operationId = UuidSchema.parse(request.params.operationId);
-      if (
-        !options.verificationAdjudicationDecisionReadService ||
-        !options.isAdjudicationDecisionReadAdmitted
-      )
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Decision reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        if (
-          !(await options.isAdjudicationDecisionReadAdmitted({
-            tenantId: access.tenant,
-            operationId,
-            actor: access.identity.actor,
-          }))
-        )
-          return reply
-            .status(404)
-            .type("application/problem+json")
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Decision not found",
-                correlationId(request),
-              ),
-            );
-        const resource =
-          VerificationAdjudicationDecisionTerminalResourceSchema.parse(
-            await options.verificationAdjudicationDecisionReadService.getDecision(
-              {
-                tenantId: access.tenant,
-                operationId,
-                actor: access.identity.actor,
-              },
-            ),
-          );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.operationId !== operationId
-        )
-          throw new Error("DECISION_READ_SCOPE_MISMATCH");
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const code =
-          error instanceof Error && "code" in error
-            ? String(error.code)
-            : "INTEGRITY";
-        const status =
-          code === "NOT_FOUND"
-            ? 404
-            : code === "PENDING"
-              ? 409
-              : code === "FAILED" || code === "CANCELLED"
-                ? 422
-                : 503;
-        return reply
-          .status(status)
-          .type("application/problem+json")
-          .send(
-            problem(
-              status,
-              status === 404
-                ? "NOT_FOUND"
-                : status === 409
-                  ? "CONFLICT"
-                  : status === 422
-                    ? "INVALID_STATE_TRANSITION"
-                    : "INTERNAL_ERROR",
-              status === 404
-                ? "Decision not found"
-                : status === 409
-                  ? "Decision is not terminal"
-                  : status === 422
-                    ? "Decision did not succeed"
-                    : "Decision integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.adjudicationDecision({
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        }),
+        {
+          unavailable: "Decision reads unavailable",
+          notFound: "Decision not found",
+          pending: "Decision is not terminal",
+          terminal: () => "Decision did not succeed",
+          integrity: "Decision integrity unavailable",
+        },
+      );
     },
   );
   server.get<{ Params: { operationId: string } }>(
@@ -1531,71 +1290,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const operationId = UuidSchema.parse(request.params.operationId);
-      if (!options.verificationAdjudicationReadService)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Adjudication reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        const resource = VerificationAdjudicationTerminalResourceSchema.parse(
-          await options.verificationAdjudicationReadService.getPendingSubject({
-            tenantId: access.tenant,
-            operationId,
-            actor: access.identity.actor,
-          }),
-        );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.operationId !== operationId
-        )
-          throw new Error("VERIFICATION_ADJUDICATION_READ_SCOPE_MISMATCH");
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const code =
-          error instanceof Error &&
-          "code" in error &&
-          typeof error.code === "string"
-            ? error.code
-            : "INTEGRITY";
-        const status =
-          code === "NOT_FOUND"
-            ? 404
-            : code === "PENDING"
-              ? 409
-              : code === "FAILED" || code === "CANCELLED"
-                ? 422
-                : 503;
-        return reply
-          .status(status)
-          .type("application/problem+json")
-          .send(
-            problem(
-              status,
-              status === 404
-                ? "NOT_FOUND"
-                : status === 409
-                  ? "CONFLICT"
-                  : status === 422
-                    ? "INVALID_STATE_TRANSITION"
-                    : "INTERNAL_ERROR",
-              status === 404
-                ? "Adjudication subject not found"
-                : status === 409
-                  ? "Adjudication subject is not terminal"
-                  : status === 422
-                    ? `Adjudication terminal state: ${code.toLowerCase()}`
-                    : "Adjudication integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.adjudicationSubject({
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        }),
+        {
+          unavailable: "Adjudication reads unavailable",
+          notFound: "Adjudication subject not found",
+          pending: "Adjudication subject is not terminal",
+          terminal: (state) => `Adjudication terminal state: ${state}`,
+          integrity: "Adjudication integrity unavailable",
+        },
+      );
     },
   );
   server.get<{ Params: { operationId: string } }>(
@@ -1605,71 +1315,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const operationId = UuidSchema.parse(request.params.operationId);
-      if (!options.verificationCaptureReads)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Capture reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        const resource = VerificationCaptureTerminalResourceSchema.parse(
-          await options.verificationCaptureReads.getCapture({
-            tenantId: access.tenant,
-            operationId,
-            actor: access.identity.actor,
-          }),
-        );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.operationId !== operationId
-        )
-          throw new Error("VERIFICATION_CAPTURE_READ_SCOPE_MISMATCH");
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const code =
-          error instanceof Error &&
-          "code" in error &&
-          typeof error.code === "string"
-            ? error.code
-            : "INTEGRITY";
-        const status =
-          code === "NOT_FOUND"
-            ? 404
-            : code === "PENDING"
-              ? 409
-              : code === "FAILED" || code === "CANCELLED"
-                ? 422
-                : 503;
-        return reply
-          .status(status)
-          .type("application/problem+json")
-          .send(
-            problem(
-              status,
-              status === 404
-                ? "NOT_FOUND"
-                : status === 409
-                  ? "CONFLICT"
-                  : status === 422
-                    ? "INVALID_STATE_TRANSITION"
-                    : "INTERNAL_ERROR",
-              status === 404
-                ? "Capture result not found"
-                : status === 409
-                  ? "Capture result is not terminal"
-                  : status === 422
-                    ? `Capture terminal state: ${code.toLowerCase()}`
-                    : "Capture custody integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.capture({
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        }),
+        {
+          unavailable: "Capture reads unavailable",
+          notFound: "Capture result not found",
+          pending: "Capture result is not terminal",
+          terminal: (state) => `Capture terminal state: ${state}`,
+          integrity: "Capture custody integrity unavailable",
+        },
+      );
     },
   );
   for (const family of ["claims", "reports"] as const) {
@@ -1680,82 +1341,25 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         if (!access) return;
         z.strictObject({}).parse(request.query);
         const operationId = UuidSchema.parse(request.params.operationId);
-        if (!options.verificationClaimsReportReads)
-          return reply
-            .status(503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                503,
-                "CAPABILITY_NOT_ADMITTED",
-                "Claims/report reads unavailable",
-                correlationId(request),
-              ),
-            );
-        try {
-          const value =
-            family === "claims"
-              ? await options.verificationClaimsReportReads.getClaims({
-                  tenantId: access.tenant,
-                  operationId,
-                  actor: access.identity.actor,
-                })
-              : await options.verificationClaimsReportReads.getReport({
-                  tenantId: access.tenant,
-                  operationId,
-                  actor: access.identity.actor,
-                });
-          const resource =
-            family === "claims"
-              ? VerificationClaimsTerminalResourceSchema.parse(value)
-              : VerificationReportTerminalResourceSchema.parse(value);
-          if (
-            resource.tenantId !== access.tenant ||
-            resource.operationId !== operationId
-          )
-            throw new Error("VERIFICATION_CLAIMS_REPORT_READ_SCOPE_MISMATCH");
-          return boundedResource(request, reply, resource);
-        } catch (error) {
-          const code =
-            error instanceof Error &&
-            "code" in error &&
-            typeof error.code === "string"
-              ? error.code
-              : "INTEGRITY";
-          const status =
-            code === "NOT_FOUND"
-              ? 404
-              : code === "PENDING"
-                ? 409
-                : code === "FAILED" || code === "CANCELLED"
-                  ? 422
-                  : 503;
-          const problemCode =
-            status === 404
-              ? "NOT_FOUND"
-              : status === 409
-                ? "CONFLICT"
-                : status === 422
-                  ? "INVALID_STATE_TRANSITION"
-                  : "INTERNAL_ERROR";
-          return reply
-            .status(status)
-            .type("application/problem+json")
-            .send(
-              problem(
-                status,
-                problemCode,
-                status === 404
-                  ? "Verification result not found"
-                  : status === 409
-                    ? "Verification result is not terminal"
-                    : status === 422
-                      ? `Verification terminal state: ${code.toLowerCase()}`
-                      : "Verification result integrity unavailable",
-                correlationId(request),
-              ),
-            );
-        }
+        const input = {
+          tenantId: access.tenant,
+          operationId,
+          actor: access.identity.actor,
+        };
+        return sendVerificationRead(
+          request,
+          reply,
+          family === "claims"
+            ? await verificationReads.claims(input)
+            : await verificationReads.report(input),
+          {
+            unavailable: "Claims/report reads unavailable",
+            notFound: "Verification result not found",
+            pending: "Verification result is not terminal",
+            terminal: (state) => `Verification terminal state: ${state}`,
+            integrity: "Verification result integrity unavailable",
+          },
+        );
       },
     );
   }
@@ -1766,52 +1370,19 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       if (!access) return;
       z.strictObject({}).parse(request.query);
       const comparisonId = UuidSchema.parse(request.params.comparisonId);
-      if (!options.verificationBenchmarkComparisonReads)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Comparison reads unavailable",
-              correlationId(request),
-            ),
-          );
-      try {
-        const resource = VerificationBenchmarkComparisonResourceSchema.parse(
-          await options.verificationBenchmarkComparisonReads.getComparison({
-            tenantId: access.tenant,
-            comparisonId,
-          }),
-        );
-        if (
-          resource.tenantId !== access.tenant ||
-          resource.comparisonId !== comparisonId
-        )
-          throw new Error(
-            "VERIFICATION_BENCHMARK_COMPARISON_READ_SCOPE_MISMATCH",
-          );
-        return boundedResource(request, reply, resource);
-      } catch (error) {
-        const missing =
-          error instanceof Error &&
-          "code" in error &&
-          error.code === "NOT_FOUND";
-        return reply
-          .status(missing ? 404 : 503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              missing ? 404 : 503,
-              missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-              missing
-                ? "Comparison not found"
-                : "Comparison integrity unavailable",
-              correlationId(request),
-            ),
-          );
-      }
+      return sendVerificationRead(
+        request,
+        reply,
+        await verificationReads.benchmarkComparison({
+          tenantId: access.tenant,
+          comparisonId,
+        }),
+        {
+          unavailable: "Comparison reads unavailable",
+          notFound: "Comparison not found",
+          integrity: "Comparison integrity unavailable",
+        },
+      );
     },
   );
   for (const manifest of [false, true]) {
@@ -1821,50 +1392,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const access = await requireAccess(request, reply, "knowledge.read");
         if (!access) return;
         z.strictObject({}).parse(request.query);
-        const runId = UuidSchema.parse(request.params.runId);
-        if (!options.verificationBenchmarkReads)
-          return reply
-            .status(503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                503,
-                "CAPABILITY_NOT_ADMITTED",
-                "Benchmark reads unavailable",
-                correlationId(request),
-              ),
-            );
-        try {
-          const input = { tenantId: access.tenant, runId };
-          const resource = manifest
-            ? VerificationBenchmarkRunManifestResourceSchema.parse(
-                await options.verificationBenchmarkReads.getManifest(input),
-              )
-            : VerificationBenchmarkRunSummaryResourceSchema.parse(
-                await options.verificationBenchmarkReads.getRun(input),
-              );
-          if (resource.tenantId !== access.tenant || resource.runId !== runId)
-            throw new Error("VERIFICATION_BENCHMARK_READ_SCOPE_MISMATCH");
-          return boundedResource(request, reply, resource);
-        } catch (error) {
-          const missing =
-            error instanceof Error &&
-            "code" in error &&
-            error.code === "NOT_FOUND";
-          return reply
-            .status(missing ? 404 : 503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                missing ? 404 : 503,
-                missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-                missing
-                  ? "Benchmark run not found"
-                  : "Benchmark integrity unavailable",
-                correlationId(request),
-              ),
-            );
-        }
+        const input = {
+          tenantId: access.tenant,
+          runId: UuidSchema.parse(request.params.runId),
+        };
+        return sendVerificationRead(
+          request,
+          reply,
+          manifest
+            ? await verificationReads.benchmarkManifest(input)
+            : await verificationReads.benchmarkRun(input),
+          {
+            unavailable: "Benchmark reads unavailable",
+            notFound: "Benchmark run not found",
+            integrity: "Benchmark integrity unavailable",
+          },
+        );
       },
     );
   }
@@ -1874,50 +1417,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       async (request, reply) => {
         const access = await requireAccess(request, reply, "knowledge.read");
         if (!access) return;
-        const runId = UuidSchema.parse(request.params.runId);
-        if (!options.verificationReads)
-          return reply
-            .status(503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                503,
-                "CAPABILITY_NOT_ADMITTED",
-                "Verification reads unavailable",
-                correlationId(request),
-              ),
-            );
-        try {
-          const input = { tenantId: access.tenant, runId };
-          const resource = manifest
-            ? VerificationRunManifestResourceSchema.parse(
-                await options.verificationReads.getRunManifest(input),
-              )
-            : VerificationRunSummaryResourceSchema.parse(
-                await options.verificationReads.getRun(input),
-              );
-          if (resource.tenantId !== access.tenant || resource.runId !== runId)
-            throw new Error("VERIFICATION_RUN_READ_SCOPE_MISMATCH");
-          return boundedResource(request, reply, resource);
-        } catch (error) {
-          const missing =
-            error instanceof Error &&
-            "code" in error &&
-            error.code === "NOT_FOUND";
-          return reply
-            .status(missing ? 404 : 503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                missing ? 404 : 503,
-                missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-                missing
-                  ? "Verification run not found"
-                  : "Verification run integrity unavailable",
-                correlationId(request),
-              ),
-            );
-        }
+        const input = {
+          tenantId: access.tenant,
+          runId: UuidSchema.parse(request.params.runId),
+        };
+        return sendVerificationRead(
+          request,
+          reply,
+          manifest
+            ? await verificationReads.runManifest(input)
+            : await verificationReads.run(input),
+          {
+            unavailable: "Verification reads unavailable",
+            notFound: "Verification run not found",
+            integrity: "Verification run integrity unavailable",
+          },
+        );
       },
     );
   }
@@ -1941,71 +1456,21 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
                 })
                 .parse(request.query)
             : z.strictObject({}).parse(request.query);
-        const reads = options.verificationCaseReads;
-        if (!reads)
-          return reply
-            .status(503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                503,
-                "CAPABILITY_NOT_ADMITTED",
-                "Verification case reads unavailable",
-                correlationId(request),
-              ),
-            );
-        try {
-          const value =
-            route.kind === "list"
-              ? await reads.listRunCases({
-                  tenantId: access.tenant,
-                  runId: id,
-                  ...page,
-                })
-              : route.kind === "case"
-                ? await reads.getCase({
-                    tenantId: access.tenant,
-                    caseRunId: id,
-                  })
-                : await reads.getEvidence({
-                    tenantId: access.tenant,
-                    evidenceId: id,
-                  });
-          const resource =
-            route.kind === "list"
-              ? VerificationRunCasesResourceSchema.parse(value)
-              : route.kind === "case"
-                ? VerificationCaseResourceSchema.parse(value)
-                : VerificationEvidenceResourceSchema.parse(value);
-          if (
-            resource.tenantId !== access.tenant ||
-            (route.kind === "list" && resource.runId !== id) ||
-            (route.kind === "case" &&
-              (!("caseRunId" in resource) || resource.caseRunId !== id)) ||
-            (route.kind === "evidence" &&
-              (!("evidenceId" in resource) || resource.evidenceId !== id))
-          )
-            throw new Error("VERIFICATION_CASE_READ_SCOPE_MISMATCH");
-          return boundedResource(request, reply, resource);
-        } catch (error) {
-          const missing =
-            error instanceof Error &&
-            "code" in error &&
-            error.code === "NOT_FOUND";
-          return reply
-            .status(missing ? 404 : 503)
-            .type("application/problem+json")
-            .send(
-              problem(
-                missing ? 404 : 503,
-                missing ? "NOT_FOUND" : "INTERNAL_ERROR",
-                missing
-                  ? "Verification resource not found"
-                  : "Verification resource integrity unavailable",
-                correlationId(request),
-              ),
-            );
-        }
+        const tenantId = access.tenant;
+        return sendVerificationRead(
+          request,
+          reply,
+          route.kind === "list"
+            ? await verificationReads.runCases({ tenantId, runId: id, ...page })
+            : route.kind === "case"
+              ? await verificationReads.case({ tenantId, caseRunId: id })
+              : await verificationReads.evidence({ tenantId, evidenceId: id }),
+          {
+            unavailable: "Verification case reads unavailable",
+            notFound: "Verification resource not found",
+            integrity: "Verification resource integrity unavailable",
+          },
+        );
       },
     );
   }
@@ -2463,11 +1928,8 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       const input = VerificationAdjudicationDecisionRequestSchema.parse(
         request.body,
       );
-      const actor = trusted.context.actor;
       if (
-        actor.kind === "model" ||
-        (actor.kind === "service" &&
-          actor.serviceIdentity !== "human_reviewer") ||
+        !isAdjudicationDecisionReviewerActor(trusted.context.actor) ||
         !(await options.isAdjudicationDecisionAdmitted({
           request: input,
           context: trusted.context,

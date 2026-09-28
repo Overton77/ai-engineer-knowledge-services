@@ -1,0 +1,161 @@
+// Every verification mutation surface: use case, durable kind/step, CLI route, MCP tool,
+// HTTP path and a strict request. Shared by the surface inventory and no-HTTP-shim tests.
+const id = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const tenant = id(1);
+export const version = { verificationContractVersion: "verification.v1" as const };
+const ref = { artifactId: id(3), digest: `sha256:${"a".repeat(64)}` };
+const captures = { captureIds: [id(4)] };
+// Public inventory is independent of the adapters' switch statements. A new public
+// operation must be represented here before it can claim cross-surface parity.
+export const verificationMutationInventory = [
+  {
+    useCase: "captureSource",
+    kind: "verification_capture",
+    step: "register_and_admit",
+    cli: ["benchmark", "capture"],
+    tool: "knowledge_capture_source",
+    path: "/v1/verification/captures",
+    request: {
+      source: {
+        mode: "register",
+        sourceKind: "web_page",
+        sourceId: id(5),
+        contentArtifact: ref,
+      },
+      requestedProjectionKinds: ["html_dom"],
+    },
+  },
+  {
+    useCase: "parseArtifact",
+    kind: "verification_parse_artifact",
+    step: "parse_and_admit",
+    cli: ["artifact", "parse"],
+    tool: "knowledge_parse_artifact",
+    path: "/v1/verification/artifacts:parse",
+    request: {
+      captureId: id(4),
+      sourceArtifact: {
+        ...ref,
+        tenantId: tenant,
+        mediaType: "text/html",
+        byteLength: 4,
+        objectKey: "tenant/object",
+        createdAt: "2026-09-08T00:00:00.000Z",
+        producerActivityId: "capture",
+        producerVersion: "v1",
+        encryptionClass: "managed",
+        retentionClass: "audit",
+        dataClassification: "restricted",
+        parentArtifactIds: [],
+      },
+    },
+  },
+  {
+    useCase: "extractStructuredData",
+    kind: "verification_structured_extraction",
+    step: "extract_and_register",
+    cli: ["extraction", "run"],
+    tool: "knowledge_extract_structured_data",
+    path: "/v1/verification/extractions",
+    request: {
+      captureId: id(4),
+      representation: ref,
+      extractionSchema: ref,
+      extractionProfile: "registered_default",
+    },
+  },
+  {
+    useCase: "verifyExtraction",
+    kind: "verification_extraction",
+    step: "verify_and_register",
+    cli: ["verify", "extract"],
+    tool: "knowledge_verify_extraction",
+    path: "/v1/verification/extractions:verify",
+    request: { ...captures, extractionSchema: ref, extractionOutput: ref },
+  },
+  {
+    useCase: "verifyClaims",
+    kind: "verification_claims",
+    step: "verify_claims_and_register",
+    cli: ["verify", "citations"],
+    tool: "knowledge_verify_claims",
+    path: "/v1/verification/claims:verify",
+    request: { ...captures, assertions: ref },
+  },
+  {
+    useCase: "verifyReport",
+    kind: "verification_report",
+    step: "verify_report_and_register",
+    cli: ["verify", "report"],
+    tool: "knowledge_verify_report",
+    path: "/v1/verification/reports:verify",
+    request: { ...captures, report: ref, claimLedger: ref },
+  },
+  {
+    useCase: "verifyMetricObservation",
+    kind: "verification_metric",
+    step: "verify_metric_and_register",
+    cli: ["verify", "metric"],
+    tool: "knowledge_verify_metric",
+    path: "/v1/verification/metrics:verify",
+    request: { ...captures, observations: ref },
+  },
+  {
+    useCase: "runBenchmark",
+    kind: "verification_benchmark",
+    step: "replay_recorded_and_register",
+    cli: ["benchmark", "run"],
+    tool: "knowledge_run_benchmark",
+    path: "/v1/verification/benchmarks:run",
+    request: {
+      dataset: ref,
+      experimentDefinition: ref,
+      executionMode: "offline_recorded",
+    },
+  },
+  {
+    useCase: "compareBenchmarkRuns",
+    kind: "verification_benchmark_compare",
+    step: "compare_registered_and_publish",
+    cli: ["benchmark", "compare"],
+    tool: "knowledge_compare_benchmark_runs",
+    path: "/v1/verification/benchmarks:compare",
+    request: {
+      baselineRunId: id(6),
+      candidateRunId: id(7),
+      comparisonProfile: "paired_default",
+    },
+  },
+  {
+    useCase: "replayRun",
+    kind: "verification_replay",
+    step: "hydrate_and_recompute",
+    cli: ["bundle", "replay"],
+    tool: "knowledge_replay_run",
+    path: `/v1/verification/runs/${id(6)}:replay`,
+    request: { runId: id(6), replayMode: "deterministic_only" },
+  },
+  {
+    useCase: "requestAdjudication",
+    kind: "verification_adjudication",
+    step: "request_adjudication_and_register",
+    cli: ["adjudication", "request"],
+    tool: "knowledge_request_adjudication",
+    path: "/v1/verification/adjudications:request",
+    request: {
+      target: { kind: "evidence", evidenceId: id(8) },
+      reason: "ambiguous_evidence",
+      evidencePacket: ref,
+    },
+  },
+  {
+    useCase: "inspectAuditBundle",
+    kind: "verification_audit_bundle",
+    step: "inspect_audit_bundle_and_register",
+    cli: ["bundle", "inspect"],
+    tool: "knowledge_inspect_audit_bundle",
+    path: "/v1/verification/audit-bundles:inspect",
+    request: { auditBundle: ref },
+  },
+] as const;
