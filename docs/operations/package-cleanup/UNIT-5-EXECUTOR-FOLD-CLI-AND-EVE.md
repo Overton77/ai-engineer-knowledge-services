@@ -2,6 +2,8 @@
 
 Status: proposed execution specification, prepared at the end of Unit 4 on 2026-09-28. Begin only from the locally integrated Unit 4 main. Parent: [FINAL-LAYOUT.md](./FINAL-LAYOUT.md), unit 5 (§3, §4.1, §4.4) and [review](./FINAL-REVIEW.md) R1, R3, R4, R5. Previous unit: [UNIT-4-APPLICATION-ORDER-AND-CATALOG.md](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md). Progress: [workspace/PROGRESS.md](./workspace/PROGRESS.md).
 
+Delivery is divided into slices (5A–5H, one branch per slice) in [UNIT-5-SLICES.md](./UNIT-5-SLICES.md); start each session there.
+
 ## Scope and entry gate
 
 Create `refactor/ks-unit-5-executor-fold-and-eve` in Knowledge Services from integrated main, and a matching branch in `research_ingestion_systems_agent` for the Eve adaptation. Unlike Units 1–4 this unit changes surfaces deliberately: the executor binaries (`knowledge-verify`, the executor's `knowledge`) and the CLI's `knowledge` binary are replaced by one `ks`; Eve and its skill sync move to the new binaries, entrypoints and packaging in the same unit (R4). No forwarding adapters, dual-running services or legacy aliases (R3, R4). Authority outcomes, custody, receipts and persisted identity strings do not change.
