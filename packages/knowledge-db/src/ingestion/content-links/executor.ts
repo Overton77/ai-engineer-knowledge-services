@@ -1,7 +1,7 @@
 import { ContentLinkIntentSchema, JsonValueSchema, type ContentLinkIntent, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger } from "../../db-read/index.js";
-import type { TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { ContentAdmission, KnowledgeDatabase, KnowledgeSqlClient } from "../../ports.js";
 import { assertHeadMatches, domainError, isKnowledgeError, type Workspace } from "../../schema-workspace/index.js";
 import { awaitWinnerReceipt, isIdempotencyKeyCollision } from "../duplicate.js";
 import { verifySnapshotPreflight } from "../snapshot-preflight.js";
@@ -13,7 +13,8 @@ import { beginContentLedger, finishContentLedger, findContentLedger, reconcileCo
 import type { AuthenticatedContentEvidence, ContentLinkAuthority, ContentLinkOperationResult, ContentLinkPlan, ContentLinkReceipt } from "./types.js";
 
 interface ContentLinkExecutorConfig {
-  readonly db: TenantPostgres;
+  readonly db: KnowledgeDatabase;
+  readonly admission: ContentAdmission;
   readonly workspace: Workspace;
   readonly artifacts: ArtifactLedger;
   readonly authority: ContentLinkAuthority;
@@ -102,11 +103,11 @@ export class ContentLinkExecutor {
         knowledgeSeq: intent.inputSnapshot.knowledgeSeq } }, this.config.artifacts, this.config.workspace);
   }
 
-  private async prepare(client: TenantSqlClient, intent: ContentLinkIntent, receiptId?: string): Promise<PreparedPlan> {
+  private async prepare(client: KnowledgeSqlClient, intent: ContentLinkIntent, receiptId?: string): Promise<PreparedPlan> {
     const prepared = new Map<string, PreparedContentOperation>();
     const contexts = new Map<string, ContentOperationContext>();
     const results: ContentLinkOperationResult[] = [];
-    const sources = new ContentSourceReader({ client, tenantId: intent.context.tenantId, artifacts: this.config.artifacts });
+    const sources = new ContentSourceReader({ client, tenantId: intent.context.tenantId, artifacts: this.config.artifacts, admission: this.config.admission });
     const context = { client, tenantId: intent.context.tenantId, attemptId: intent.context.attemptId,
       ...(receiptId ? { receiptId } : {}), sources, priorPrepared: prepared };
     for (const ordered of orderContentOperations(intent.operations)) {
@@ -171,7 +172,7 @@ export class ContentLinkExecutor {
     return operations;
   }
 
-  private async commitBatch(input: { client: TenantSqlClient; intent: ContentLinkIntent; receiptId: string; expectedHead: number; operationCount: number }): Promise<void> {
+  private async commitBatch(input: { client: KnowledgeSqlClient; intent: ContentLinkIntent; receiptId: string; expectedHead: number; operationCount: number }): Promise<void> {
     const committed = await scalarNumber(input.client, "select temporal.commit_batch($1,$2,$3,$4::jsonb)", [input.receiptId,
       this.idempotencyKey(input.intent).slice(7), contentIntentDigest(input.intent).slice(7), JSON.stringify({ contentOperations: input.operationCount })]);
     if (committed !== input.expectedHead) throw new Error("CONTENT_BATCH_COMMIT_MISMATCH");
@@ -183,7 +184,7 @@ export class ContentLinkExecutor {
         { intent, intentDigest: contentIntentDigest(intent), idempotencyKey: this.idempotencyKey(intent) }));
   }
 
-  private async reconcileRows(client: TenantSqlClient, receipt: ContentLinkReceipt): Promise<void> {
+  private async reconcileRows(client: KnowledgeSqlClient, receipt: ContentLinkReceipt): Promise<void> {
     for (const result of receipt.operations) {
       const operation = receipt.intent.operations.find(candidate => candidate.operationId === result.operationId);
       if (!operation) throw new Error("CONTENT_RECEIPT_OPERATION_MISSING");
@@ -205,17 +206,17 @@ function admissionFailure(error: unknown): string | undefined {
   if (isKnowledgeError(error) && /^(CONTENT_|EVIDENCE_|ARTIFACT_NOT_FOUND)/.test(error.code)) return error.code;
   return error instanceof Error && error.message === "EVIDENCE_NOT_AUTHORIZED" ? error.message : undefined;
 }
-async function requireAttempt(client: TenantSqlClient, intent: ContentLinkIntent): Promise<void> {
+async function requireAttempt(client: KnowledgeSqlClient, intent: ContentLinkIntent): Promise<void> {
   const row = (await client.query<{ id: string }>("select a.id from orchestration.attempt a join orchestration.work_item w on w.tenant_id=a.tenant_id and w.id=a.work_item_id where a.tenant_id=$1 and a.id=$2 and w.mission_id=$3",
     [intent.context.tenantId, intent.context.attemptId, intent.context.missionId])).rows[0];
   if (!row) throw domainError("CONTENT_ATTEMPT_BINDING_INVALID", "Content-link attempt must belong to the declared tenant and mission");
 }
-async function requireCurrentHead(client: TenantSqlClient, expected: number): Promise<number> {
+async function requireCurrentHead(client: KnowledgeSqlClient, expected: number): Promise<number> {
   const current = await scalarNumber(client, "select knowledge_seq from api.knowledge_head()", []);
   if (current !== expected) throw domainError("REBASE_REQUIRED", "Knowledge head advanced; refresh the content-link snapshot");
   return current;
 }
-async function scalarNumber(client: TenantSqlClient, sql: string, values: readonly unknown[]): Promise<number> {
+async function scalarNumber(client: KnowledgeSqlClient, sql: string, values: readonly unknown[]): Promise<number> {
   const row = (await client.query<Record<string, unknown>>(sql, [...values])).rows[0];
   const value = row ? Number(Object.values(row)[0]) : NaN;
   if (!Number.isSafeInteger(value) || value < 0) throw new Error("CONTENT_KNOWLEDGE_HEAD_INVALID");

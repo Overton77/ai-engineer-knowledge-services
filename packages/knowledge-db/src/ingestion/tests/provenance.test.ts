@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
 import { promoteOfficialClaimStatus } from "../provenance.js";
 
@@ -10,7 +10,7 @@ function recordingClient() {
       statements.push(sql);
       return { rows: [], rowCount: 0 };
     },
-  } as unknown as TenantSqlClient;
+  } as unknown as KnowledgeSqlClient;
   return { client, statements };
 }
 

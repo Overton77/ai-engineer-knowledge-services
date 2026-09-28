@@ -1,9 +1,9 @@
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 import type { IngestionIntent } from "../intent.js";
 import type { IngestionReceipt, ProposalReceipt } from "../receipt.js";
 
-export async function linkReportIngestion(client: TenantSqlClient, input: { intent: IngestionIntent; receipt: IngestionReceipt }): Promise<void> {
+export async function linkReportIngestion(client: KnowledgeSqlClient, input: { intent: IngestionIntent; receipt: IngestionReceipt }): Promise<void> {
   for (const proposal of input.intent.proposals) {
     if (!proposal.reportBinding) continue;
     const binding = proposal.reportBinding;

@@ -1,7 +1,7 @@
 import { ContentLinkOperationSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { canonicalJson } from "../../db-read/index.js";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
 import { deterministicId } from "../plan.js";
 import type { ContentSourceReader, ContentSourceNode } from "./sources.js";
@@ -11,7 +11,7 @@ import { sameContentInstant } from "./timestamps.js";
 type Row = Record<string, unknown>;
 type SummaryOperation = Extract<ContentLinkOperation, { kind: "summary.materialize" }>;
 export interface ContentOperationContext {
-  readonly client: TenantSqlClient;
+  readonly client: KnowledgeSqlClient;
   readonly tenantId: string;
   readonly attemptId: string;
   readonly receiptId?: string;
@@ -416,7 +416,7 @@ async function projectionBridges(context: ContentOperationContext, operation: Ex
 }
 
 /** Historical reconciliation checks immutable rows; later evidence eligibility and summary lifecycle may change. */
-export async function reconcileContentOperationRefs(client: TenantSqlClient, input: {
+export async function reconcileContentOperationRefs(client: KnowledgeSqlClient, input: {
   readonly tenantId: string; readonly result: ContentLinkOperationResult; readonly operation: ContentLinkOperation;
 }): Promise<void> {
   const { tenantId, result, operation } = input;

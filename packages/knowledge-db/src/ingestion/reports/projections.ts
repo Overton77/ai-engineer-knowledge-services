@@ -1,5 +1,5 @@
 import { uuidv7 } from "../../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import type { RenderedAssertion, ReportStructure } from "./structure.js";
 
 interface ProjectionInput {
@@ -8,7 +8,7 @@ interface ProjectionInput {
   readonly assertions: readonly RenderedAssertion[];
 }
 
-export async function writeReportProjections(client: TenantSqlClient, input: ProjectionInput): Promise<void> {
+export async function writeReportProjections(client: KnowledgeSqlClient, input: ProjectionInput): Promise<void> {
   const { report } = input;
   const sections = new Map<string, string>();
   for (const [ordinal, section] of report.sections.entries()) {

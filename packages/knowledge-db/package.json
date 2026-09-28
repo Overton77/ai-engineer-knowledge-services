@@ -19,10 +19,10 @@
     "@aiengineer/database-contract": "file:../../vendor/aiengineer-database-contract-0.4.16.tgz",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-core": "workspace:*",
-    "@aiengineer/knowledge-persistence": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-preparation": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "catalog:",

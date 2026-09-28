@@ -1,5 +1,5 @@
 import { canonicalJson } from "../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../ports.js";
 import { domainError } from "../schema-workspace/index.js";
 import { isOfficiallyAdmittedVerdict, type AuthoritativeClaim } from "./evidence-admission.js";
 import { deterministicId } from "./plan.js";
@@ -10,7 +10,7 @@ export { isOfficiallyAdmittedVerdict };
 type Provenance = NonNullable<AuthoritativeClaim["provenance"]>;
 type Evidence = Provenance["evidence"][number];
 type Row = Record<string, unknown>;
-interface Context { client: TenantSqlClient; tenantId: string; claimRowId: string }
+interface Context { client: KnowledgeSqlClient; tenantId: string; claimRowId: string }
 const METHOD_ALIASES: Readonly<Record<string, string>> = { "direct-http": "http", "firecrawl-scrape": "firecrawl", "manual-upload": "manual", "repository-archive": "repository", "paper-resolver": "api", https_acquire: "http", registered_artifact: "manual", file_text: "manual", file_html: "manual", firecrawl_parse: "firecrawl", https_get: "http", "https_get+firecrawl_parse": "http" };
 const SOURCE_CLASSES = new Set(["web_page", "api", "repository", "pdf", "transcript", "dataset", "registry", "other"]);
 
@@ -49,7 +49,7 @@ export async function materializeProvenance(context: Context, claim: Authoritati
 
 /** Flips `evidence.claim.status` to verified only for policy-admitted official verdicts. */
 export async function promoteOfficialClaimStatus(
-  client: TenantSqlClient,
+  client: KnowledgeSqlClient,
   input: { tenantId: string; claimRowId: string; verdict: string },
 ): Promise<boolean> {
   if (!isOfficiallyAdmittedVerdict(input.verdict)) return false;

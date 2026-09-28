@@ -1,5 +1,5 @@
 import { canonicalJson } from "../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../ports.js";
 import { domainError } from "../schema-workspace/index.js";
 import type { ProposalOf } from "./intent.js";
 import { deterministicId } from "./plan.js";
@@ -26,7 +26,7 @@ export function recordKeys(binding: RecordBinding): { recordId: string; compatib
     recordEntityKey: JSON.stringify([binding.tenantId, recordId, binding.entityId, "subject"]) };
 }
 
-export async function existingRecord(client: TenantSqlClient, binding: RecordBinding): Promise<string | undefined> {
+export async function existingRecord(client: KnowledgeSqlClient, binding: RecordBinding): Promise<string | undefined> {
   const id = recordIdentity(binding);
   const row = (await client.query<{ id: string }>(`select r.id from knowledge.record r
     join knowledge.compatibility_constraint c on c.tenant_id=r.tenant_id and c.id=r.id
@@ -41,7 +41,7 @@ export async function existingRecord(client: TenantSqlClient, binding: RecordBin
   return row?.id;
 }
 
-export async function materializeRecord(input: RecordBinding & { readonly client: TenantSqlClient; readonly receiptId: string }): Promise<{
+export async function materializeRecord(input: RecordBinding & { readonly client: KnowledgeSqlClient; readonly receiptId: string }): Promise<{
   ids: Record<string, string>; affected: AffectedRef[]; noop?: boolean;
 }> {
   const { client, tenantId, claimId, entityId, proposal, receiptId } = input;

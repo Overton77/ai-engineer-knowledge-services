@@ -1,4 +1,4 @@
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../ports.js";
 
 /** Vocabulary tables read once per plan so validation can name allowed values before any transaction is attempted. */
 export interface EntityKind { readonly code: string; readonly schema: string; readonly table: string; readonly columns: readonly string[] }
@@ -15,7 +15,7 @@ export interface Vocabulary {
 
 const TYPED_TABLE_EXCLUDED_COLUMNS = new Set(["id", "tenant_id", "kind"]);
 
-export async function loadVocabulary(client: TenantSqlClient): Promise<Vocabulary> {
+export async function loadVocabulary(client: KnowledgeSqlClient): Promise<Vocabulary> {
   const [kinds, columns, relationships, streams, events] = await Promise.all([
     client.query<{ code: string; canonical_schema: string; canonical_table: string }>("select code, canonical_schema, canonical_table from taxonomy.entity_kind order by code"),
     client.query<{ table_schema: string; table_name: string; column_name: string }>("select table_schema, table_name, column_name from information_schema.columns where table_schema = 'corpus' order by table_name, ordinal_position"),

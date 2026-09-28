@@ -4,7 +4,7 @@ import type { ArtifactLedger } from "@aiengineer/knowledge-db";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { JsonValueSchema } from "@aiengineer/knowledge-contracts";
 import { authenticateCanonicalContentEvidence, ContentSourceReader, readContentLinkReceipt } from "@aiengineer/knowledge-db";
-import type { PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";
+import { postgresContentAdmission, type PromotionSelectionPorts } from "@aiengineer/knowledge-persistence";
 import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import type { CanonicalEvidenceClaim, CanonicalEvidenceReader } from "../evidence-reader.js";
 
@@ -76,7 +76,7 @@ export function createPromotionSelectionPorts(config: SelectionHostConfig): Prom
     },
     async authenticateSource(client, input) {
       authorize(input.tenantId);
-      const source = await new ContentSourceReader({ client, tenantId: pins.tenantId, artifacts: config.artifacts }).chunk(input.reference);
+      const source = await new ContentSourceReader({ client, tenantId: pins.tenantId, artifacts: config.artifacts, admission: postgresContentAdmission }).chunk(input.reference);
       const row = (await client.query<{ source_id: string }>("select source_id from evidence.source_capture where tenant_id=$1 and id=$2",
         [pins.tenantId, input.reference.captureId])).rows[0];
       if (!row || input.reference.captureId !== input.source.captureId) deny("PROMOTION_SELECTION_SOURCE_CAPTURE_MISMATCH");
@@ -84,7 +84,7 @@ export function createPromotionSelectionPorts(config: SelectionHostConfig): Prom
     },
     async authenticateNode(client, input) {
       authorize(input.tenantId);
-      return new ContentSourceReader({ client, tenantId: pins.tenantId, artifacts: config.artifacts }).node(input.reference);
+      return new ContentSourceReader({ client, tenantId: pins.tenantId, artifacts: config.artifacts, admission: postgresContentAdmission }).node(input.reference);
     },
     measure: config.measure,
   };

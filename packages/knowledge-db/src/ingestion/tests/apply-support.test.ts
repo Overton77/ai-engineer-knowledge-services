@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { applyPlan, type ApplyContext } from "../apply.js";
 import { admissionIssues, proposalEffect, type AuthoritativeClaim } from "../evidence-admission.js";
 import { IngestionIntentSchema } from "../intent.js";
@@ -20,7 +20,7 @@ function supportFixture() {
   const facts: PlanFacts = { ...fixtureFacts(), claims: [{ runId: "sealed", claimId: "challenge", claimRowId: claimId, sealed: true, eligible: true, authoritative }] };
   const query = vi.fn(async (sql: string) => ({ rows: sql.includes("claim_evidence_link") ? [{ locator_id: locatorId }]
     : sql.includes("temporal.admit_support") ? [{ id: "support-id" }] : [{ id: segmentId }], rowCount: 1 }));
-  const client = { query } as unknown as TenantSqlClient;
+  const client = { query } as unknown as KnowledgeSqlClient;
   const plan = buildPlan(intent, facts, { version: "unit", migrationHead: "unit" });
   const context: ApplyContext = { client, tenantId, receiptId: randomUUID(), intent, plan,
     vocabulary: facts.vocabulary, artifacts: {} as ApplyContext["artifacts"] };

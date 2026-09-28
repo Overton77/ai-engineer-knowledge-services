@@ -1,5 +1,5 @@
 import { uuidv7, type ArtifactLedger } from "../db-read/index.js";
-import type { TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeDatabase, KnowledgeSqlClient } from "../ports.js";
 import { assertHeadMatches, domainError, infrastructureError, isKnowledgeError, KnowledgeError, type ExitClass, type Workspace } from "../schema-workspace/index.js";
 import { applyPlan, type ApplyOutcome } from "./apply.js";
 import { awaitWinnerReceipt, isIdempotencyKeyCollision } from "./duplicate.js";
@@ -14,7 +14,7 @@ import { reconcileReceipt } from "./receipt-reconciliation.js";
 import { verifySnapshotPreflight } from "./snapshot-preflight.js";
 
 export interface IngestionExecutorConfig {
-  readonly db: TenantPostgres;
+  readonly db: KnowledgeDatabase;
   readonly workspace: Workspace;
   readonly artifacts: ArtifactLedger;
   readonly executorVersion: string;
@@ -135,7 +135,7 @@ export class IngestionExecutor {
     return awaitWinnerReceipt(lookup, { intentId: intent.intentId, idempotencyKey });
   }
 
-  private async priorReceipts(client: TenantSqlClient, intent: IngestionIntent, excludingKey: string): Promise<string[]> {
+  private async priorReceipts(client: KnowledgeSqlClient, intent: IngestionIntent, excludingKey: string): Promise<string[]> {
     return (await client.query<Row>("select r.id from orchestration.operation_intent i join orchestration.operation_receipt r on r.intent_id=i.id where i.tenant_id=$1 and i.intent_type=$2 and i.payload->>'intentId'=$3 and i.idempotency_key<>$4 order by r.applied_at", [intent.context.tenantId, INTENT_TYPE, intent.intentId, excludingKey])).rows.map((row) => String(row.id));
   }
 
@@ -178,7 +178,7 @@ export class IngestionExecutor {
   }
 
   /** Plan `derived_from` intent; receipt `produced_by` plan and `consumed_by` intent (spec §6.4). */
-  private async linkLineage(client: TenantSqlClient, refs: { tenantId: string; receiptId: string; intentArtifactId: string; planArtifactId: string; receiptArtifactId: string }): Promise<"written" | "denied"> {
+  private async linkLineage(client: KnowledgeSqlClient, refs: { tenantId: string; receiptId: string; intentArtifactId: string; planArtifactId: string; receiptArtifactId: string }): Promise<"written" | "denied"> {
     const { tenantId, receiptId } = refs;
     const states = [
       await this.config.artifacts.link(client, { tenantId, from: refs.planArtifactId, to: refs.intentArtifactId, relation: "derived_from", receiptId }),
@@ -215,7 +215,7 @@ export class IngestionExecutor {
     }
   }
 
-  private async insertLedger(client: TenantSqlClient, entry: LedgerEntry): Promise<LedgerIds> {
+  private async insertLedger(client: KnowledgeSqlClient, entry: LedgerEntry): Promise<LedgerIds> {
     const { intent, plan } = entry;
     const { proposals: _proposals, subjects: _subjects, notes: _notes, ...envelope } = intent;
     const operationIntentId = uuidv7();
@@ -227,7 +227,7 @@ export class IngestionExecutor {
     return { operationIntentId, receiptId: uuidv7() };
   }
 
-  private async insertReceipt(client: TenantSqlClient, entry: LedgerEntry, ids: LedgerIds & { affectedRefs: readonly AffectedRef[] }): Promise<void> {
+  private async insertReceipt(client: KnowledgeSqlClient, entry: LedgerEntry, ids: LedgerIds & { affectedRefs: readonly AffectedRef[] }): Promise<void> {
     const { plan, intent } = entry;
     await client.query(
       `insert into orchestration.operation_receipt(id,intent_id,executor_version,precondition_results,outcome,changes_summary,affected_refs) values($1,$2,$3,$4::jsonb,$5,$6::jsonb,$7::jsonb)`,
@@ -253,7 +253,7 @@ function outcomeWithoutBatch(plan: IngestionPlan): ApplyOutcome {
   };
 }
 
-async function scalar(client: TenantSqlClient, sql: string, params: readonly unknown[]): Promise<string> {
+async function scalar(client: KnowledgeSqlClient, sql: string, params: readonly unknown[]): Promise<string> {
   const row = (await client.query<Row>(sql, params)).rows[0];
   if (!row) throw infrastructureError("EXECUTOR_INTERNAL", `no row from ${sql}`);
   return String(Object.values(row)[0]);

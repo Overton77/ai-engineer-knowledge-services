@@ -3,14 +3,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContentLinkOperationSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger, ArtifactRecord, PutArtifactInput } from "../../db-read/index.js";
-import { persistPreparedContentSummary, readContentRepresentationAdmission, type TenantPostgres, type TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { ContentAdmission, KnowledgeSqlClient, KnowledgeTransactions } from "../../ports.js";
 import { ContentSourceReader } from "./sources.js";
 import { contentLinkEffect } from "./operations.js";
 import { ContentSummaryPreparer } from "./summary-preparation.js";
 import type { AuthenticatedContentEvidence } from "./types.js";
 
-vi.mock("@aiengineer/knowledge-persistence", async importOriginal => ({ ...await importOriginal<object>(), persistPreparedContentSummary: vi.fn(async () => undefined), readContentRepresentationAdmission: vi.fn(async () => ({ accepted: false, decisionId: null, decision: null })) }));
-afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); vi.mocked(readContentRepresentationAdmission).mockResolvedValue({ accepted: false, decisionId: null, decision: null }); });
+const admission = { persistPreparedSummary: vi.fn(async () => undefined), readRepresentationAdmission: vi.fn(async () => ({ accepted: false, decisionId: null as string | null, decision: null as string | null })) } satisfies ContentAdmission;
+afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); admission.readRepresentationAdmission.mockResolvedValue({ accepted: false, decisionId: null, decision: null }); });
 const tenantId = randomUUID(), missionId = randomUUID(), attemptId = randomUUID(), sourceArtifactId = randomUUID();
 const sourceId = randomUUID(), representationId = randomUUID(), documentVersionId = randomUUID(), captureId = randomUUID();
 const selectedText = "Café 😀 works on β only.", qualifiers = ["β only"], text = `${selectedText}\nβ only`, digest = sha256Digest("input");
@@ -25,10 +25,10 @@ function fixture(capturedText = selectedText) {
   const evidence: AuthenticatedContentEvidence = { reference: operation.evidence[0]!, statement: capturedText, qualifiers, value: contentLinkEffect(operation),
     entityBindings: [], downstreamUse: ["content_link:summary.materialize"], verdict: "directly_supported", policyOutcome: "pass", policyDigest: digest,
     eligible: true, selectedText: capturedText, selectedContentDigest: sha256Digest(capturedText), representationArtifactId: sourceArtifactId, captureArtifactId: sourceArtifactId };
-  const client = { query: vi.fn(async () => ({ rows: [{ acceptance_state: "pending" }] })) } as unknown as TenantSqlClient;
-  const db = { transaction: async (_scope: unknown, work: (client: TenantSqlClient) => Promise<unknown>) => work(client) } as unknown as TenantPostgres;
+  const client = { query: vi.fn(async () => ({ rows: [{ acceptance_state: "pending" }] })) } as unknown as KnowledgeSqlClient;
+  const db = { transaction: async (_scope: unknown, work: (client: KnowledgeSqlClient) => Promise<unknown>) => work(client) } as unknown as KnowledgeTransactions;
   const retained = new Map<string, ArtifactRecord>(), values: PutArtifactInput[] = [];
-  const artifacts = { async putWith(transaction: TenantSqlClient, input: PutArtifactInput) {
+  const artifacts = { async putWith(transaction: KnowledgeSqlClient, input: PutArtifactInput) {
     expect(transaction).toBe(client); values.push(input);
     const content = input.text ?? JSON.stringify(input.value), hash = sha256Digest(content);
     const old = retained.get(hash);
@@ -41,8 +41,8 @@ function fixture(capturedText = selectedText) {
   vi.spyOn(ContentSourceReader.prototype, "representation").mockResolvedValue({ representation_class: "structural_extraction", artifact_id: sourceArtifactId });
   vi.spyOn(ContentSourceReader.prototype, "node").mockResolvedValue({ id: sourceId, representationId, text: capturedText, kind: "paragraph" });
   const lineage = vi.spyOn(ContentSourceReader.prototype, "representationCapture").mockResolvedValue({});
-  const authority = { authenticate: vi.fn(async (input: { client: TenantSqlClient }) => { expect(input.client).toBe(client); return evidence; }) };
-  const service = new ContentSummaryPreparer({ db, artifacts, authority, tenantId, missionId, attemptId, policyDigest: digest });
+  const authority = { authenticate: vi.fn(async (input: { client: KnowledgeSqlClient }) => { expect(input.client).toBe(client); return evidence; }) };
+  const service = new ContentSummaryPreparer({ db, admission, artifacts, authority, tenantId, missionId, attemptId, policyDigest: digest });
   return { operation, evidence, service, values, lineage, authority, client };
 }
 
@@ -53,7 +53,7 @@ describe("authenticated deterministic summary preparation", () => {
     expect(value.values[0]).toMatchObject({ artifactType: "content_summary_text", text });
     expect(value.values[1]).toMatchObject({ artifactType: "content_summary_preparation_receipt" });
     expect(value.lineage).toHaveBeenCalledWith(value.operation.kind === "summary.materialize" ? value.operation.derivedFrom : {}, documentVersionId, captureId);
-    expect(persistPreparedContentSummary).toHaveBeenCalledWith(value.client, expect.objectContaining({ tenantId, missionId, attemptId }));
+    expect(admission.persistPreparedSummary).toHaveBeenCalledWith(value.client, expect.objectContaining({ tenantId, missionId, attemptId }));
   });
   it("replays stable receipt bytes despite the artifact store's reused flag", async () => {
     const value = fixture(), first = await value.service.prepare(value.operation), second = await value.service.prepare(value.operation);
@@ -83,7 +83,7 @@ describe("authenticated deterministic summary preparation", () => {
     if (field === "verdict") evidence.verdict = "not_supported";
     await expect(value.service.prepare(value.operation)).rejects.toThrow();
     expect(value.values).toHaveLength(0);
-    expect(persistPreparedContentSummary).not.toHaveBeenCalled();
+    expect(admission.persistPreparedSummary).not.toHaveBeenCalled();
   });
   it("rejects caller acceptance and undeclared output fields at its strict proposal seam", async () => {
     const value = fixture();
@@ -99,11 +99,11 @@ describe("authenticated deterministic summary preparation", () => {
 
 it.each(["reject", "quarantine", "defer", "request_changes"])("reports latest %s on preparation replay", async decision => {
   const value = fixture();
-  vi.mocked(readContentRepresentationAdmission).mockResolvedValue({ accepted: false, decisionId: "review", decision });
+  admission.readRepresentationAdmission.mockResolvedValue({ accepted: false, decisionId: "review", decision });
   expect((await value.service.prepare(value.operation)).acceptanceState).toBe(decision);
 });
 it("reports effective accepted review while the immutable output label remains pending", async () => {
   const value = fixture();
-  vi.mocked(readContentRepresentationAdmission).mockResolvedValue({ accepted: true, decisionId: "review", decision: "accept" });
+  admission.readRepresentationAdmission.mockResolvedValue({ accepted: true, decisionId: "review", decision: "accept" });
   expect((await value.service.prepare(value.operation)).acceptanceState).toBe("accepted");
 });

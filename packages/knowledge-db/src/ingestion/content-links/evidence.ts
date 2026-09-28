@@ -1,6 +1,6 @@
 import { canonicalJson } from "../../db-read/index.js";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 import type { AuthoritativeClaim } from "../evidence-admission.js";
 import { canonicalCaptureMethod } from "../provenance.js";
@@ -16,7 +16,7 @@ export interface SealedContentClaim {
   selectedText: ReadonlyMap<string, string>;
 }
 interface EvidenceContext {
-  client: TenantSqlClient;
+  client: KnowledgeSqlClient;
   tenantId: string;
   policyDigest: string;
   reference: ContentLinkEvidenceReference;

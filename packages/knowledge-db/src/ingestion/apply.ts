@@ -1,6 +1,6 @@
 import type { ArtifactLedger } from "../db-read/index.js";
 import { eventExtent, extentTimestamp } from "./temporal.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../ports.js";
 import { domainError } from "../schema-workspace/index.js";
 import type { ExtentSchema, IngestionIntent, NewSubject, Proposal, ProposalOf, WorldInterval } from "./intent.js";
 import { claimKey, subjectRefOfPlaceholder } from "./placeholders.js";
@@ -17,7 +17,7 @@ import { materializeRecord } from "./records.js";
  * goes through the temporal helpers or a table `executor_service` may insert into.
  */
 export interface ApplyContext {
-  readonly client: TenantSqlClient;
+  readonly client: KnowledgeSqlClient;
   readonly tenantId: string;
   readonly receiptId: string;
   readonly intent: IngestionIntent;
@@ -83,13 +83,13 @@ class ApplyState {
 
 const rangeLiteral = (interval: WorldInterval | undefined): string | null => interval ? `[${interval.from ?? ""},${interval.to ?? ""})` : null;
 
-async function one(client: TenantSqlClient, sql: string, params: readonly unknown[]): Promise<Row> {
+async function one(client: KnowledgeSqlClient, sql: string, params: readonly unknown[]): Promise<Row> {
   const row = (await client.query<Row>(sql, params)).rows[0];
   if (!row) throw domainError("EXECUTOR_INTERNAL", `statement returned no row: ${sql.slice(0, SQL_PREVIEW_CHARS)}`);
   return row;
 }
 
-const scalar = async (client: TenantSqlClient, sql: string, params: readonly unknown[]): Promise<string> => String(Object.values(await one(client, sql, params))[0]);
+const scalar = async (client: KnowledgeSqlClient, sql: string, params: readonly unknown[]): Promise<string> => String(Object.values(await one(client, sql, params))[0]);
 
 export async function applyPlan(context: ApplyContext): Promise<ApplyOutcome> {
   const state = new ApplyState(context.plan);
@@ -201,7 +201,7 @@ async function createEntity(context: ApplyContext, proposal: ProposalOf<"entity.
 interface TypedRow { readonly kind: EntityKind; readonly entityId: string; readonly payload: Record<string, unknown> }
 
 /** Inserts the kind's typed row, resolving `$subject:` placeholders and serialising nested objects as JSON. */
-async function insertTypedRow(client: TenantSqlClient, state: ApplyState, row: TypedRow): Promise<void> {
+async function insertTypedRow(client: KnowledgeSqlClient, state: ApplyState, row: TypedRow): Promise<void> {
   const columns = Object.keys(row.payload).filter((column) => row.kind.columns.includes(column));
   const values = columns.map((column) => typedColumnValue(row.payload[column], state));
   const quoted = columns.map((column) => `"${column.replaceAll('"', '""')}"`);
@@ -240,7 +240,7 @@ async function assertRelationship(context: ApplyContext, proposal: ProposalOf<"r
   return { ids: { relationshipId, ...(segmentId ? { segmentId } : {}), ...(extentId ? { extentId } : {}) } };
 }
 
-async function activeRelationshipSegment(client: TenantSqlClient, relationshipId: string): Promise<string | undefined> {
+async function activeRelationshipSegment(client: KnowledgeSqlClient, relationshipId: string): Promise<string | undefined> {
   const active = (await client.query<Row>("select s.id from temporal.segment s join temporal.stream st on st.id=s.stream_id where st.subject_relationship_id=$1 and st.kind='relationship_active' and s.k_to is null and s.k_from=temporal.current_k() order by s.id desc limit 1", [relationshipId])).rows[0];
   return active ? String(active.id) : undefined;
 }
@@ -257,7 +257,7 @@ async function assertState(context: ApplyContext, proposal: ProposalOf<"fact.ass
 }
 
 /** What `assert_state` did: which older segments it closed, which stream it belongs to, and whether it reused a pre-batch segment. */
-async function describeAssertedSegment(client: TenantSqlClient, segmentId: string): Promise<{ supersedes: string[]; streamId: string; reused: boolean }> {
+async function describeAssertedSegment(client: KnowledgeSqlClient, segmentId: string): Promise<{ supersedes: string[]; streamId: string; reused: boolean }> {
   const supersedes = (await client.query<Row>("select id from temporal.segment where stream_id=(select stream_id from temporal.segment where id=$1) and k_to=temporal.current_k() order by id", [segmentId])).rows.map((row) => String(row.id));
   const streamId = await scalar(client, "select stream_id from temporal.segment where id=$1", [segmentId]);
   const reused = (await client.query<Row>("select 1 from temporal.segment where id=$1 and k_from<temporal.current_k()", [segmentId])).rows.length > 0;
@@ -289,7 +289,7 @@ async function admitSupport(context: ApplyContext, proposal: ProposalOf<"support
 }
 
 /** A support target is a proposal in this plan (segment or occurrence it created) or an existing segment/occurrence id. */
-async function resolveSupportTarget(client: TenantSqlClient, targetRef: string, state: ApplyState): Promise<{ segmentId: string | null; occurrenceId: string | null }> {
+async function resolveSupportTarget(client: KnowledgeSqlClient, targetRef: string, state: ApplyState): Promise<{ segmentId: string | null; occurrenceId: string | null }> {
   const result = state.resultOf(targetRef);
   if (result?.segmentId) return { segmentId: String(result.segmentId), occurrenceId: null };
   if (result?.occurrenceId) return { segmentId: null, occurrenceId: String(result.occurrenceId) };

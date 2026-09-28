@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ContentLinkIntentSchema, type JsonValue } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger, ArtifactRecord, LineageEdge, PutArtifactInput } from "../../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { beginContentLedger, finishContentLedger, findContentLedger } from "./ledger.js";
 import type { ContentLinkOperationResult, ContentLinkPlan, ContentLinkReceipt } from "./types.js";
 
@@ -33,7 +33,7 @@ function fixture() {
     records.set(artifactId, { text, record: { artifactId, artifactType: value === 4 ? "knowledge_read_snapshot" : "verification_manifest", digest: sha256Digest(text),
       bucket: "ledger", objectPath: artifactId, storageState: "available", mediaType: "text/plain", sizeBytes: Buffer.byteLength(text), reused: false } });
   }
-  const client: TenantSqlClient = { async query<R extends Row>(sql: string, values: readonly unknown[] = []) {
+  const client: KnowledgeSqlClient = { async query<R extends Row>(sql: string, values: readonly unknown[] = []) {
     let rows: Row[] = [];
     if (sql.includes("insert into orchestration.operation_intent")) {
       if (intents.some(row => row.idempotency_key === values[3])) throw Object.assign(new Error("duplicate key"), { code: "23505" });
@@ -55,7 +55,7 @@ function fixture() {
     return { rows: rows as R[], rowCount: rows.length };
   } };
   const artifacts = {
-    async putWith(_client: TenantSqlClient, input: PutArtifactInput) {
+    async putWith(_client: KnowledgeSqlClient, input: PutArtifactInput) {
       controls.writes++;
       expect(input.tenantId).toBe(intent.context.tenantId);
       expect(input.value).toBeUndefined();
@@ -71,7 +71,7 @@ function fixture() {
       if (!value) throw new Error("missing artifact");
       return value;
     },
-    async link(_client: TenantSqlClient, edge: LineageEdge) {
+    async link(_client: KnowledgeSqlClient, edge: LineageEdge) {
       if (controls.denyLineage) return "denied";
       lineage.push({ tenant_id: edge.tenantId, from_artifact_id: edge.from, to_artifact_id: edge.to, relation_kind: edge.relation, receipt_id: edge.receiptId ?? null });
       return "written";

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import type { AuthoritativeClaim } from "../evidence-admission.js";
 import { authenticateCanonicalContentEvidence, contentEvidenceAssessmentDigest, type SealedContentClaim } from "./evidence.js";
 import type { ContentLinkEvidenceReference } from "./types.js";
@@ -36,7 +36,7 @@ function fixture() {
   const query = vi.fn(async () => ({ rows: [rows] }));
   const sealed: SealedContentClaim = { claim, assertionDigest: reference.claimDigest, selectedText: new Map([[edge.fragmentId, text]]) };
   const loadClaim = vi.fn(async () => sealed);
-  const context = { client: { query } as unknown as TenantSqlClient, tenantId, policyDigest, reference, loadClaim };
+  const context = { client: { query } as unknown as KnowledgeSqlClient, tenantId, policyDigest, reference, loadClaim };
   return { context, rows, sealed, query, loadClaim, edge };
 }
 

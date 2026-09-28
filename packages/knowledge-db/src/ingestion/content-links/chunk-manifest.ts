@@ -1,6 +1,6 @@
 import { SourceLocatorSchema } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 
 type Row = Record<string, unknown>;
@@ -11,7 +11,7 @@ const digestOf = (value: unknown): string => `sha256:${String(value)}`;
 function reject(): never { throw domainError("CONTENT_CHUNK_MANIFEST_INVALID", "Chunk-set membership or procedure does not match its retained input/output manifests"); }
 
 /** The current preparation writer hashes an ordered manifest of chunks and source locators. */
-export async function verifyContentChunkManifest(input: { client: TenantSqlClient; tenantId: string; chunkSetId: string }): Promise<void> {
+export async function verifyContentChunkManifest(input: { client: KnowledgeSqlClient; tenantId: string; chunkSetId: string }): Promise<void> {
   const { client, tenantId, chunkSetId } = input;
   const set = (await client.query<Row>(`select s.*,p.status procedure_status from retrieval.chunk_set s
     join retrieval.chunking_procedure_version p on p.tenant_id=s.tenant_id and p.id=s.procedure_version_id

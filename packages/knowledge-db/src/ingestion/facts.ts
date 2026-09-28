@@ -1,5 +1,5 @@
 import { proposalClaims, type ClaimEligibility, type ReportEvidence } from "./evidence-admission.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../ports.js";
 import { subjectRefsOf, type IngestionIntent, type Proposal, type ProposalOf, type Subject } from "./intent.js";
 import { slugify, STRONG_MATCH, type ChangedItem, type ClaimFacts, type EntityMatch, type ExistingFacts, type PlanFacts, type SubjectFacts } from "./plan.js";
 import { applyRules, type RuleSet } from "./rules.js";
@@ -26,7 +26,7 @@ type Row = Record<string, unknown>;
 const range = (interval: { from: string | null; to: string | null } | undefined): [string | null, string | null] => [interval?.from ?? null, interval?.to ?? null];
 
 /** Reads everything the pure planner needs, in one read-only transaction as `pipeline_agent`. */
-export async function gatherFacts(client: TenantSqlClient, intent: IngestionIntent, deps: FactGatheringDeps): Promise<PlanFacts> {
+export async function gatherFacts(client: KnowledgeSqlClient, intent: IngestionIntent, deps: FactGatheringDeps): Promise<PlanFacts> {
   const currentHead = Number((await client.query<{ knowledge_seq: string }>("select knowledge_seq from api.knowledge_head()")).rows[0]?.knowledge_seq ?? 0);
   const subjects: Record<string, SubjectFacts> = {};
   for (const subject of intent.subjects) subjects[subject.ref] = await subjectFacts(client, subject);
@@ -41,7 +41,7 @@ export async function gatherFacts(client: TenantSqlClient, intent: IngestionInte
   return { currentHead, vocabulary: deps.vocabulary, subjects, existing: { ...existing, records }, claims, reports, whatChanged, rules: deps.rules };
 }
 
-async function recordFacts(client: TenantSqlClient, input: { intent: IngestionIntent; entityIds: ReadonlyMap<string, string | null>; claims: readonly ClaimFacts[] }): Promise<Record<string, { recordId: string }>> {
+async function recordFacts(client: KnowledgeSqlClient, input: { intent: IngestionIntent; entityIds: ReadonlyMap<string, string | null>; claims: readonly ClaimFacts[] }): Promise<Record<string, { recordId: string }>> {
   const { intent, entityIds, claims } = input;
   const records: Record<string, { recordId: string }> = {};
   for (const proposal of intent.proposals) {
@@ -63,7 +63,7 @@ function entityIdFor(subject: Subject, facts: SubjectFacts): string | null {
   return strong && subject.onMatch === "use_existing" ? strong.entityId : null;
 }
 
-async function subjectFacts(client: TenantSqlClient, subject: Subject): Promise<SubjectFacts> {
+async function subjectFacts(client: KnowledgeSqlClient, subject: Subject): Promise<SubjectFacts> {
   if (subject.mode === "resolved") {
     const row = (await client.query<Row>("select kind, lifecycle, merged_into_id from corpus.entity where id=$1", [subject.entityId])).rows[0];
     if (!row) return { ref: subject.ref, lifecycle: "missing" };
@@ -84,7 +84,7 @@ async function subjectFacts(client: TenantSqlClient, subject: Subject): Promise<
   return { ref: subject.ref, kind: subject.kind, matches: [...matches.values()].sort((a, b) => b.score - a.score || a.entityId.localeCompare(b.entityId)), slugTaken: slug };
 }
 
-async function existingFacts(client: TenantSqlClient, proposals: readonly Proposal[], entityIds: ReadonlyMap<string, string | null>, deps: FactGatheringDeps, claims: readonly ClaimFacts[]): Promise<ExistingFacts> {
+async function existingFacts(client: KnowledgeSqlClient, proposals: readonly Proposal[], entityIds: ReadonlyMap<string, string | null>, deps: FactGatheringDeps, claims: readonly ClaimFacts[]): Promise<ExistingFacts> {
   const segments: Record<string, { segmentId: string; kFrom: number }> = {};
   const relationships: Record<string, { relationshipId: string; sameProperties: boolean }> = {};
   const occurrences: Record<string, { occurrenceId: string }> = {};
@@ -140,7 +140,7 @@ async function existingFacts(client: TenantSqlClient, proposals: readonly Propos
 }
 
 /** Resolve only recognized legacy aliases; explicit regional/qualified scopes stay distinct. */
-async function sameUnitSeriesKey(client: TenantSqlClient, proposal: ProposalOf<"fact.assert_state">, entityId: string): Promise<string | undefined> {
+async function sameUnitSeriesKey(client: KnowledgeSqlClient, proposal: ProposalOf<"fact.assert_state">, entityId: string): Promise<string | undefined> {
   if (proposal.streamKind !== "model_offering_price" || proposal.unit === undefined) return undefined;
   const aliases = priceSlotAliases(proposal.unit);
   if (proposal.scopeKey && !aliases.includes(proposal.scopeKey)) return undefined;
@@ -153,7 +153,7 @@ async function sameUnitSeriesKey(client: TenantSqlClient, proposal: ProposalOf<"
   return rows[0] ? String(rows[0].scope_key) : undefined;
 }
 
-async function claimFacts(client: TenantSqlClient, intent: IngestionIntent, oracle: EvidenceOracle): Promise<ClaimFacts[]> {
+async function claimFacts(client: KnowledgeSqlClient, intent: IngestionIntent, oracle: EvidenceOracle): Promise<ClaimFacts[]> {
   const cited = new Map<string, { runId: string; claimId: string }>();
   for (const proposal of intent.proposals) {
     for (const reference of proposalClaims(proposal)) cited.set(`${reference.runId}/${reference.claimId}`, reference);
@@ -179,7 +179,7 @@ async function claimFacts(client: TenantSqlClient, intent: IngestionIntent, orac
   return facts;
 }
 
-async function changedItems(client: TenantSqlClient, intent: IngestionIntent, entityIds: ReadonlyMap<string, string | null>, [k1, k2]: [number, number]): Promise<ChangedItem[]> {
+async function changedItems(client: KnowledgeSqlClient, intent: IngestionIntent, entityIds: ReadonlyMap<string, string | null>, [k1, k2]: [number, number]): Promise<ChangedItem[]> {
   const items: ChangedItem[] = [];
   const streamIds = new Set<string>(); const eventIds = new Set<string>();
   const raw: { subjectRef: string; entityId: string; row: Row }[] = [];

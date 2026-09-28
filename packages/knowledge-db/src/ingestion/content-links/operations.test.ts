@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ContentLinkOperationSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { ContentSourceReader } from "./sources.js";
 import type { AuthenticatedContentEvidence } from "./types.js";
 import { applyPreparedContentOperation, contentLinkEffect, prepareContentOperation, reconcileContentOperationRefs,
@@ -47,7 +47,7 @@ function fixture(operation: ContentLinkOperation, override: Query = () => undefi
     if (sql.includes("count(*)")) return { rows: [{ count: 2 }] };
     if (sql.startsWith("select verb from retrieval.chunk_")) return { rows: [{ verb: "supports" }] };
     return { rows: [] };
-  } } as unknown as TenantSqlClient;
+  } } as unknown as KnowledgeSqlClient;
   const sources = { async documentVersion() { return {}; }, async node() { return { id: ids.node!, representationId: ids.representation!, text: selectedText, kind: "paragraph" }; },
     async chunk() { return { id: ids.chunk!, text: selectedText, nodes: [] }; }, async representation(reference: { id: string }) {
       return reference.id === ids.output ? { representation_class: "semantic_projection", representation_kind: "summary", transformation_run_id: ids.transformation }
