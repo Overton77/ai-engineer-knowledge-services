@@ -350,19 +350,24 @@
       "path": "packages/host",
       "kind": "package",
       "state": "implemented",
-      "summary": "Server composition root: configuration and identity resolution, shared knowledge and verification composition, and createHost for API, MCP and worker with owned lifecycle.",
+      "summary": "Composition root: configuration and identity resolution, shared knowledge and verification composition, createHost for the server roles (API, MCP, worker) and the file-backed local profile, with owned lifecycle and the server/local/remote-CLI capability matrix.",
       "entrypoints": [
         "packages/host/src/index.ts",
         "packages/host/src/create-host.ts",
         "packages/host/src/server/verification.ts",
+        "packages/host/src/local/local-host.ts",
+        "packages/host/src/local/capabilities.ts",
         "packages/host/src/verification/host-runtime.ts"
       ],
       "interface": [
-        "createHost({ profile: \"server\", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); the local profile is reserved and fails with HOST_PROFILE_UNAVAILABLE. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; access rules are re-exported from application."
+        "createHost({ profile: \"server\", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); createHost({ profile: \"local\", storeDir, providers?, verification }) composes the verification intent pipeline lazily over a file store: offline operations need no network, database or credentials; online capture, document conversion and semantic judging need explicit providers, else CAPABILITY_NOT_ADMITTED; other operations are server-only (profileAvailability). The verification seam is supplied by the executor until 5D3. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; access rules are re-exported from application."
       ],
       "tests": [
         "packages/host/src/tests/composition.test.ts",
-        "packages/host/src/tests/lifecycle.test.ts"
+        "packages/host/src/tests/lifecycle.test.ts",
+        "packages/host/src/tests/local-profile.test.ts",
+        "packages/host/src/tests/capability-matrix.test.ts",
+        "apps/verification-executor/src/local-host.test.ts"
       ],
       "constraints": [
         "Never import apps; application and persistence never import host. Importing host opens no pool, timer or child process. Do not read or emit environment secrets in docs."

@@ -52,7 +52,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 ### Task routes
 
 - [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next: Unit 5 slices (5B), linked spec: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
+- [proposed] Next: Unit 5 slices (5C), linked spec: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
 - [reference] Unit 4 folders, names, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
 - [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
