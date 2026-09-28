@@ -170,7 +170,7 @@ Recorded so implementation does not invent product. Parent slice owns acquire/in
 
 - `ConversionRouter` order is text → Docling → gated Unstructured. Exclusive text never calls the binaries. Office Open XML is not treated as text. Low-fidelity `alternate_conversion` advances to the next admitted converter. Routing receipts omit secrets.
 - Worker durable convert uses `conversionRouterFromProviders` and keeps `providerRoute` as the admitted set, not as an Unstructured-first queue.
-- In-process preparation (`packages/application/src/preparation/preparation.ts`) still converts with the text provider only (`managedProcessingAllowed: false`) and picks one profile from `document_kind`. Multi-profile selection is the next slice.
+- In-process preparation (`packages/application/src/knowledge/preparation/preparation.ts`) still converts with the text provider only (`managedProcessingAllowed: false`) and picks one profile from `document_kind`. Multi-profile selection is the next slice.
 - `knowledge-preparation-and-promotion` 1.3.0 teaches the router, the two inspections, and points at `packages/preparation/examples`. Chunk profile table teaching stays thin until that slice lands.
 
 Recheck `git status` and both operations pages against the tree before the chunking slice.

@@ -23,26 +23,31 @@
       "status": "reference"
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md",
-      "task": "Next unit: app order, naming, catalog",
+      "path": "docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md",
+      "task": "Next unit: executor fold, ks, Eve",
       "status": "proposed",
       "modules": [
+        "verification-executor",
+        "host",
         "application",
-        "contracts",
-        "api",
+        "knowledge-db",
+        "cli",
         "mcp",
-        "cli"
+        "api"
       ]
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md",
-      "task": "Unit 3 in-process MCP",
+      "path": "docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md",
+      "task": "Unit 4 folders, names, catalog",
       "status": "reference",
       "modules": [
         "application",
-        "host",
         "api",
-        "mcp"
+        "mcp",
+        "cli",
+        "sources",
+        "client",
+        "parser"
       ]
     },
     {

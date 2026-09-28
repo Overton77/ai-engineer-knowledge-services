@@ -160,8 +160,8 @@ Each unit has its own specification in this folder before it starts.
 | 1 | Mechanical package merges: `core`, `preparation`, `retrieval`, `knowledge-db` | None | [`UNIT-1-PACKAGE-MERGES.md`](./UNIT-1-PACKAGE-MERGES.md) |
 | 2 | Add `packages/host` (absorbs `config`); move API and worker runtime wiring into it | None intended | [`UNIT-2-HOST-COMPOSITION.md`](./UNIT-2-HOST-COMPOSITION.md) (delivered) |
 | 3 | Ownership, admission, retrieval executor into application; delete MCP `createApiClient` | MCP no longer calls the API | [`UNIT-3-APPLICATION-AND-MCP.md`](./UNIT-3-APPLICATION-AND-MCP.md) (delivered) |
-| 4 | Application folders by tool group; A2A adapter into `apps/api`; testkit to devDependency; naming pass (`acquisition`→`sources`, `client-typescript`→`client`, `verification-parser`→`parser`); catalog parity test | None | [`UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) |
-| 5 | Fold `verification-executor` into api/mcp/cli/application via host profiles | Executor binaries replaced by `ks` | to write |
+| 4 | Application folders by tool group; A2A adapter into `apps/api`; testkit to devDependency; naming pass (`acquisition`→`sources`, `client-typescript`→`client`, `verification-parser`→`parser`); catalog parity test | None | [`UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) (delivered) |
+| 5 | Fold `verification-executor` into api/mcp/cli/application via host profiles | Executor binaries replaced by `ks` | [`UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) |
 | 6 | Skills to eight; update `skills/manifest.json` and sandbox packaging's required skills | Skill names change | to write |
 | 7 | `scripts/` → `proofs/`; archive sprint-only proofs | None | to write |
 

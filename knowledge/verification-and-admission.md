@@ -57,7 +57,7 @@ wires those ports for both servers.
 
 Every MCP verification tool calls application in process; MCP never proxies
 HTTP. Reads, reconciliation and decisions go through
-[`createVerificationResourceReads`](../packages/application/src/reads/verification-resource-reads.ts);
+[`createVerificationResourceReads`](../packages/application/src/verification/reads/verification-resource-reads.ts);
 submissions apply
 [`bindResolvedVerificationContext`](../packages/application/src/verification/operations/verification-context-binding.ts)
 and the reviewer rule exactly as the API route does. Host

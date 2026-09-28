@@ -144,6 +144,8 @@ A read-only organization pass on 2026-09-16 (see the conversation map of `packag
 
 Do not, in the same change: move files into other packages, rewrite worker preparation, or drop diagnostics export names.
 
+**Delivered (Unit 4, 2026-09-28).** Phases 1–4 are done: `src/` groups `operations/`, `knowledge/` (preparation, source discovery, checkpoints, promotion selection, retrieval, knowledge reads) and `verification/` (with `reads/`), with `access/`, `errors/` and `reads/resource-read-result.ts` shared; there is no `db/` folder until application owns a db use case (Unit 5, after the R1 inversion). No stale `.d.ts` remained beside live sources. `verification-benchmark.ts` no longer imports diagnostics (the offline demo and the pilot-v3 provider grant moved into `diagnostics/`), and a test keeps product source free of diagnostics imports; export names are unchanged. Phases 5–6 remain open. See [Unit 4](package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md#delivered-structure-and-decisions).
+
 **Hot files if another agent is active:** `index.ts`, `promotion-selection.ts`, `source-discovery.ts`, `checkpoints.ts`, `verification-recovery*.ts`, `verification-benchmark.ts`. Folder-move those last or coordinate.
 
 ## Work order (when the tree is free)
