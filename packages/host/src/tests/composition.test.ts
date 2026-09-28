@@ -62,12 +62,12 @@ describe("host import and profile admission", () => {
 
   it("composes the local profile lazily without reaching the network or a database", async () => {
     const { createHost } = await import("../index.js");
-    const verificationServices = vi.fn();
-    const host = await createHost({ profile: "local", storeDir: "never-created-store", verificationServices: verificationServices as never });
+    const create = vi.fn();
+    const host = await createHost({ profile: "local", storeDir: "never-created-store", verification: { captureMediaKind: vi.fn(), create: create as never } });
     expect(host.profile).toBe("local");
     expect(host.capabilities).toEqual({ onlineCapture: false, documentConversion: false, semanticJudging: false, database: false });
     await host.close();
-    expect(verificationServices).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
     expect(pools.created).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
   });

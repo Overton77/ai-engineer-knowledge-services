@@ -1,5 +1,5 @@
-import type { LocalServiceConfig } from "@aiengineer/knowledge-host";
-import { mediaTypeForFilename, normalizeMediaType, SUPPORTED_MEDIA_TYPES, type CaptureFileInput, type CaptureInput } from "./capture.js";
+import type { LocalServiceConfig, LocalVerificationSeam, LocalVerificationServices } from "@aiengineer/knowledge-host";
+import { captureFileMediaKind, type CaptureFileInput, type CaptureInput } from "./capture.js";
 import { loadExecutorConfig, VerificationExecutor } from "./executor.js";
 
 type Input<M extends keyof VerificationExecutor> = VerificationExecutor[M] extends (input: infer I) => unknown ? I : never;
@@ -23,11 +23,10 @@ function executorEnvironment({ storeDir, identity, providers }: LocalServiceConf
 }
 
 /**
- * Unit 5D3 seam: the executor's file-backed intent pipeline for `createHost({ profile: "local" })`, until
- * the pipeline becomes application use cases. Host admits each operation before calling it; this factory
- * only binds the executor over the host's store directory, identity and explicitly configured providers.
+ * Binds the executor over the host's store directory, identity and explicitly configured providers.
+ * Without `identity.gitSha` the executor records `git rev-parse HEAD` (a local subprocess), as its CLI does.
  */
-export async function createExecutorLocalServices(config: LocalServiceConfig) {
+async function createExecutorLocalServices(config: LocalServiceConfig) {
   const executor = await VerificationExecutor.create(loadExecutorConfig(executorEnvironment(config)));
   return {
     supportedMediaTypes: () => executor.supportedMediaTypes(),
@@ -46,11 +45,15 @@ export async function createExecutorLocalServices(config: LocalServiceConfig) {
     checkReport: (input: Input<"checkReport">) => executor.checkReport(input),
     runStatus: (input: Input<"runStatus">) => executor.runStatus(input),
     artifact: (input: Input<"artifact">) => executor.artifact(input),
-    // The same media-type resolution captureFile applies before converting.
-    captureMediaKind: ({ filename, mediaType }: { readonly filename: string; readonly mediaType?: string }) => {
-      const declared = normalizeMediaType(mediaType);
-      const resolved = declared && SUPPORTED_MEDIA_TYPES[declared] ? declared : mediaTypeForFilename(filename);
-      return resolved ? SUPPORTED_MEDIA_TYPES[resolved]?.kind : undefined;
-    },
-  };
+  } satisfies LocalVerificationServices;
 }
+
+/**
+ * Unit 5D3 seam: the executor's file-backed intent pipeline for `createHost({ profile: "local" })`, until
+ * the pipeline becomes application use cases. Host admits each operation, including document conversion
+ * through the same media-type resolution captureFile applies, before constructing or calling it.
+ */
+export const executorLocalVerification = {
+  captureMediaKind: captureFileMediaKind,
+  create: createExecutorLocalServices,
+} satisfies LocalVerificationSeam<Awaited<ReturnType<typeof createExecutorLocalServices>>>;

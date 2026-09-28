@@ -125,9 +125,9 @@ describe("operation catalog parity", async () => {
       return { ...total, [state]: (total[state] ?? 0) + 1 };
     }, {});
     expect(counts).toEqual({ "server only": 140, offline: 14, "capture provider": 1, "semantic provider": 1 });
-    const notConstructed = (() => { throw new Error("NOT_CONSTRUCTED"); }) as never;
-    const bare = await createHost({ profile: "local", storeDir: "never-created-store", verificationServices: notConstructed });
-    const configured = await createHost({ profile: "local", storeDir: "never-created-store", verificationServices: notConstructed,
+    const verification = { captureMediaKind: () => "text" as const, create: (() => { throw new Error("NOT_CONSTRUCTED"); }) as never };
+    const bare = await createHost({ profile: "local", storeDir: "never-created-store", verification });
+    const configured = await createHost({ profile: "local", storeDir: "never-created-store", verification,
       providers: { capture: {}, semantic: { aiGatewayApiKey: "explicit" } } });
     for (const operation of operationCatalog) {
       const name = operation.executor?.mcp ?? operation.id;

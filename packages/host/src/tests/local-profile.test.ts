@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createHost, type LocalHostOptions, type LocalVerificationServices } from "../index.js";
+import { createHost, type LocalHostOptions, type LocalVerificationSeam, type LocalVerificationServices } from "../index.js";
 import { localVerificationOperations, type LocalOperation } from "../local/capabilities.js";
 
 // Every local operation, by the service method it calls, with a recorded call instead of an implementation.
@@ -8,12 +8,9 @@ function stubServices(calls: string[]) {
     calls.push(method);
     return { method, args };
   };
-  const methods = Object.fromEntries(Object.values(localVerificationOperations).map(({ method }) => [method, record(method)]));
-  return {
-    ...methods,
-    captureMediaKind: ({ filename }: { readonly filename: string }) => (filename.endsWith(".pdf") ? "document" as const : "text" as const),
-  } as unknown as LocalVerificationServices;
+  return Object.fromEntries(Object.values(localVerificationOperations).map(({ method }) => [method, record(method)])) as unknown as LocalVerificationServices;
 }
+const captureMediaKind = ({ filename }: { readonly filename: string }) => (filename.endsWith(".pdf") ? "document" as const : "text" as const);
 
 const operations = Object.keys(localVerificationOperations) as LocalOperation[];
 const invoke = (host: Awaited<ReturnType<typeof createHost<LocalVerificationServices>>>, operation: LocalOperation, input: unknown = {}) =>
@@ -28,9 +25,10 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-function local(overrides: Partial<LocalHostOptions> = {}, calls: string[] = []) {
-  const factory = vi.fn((_config: Parameters<LocalHostOptions["verificationServices"]>[0]) => stubServices(calls));
-  return { factory, options: { profile: "local" as const, storeDir: "local-store", verificationServices: factory, ...overrides } };
+type Create = LocalVerificationSeam<LocalVerificationServices>["create"];
+function local({ create, ...overrides }: Partial<LocalHostOptions> & { readonly create?: Create } = {}, calls: string[] = []) {
+  const factory = vi.fn<Create>(create ?? (() => stubServices(calls)));
+  return { factory, options: { profile: "local" as const, storeDir: "local-store", verification: { captureMediaKind, create: factory }, ...overrides } };
 }
 
 describe("local host construction", () => {
@@ -62,7 +60,7 @@ describe("local host construction", () => {
 
   it("rejects incomplete configuration before constructing anything", async () => {
     await expect(createHost(local({ storeDir: " " }).options)).rejects.toThrow("HOST_LOCAL_STORE_DIR_REQUIRED");
-    await expect(createHost(local({ verificationServices: undefined as never }).options)).rejects.toThrow("HOST_LOCAL_VERIFICATION_SERVICES_REQUIRED");
+    await expect(createHost(local({ verification: undefined as never }).options)).rejects.toThrow("HOST_LOCAL_VERIFICATION_SERVICES_REQUIRED");
     await expect(createHost(local({ providers: { semantic: { aiGatewayApiKey: "" } } }).options)).rejects.toThrow("HOST_LOCAL_SEMANTIC_PROVIDER_KEY_REQUIRED");
     await expect(createHost(local({ providers: { capture: { firecrawlApiKey: " " } } }).options)).rejects.toThrow("HOST_LOCAL_CAPTURE_PROVIDER_KEY_INVALID");
   });
@@ -91,10 +89,12 @@ describe("local host admission", () => {
 
   it("treats document conversion as a capture-provider call even though capture-file is offline", async () => {
     const calls: string[] = [];
-    const host = await createHost(local({}, calls).options);
+    const { factory, options } = local({}, calls);
+    const host = await createHost(options);
     await expect(invoke(host, "verify_capture_file", { filename: "paper.pdf" })).rejects.toMatchObject({
       code: "CAPABILITY_NOT_ADMITTED", operation: "verify_capture_file", requirement: "document-conversion",
     });
+    expect(factory).not.toHaveBeenCalled();
     await invoke(host, "verify_capture_file", { filename: "paper.md" });
     expect(calls).toEqual(["captureFile"]);
     await host.close();
@@ -131,7 +131,7 @@ describe("local host lifecycle", () => {
   it("closes idempotently, sharing one cleanup, and rejects operations afterwards", async () => {
     let releases = 0;
     const host = await createHost(local({
-      verificationServices: (_config, resources) => {
+      create: (_config, resources) => {
         resources.own("store", undefined, () => void (releases += 1));
         return stubServices([]);
       },
@@ -156,7 +156,7 @@ describe("local host lifecycle", () => {
     const released: string[] = [];
     let attempts = 0;
     const host = await createHost(local({
-      verificationServices: (_config, resources) => {
+      create: (_config, resources) => {
         attempts += 1;
         resources.own(`store-${attempts}`, undefined, () => void released.push(`store-${attempts}`));
         if (attempts === 1) throw new Error("LOCAL_START_FAILED");
@@ -174,7 +174,7 @@ describe("local host lifecycle", () => {
     let finish!: () => void;
     const released: string[] = [];
     const host = await createHost(local({
-      verificationServices: async (_config, resources) => {
+      create: async (_config, resources) => {
         resources.own("store", undefined, () => void released.push("store"));
         await new Promise<void>((resolve) => (finish = resolve));
         return stubServices([]);
@@ -190,9 +190,28 @@ describe("local host lifecycle", () => {
     expect(released).toEqual(["store"]);
   });
 
+  it("waits for running operations before releasing", async () => {
+    let finish!: () => void;
+    const order: string[] = [];
+    const host = await createHost(local({
+      create: (_config, resources) => {
+        resources.own("store", undefined, () => void order.push("released"));
+        return { ...stubServices([]), sealRun: () => new Promise<void>((resolve) => (finish = resolve)).then(() => void order.push("sealed")) } as never;
+      },
+    }).options);
+    const sealing = invoke(host, "verify_seal_run", { runId: "r" });
+    await vi.waitFor(() => expect(finish).toBeTypeOf("function"));
+    const closing = host.close();
+    await Promise.resolve();
+    expect(order).toEqual([]);
+    finish();
+    await Promise.all([sealing, closing]);
+    expect(order).toEqual(["sealed", "released"]);
+  });
+
   it("surfaces release failures from close", async () => {
     const host = await createHost(local({
-      verificationServices: (_config, resources) => {
+      create: (_config, resources) => {
         resources.own("store", undefined, () => Promise.reject(new Error("STORE_RELEASE_FAILED")));
         return stubServices([]);
       },

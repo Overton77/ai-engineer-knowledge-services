@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHost, type LocalServiceConfig } from "@aiengineer/knowledge-host";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createExecutorLocalServices } from "./local-services.js";
+import { executorLocalVerification } from "./local-services.js";
 
 // The local profile over the executor's file store. Every network or database connection is trapped:
 // fetch and raw sockets (which Postgres and HTTP clients use) reject, and ambient provider and database
@@ -38,13 +38,16 @@ const localHost = (options: { readonly providers?: LocalServiceConfig["providers
   storeDir: join(directory, "store"),
   identity: { gitSha: "local-host-test" },
   ...options,
-  verificationServices: createExecutorLocalServices,
+  verification: executorLocalVerification,
 });
 
 describe("local host profile over the executor file store", () => {
   it("constructs nothing and touches no store, network or database until an admitted operation runs", async () => {
     const host = await localHost();
     expect(existsSync(host.storeDir)).toBe(false);
+    await expect(host.verify.captureFile({ bytes: new Uint8Array([37, 80, 68, 70]), filename: "paper.pdf", runId: run })).rejects.toMatchObject({
+      code: "CAPABILITY_NOT_ADMITTED", operation: "verify_capture_file", requirement: "document-conversion",
+    });
     await expect(host.verify.captureSource({ url: "https://example.test/source.html", runId: run })).rejects.toMatchObject({
       code: "CAPABILITY_NOT_ADMITTED", operation: "verify_capture_source", requirement: "capture-provider",
     });
@@ -63,9 +66,8 @@ describe("local host profile over the executor file store", () => {
     const captured = await verify.captureFile({ bytes: encoder.encode(source), filename: "source.txt", captureId: "panel", runId: run });
     expect(captured).toMatchObject({ captureId: "panel", captureMethod: "file_text", reused: false });
     expect(existsSync(host.storeDir)).toBe(true);
-    await expect(verify.captureFile({ bytes: new Uint8Array([37, 80, 68, 70]), filename: "paper.pdf", runId: run })).rejects.toMatchObject({
-      code: "CAPABILITY_NOT_ADMITTED", operation: "verify_capture_file", requirement: "document-conversion",
-    });
+    await expect(verify.captureFile({ bytes: new Uint8Array([37, 80, 68, 70]), filename: "paper.bin", mediaType: "application/pdf", runId: run }))
+      .rejects.toMatchObject({ code: "CAPABILITY_NOT_ADMITTED", operation: "verify_capture_file", requirement: "document-conversion" });
 
     expect((await verify.supportedMediaTypes()).some((type) => type.mediaType === "text/markdown")).toBe(true);
     expect((await verify.listCaptures()).map((capture) => capture.captureId)).toEqual(["panel"]);
@@ -122,7 +124,8 @@ describe("local host profile over the executor file store", () => {
     const host = await localHost({ providers: { capture: {}, semantic: { aiGatewayApiKey: "explicit-test-key" } } });
     expect(host.capabilities).toMatchObject({ onlineCapture: true, documentConversion: false, semanticJudging: true, database: false });
     // Admitted: the request reaches the provider boundary, where the trap stops it; no provider is called.
-    await expect(host.verify.captureSource({ url: "https://example.test/source.md", method: "https_get", runId: run })).rejects.toThrow("NETWORK_NOT_ALLOWED");
+    // `auto` would use Firecrawl if the ambient key leaked in; the explicit capture provider has no key.
+    await expect(host.verify.captureSource({ url: "https://example.test/source.md", runId: run })).rejects.toThrow("NETWORK_NOT_ALLOWED");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(String(fetchSpy.mock.calls[0]![0])).toBe("https://example.test/source.md");
     await host.verify.captureFile({ bytes: encoder.encode(source), filename: "source.txt", captureId: "panel", runId: run });
@@ -132,6 +135,9 @@ describe("local host profile over the executor file store", () => {
     } });
     await expect(host.verify.judgeSemantics({ runId: run })).rejects.toMatchObject({ code: "PROVIDER_NETWORK_FAILURE" });
     expect(fetchSpy.mock.calls.map((call: unknown[]) => new URL(String(call[0])).host)).toEqual(["example.test", "ai-gateway.vercel.sh"]);
+    const authorization = JSON.stringify(fetchSpy.mock.calls[1]![1]);
+    expect(authorization).toContain("explicit-test-key");
+    expect(authorization).not.toContain("ambient-gateway-key");
     await host.close();
     expect(socketSpy).not.toHaveBeenCalled();
   });

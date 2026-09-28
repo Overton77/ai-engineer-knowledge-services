@@ -89,6 +89,18 @@ function mediaKind(mediaType: string): "text" | "html" | "document" | undefined 
   return SUPPORTED_MEDIA_TYPES[mediaType]?.kind;
 }
 
+/** The media type captureFile converts: a supported declared type, otherwise the one the filename implies. */
+export function captureFileMediaType(input: { readonly filename: string; readonly mediaType?: string }): string | undefined {
+  const declared = normalizeMediaType(input.mediaType);
+  return declared && mediaKind(declared) ? declared : mediaTypeForFilename(input.filename);
+}
+
+/** How captureFile would convert this input, without converting it. */
+export function captureFileMediaKind(input: { readonly filename: string; readonly mediaType?: string }): "text" | "html" | "document" | undefined {
+  const mediaType = captureFileMediaType(input);
+  return mediaType ? mediaKind(mediaType) : undefined;
+}
+
 function sourceKindFor(mediaType: string): CaptureRecord["sourceKind"] {
   if (mediaType === "application/pdf") return "pdf";
   if (mediaType === "text/html") return "web_page";
@@ -282,7 +294,7 @@ export async function captureSource(store: FilesystemStore, input: CaptureInput,
  */
 export async function captureFile(store: FilesystemStore, input: CaptureFileInput, env: Readonly<Record<string, string | undefined>> = process.env): Promise<CaptureOutcome> {
   if (input.bytes.byteLength === 0) throw new Error("CAPTURE_FILE_EMPTY");
-  const mediaType = normalizeMediaType(input.mediaType) && mediaKind(normalizeMediaType(input.mediaType)!) ? normalizeMediaType(input.mediaType)! : mediaTypeForFilename(input.filename);
+  const mediaType = captureFileMediaType(input);
   if (!mediaType) throw new Error(`CAPTURE_FILE_UNSUPPORTED_TYPE:${input.mediaType ?? input.filename}:supported=${Object.keys(SUPPORTED_MEDIA_TYPES).join(",")}`);
   const kind = mediaKind(mediaType)!;
   const sourceUri = input.sourceUri?.trim() || `file:///${input.filename.replace(/^\/+/, "")}`;

@@ -50,27 +50,28 @@ export interface LocalCaptureFileDescriptor {
 }
 
 /** The file-backed verification services the local profile composes. */
-export type LocalVerificationServices = { readonly [M in LocalMethod]: (...args: never[]) => unknown } & {
-  /** How `captureFile` would convert this input; `document` needs a provider. */
-  captureMediaKind(input: LocalCaptureFileDescriptor): "text" | "html" | "document" | undefined;
-};
+export type LocalVerificationServices = { readonly [M in LocalMethod]: (...args: never[]) => unknown };
 
 /**
  * Unit 5D3 seam: the verification executor supplies its file-backed intent pipeline until that pipeline
- * becomes application use cases that host composes directly. Resources the factory acquires are
- * registered on `resources` and released by `close()`, or immediately when construction fails.
+ * becomes application use cases that host composes directly.
  */
-export type LocalVerificationServicesFactory<S extends LocalVerificationServices> = (
-  config: LocalServiceConfig,
-  resources: HostResources,
-) => Promise<S> | S;
+export interface LocalVerificationSeam<S extends LocalVerificationServices> {
+  /** Pure: how `captureFile` would convert this input. Host admits `document` conversion before constructing. */
+  readonly captureMediaKind: (input: LocalCaptureFileDescriptor) => "text" | "html" | "document" | undefined;
+  /**
+   * Constructs the services on first use. Resources it acquires are registered on `resources` and released
+   * by `close()`, or immediately when construction fails.
+   */
+  readonly create: (config: LocalServiceConfig, resources: HostResources) => Promise<S> | S;
+}
 
 export interface LocalHostOptions<S extends LocalVerificationServices = LocalVerificationServices> {
   readonly profile: "local";
   readonly storeDir: string;
   readonly identity?: LocalIdentity;
   readonly providers?: LocalProviders;
-  readonly verificationServices: LocalVerificationServicesFactory<S>;
+  readonly verification: LocalVerificationSeam<S>;
 }
 
 export interface LocalHostCapabilities {
@@ -92,13 +93,17 @@ export interface LocalHost<S extends LocalVerificationServices = LocalVerificati
   readonly verify: LocalVerifyOperations<S>;
   /** Whether this host executes the operation (a verification tool name); anything else is server-only. */
   admits(operation: string): boolean;
-  /** Idempotent: concurrent and later callers await the same cleanup. */
+  /** Idempotent: waits for running operations, then releases; concurrent and later callers await the same cleanup. */
   close(): Promise<void>;
 }
 
+const isCaptureFileDescriptor = (input: unknown): input is LocalCaptureFileDescriptor =>
+  typeof input === "object" && input !== null && typeof (input as { filename?: unknown }).filename === "string";
+
 function localServiceConfig(options: LocalHostOptions<LocalVerificationServices>): LocalServiceConfig {
   if (typeof options.storeDir !== "string" || options.storeDir.trim() === "") throw new Error("HOST_LOCAL_STORE_DIR_REQUIRED");
-  if (typeof options.verificationServices !== "function") throw new Error("HOST_LOCAL_VERIFICATION_SERVICES_REQUIRED");
+  if (typeof options.verification?.create !== "function" || typeof options.verification.captureMediaKind !== "function")
+    throw new Error("HOST_LOCAL_VERIFICATION_SERVICES_REQUIRED");
   const { capture, semantic } = options.providers ?? {};
   if (capture?.firecrawlApiKey !== undefined && capture.firecrawlApiKey.trim() === "") throw new Error("HOST_LOCAL_CAPTURE_PROVIDER_KEY_INVALID");
   if (semantic && (typeof semantic.aiGatewayApiKey !== "string" || semantic.aiGatewayApiKey.trim() === ""))
@@ -112,8 +117,8 @@ function localServiceConfig(options: LocalHostOptions<LocalVerificationServices>
 
 /**
  * Composes the local profile. Nothing is constructed here: the store directory, services and any
- * resources they own are created on the first operation call, so `--help` or a rejected operation
- * touches no store, network or database.
+ * resources they own are created on the first admitted operation call, so `--help` or a rejected
+ * operation touches no store, network or database.
  */
 export async function createLocalHost<S extends LocalVerificationServices>(options: LocalHostOptions<S>): Promise<LocalHost<S>> {
   const config = localServiceConfig(options);
@@ -126,9 +131,10 @@ export async function createLocalHost<S extends LocalVerificationServices>(optio
   type Built = { readonly value: S; readonly resources: HostResources };
   let construction: Promise<Built> | undefined;
   let closing: Promise<void> | undefined;
+  const running = new Set<Promise<unknown>>();
 
   const start = (): Promise<Built> => {
-    const attempt = constructWithResources((resources) => options.verificationServices(config, resources));
+    const attempt = constructWithResources((resources) => options.verification.create(config, resources));
     construction = attempt;
     // A failed start has already released what it acquired; the next call starts again.
     attempt.catch(() => {
@@ -150,19 +156,25 @@ export async function createLocalHost<S extends LocalVerificationServices>(optio
     if (requires === "semantic-provider" && !capabilities.semanticJudging) return requires;
     return undefined;
   };
-  const admit = (operation: string) => {
+  const admit = (operation: LocalOperation, input: unknown) => {
     const missing = requirement(operation);
     if (missing) throw new HostCapabilityNotAdmittedError("local", operation, missing);
+    if (operation === "verify_capture_file" && !capabilities.documentConversion && isCaptureFileDescriptor(input)
+      && options.verification.captureMediaKind(input) === "document")
+      throw new HostCapabilityNotAdmittedError("local", operation, "document-conversion");
   };
 
-  const call = (operation: LocalOperation) => async (...args: unknown[]) => {
-    admit(operation);
-    const target = await services();
-    if (operation === "verify_capture_file" && !capabilities.documentConversion
-      && target.captureMediaKind(args[0] as LocalCaptureFileDescriptor) === "document")
-      throw new HostCapabilityNotAdmittedError("local", operation, "document-conversion");
-    const method = localVerificationOperations[operation].method;
-    return (target[method] as (...values: unknown[]) => unknown)(...args);
+  const call = (operation: LocalOperation) => (...args: unknown[]) => {
+    const run = (async () => {
+      admit(operation, args[0]);
+      const target = await services();
+      const method = localVerificationOperations[operation].method;
+      return (target[method] as (...values: unknown[]) => unknown)(...args);
+    })();
+    running.add(run);
+    const settled = () => void running.delete(run);
+    run.then(settled, settled);
+    return run;
   };
   const verify = Object.fromEntries(
     (Object.keys(localVerificationOperations) as LocalOperation[]).map((operation) => [localVerificationOperations[operation].method, call(operation)]),
@@ -176,6 +188,7 @@ export async function createLocalHost<S extends LocalVerificationServices>(optio
     admits: (operation) => requirement(operation) === undefined,
     close: () => {
       closing ??= (async () => {
+        await Promise.allSettled([...running]);
         const pending = construction;
         if (!pending) return;
         const built = await pending.catch(() => undefined);
