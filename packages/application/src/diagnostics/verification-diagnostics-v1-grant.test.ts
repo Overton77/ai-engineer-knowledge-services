@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
-import { createDiagnosticsProviderCaseInput, loadDiagnosticsProviderGrant, loadDiagnosticsV1ProviderGrant } from "../verification/benchmark/verification-benchmark.js";
+import { createDiagnosticsProviderCaseInput, loadDiagnosticsProviderGrant, loadDiagnosticsV1ProviderGrant } from "./verification-diagnostics-provider-grant.js";
 
 const root = resolve(import.meta.dirname, "../../../../catalog/verification-benchmarks");
 describe("sealed original diagnostics provider authority", () => {

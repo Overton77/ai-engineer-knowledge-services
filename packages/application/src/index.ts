@@ -110,6 +110,8 @@ export * from "./verification/operations/verification-context-binding.js";
 
 // Diagnostics: quarantined offline demo and fixture helpers; export names kept for the CLI and scripts.
 export * from "./diagnostics/verification-diagnostics-offline-catalog.js";
+export * from "./diagnostics/verification-diagnostics-provider-grant.js";
+export * from "./diagnostics/verification-diagnostics-companies-demo.js";
 export * from "./diagnostics/verification-diagnostics-semantic-fixture.js";
 export * from "./diagnostics/verification-diagnostics-generated-report-semantic-fixture.js";
 export * from "./diagnostics/verification-diagnostics-semantic-replay.js";
