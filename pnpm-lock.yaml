@@ -46,7 +46,7 @@ importers:
         version: link:packages/application
       '@aiengineer/knowledge-client':
         specifier: workspace:*
-        version: link:packages/client-typescript
+        version: link:packages/client
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:packages/contracts
@@ -120,7 +120,7 @@ importers:
     devDependencies:
       '@aiengineer/knowledge-client':
         specifier: workspace:*
-        version: link:../../packages/client-typescript
+        version: link:../../packages/client
       '@aiengineer/knowledge-db':
         specifier: workspace:*
         version: link:../../packages/knowledge-db
@@ -147,7 +147,7 @@ importers:
         version: link:../../packages/application
       '@aiengineer/knowledge-client':
         specifier: workspace:*
-        version: link:../../packages/client-typescript
+        version: link:../../packages/client
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -175,7 +175,7 @@ importers:
         version: link:../../packages/application
       '@aiengineer/knowledge-client':
         specifier: workspace:*
-        version: link:../../packages/client-typescript
+        version: link:../../packages/client
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -222,7 +222,7 @@ importers:
     devDependencies:
       '@aiengineer/knowledge-client':
         specifier: workspace:*
-        version: link:../../packages/client-typescript
+        version: link:../../packages/client
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)
@@ -392,7 +392,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
-  packages/client-typescript:
+  packages/client:
     dependencies:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:^
@@ -409,7 +409,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
 
   packages/contracts:
     dependencies:
@@ -675,7 +675,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.27.7)(tsx@4.23.13))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@26.4.0)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13))
 
   packages/testkit:
     dependencies:

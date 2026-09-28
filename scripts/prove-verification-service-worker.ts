@@ -10,7 +10,7 @@ import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 import { createVerificationOperationExecutor,verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
-import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
+import { KnowledgeClient } from "../packages/client/src/client.js";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
@@ -164,7 +164,7 @@ try {
     } finally {await mcp.close();}
   } finally {await api.close();}
   const sourceHashes:Record<string,string>={};
-  for(const file of ["scripts/prove-verification-service-worker.ts","apps/worker/src/activity-registry.ts","apps/worker/src/verification-activities.ts","packages/application/src/verification/operations/verification-service.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/cli/src/index.ts","apps/cli/src/verification-completion.ts","packages/host/src/verification/api/verification-ownership.ts","apps/mcp/src/index.ts"])
+  for(const file of ["scripts/prove-verification-service-worker.ts","apps/worker/src/activity-registry.ts","apps/worker/src/verification-activities.ts","packages/application/src/verification/operations/verification-service.ts","packages/client/src/client.ts","apps/cli/src/commands.ts","apps/cli/src/index.ts","apps/cli/src/verification-completion.ts","packages/host/src/verification/api/verification-ownership.ts","apps/mcp/src/index.ts"])
     sourceHashes[file]=createHash("sha256").update(await readFile(file)).digest("hex");
   const receipt=resolve("..","internal",`${namespace}.json`);
   await writeFile(receipt,JSON.stringify({capturedAt:now(),tenantId,missionId,attemptId,imageDigest,operations:[capture.operationId,verified.operationId,replay.operationId,rejected.operationId],sourceHashes,checks,providerDispatches:0,passed:true},null,2),{flag:"wx"});

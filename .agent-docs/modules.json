@@ -320,26 +320,26 @@
       "packageJson": "packages/preparation/package.json"
     },
     {
-      "id": "client-typescript",
-      "path": "packages/client-typescript",
+      "id": "client",
+      "path": "packages/client",
       "kind": "package",
       "state": "implemented",
       "summary": "Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.",
       "entrypoints": [
-        "packages/client-typescript/src/index.ts"
+        "packages/client/src/index.ts"
       ],
       "interface": [
         "KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application."
       ],
       "tests": [
-        "packages/client-typescript/src/adjudication-decision-read.test.ts",
-        "packages/client-typescript/src/adjudication.test.ts"
+        "packages/client/src/adjudication-decision-read.test.ts",
+        "packages/client/src/adjudication.test.ts"
       ],
       "constraints": [
         "Do not use from in-process KS servers; API, MCP and workers call application."
       ],
       "uses": [],
-      "packageJson": "packages/client-typescript/package.json"
+      "packageJson": "packages/client/package.json"
     },
     {
       "id": "host",
@@ -1333,7 +1333,7 @@
       ],
       "uses": [
         "application",
-        "client-typescript",
+        "client",
         "contracts",
         "jev"
       ],

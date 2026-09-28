@@ -139,7 +139,7 @@ try {
     "packages/application/src/verification/benchmark/verification-benchmark-comparison-runtime-config.ts",
     "packages/persistence/src/verification-benchmark-comparison.ts",
     "apps/api/src/server.ts",
-    "packages/client-typescript/src/client.ts",
+    "packages/client/src/client.ts",
     "apps/cli/src/commands.ts",
     "apps/mcp/src/index.ts",
     "scripts/prove-verification-benchmark-comparison-worker.ts",

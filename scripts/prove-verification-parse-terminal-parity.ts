@@ -12,7 +12,7 @@ import { createVerificationOperationExecutor, verificationActivityHandlers } fro
 import { verificationParseArtifactActivityHandler } from "../apps/worker/src/verification-parse-activity.js";
 import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
-import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
+import { KnowledgeClient } from "../packages/client/src/client.js";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
@@ -67,7 +67,7 @@ try{
   const body={...receipt.body};delete body.eventId;delete body.fencingToken;const result=VerificationParseArtifactResultSchema.parse(body);
   assert.equal(result.operationId,http.operationId);assert.equal(result.sourceArtifact.artifactId,sourceArtifact.artifactId);assert.equal(result.output.projections.length,1);assert.equal(result.output.projections[0].projectionKind,"html_dom");
   const resolver=repository.createTrustedArtifactResolver();await resolver.authorizeArtifact({tenantId,artifactId:result.resultArtifact.artifactId,purpose:"verification_replay"});const hydrated=await resolver.hydrateRegisteredArtifact({tenantId,artifactId:result.resultArtifact.artifactId});const {resultArtifact:_,...unsigned}=result;assert.equal(new TextDecoder().decode(hydrated.bytes),canonicalizeJson(VerificationParseArtifactResultSchema.omit({resultArtifact:true}).parse(unsigned)));
-  const output=resolve("..","internal",`${namespace}.json`);const sourceHashes=Object.fromEntries(await Promise.all(["apps/api/src/server.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","apps/worker/src/verification-parse-activity.ts","packages/application/src/verification/operations/verification-parse.ts"].map(async file=>[file,createHash("sha256").update(await readFile(file)).digest("hex")])));
+  const output=resolve("..","internal",`${namespace}.json`);const sourceHashes=Object.fromEntries(await Promise.all(["apps/api/src/server.ts","packages/client/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","apps/worker/src/verification-parse-activity.ts","packages/application/src/verification/operations/verification-parse.ts"].map(async file=>[file,createHash("sha256").update(await readFile(file)).digest("hex")])));
   await writeFile(output,JSON.stringify({schemaVersion:"verification-parse-terminal-parity-proof.v1",createdAt:now(),namespace,tenantId,operationId:http.operationId,checks:{sameDurableOperationAcrossHttpClientCliMcp:true,actualSandboxedParserWorkerSucceeded:true,canonicalTerminalResultArtifactHydrated:true,receiptEnvelopeBound:true},terminal:{resultArtifact:{artifactId:result.resultArtifact.artifactId,digest:result.resultArtifact.digest},projectionCount:result.output.projections.length,receiptId:receipt.id},providerCalls:0,remoteWrites:0,sourceHashes},null,2)+"\n",{flag:"wx"});console.log(JSON.stringify({output,operationId:http.operationId}));
  }finally{await api.close();}
 }finally{await database.close();}

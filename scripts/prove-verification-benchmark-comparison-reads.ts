@@ -202,7 +202,7 @@ try {
     "packages/persistence/src/verification-benchmark-comparison-reads.ts",
     "packages/host/src/verification/api/verification-benchmark-comparison-reads-runtime.ts",
     "apps/api/src/server.ts",
-    "packages/client-typescript/src/client.ts",
+    "packages/client/src/client.ts",
     "apps/cli/src/commands.ts",
     "apps/mcp/src/index.ts",
     "scripts/prove-verification-benchmark-comparison-reads.ts",

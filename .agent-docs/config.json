@@ -281,7 +281,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "application",
         "worker",
         "persistence"
@@ -295,7 +295,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "application"
       ]
     },
@@ -325,7 +325,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "contracts"
       ]
     },
@@ -414,7 +414,7 @@
         "jev-service",
         "application",
         "contracts",
-        "client-typescript",
+        "client",
         "skill-jev-system-one"
       ]
     }

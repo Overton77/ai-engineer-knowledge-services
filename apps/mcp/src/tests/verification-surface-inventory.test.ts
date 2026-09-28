@@ -3,7 +3,7 @@ import {
   KnowledgeIntegrationService,
   VerificationOperationApplicationService,
 } from "@aiengineer/knowledge-application";
-import { KnowledgeClient } from "../../../../packages/client-typescript/src/client.js";
+import { KnowledgeClient } from "../../../../packages/client/src/client.js";
 import {
   dispatchCliCommand,
   resolveCommand,
