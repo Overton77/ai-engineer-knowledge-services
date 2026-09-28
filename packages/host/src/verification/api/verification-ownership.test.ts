@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createVerificationOwnershipResolver,
   isVerifiedEveRuntimeRetry,
-} from "../verification-ownership.js";
+} from "./verification-ownership.js";
 import type { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import {
   createEveRuntimeAttestation,

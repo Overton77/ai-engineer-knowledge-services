@@ -1,4 +1,4 @@
-import { CanonicalRetrievalExecutor } from "../apps/api/src/retrieval-executor.js";
+import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import { buildServer } from "../apps/api/src/server.js";
 import { PostgresKnowledgeOperationService, PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";

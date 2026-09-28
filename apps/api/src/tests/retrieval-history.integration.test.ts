@@ -35,7 +35,7 @@ import {
   publishCandidate,
 } from "../../../verification-executor/src/knowledge/selected-candidate-publication.js";
 import type { LocalApiIdentity } from "../auth.js";
-import { CanonicalRetrievalExecutor } from "../retrieval-executor.js";
+import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
 
 const CURRENT_QUERY =

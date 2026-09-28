@@ -12,10 +12,11 @@ import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
 import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { spawn } from "node:child_process";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const connectionString=process.env.POSTGRES_URL,projectUrl=process.env.SUPABASE_URL,serviceRoleKey=process.env.SUPABASE_SECRET_KEY;
 if(!connectionString||!projectUrl||!serviceRoleKey)throw new Error("LOCAL_CONFIGURATION_REQUIRED");
@@ -150,7 +151,7 @@ try {
     await operations.cancel(timeoutOperation.operationId,tenantId,timeoutContext);
     const mcp=buildKnowledgeMcpApp({operationService:operations,apiOrigin:baseUrl,
       resolveIdentity:value=>value===token?{actor:publicContext.actor,grants:[{tenantId,roles:["knowledge_operator"],scopes:[]}]}:undefined,
-      createApiClient:accessToken=>new KnowledgeClient({baseUrl,getAccessToken:()=>accessToken})});
+      ...inProcessMcpOptions({operationService:operations,verificationOperationService:operations,resourceReader:database,resolveVerificationContext:resolver},baseUrl)});
     try {
       const mcpUrl=await mcp.listen({host:"127.0.0.1",port:0});
       const mcpContext={tenantId,missionId,workItemId,attemptId,correlationId:publicContext.correlationId,idempotencyKey:`${namespace}-mcp`};
@@ -163,7 +164,7 @@ try {
     } finally {await mcp.close();}
   } finally {await api.close();}
   const sourceHashes:Record<string,string>={};
-  for(const file of ["scripts/prove-verification-service-worker.ts","apps/worker/src/activity-registry.ts","apps/worker/src/verification-activities.ts","packages/application/src/verification/operations/verification-service.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/cli/src/index.ts","apps/cli/src/verification-completion.ts","apps/api/src/verification-ownership.ts","apps/mcp/src/index.ts"])
+  for(const file of ["scripts/prove-verification-service-worker.ts","apps/worker/src/activity-registry.ts","apps/worker/src/verification-activities.ts","packages/application/src/verification/operations/verification-service.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/cli/src/index.ts","apps/cli/src/verification-completion.ts","packages/host/src/verification/api/verification-ownership.ts","apps/mcp/src/index.ts"])
     sourceHashes[file]=createHash("sha256").update(await readFile(file)).digest("hex");
   const receipt=resolve("..","internal",`${namespace}.json`);
   await writeFile(receipt,JSON.stringify({capturedAt:now(),tenantId,missionId,attemptId,imageDigest,operations:[capture.operationId,verified.operationId,replay.operationId,rejected.operationId],sourceHashes,checks,providerDispatches:0,passed:true},null,2),{flag:"wx"});

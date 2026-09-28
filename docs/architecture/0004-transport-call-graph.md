@@ -28,7 +28,7 @@ CLI demo / attestation / benchmark diff --> application / verification (frozen f
 | Surface | Where it runs | What it calls | What it must not call |
 | --- | --- | --- | --- |
 | API | KS server with Postgres | application use cases, then persistence | `KnowledgeClient` (no self-HTTP) |
-| MCP | KS server with Postgres | the same application functions the API uses | `KnowledgeClient` / the sibling API, except as a temporary verification shim |
+| MCP | KS server with Postgres | the same application functions the API uses | `KnowledgeClient` / the sibling API (the temporary shim was removed in cleanup unit 3) |
 | Workers | KS server | application | HTTP API for their own use cases |
 | CLI remote | Operator laptop, no DB | `KnowledgeClient` → HTTP API | application persistence, `POSTGRES_URL` |
 | CLI local (`demo`, `attestation-*`, `benchmark diff`) | Laptop, offline | application / verification on frozen files | HTTP, tokens, the remote catalog |
@@ -45,7 +45,7 @@ Do not publish a verification-only client package. Split `client.ts` later as fi
 - New MCP tools must not add `apiClient` / `KnowledgeClient` methods.
 - New remote CLI commands may use `KnowledgeClient`.
 - New API and MCP behavior goes through application first; HTTP and MCP both call it.
-- The MCP verification HTTP loop (`createApiClient` in `apps/mcp`) is a temporary shim because ownership and some admission still live in API HTTP handlers. Unwind it; do not grow it.
+- The MCP verification HTTP loop (`createApiClient` in `apps/mcp`) was a temporary shim while ownership and some admission lived in API HTTP handlers. Cleanup unit 3 removed it (2026-09-27): MCP has no API client, and an API/MCP parity test covers every former shim row.
 
 A dated inventory of later refactors is [transport-call-graph-refactor-snapshot-20260916.md](./transport-call-graph-refactor-snapshot-20260916.md). That file is a snapshot and will go stale.
 
@@ -59,4 +59,4 @@ The rule above is unchanged. What was missing is one place that builds applicati
 - API, MCP, and worker import only `host` and `contracts`. CLI offline commands and MCP stdio use the `local` profile. CLI remote and every out-of-process caller keep using `KnowledgeClient`.
 - Handlers parse with `contracts`, build an `OperationContext`, call one application function, and map the result. Error codes live in `contracts`; handlers contain no SQL or authorization logic.
 - Durable work goes through `operations.submit`; the worker is a lease loop over the activity registry.
-- The MCP `createApiClient` shim is removed once ownership, admission, and retrieval execution are application ports (FINAL-LAYOUT unit 3).
+- The MCP `createApiClient` shim is removed once ownership, admission, and retrieval execution are application ports (FINAL-LAYOUT unit 3). Done in unit 3; the `local` profile and CLI/MCP stdio remain unit 5.

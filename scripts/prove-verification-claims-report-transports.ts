@@ -7,10 +7,11 @@ import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { AcceptedOperationSchema, OperationContextSchema } from "@aiengineer/knowledge-contracts";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
 import { digestCanonicalJson } from "@aiengineer/knowledge-verification";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 for (const [value, port] of [[process.env.POSTGRES_URL, "54322"], [process.env.SUPABASE_URL, "54321"]] as const) {
   const url = new URL(value); if (!['127.0.0.1', 'localhost'].includes(url.hostname) || url.port !== port || url.search || url.hash) throw new Error("LOCAL_ONLY_PROOF_REQUIRED");
@@ -39,7 +40,7 @@ await writeFile(startupJournal, JSON.stringify({ schemaVersion: "verification-cl
 try {
   const origin = await server.listen({ host: "127.0.0.1", port: 0 });
   const client = new KnowledgeClient({ baseUrl: origin, getAccessToken: () => "valid" });
-  const mcp = createVerificationMcpToolExecutor({ operationService: service, apiOrigin: origin, identity, apiClient: client });
+  const mcp = createVerificationMcpToolExecutor({ operationService: service, apiOrigin: origin, identity, ...inProcessMcpOptions({ verificationOperationService: service, resolveVerificationContext: createVerificationOwnershipResolver(database, grants), isClaimsRequestAdmitted: isAdmitted }, origin) });
   for (const [index, source] of sourceOperations.entries()) {
     const useCase = index === 0 ? "verifyClaims" : "verifyReport";
     const context = OperationContextSchema.parse({ tenantId, operationId: randomUUID(), attemptId: source.ownership.attempt_id, workItemId: source.ownership.work_item_id, missionId: source.ownership.mission_id, actor, correlationId: namespace, idempotencyKey: `${useCase}-${namespace}`, capabilityVersion: "verification.v1", reason: "Loopback claims/report transport proof", contractVersion: "v1" });
@@ -58,7 +59,7 @@ try {
   checks.authorized_operations_queued_without_worker_provider_or_parser = true;
   for (const operationId of operations) { await database.cancelOperation(tenantId, operationId, { actorIdentity: namespace, correlationId: namespace }); assert.equal((await database.getOperation(tenantId, operationId))?.status, "cancelled"); }
   checks.all_proof_operations_cancelled_before_success_receipt = true;
-  const sourceFiles = await Promise.all(["apps/api/src/server.ts", "apps/api/src/verification-ownership.ts", "packages/client-typescript/src/client.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "scripts/prove-verification-claims-report-transports.ts"].map(async path => ({ path, sha256: createHash("sha256").update(await readFile(path)).digest("hex") })));
+  const sourceFiles = await Promise.all(["apps/api/src/server.ts", "packages/host/src/verification/api/verification-ownership.ts", "packages/client-typescript/src/client.ts", "apps/cli/src/commands.ts", "apps/mcp/src/index.ts", "scripts/prove-verification-claims-report-transports.ts"].map(async path => ({ path, sha256: createHash("sha256").update(await readFile(path)).digest("hex") })));
   const output = resolve("../internal", `verification-claims-report-transports-${namespace}.json`);
   await writeFile(output, JSON.stringify({ schemaVersion: "verification-claims-report-transports-proof.v1", createdAt: new Date().toISOString(), namespace, fixtureName, tenantId, checks, startupJournal, admittedThenCancelledOperationIds: operations, sourceFiles, parserDispatches: 0, providerDispatches: 0, limitations: ["Configured loopback HTTP/client and in-process CLI/MCP adapters submit retained registered inputs", "Claims/report expose no public typed terminal-receipt/result read route, so cross-transport terminal-result parity is unsupported and not asserted", "Queued proof operations are cancelled and verified before this receipt; no worker, parser, provider, or remote service is started"] }, null, 2) + "\n", { flag: "wx" });
   console.log(JSON.stringify({ output, checks }));

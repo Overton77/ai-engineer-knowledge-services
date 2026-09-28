@@ -22,7 +22,7 @@ import type {
   FastifyRequest,
 } from "fastify";
 import { z } from "zod";
-import type { CanonicalRetrievalExecutorPort } from "./retrieval-executor.js";
+import type { CanonicalRetrievalExecutorPort } from "@aiengineer/knowledge-application";
 
 export type ResolveCallbackSigningSecret = (
   tenantId: string,

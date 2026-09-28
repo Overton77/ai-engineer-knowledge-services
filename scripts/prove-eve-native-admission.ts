@@ -8,7 +8,7 @@ import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "
 import { deterministicUuid, parseEveRuntimeAttestation } from "@aiengineer/knowledge-core";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 
 // Actual Eve runtime -> HTTP API -> canonical SQL admission. All SQL is observed
 // inside one intentionally rolled-back transaction: this is not a durability,
@@ -102,7 +102,7 @@ t.check(value?.status,equals("accepted"));t.check(value?.operationId,equals(proc
 finally {
   await api?.close();await scoped.close();await database.close();
   if(fixtureCreated){assert.equal(dirname(fixtureRoot),dirname(eveRoot));assert.match(fixtureRoot.split(/[\\/]/).at(-1)!,/^\.verification-native-fixture-[0-9a-f-]{36}$/u);await rm(fixtureRoot,{recursive:true,force:true});}
-  const sourceFiles=["ai-engineer-knowledge-services/scripts/prove-eve-native-admission.ts","ai-engineer-knowledge-services/apps/api/src/verification-ownership.ts","ai-engineer-knowledge-services/apps/api/src/server.ts","ai-engineer-knowledge-services/packages/persistence/src/eve-verification-binding.ts","research_ingestion_systems_agent/agents/verification/agent/lib/verification-ks-runtime.ts"];
+  const sourceFiles=["ai-engineer-knowledge-services/scripts/prove-eve-native-admission.ts","ai-engineer-knowledge-services/packages/host/src/verification/api/verification-ownership.ts","ai-engineer-knowledge-services/apps/api/src/server.ts","ai-engineer-knowledge-services/packages/persistence/src/eve-verification-binding.ts","research_ingestion_systems_agent/agents/verification/agent/lib/verification-ks-runtime.ts"];
   const sourceHashes=await Promise.all(sourceFiles.map(async path=>({path,sha256:sha(await readFile(resolve(root,path),"utf8"))})));
   await mkdir(dirname(output),{recursive:true});await writeFile(output,JSON.stringify({schemaVersion:"verification-eve-native-admission.v1",passed,rolledBack,proofId,observed,calls,commandReceipts,sourceHashes,failureCode,publicKeyPem,providerCalls:0,limitations:["Rollback-only SQL admission evidence; no committed durability or concurrency proof.","Synthetic request handles are exactly admitted for transport; no worker, artifact validation, signed verification result, Storage, Temporal, or live model executed."],createdAt:new Date().toISOString()},null,2)+"\n",{flag:"wx"});
 }

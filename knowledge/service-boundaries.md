@@ -91,31 +91,38 @@ The catalog names operations once, so CLI, POST `/knowledge/<name>`, and MCP
 share input schemas and gates. The CLI behaviour is covered by
 [`cli.test.ts`](../apps/verification-executor/src/knowledge/cli.test.ts).
 
-The main API and MCP servers compose the same verification host.
+The main API and MCP servers compose the same services.
 [`createApiRuntime`](../apps/api/src/index.ts) and
 [`createMcpRuntime`](../apps/mcp/src/index.ts) call
 [`createHost`](../packages/host/src/create-host.ts), whose `api` and `mcp`
 roles both call
-[`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts)
-before they attach read runtimes. Host owns construction and release; the
-transports keep credential handling, listeners and protocol mapping. That host wires application ownership and
-catalog/SQL admission ports; it is not a second algorithm authority.
+[`composeKnowledgeServices`](../packages/host/src/server/knowledge.ts) and
+[`composeVerificationServices`](../packages/host/src/server/verification.ts)
+(admission via
+[`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts),
+read, reconciliation and decision construction). Host owns construction and
+release; the transports keep credential handling, listeners and protocol
+mapping. MCP omits only transport-only pieces (callback replay and the
+service-only drift queue).
 
-MCP verification mutations call application in-process after ownership and
-`is*RequestAdmitted`. `knowledge_get_verification_operation`,
-`embedding.run_status`, and `promotion.status` use `operationService.get`.
-`retrieval.plan_validate` is `RetrievalPlanSchema.parse`. Pipeline catalog
-writes still use `operationService.submit`.
-
-These MCP tools still HTTP-shim through `KnowledgeClient`: retrieval
-search/explain/read_run/evidence packet/citation replay,
-`evaluation.inspect_failures`, `vector_store.ingestion_status`, provider
-reconciliation apply/get, most verification reads (benchmark, extraction,
-audit, claims, adjudication subject/decision, cases), and
-`knowledge_record_adjudication_decision` when
-`isAdjudicationDecisionAdmitted` is absent. New MCP tools must not add
-`apiClient` methods. This is observed remainder, not a rewrite of accepted
-[ADR 0004](../docs/architecture/0004-transport-call-graph.md).
+Every MCP tool runs in process; MCP has no API client and issues no HTTP
+request to the API
+([fetch-trap test](../apps/mcp/src/tests/no-http-shims.test.ts)). Knowledge and
+verification reads call the shared
+[`createKnowledgeResourceReads`](../packages/application/src/reads/knowledge-resource-reads.ts)
+and
+[`createVerificationResourceReads`](../packages/application/src/reads/verification-resource-reads.ts);
+`retrieval.search` calls
+[`submitCanonicalRetrievalRun`](../packages/application/src/retrieval/canonical-retrieval-run.ts).
+Verification mutations call application after
+[`bindResolvedVerificationContext`](../packages/application/src/verification/operations/verification-context-binding.ts)
+and the shared admission gates. `knowledge_get_verification_operation`,
+`embedding.run_status` and `promotion.status` use `operationService.get`;
+`retrieval.plan_validate` is `RetrievalPlanSchema.parse`; pipeline catalog
+writes use `operationService.submit`. The API route is the behavioral
+reference: a [parity test](../apps/mcp/src/tests/api-mcp-parity.test.ts) runs
+both transports over identical fixtures for every former shim row. This
+follows accepted [ADR 0004](../docs/architecture/0004-transport-call-graph.md).
 
 # Retrieval is a separate read path
 
@@ -152,9 +159,10 @@ implemented package and a catalog entry may describe a retrieval-shaped query.
   receipt/ledger records in its executor path. Those records are distinct from
   the service operation lifecycle; do not treat the absence of a
   `knowledge_service.operation` row as absence of an ingestion receipt.
-- Most verification and retrieval-evidence-eval read ports remain API-local.
-  MCP still proxies those tools. Decision admission is also API-local, so MCP
-  record-decision stays on HTTP unless that gate is injected.
+- MCP answers `CAPABILITY_NOT_ADMITTED` when a read, reconciliation or
+  decision capability is not composed; it never falls back to another
+  transport. MCP deployments therefore need the same verification read,
+  Storage and gateway configuration as the API for those tools to work.
 
 For authentication, capability admission, and parser isolation, read the
 owning [security guide](../docs/security.md) before changing a transport's trust

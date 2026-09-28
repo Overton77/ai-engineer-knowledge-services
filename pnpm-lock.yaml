@@ -201,9 +201,6 @@ importers:
       '@aiengineer/knowledge-application':
         specifier: workspace:*
         version: link:../../packages/application
-      '@aiengineer/knowledge-client':
-        specifier: workspace:*
-        version: link:../../packages/client-typescript
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -223,6 +220,9 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-client':
+        specifier: workspace:*
+        version: link:../../packages/client-typescript
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(tsx@4.23.13)(typescript@7.0.2)

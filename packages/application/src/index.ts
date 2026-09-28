@@ -105,3 +105,16 @@ export * from "./checkpoints/checkpoints.js";
 export * from "./verification/recovery/verification-recovery-durable-ports.js";
 export * from "./verification/recovery/verification-recovery-durable.js";
 export * from "./promotion-selection/promotion-selection.js";
+
+// Transport-neutral access rules and in-process use cases shared by API and MCP.
+export * from "./access/api-access.js";
+export * from "./retrieval/canonical-retrieval-ports.js";
+export * from "./retrieval/canonical-retrieval-executor.js";
+export * from "./retrieval/canonical-retrieval-run.js";
+export * from "./reads/resource-read-result.js";
+export * from "./reads/knowledge-resource-reads.js";
+export * from "./reads/verification-resource-reads.js";
+export * from "./verification/operations/verification-drift-revalidation-queue.js";
+export * from "./verification/benchmark/verification-benchmark-capture-profile.js";
+export * from "./verification/operations/verification-context-binding.js";
+export * from "./errors/transport-problem.js";

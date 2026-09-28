@@ -1,6 +1,6 @@
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { createVerificationClaimsReportReads } from "../verification-claims-report-reads-runtime.js";
+import { createVerificationClaimsReportReads } from "./verification-claims-report-reads-runtime.js";
 
 describe("claims/report read runtime", () => {
   it("stays unavailable unless server-owned signature trust is configured", () => {

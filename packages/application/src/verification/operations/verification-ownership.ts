@@ -19,6 +19,7 @@ import {
 import { createPublicKey } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
+import { actorsMatch } from "../../access/api-access.js";
 import type {
   ResolveVerificationContext,
   VerificationContextResolutionInput,
@@ -92,19 +93,6 @@ export interface VerificationOwnershipResolverOptions {
 }
 
 const verifiedEveRetries = new WeakMap<object, { readonly context: OperationContext; readonly observed: unknown }>();
-
-function actorsMatch(authenticated: Actor, asserted: Actor): boolean {
-  if (authenticated.kind !== asserted.kind || authenticated.id !== asserted.id) return false;
-  if (authenticated.kind === "service" && asserted.kind === "service")
-    return authenticated.serviceIdentity === asserted.serviceIdentity;
-  if (authenticated.kind === "model" && asserted.kind === "model")
-    return (
-      authenticated.serviceIdentity === asserted.serviceIdentity &&
-      authenticated.model === asserted.model &&
-      authenticated.providerRunId === asserted.providerRunId
-    );
-  return true;
-}
 
 function headerString(
   headers: Record<string, unknown>,

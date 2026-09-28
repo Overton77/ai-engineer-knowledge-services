@@ -11,6 +11,7 @@ import {buildKnowledgeMcpApp} from "../apps/mcp/src/index.js";
 import {PostgresCanonicalRepository,PostgresKnowledgeOperationService} from "@aiengineer/knowledge-persistence";
 import {KnowledgeClient} from "@aiengineer/knowledge-client";
 import {VerificationBenchmarkRunSummaryResourceSchema,VerificationBenchmarkRunManifestResourceSchema} from "@aiengineer/knowledge-contracts";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const postgres=process.env.POSTGRES_URL,storage=process.env.SUPABASE_URL;
 if(!postgres||!/^postgres(?:ql)?:\/\/(?:[^@/]+@)?(?:127\.0\.0\.1|localhost):54322\//u.test(postgres))throw new Error("LOCAL_DB_REQUIRED");
@@ -45,7 +46,7 @@ try{
  const unknownReads=createVerificationBenchmarkReads(database,{...process.env,VERIFICATION_BENCHMARK_READ_PUBLIC_KEYS_JSON:JSON.stringify([{keyId:"untrusted-other",publicKeyPem:fixture.publicKey.pem}])})!;
  await assert.rejects(()=>unknownReads.getRun({tenantId,runId:fixture.benchmarkRunId}),error=>error instanceof Error&&"code" in error&&error.code==="INTEGRITY");checks.unknownSigningKeyRejected=true;
  for(const action of ["show","manifest"]){const result=await cli(origin,action);assert.equal(result.code,0,result.stderr);const value=JSON.parse(result.stdout);(action==="show"?VerificationBenchmarkRunSummaryResourceSchema:VerificationBenchmarkRunManifestResourceSchema).parse(value);}checks.builtCliReads=true;
- mcp=buildKnowledgeMcpApp({operationService:new PostgresKnowledgeOperationService(database),apiOrigin:origin,resolveIdentity:value=>value===token?identity:undefined,createApiClient:accessToken=>new KnowledgeClient({baseUrl:origin,getAccessToken:()=>accessToken})});
+ mcp=buildKnowledgeMcpApp({operationService:new PostgresKnowledgeOperationService(database),apiOrigin:origin,resolveIdentity:value=>value===token?identity:undefined,...inProcessMcpOptions({verificationBenchmarkReads:reads},origin)});
  const mcpOrigin=await mcp.listen({host:"127.0.0.1",port:0}),require=createRequire(resolve("apps/mcp/package.json"));
  const {Client}=await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href),{StreamableHTTPClientTransport}=await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/streamableHttp.js")).href);
  const protocolClient=new Client({name:"benchmark-read-proof",version:"1"});

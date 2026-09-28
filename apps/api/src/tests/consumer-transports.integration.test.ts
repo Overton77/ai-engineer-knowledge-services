@@ -29,7 +29,7 @@ import {
   evaluateCandidate,
   publishCandidate,
 } from "../../../verification-executor/src/knowledge/selected-candidate-publication.js";
-import { CanonicalRetrievalExecutor } from "../retrieval-executor.js";
+import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
 
 const databaseUrl = disposableDatabaseUrl(),

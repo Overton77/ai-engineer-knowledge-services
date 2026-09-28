@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   allowsVerificationAdjudicationReadArtifact,
   createVerificationAdjudicationReads,
-} from "../verification-adjudication-reads-runtime.js";
+} from "./verification-adjudication-reads-runtime.js";
 
 describe("adjudication read native runtime configuration", () => {
   it("stays disabled without server trust and rejects an incomplete enabled runtime", () => {

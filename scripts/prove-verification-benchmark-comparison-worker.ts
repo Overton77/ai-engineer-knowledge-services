@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { CanonicalActivityRegistry, createCanonicalActivityExecutor } from "../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
@@ -17,6 +17,7 @@ import { VerificationBenchmarkComparisonOperationResultSchema } from "@aienginee
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore, deterministicUuid } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, createEd25519Verifier, digestCanonicalJson, verifyVerificationBenchmarkComparisonPublication } from "@aiengineer/knowledge-verification";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 type Ref = { artifactId: string; digest: string };
 type ProfileId = "paired_default" | "regression_gate";
@@ -262,7 +263,7 @@ try {
       operationService: genericOperations,
       apiOrigin: baseUrl,
       resolveIdentity: value => value === token ? identity : undefined,
-      createApiClient: accessToken => new KnowledgeClient({ baseUrl, getAccessToken: () => accessToken }),
+      ...inProcessMcpOptions({ operationService: genericOperations, verificationOperationService: comparisonOperations, resourceReader: database, resolveVerificationContext: resolver, isBenchmarkComparisonRequestAdmitted: admitted }, baseUrl),
     });
     const mcpOrigin = await mcp.listen({ host: "127.0.0.1", port: 0 });
     const require = createRequire(resolve("apps/mcp/package.json"));

@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {ActorSchema,UuidSchema,VerificationArtifactHandleSchema,type Actor,type VerificationArtifactHandle} from "@aiengineer/knowledge-contracts";
-import {actorsMatch} from "@aiengineer/knowledge-host";
+import {actorsMatch} from "@aiengineer/knowledge-application";
 import {ProviderReconciliationAdmission} from "@aiengineer/knowledge-application";
 import {PostgresProviderReconciliationStore,PostgresProviderReconciliationReadRepository,PostgresVerificationRepository,type PostgresCanonicalRepository} from "@aiengineer/knowledge-persistence";
 import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";

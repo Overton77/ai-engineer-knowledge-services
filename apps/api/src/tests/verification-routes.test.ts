@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
-import { createVerificationOwnershipResolver } from "../verification-ownership.js";
+import { createVerificationOwnershipResolver } from "@aiengineer/knowledge-host";
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

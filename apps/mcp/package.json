@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@aiengineer/knowledge-application": "workspace:*",
-    "@aiengineer/knowledge-client": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
     "@aiengineer/knowledge-host": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
@@ -21,6 +20,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aiengineer/knowledge-client": "workspace:*",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

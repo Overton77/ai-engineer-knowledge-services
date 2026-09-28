@@ -8,7 +8,7 @@ vi.mock("@aiengineer/knowledge-application", async (importOriginal) => ({
   >()),
   compareVerifiedComponentVersions: compare,
 }));
-import { createVerificationDriftRevalidationRuntime } from "../verification-drift-revalidation-runtime.js";
+import { createVerificationDriftRevalidationRuntime } from "./verification-drift-revalidation-runtime.js";
 
 const tenant = "11111111-1111-4111-8111-111111111111";
 const other = "99999999-1111-4111-8111-111111111111";

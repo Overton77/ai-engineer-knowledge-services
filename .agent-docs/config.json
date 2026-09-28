@@ -6,7 +6,7 @@
   "budgetBytes": 9216,
   "rules": [
     "Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.",
-    "API, MCP, and workers call packages/application. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct. Never add MCP apiClient methods.",
+    "API, MCP, and workers call packages/application in process; MCP has no API client. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct.",
     "Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.",
     "Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.",
     "Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.",
@@ -23,28 +23,26 @@
       "status": "reference"
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md",
-      "task": "Next unit: application use cases, no MCP HTTP shims",
+      "path": "docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md",
+      "task": "Next unit: app order, naming, catalog",
       "status": "proposed",
+      "modules": [
+        "application",
+        "contracts",
+        "api",
+        "mcp",
+        "cli"
+      ]
+    },
+    {
+      "path": "docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md",
+      "task": "Unit 3 in-process MCP",
+      "status": "reference",
       "modules": [
         "application",
         "host",
         "api",
         "mcp"
-      ]
-    },
-    {
-      "path": "docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md",
-      "task": "Unit 2 host composition and seams",
-      "status": "reference",
-      "modules": [
-        "host",
-        "persistence",
-        "api",
-        "mcp",
-        "worker",
-        "jev",
-        "jev-service"
       ]
     },
     {
@@ -433,7 +431,7 @@
     "A knowledge-read retrieval operation is accepted in the intent schema but skipped as RETRIEVAL_UNAVAILABLE; catalog query retrieval.hybrid_search is pending an embedding.",
     "Ingestion records orchestration.operation_intent/receipt and does not write a knowledge_service.operation row or outbox.",
     "The database-contract pin is the vendored 0.4.16 tarball, not an unpinned sibling checkout. Cloud deployment of its schema additions is not verified by this map.",
-    "Accepted ADR 0004: in-process KS servers call application; out-of-process callers use KnowledgeClient HTTP. MCP verification mutations, operation/status, and retrieval.plan_validate are in-process; decision/reconciliation/retrieval-evidence-eval reads and record-decision without the decision gate still HTTP-shim. Do not add apiClient methods."
+    "Accepted ADR 0004: in-process KS servers call application; out-of-process callers use KnowledgeClient HTTP. Since Unit 3 every MCP tool runs in process (no API client); API/MCP parity is enforced by apps/mcp/src/tests/api-mcp-parity.test.ts."
   ],
   "ciWorkflow": ".github/workflows/agent-docs.yml",
   "codeMap": ".agent-docs/modules.json",

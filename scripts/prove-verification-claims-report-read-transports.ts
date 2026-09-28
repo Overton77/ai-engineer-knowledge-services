@@ -7,9 +7,10 @@ import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationClaimsReportReads } from "../apps/api/src/verification-claims-report-reads-runtime.js";
+import { createVerificationClaimsReportReads } from "../packages/host/src/verification/api/verification-claims-report-reads-runtime.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 import { createClaimsReportReadMcpExecutor } from "../apps/mcp/src/index.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 type Proof={namespace:string;tenantId:string;publicKeyPem:string;results:{claimsRecovery:{operationId:string};reportRecovery:{operationId:string}}};
 type OwnershipRow={id:string;mission_id:string;agent_deployment_id:string;capability_version:string;actor:Actor;external_execution:unknown};
@@ -59,7 +60,7 @@ try{
     const httpResponse=await fetch(`${baseUrl}${path}`,{headers});assert.equal(httpResponse.status,200);const http=schema.parse(await httpResponse.json());
     const typed=family==="claims"?await client.getVerificationClaimsResult(operationId,context):await client.getVerificationReportResult(operationId,context);
     const cli=await dispatchCliCommand(client as never,resolveCommand("verify",family==="claims"?"claims-result":"report-result")!,{operationId},context);
-    const mcp=(await createClaimsReportReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity:{actor,grants:[{tenantId:proof.tenantId,roles:["knowledge_reader"],scopes:[]}]},apiClient:client},family)({context:{tenantId:proof.tenantId,correlationId:context.correlationId},operationId}) as {structuredContent:unknown}).structuredContent;
+    const mcp:unknown=(await createClaimsReportReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity:{actor,grants:[{tenantId:proof.tenantId,roles:["knowledge_reader"],scopes:[]}]},...inProcessMcpOptions({verificationClaimsReportReads:reads},baseUrl)},family)({context:{tenantId:proof.tenantId,correlationId:context.correlationId},operationId}) as {structuredContent:unknown}).structuredContent;
     for(const candidate of [http,typed,cli,mcp])assert.equal(canonicalizeJson(schema.parse(candidate)),canonicalizeJson(direct));
     const serialized=JSON.stringify(direct);for(const forbidden of ["objectKey","rawBundle","providerResponse","BEGIN PUBLIC KEY","selectorResolutions","missingQualifierAssertionIds","pointerFailures"]){assert.equal(serialized.includes(forbidden),false);}
     results.push({family,surface:"http+typescript-client+cli+mcp",operationId,resultArtifact:direct.resultArtifact,manifestArtifact:direct.sealedRun.manifestArtifact,policyOutcome:direct.sealedRun.policyOutcome});
@@ -74,7 +75,7 @@ try{
     (select count(*)::int from knowledge_service.operation where tenant_id=$1) operations,
     (select count(*)::int from orchestration.artifact where tenant_id=$1) artifacts`,[proof.tenantId])).rows[0]!);
   assert.deepEqual(after,before);
-  const sourcePaths=["packages/contracts/src/verification/claims-report-reads.ts","packages/application/src/verification/operations/verification-claims-report-reads.ts","packages/persistence/src/verification-claims-report-reads.ts","apps/api/src/verification-claims-report-reads-runtime.ts","apps/api/src/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-claims-report-read-transports.ts"];
+  const sourcePaths=["packages/contracts/src/verification/claims-report-reads.ts","packages/application/src/verification/operations/verification-claims-report-reads.ts","packages/persistence/src/verification-claims-report-reads.ts","packages/host/src/verification/api/verification-claims-report-reads-runtime.ts","packages/host/src/verification/api/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-claims-report-read-transports.ts"];
   const sourceFiles=await Promise.all(sourcePaths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
   const receipt={schemaVersion:"verification-claims-report-read-transports-proof.v1",sourceProof:{path:sourceProofPath,sha256:createHash("sha256").update(await readFile(sourceProofPath)).digest("hex")},tenantId:proof.tenantId,createdAt:new Date().toISOString(),checks:{database_default_transaction_read_only:true,server_owned_signature_and_ownership_trust:true,http_client_cli_mcp_exact_claims_read:true,http_client_cli_mcp_exact_report_read:true,strict_compact_outputs:true,unauthorized_read_rejected:true,missing_read_discloses_no_result:true,wrong_family_rejected:true,wrong_tenant_rejected:true,authenticated_unowned_actor_rejected:true,native_operation_and_artifact_counts_unchanged:true},results,parserDispatches:0,providerDispatches:0,sourceFiles};
   await writeFile(outputPath,JSON.stringify(receipt,null,2)+"\n",{flag:"wx"});console.log(JSON.stringify({output:outputPath,sha256:createHash("sha256").update(await readFile(outputPath)).digest("hex"),checks:Object.keys(receipt.checks).length,parserDispatches:0,providerDispatches:0}));

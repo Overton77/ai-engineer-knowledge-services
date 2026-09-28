@@ -23,7 +23,7 @@ import {
 import { SandboxedVerificationParser, VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-conversion";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-runtime";
-import { createVerificationBenchmarkCaptureProfileResolver } from "../../apps/api/src/verification-benchmark-capture-profile.js";
+import { createVerificationBenchmarkCaptureProfileResolver } from "../../packages/host/src/verification/api/verification-benchmark-capture-profile.js";
 import { buildServer } from "../../apps/api/src/server.js";
 import { CanonicalActivityRegistry } from "../../apps/worker/src/activity-registry.js";
 import { CanonicalDurableKnowledgeWorker } from "../../apps/worker/src/canonical-worker.js";

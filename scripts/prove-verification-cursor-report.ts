@@ -11,8 +11,8 @@ import { deterministicUuid, SupabaseArtifactStore } from "@aiengineer/knowledge-
 import { canonicalizeJson, digestCanonicalJson, gatewaySemanticConfigurationDigest, gatewaySemanticOutputSchemaDigest, gatewaySemanticPromptDigest, prepareGatewaySemanticRequest, projectionSelectorResolver } from "@aiengineer/knowledge-verification";
 import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationReads } from "../packages/host/src/verification/api/verification-reads-runtime.js";
-import { createVerificationClaimsReportReads } from "../apps/api/src/verification-claims-report-reads-runtime.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationClaimsReportReads } from "../packages/host/src/verification/api/verification-claims-report-reads-runtime.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { startWorker } from "../apps/worker/src/index.js";
 import { createVerificationAgentReportFixture, type AgentReportFrozenRecord } from "./verification-agent-report-fixture.js";
 

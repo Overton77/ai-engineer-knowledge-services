@@ -10,10 +10,11 @@ import {KnowledgeClient} from "@aiengineer/knowledge-client";
 import {AcceptedOperationSchema,OperationContextSchema,VerificationStructuredExtractionResourceSchema} from "@aiengineer/knowledge-contracts";
 import {createStructuredExtractionRequestAdmission,parseVerificationStructuredExtractionRuntimeConfig} from "@aiengineer/knowledge-application";
 import {buildServer} from "../apps/api/src/server.js";
-import {createVerificationStructuredExtractionReads} from "../apps/api/src/verification-structured-extraction-reads-runtime.js";
-import {createVerificationOwnershipResolver} from "../apps/api/src/verification-ownership.js";
+import {createVerificationStructuredExtractionReads} from "../packages/host/src/verification/api/verification-structured-extraction-reads-runtime.js";
+import {createVerificationOwnershipResolver} from "../packages/host/src/verification/api/verification-ownership.js";
 import {dispatchCliCommand,resolveCommand} from "../apps/cli/src/commands.js";
 import {buildKnowledgeMcpApp,createStructuredExtractionReadMcpExecutor,createVerificationMcpToolExecutor} from "../apps/mcp/src/index.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 for(const[value,port]of [[process.env.POSTGRES_URL!,"54322"],[process.env.SUPABASE_URL!,"54321"]]){const url=new URL(value!);if(!["localhost","127.0.0.1"].includes(url.hostname)||url.port!==port)throw new Error("LOCAL_ONLY_PROOF_REQUIRED");}
 const fixtureName="verification-structured-extraction-worker-97976363-5591-40f7-b4a8-9d00fa805123.json",fixture=JSON.parse(await readFile(resolve("../internal",fixtureName),"utf8"));
@@ -31,7 +32,8 @@ try{
   const origin=await server.listen({host:"127.0.0.1",port:0});
   const client=new KnowledgeClient({baseUrl:origin,getAccessToken:()=>"valid"});
   const context=OperationContextSchema.parse({tenantId,operationId:randomUUID(),attemptId:ownership.attempt_id,workItemId:ownership.work_item_id,missionId:ownership.mission_id,actor,correlationId:namespace,idempotencyKey:`extract-${namespace}`,capabilityVersion:"verification-service.v1",reason:"Local transport admission proof",contractVersion:"v1"});
-  const options={operationService:service,apiOrigin:origin,identity,apiClient:client};
+  const mcpServices=inProcessMcpOptions({verificationStructuredExtractionReads:reads,verificationOperationService:service,resolveVerificationContext:createVerificationOwnershipResolver(database,grants),isStructuredExtractionRequestAdmitted:createStructuredExtractionRequestAdmission(config)},origin);
+  const options={operationService:service,apiOrigin:origin,identity,...mcpServices};
   for(const item of fixture.results){
     const http=await client.getStructuredExtraction(item.operationId,context);
     assert.equal(http.output.status,item.scenario==="accepted"?"unverified_candidate":"failed");
@@ -67,7 +69,7 @@ try{
   });
   assert.deepEqual(await runCli("show",{operationId:original.operationId}),publicResults[0]);
   operations.push(AcceptedOperationSchema.parse(await runCli("run",original.request)).operationId);checks.built_cli_process_read_and_submission=true;
-  const mcpApp=buildKnowledgeMcpApp({operationService:service,apiOrigin:origin,resolveIdentity:token=>token==="valid"?identity:undefined,createApiClient:token=>new KnowledgeClient({baseUrl:origin,getAccessToken:()=>token})});
+  const mcpApp=buildKnowledgeMcpApp({operationService:service,apiOrigin:origin,resolveIdentity:token=>token==="valid"?identity:undefined,...mcpServices});
   try{
     const mcpOrigin=await mcpApp.listen({host:"127.0.0.1",port:0}),require=createRequire(resolve("apps/mcp/package.json"));
     const {Client}=await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href);
@@ -87,7 +89,7 @@ try{
   }
   checks.http_cli_mcp_canonical_admission_and_idempotency=true;
   assert.throws(()=>VerificationStructuredExtractionResourceSchema.parse({...publicResults[0] as object,objectKey:"private"}));checks.public_contract_rejects_private_extensions=true;
-  const sourcePaths=["packages/contracts/src/verification/structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-runtime.ts","apps/api/src/verification-structured-extraction-reads-runtime.ts","apps/api/src/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/host/src/server/api.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-structured-extraction-transports.ts"];
+  const sourcePaths=["packages/contracts/src/verification/structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-reads.ts","packages/application/src/verification/operations/verification-structured-extraction-runtime.ts","packages/host/src/verification/api/verification-structured-extraction-reads-runtime.ts","packages/host/src/verification/api/verification-ownership.ts","apps/api/src/server.ts","apps/api/src/index.ts","packages/host/src/server/api.ts","packages/client-typescript/src/client.ts","apps/cli/src/commands.ts","apps/mcp/src/index.ts","scripts/prove-verification-structured-extraction-transports.ts"];
   const sourceFiles=await Promise.all(sourcePaths.map(async path=>({path,sha256:createHash("sha256").update(await readFile(path)).digest("hex")})));
   for(const operationId of operations)await database.cancelOperation(tenantId,operationId,{actorIdentity:namespace,correlationId:namespace});
   const report={schemaVersion:"verification-structured-extraction-transports-proof.v1",createdAt:new Date().toISOString(),fixtureName,tenantId,checks,publicResults,admittedThenCancelledOperationIds:operations,sourceFiles,supplierRequests:0,

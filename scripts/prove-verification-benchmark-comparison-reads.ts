@@ -13,6 +13,7 @@ import { VerificationBenchmarkComparisonResourceSchema } from "@aiengineer/knowl
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 type WorkerReceipt = {
   tenantId: string;
@@ -178,7 +179,7 @@ try {
     operationService,
     apiOrigin: origin,
     resolveIdentity: value => value === token ? identity : undefined,
-    createApiClient: accessToken => new KnowledgeClient({ baseUrl: origin, getAccessToken: () => accessToken }),
+    ...inProcessMcpOptions({ verificationBenchmarkComparisonReads: reads }, origin),
   });
   const mcpOrigin = await mcp.listen({ host: "127.0.0.1", port: 0 });
   const require = createRequire(resolve("apps/mcp/package.json"));

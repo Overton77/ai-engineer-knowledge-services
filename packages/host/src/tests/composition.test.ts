@@ -35,15 +35,6 @@ vi.mock("@aiengineer/knowledge-persistence", async (importOriginal) => {
 
 const database = { POSTGRES_URL: "postgres://user:secret@127.0.0.1:54322/knowledge", CANONICAL_LOCAL_ONLY: "1" };
 const noPublicOrigin = () => undefined;
-const unusedSeams = {
-  createCanonicalRetrievalExecutor: () => {
-    throw new Error("RETRIEVAL_SEAM_NOT_EXPECTED");
-  },
-  createVerificationDriftRevalidation: () => {
-    throw new Error("DRIFT_SEAM_NOT_EXPECTED");
-  },
-  createVerificationUseCases: () => ({ composed: true }),
-};
 
 let fetchSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
@@ -83,11 +74,11 @@ describe("API host composition", () => {
   it("exposes no persistence-backed capability when none is configured", async () => {
     const { createHost } = await import("../index.js");
     const host = await createHost({ profile: "server", role: "api",
-        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test" }, seams: unusedSeams });
+        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test" } });
     expect(host.capabilities).toEqual({ persistence: false, retrieval: false, citationReplay: false, verification: false });
     expect(host.operations).toBeUndefined();
     expect(host.knowledge).toEqual({});
-    expect(host.verify.useCases).toEqual({ composed: true });
+    expect(Object.keys(host.verify)).toEqual(["runtime"]);
     await host.close();
     expect(pools.created).toBe(0);
   });
@@ -102,7 +93,6 @@ describe("API host composition", () => {
         resolvePublicOrigin: () => {
           throw new Error("INVALID_KNOWLEDGE_API_URL");
         },
-        seams: unusedSeams,
       }),
     ).rejects.toThrow("INVALID_KNOWLEDGE_API_URL");
     expect(pools.created).toBe(0);
@@ -116,7 +106,6 @@ describe("API host composition", () => {
         role: "api",
         resolvePublicOrigin: noPublicOrigin,
         environment: { NODE_ENV: "test", ...database, VERIFICATION_DRIFT_REVALIDATION_ENABLED: "1" },
-        seams: unusedSeams,
       }),
     ).rejects.toThrow("VERIFICATION_DRIFT_REVALIDATION_RUNTIME_REQUIRED");
     await expect(
@@ -124,22 +113,16 @@ describe("API host composition", () => {
         profile: "server",
         role: "api",
         resolvePublicOrigin: noPublicOrigin,
-        environment: { NODE_ENV: "test", ...database },
-        seams: {
-          ...unusedSeams,
-          createVerificationUseCases: () => {
-            throw new Error("USE_CASE_CONFIGURATION_INVALID");
-          },
-        },
+        environment: { NODE_ENV: "test", ...database, VERIFICATION_BENCHMARK_CAPTURE_PROFILES_JSON: "[]" },
       }),
-    ).rejects.toThrow("USE_CASE_CONFIGURATION_INVALID");
+    ).rejects.toThrow("VERIFICATION_BENCHMARK_CAPTURE_PROFILE_CONFIGURATION_REQUIRED");
     expect(pools).toEqual({ created: 2, ended: 2 });
   });
 
   it("composes durable ports with persistence and releases the pool exactly once", async () => {
     const { createHost } = await import("../index.js");
     const host = await createHost({ profile: "server", role: "api",
-        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test", ...database }, seams: unusedSeams });
+        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test", ...database } });
     expect(host.capabilities).toMatchObject({ persistence: true, retrieval: false });
     expect(host.operations).toBeDefined();
     expect(host.knowledge.resources).toBeDefined();
@@ -173,6 +156,40 @@ describe("MCP host composition", () => {
     expect(host.verify.operations).toBeUndefined();
     await host.close();
     expect(pools).toEqual({ created: 1, ended: 1 });
+  });
+
+  it("composes the API role's knowledge and verification groups without transport-only pieces", async () => {
+    const { createHost } = await import("../index.js");
+    const environment = { NODE_ENV: "test", ...database };
+    const api = await createHost({ profile: "server", role: "api", resolvePublicOrigin: noPublicOrigin, environment });
+    const mcp = await createHost({ profile: "server", role: "mcp", environment, resolveApiOrigin: () => "http://127.0.0.1:4100" });
+    try {
+      expect(Object.keys(mcp.knowledge).sort()).toEqual(Object.keys(api.knowledge).sort());
+      expect(Object.keys(mcp.verify).sort()).toEqual(Object.keys(api.verify).sort());
+      expect(Object.keys(mcp.operations).sort()).toEqual(["retrieval", "service"]);
+      expect(mcp).not.toHaveProperty("publicOrigin");
+      expect(mcp.verify).not.toHaveProperty("driftRevalidation");
+    } finally {
+      await Promise.all([api.close(), mcp.close()]);
+    }
+    expect(pools).toEqual({ created: 2, ended: 2 });
+  });
+
+  it("applies the API role's verification use-case configuration failures", async () => {
+    const { createHost } = await import("../index.js");
+    for (const [setting, failure] of [
+      [{ VERIFICATION_BENCHMARK_CAPTURE_PROFILES_JSON: "[]" }, "VERIFICATION_BENCHMARK_CAPTURE_PROFILE_CONFIGURATION_REQUIRED"],
+      [{ VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "yes" }, "VERIFICATION_ADJUDICATION_DECISIONS_ENABLED_INVALID"],
+    ] as const)
+      await expect(
+        createHost({
+          profile: "server",
+          role: "mcp",
+          environment: { NODE_ENV: "test", ...database, ...setting },
+          resolveApiOrigin: () => "http://127.0.0.1:4100",
+        }),
+      ).rejects.toThrow(failure);
+    expect(pools).toEqual({ created: 2, ended: 2 });
   });
 
   it("releases the pool when shared verification admission rejects its configuration", async () => {

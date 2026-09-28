@@ -11,7 +11,7 @@ import { VERIFICATION_PARSER_LIMITS } from "@aiengineer/knowledge-preparation";
 import { PostgresCanonicalRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationAdjudicationReads } from "../apps/api/src/verification-adjudication-reads-runtime.js";
+import { createVerificationAdjudicationReads } from "../packages/host/src/verification/api/verification-adjudication-reads-runtime.js";
 
 const root = resolve(import.meta.dirname, "../..");
 const missionControl = resolve(root, "ai-engineer-mission-control");
@@ -29,7 +29,7 @@ const database = new PostgresCanonicalRepository({ connectionString: local.DB_UR
 const token = `dashboard-read-${runId}`, operatorToken = `${randomUUID()}${randomUUID()}`, sessionSecret = `${randomUUID()}${randomUUID()}`;
 const operatorDigest = `sha256:${createHash("sha256").update(operatorToken).digest("hex")}`;
 let api: ReturnType<typeof buildServer> | undefined, next: ReturnType<typeof spawn> | undefined, browser: any;
-const sourcePaths = ["scripts/prove-verification-dashboard-adjudication-read.ts", "apps/api/src/server.ts", "apps/api/src/verification-adjudication-reads-runtime.ts", "packages/persistence/src/verification-adjudication-reads.ts", "ai-engineer-mission-control/apps/dashboard/src/features/adjudications/adjudication-detail.tsx"];
+const sourcePaths = ["scripts/prove-verification-dashboard-adjudication-read.ts", "apps/api/src/server.ts", "packages/host/src/verification/api/verification-adjudication-reads-runtime.ts", "packages/persistence/src/verification-adjudication-reads.ts", "ai-engineer-mission-control/apps/dashboard/src/features/adjudications/adjudication-detail.tsx"];
 const hash = async (path: string) => createHash("sha256").update(await readFile(resolve(root, path.startsWith("ai-engineer-mission-control/") ? path : `ai-engineer-knowledge-services/${path}`))).digest("hex");
 const reservePort = () => new Promise<number>((resolvePort, reject) => { const server = createServer(); server.once("error", reject); server.listen(0, "127.0.0.1", () => { const address = server.address(); server.close(error => error ? reject(error) : resolvePort(typeof address === "object" && address ? address.port : 0)); }); });
 async function ready(url: string) { for (let i = 0; i < 300; i += 1) { try { if ((await fetch(url, { signal: AbortSignal.timeout(1_000) })).ok) return; } catch {} await new Promise(resolveWait => setTimeout(resolveWait, 200)); } throw new Error("DASHBOARD_READY_TIMEOUT"); }

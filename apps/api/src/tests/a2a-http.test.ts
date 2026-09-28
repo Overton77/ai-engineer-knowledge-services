@@ -6,7 +6,7 @@ import {
 import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { buildServer } from "../server.js";
-import type { CanonicalRetrievalExecutorPort } from "../retrieval-executor.js";
+import type { CanonicalRetrievalExecutorPort } from "@aiengineer/knowledge-application";
 
 const id = (digit: number) =>
   `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;

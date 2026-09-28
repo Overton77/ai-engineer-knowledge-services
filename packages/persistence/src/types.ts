@@ -1,4 +1,4 @@
-import type { JsonValue, RetrievalWorldScope } from "@aiengineer/knowledge-contracts";
+import type { JsonValue } from "@aiengineer/knowledge-contracts";
 
 export type OperationStatus = "proposed" | "queued" | "running" | "needs_review" | "succeeded" | "failed" | "cancelled" | "quarantined" | "superseded";
 
@@ -497,78 +497,22 @@ export interface GovernedIndexRepository {
   executeRollback(tenantId:string,operationId:string,currentPublicationId:string,targetPublicationId:string,expectedGuardedDigest:`sha256:${string}`,reason:string,publisherIdentity:string,idempotencyKey:string):Promise<string>;
 }
 
-export interface HybridSearchRequest {
-  readonly tenantId: string;
-  readonly vectorSpaceVersionId: string;
-  readonly queryText: string;
-  readonly queryEmbedding: readonly number[];
-  readonly filters?: Readonly<Record<string, string>>;
-  readonly resultLimit?: number;
-  readonly candidateLimit?: number;
-  readonly rrfK?: number;
-  readonly knowledgeSeq?: number;
-  readonly worldScope?: RetrievalWorldScope;
-  readonly entityIds?: readonly string[];
-  readonly publicationId?: string;
-}
-
-export interface HybridSearchResult {
-  readonly vectorItemId: string;
-  readonly searchProjectionId?: string;
-  readonly searchText: string;
-  readonly sourceKind?: string;
-  readonly fusedScore: number;
-  readonly channelScores: unknown;
-}
-
-export interface ActiveRetrievalTarget {
-  readonly vectorSpaceVersionId: string;
-  readonly vectorSpace: string;
-  readonly embeddingModel: string;
-  readonly dimensions: number;
-  readonly projectionProcedureId: string;
-  readonly authority: "canonical" | "exploratory" | "user_managed";
-}
-
-export interface RetrievalPolicySnapshot {
-  readonly id: string;
-  readonly version: number;
-  readonly policy: unknown;
-  readonly targets: readonly ActiveRetrievalTarget[];
-}
-
-export interface RetrievalEvidenceRecord {
-  readonly vectorItemId: string;
-  readonly searchProjectionId: string;
-  readonly projectionProcedureId: string;
-  readonly canonicalRecord: { readonly kind: string; readonly schemaVersion: string; readonly recordId: string; readonly tenantId: string };
-  readonly sourceText: string;
-  readonly authority: "canonical" | "exploratory" | "user_managed";
-  readonly assurance: "high" | "medium" | "low";
-  readonly freshnessAt: string;
-  readonly locator?: { readonly representationId: string; readonly nodeId?: string; readonly startOffset?: number; readonly endOffset?: number; readonly quoteDigest?: `sha256:${string}` };
-  readonly artifactReference?: { readonly artifactId: string; readonly tenantId: string; readonly digest: `sha256:${string}`; readonly mediaType: string; readonly byteLength?: number };
-}
-
-export interface PersistRetrievalExecutionInput {
-  readonly operationId: string;
-  readonly requestSha256: string;
-  readonly planId: string;
-  readonly policyVersionNumber: number;
-  readonly activeVectorSpaceVersionIds: readonly string[];
-  readonly packet: unknown;
-  readonly stageTimings: unknown;
-  readonly fusionParameters: unknown;
-  readonly rerankerId?: string;
-  readonly candidates: readonly {
-    readonly id: string;
-    readonly vectorItemId: string;
-    readonly stageScores: unknown;
-    readonly finalScore: number;
-    readonly rank: number;
-    readonly sources: readonly { readonly id: string; readonly channel: "vector" | "lexical" | "exact" | "graph" | "rerank"; readonly searchProjectionId?: string; readonly sourceRank: number; readonly score: number; readonly explanation: unknown }[];
-  }[];
-}
+// Retrieval repository port shapes are owned by application; re-exported under their historical names.
+export type {
+  ActiveRetrievalTarget,
+  HybridSearchRequest,
+  HybridSearchResult,
+  PersistRetrievalExecutionInput,
+  RetrievalEvidenceRecord,
+  RetrievalPolicySnapshot,
+} from "@aiengineer/knowledge-application";
+import type {
+  HybridSearchRequest,
+  HybridSearchResult,
+  PersistRetrievalExecutionInput,
+  RetrievalEvidenceRecord,
+  RetrievalPolicySnapshot,
+} from "@aiengineer/knowledge-application";
 
 export interface OperationsRepository {
   createOperation(input: CreateCanonicalOperation): Promise<CanonicalOperation>;

@@ -1,8 +1,8 @@
 import { randomUUID, generateKeyPairSync } from "node:crypto";
 import { describe, it, expect, vi } from "vitest";
 import { buildServer } from "../server.js";
-import { createVerificationStructuredExtractionReads } from "../verification-structured-extraction-reads-runtime.js";
-import { createVerificationOperationReadAuthorizer } from "../verification-ownership.js";
+import { createVerificationStructuredExtractionReads } from "@aiengineer/knowledge-host";
+import { createVerificationOperationReadAuthorizer } from "@aiengineer/knowledge-host";
 
 describe("structured extraction public custody boundary", () => {
   it("authenticates and validates before reads and sanitizes integrity errors", async () => {

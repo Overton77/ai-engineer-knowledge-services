@@ -14,9 +14,10 @@ import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
 import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
 import { buildServer } from "../apps/api/src/server.js";
-import { createVerificationOwnershipResolver } from "../apps/api/src/verification-ownership.js";
+import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const {loadVerifiedLocalDevelopmentConfig}=await import("../../internal/verification-local-direct-config.mjs") as {loadVerifiedLocalDevelopmentConfig():Promise<{DB_URL:string;API_URL:string;SECRET_KEY:string}>};
 const local=await loadVerifiedLocalDevelopmentConfig();
@@ -52,7 +53,7 @@ try{
   const client=new KnowledgeClient({baseUrl,getAccessToken:()=>token});
   const typed=await client.captureVerificationSource(request,context);
   const cli=await dispatchCliCommand(client,resolveCommand("benchmark","capture")!,request,context) as {operationId:string};
-  const mcp=await createVerificationMcpToolExecutor({operationService:operations,apiOrigin:baseUrl,identity,apiClient:client})("knowledge_capture_source",{context,request});
+  const mcp=await createVerificationMcpToolExecutor({operationService:operations,apiOrigin:baseUrl,identity,...inProcessMcpOptions({verificationOperationService:operations,resolveVerificationContext:ownership},baseUrl)})("knowledge_capture_source",{context,request});
   for(const accepted of [typed,cli,(mcp as any).structuredContent])assert.equal(accepted.operationId,http.operationId);
   const executor=createVerificationOperationExecutor({operations:database,repository,admission,catalog:captureCatalog,config});
   const terminal=await execute(http.operationId,verificationActivityHandlers(executor));

@@ -6,16 +6,17 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { createApiRuntime } from "../apps/api/src/index.js";
-import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
+import { createMcpRuntime } from "../apps/mcp/src/index.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 
 export async function proveVerificationReads(input:{tenantId:string;otherTenantId:string;runId:string;caseRunId?:string;evidenceId?:string;caseRunIds?:string[];unlinkedEvaluationRunId?:string;unlinkedEvaluationScoreId?:string;unlinkedLocatorId?:string}){
   const token=`run-read-${randomUUID()}`,foreignToken=`run-read-foreign-${randomUUID()}`;
   const identity={actor:{kind:"human" as const,id:randomUUID()},grants:[{tenantId:input.tenantId,roles:["knowledge_reader" as const],scopes:[]}]};
   const foreignIdentity={...identity,grants:[{...identity.grants[0]!,tenantId:input.otherTenantId}]};
-  const runtime=await createApiRuntime({NODE_ENV:"test",POSTGRES_URL:process.env.POSTGRES_URL!,SUPABASE_URL:process.env.SUPABASE_URL!,
+  const environment={NODE_ENV:"test",POSTGRES_URL:process.env.POSTGRES_URL!,SUPABASE_URL:process.env.SUPABASE_URL!,
     SUPABASE_SECRET_KEY:process.env.SUPABASE_SECRET_KEY!,CANONICAL_LOCAL_ONLY:"1",VERIFICATION_READS_ENABLED:"1",
-    KNOWLEDGE_API_IDENTITIES:JSON.stringify([{token,...identity},{token:foreignToken,...foreignIdentity}])});
+    KNOWLEDGE_API_IDENTITIES:JSON.stringify([{token,...identity},{token:foreignToken,...foreignIdentity}])};
+  const runtime=await createApiRuntime(environment);
   const checks:Record<string,boolean>={};
   try{
     const baseUrl=await runtime.server.listen({host:"127.0.0.1",port:0});
@@ -83,8 +84,8 @@ export async function proveVerificationReads(input:{tenantId:string;otherTenantI
       assert.deepEqual(JSON.parse(completed.stdout),item.expected);
     }
     if(caseReads.length)checks.cliExecutableCaseEvidenceParity=true;
-    const mcp=buildKnowledgeMcpApp({operationService:{} as never,apiOrigin:baseUrl,resolveIdentity:value=>value===token?identity:undefined,
-      createApiClient:accessToken=>new KnowledgeClient({baseUrl,getAccessToken:()=>accessToken})});
+    const mcpRuntime=await createMcpRuntime({...environment,KNOWLEDGE_API_URL:baseUrl});
+    const mcp=mcpRuntime.app;
     try{
       const mcpUrl=await mcp.listen({host:"127.0.0.1",port:0});
       for(const [name,expected] of [["knowledge_get_verification_run",summary],["knowledge_get_verification_manifest",manifest]] as const){
@@ -101,7 +102,7 @@ export async function proveVerificationReads(input:{tenantId:string;otherTenantI
         assert.notEqual(rpc.result.isError,true);assert.deepEqual(rpc.result.structuredContent,item.expected);
       }
       if(caseReads.length)checks.mcpHttpCaseEvidenceParity=true;
-    }finally{await mcp.close();}
+    }finally{await mcpRuntime.close();}
     for(const suffix of ["","/manifest"]){
       const path=`${baseUrl}/v1/verification/runs/${input.runId}${suffix}`;
       const foreign=await fetch(path,{headers:{authorization:`Bearer ${foreignToken}`,"x-tenant-id":input.otherTenantId},signal:AbortSignal.timeout(15000)});
