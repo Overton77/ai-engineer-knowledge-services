@@ -18,7 +18,7 @@ import {
   resourceReadFailure,
   validatedStoredResource,
   type ResourceReadResult,
-} from "./resource-read-result.js";
+} from "../../reads/resource-read-result.js";
 
 /** Tenant-scoped canonical resource reads; implemented by the persistence resource repository. */
 export interface KnowledgeResourceReader {
