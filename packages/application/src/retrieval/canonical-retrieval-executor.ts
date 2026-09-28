@@ -14,15 +14,15 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
+import { deterministicUuid } from "@aiengineer/knowledge-core";
+import type { LocalApiIdentity } from "../access/api-access.js";
 import {
   RETRIEVAL_SUPPORT_LIMITS,
+  type CanonicalRetrievalRepository,
   type HybridSearchResult,
-  type PostgresCanonicalRepository,
   type ResolvedRetrievalSupport,
   type RetrievalEvidenceRecord,
-} from "@aiengineer/knowledge-persistence";
-import { deterministicUuid } from "@aiengineer/knowledge-core";
-import type { LocalApiIdentity } from "./auth.js";
+} from "./canonical-retrieval-ports.js";
 
 const RuntimePolicySchema = z.strictObject({
   admittedSpaces:z.array(z.string()).min(1).max(8),
@@ -93,7 +93,7 @@ interface FusedHit { hit: HybridSearchResult; contributions: { targetVersionId:s
 
 export class CanonicalRetrievalExecutor implements CanonicalRetrievalExecutorPort {
   constructor(
-    private readonly database: PostgresCanonicalRepository,
+    private readonly database: CanonicalRetrievalRepository,
     private readonly embeddings: EmbeddingAdapter,
     private readonly options: { readonly reranker?: RetrievalReranker; readonly now?: () => Date } = {},
   ) {}

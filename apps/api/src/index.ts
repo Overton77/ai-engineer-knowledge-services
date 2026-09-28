@@ -1,3 +1,4 @@
+import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import {
   createHost,
   createLocalIdentityResolver,
@@ -6,7 +7,6 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
 import { createCallbackSigningSecretResolver } from "./a2a-http.js";
-import { CanonicalRetrievalExecutor } from "./retrieval-executor.js";
 import { apiCompositionSeams, apiServerOptions } from "./composition.js";
 
 // Trusted host composition injects the same accounted adapter used by selected publication.

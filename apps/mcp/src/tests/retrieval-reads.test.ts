@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { createKnowledgeResourceReads } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
 import {
@@ -22,7 +23,7 @@ function replayFixture() {
     contractVersion: "v1",
   };
   const replay = {
-    schemaVersion: "knowledge.retrieval-citation-replay/v1",
+    schemaVersion: "knowledge.retrieval-citation-replay/v1" as const,
     evidencePacketId: packetId,
     retrievalRunId: randomUUID(),
     packetDigest: `sha256:${"a".repeat(64)}`,
@@ -48,6 +49,12 @@ function replayFixture() {
     fetch,
   });
   const submit = vi.fn();
+  // MCP replays in process through the same custody port the API route uses.
+  const replayEvidencePacketCitations = vi.fn(async (tenantId: string, id: string) => {
+    expect(tenantId).toBe(context.tenantId);
+    expect(id).toBe(packetId);
+    return replay;
+  });
   const identity = {
     actor: context.actor,
     grants: [
@@ -61,10 +68,21 @@ function replayFixture() {
   const executor = createMcpToolExecutor({
     apiOrigin: "https://knowledge.example",
     identity,
-    apiClient: client,
+    knowledge: {
+      reads: createKnowledgeResourceReads({ replayEvidencePacketCitations }),
+    },
     operationService: { submit } as never,
   });
-  return { packetId, context, replay, fetch, client, submit, executor };
+  return {
+    packetId,
+    context,
+    replay,
+    fetch,
+    client,
+    submit,
+    executor,
+    replayEvidencePacketCitations,
+  };
 }
 
 describe("public retrieval citation adapters", () => {
@@ -93,7 +111,8 @@ describe("public retrieval citation adapters", () => {
       },
     );
     expect(result).toMatchObject({ structuredContent: fixture.replay });
-    expect(fixture.fetch).toHaveBeenCalledOnce();
+    expect(fixture.replayEvidencePacketCitations).toHaveBeenCalledOnce();
+    expect(fixture.fetch).not.toHaveBeenCalled();
     expect(fixture.submit).not.toHaveBeenCalled();
   });
 
@@ -138,10 +157,11 @@ describe("public retrieval citation adapters", () => {
       ),
     ).rejects.toThrow("RETRIEVAL_PACKET_READ_INPUT_INVALID");
     expect(fixture.fetch).not.toHaveBeenCalled();
+    expect(fixture.replayEvidencePacketCitations).not.toHaveBeenCalled();
     expect(fixture.submit).not.toHaveBeenCalled();
   });
 
-  it("fails closed when the public replay client is absent", async () => {
+  it("fails closed when in-process citation replay is not composed", async () => {
     const fixture = replayFixture();
     const execute = createMcpToolExecutor({
       apiOrigin: "https://knowledge.example",
@@ -167,6 +187,33 @@ describe("public retrieval citation adapters", () => {
       isError: true,
       content: [{ text: JSON.stringify({ code: "CAPABILITY_NOT_ADMITTED" }) }],
     });
+    // Composed reads without citation custody are equally not admitted; never an HTTP fallback.
+    const withoutCustody = createMcpToolExecutor({
+      apiOrigin: "https://knowledge.example",
+      identity: {
+        actor: fixture.context.actor,
+        grants: [
+          {
+            tenantId: fixture.context.tenantId,
+            roles: ["knowledge_reader"],
+            scopes: [],
+          },
+        ],
+      },
+      knowledge: { reads: createKnowledgeResourceReads({}) },
+      operationService: { submit: fixture.submit } as never,
+    });
+    expect(
+      await withoutCustody("retrieval.replay_citations", "evidence_packet", {
+        context: fixture.context,
+        input: { packetId: fixture.packetId },
+        expectedVersions: { api: "v1" },
+      }),
+    ).toMatchObject({
+      isError: true,
+      content: [{ text: JSON.stringify({ code: "CAPABILITY_NOT_ADMITTED" }) }],
+    });
+    expect(fixture.fetch).not.toHaveBeenCalled();
     expect(fixture.submit).not.toHaveBeenCalled();
   });
 });

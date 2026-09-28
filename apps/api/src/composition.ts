@@ -1,5 +1,4 @@
 import type { ApiCompositionSeams, ApiHost } from "@aiengineer/knowledge-host";
-import { CanonicalRetrievalExecutor } from "./retrieval-executor.js";
 import type { ServerOptions } from "./server.js";
 import { createVerificationAdjudicationDecisionRuntime } from "./verification-adjudication-decision-runtime.js";
 import { createVerificationAdjudicationReads } from "./verification-adjudication-reads-runtime.js";
@@ -17,7 +16,6 @@ import { createVerificationStructuredExtractionReads } from "./verification-stru
  * moves into application with ownership, admission and retrieval execution.
  */
 export const apiCompositionSeams = {
-  createCanonicalRetrievalExecutor: ({ database, embeddings }) => new CanonicalRetrievalExecutor(database, embeddings),
   createVerificationDriftRevalidation: (ports) =>
     createVerificationDriftRevalidationRuntime(
       ports.database,
@@ -56,11 +54,10 @@ export const apiCompositionSeams = {
       decisionRuntime,
     };
   },
-} satisfies ApiCompositionSeams<unknown, unknown, unknown>;
+} satisfies ApiCompositionSeams<unknown, unknown>;
 
 type Seams = typeof apiCompositionSeams;
 export type ComposedApiHost = ApiHost<
-  ReturnType<Seams["createCanonicalRetrievalExecutor"]>,
   ReturnType<Seams["createVerificationDriftRevalidation"]>,
   ReturnType<Seams["createVerificationUseCases"]>
 >;

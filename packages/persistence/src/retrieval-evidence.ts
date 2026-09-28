@@ -100,52 +100,21 @@ export class RetrievalCitationReplay {
   }
 }
 
-/** Bounds for one canonical support traversal; every limit fails closed rather than truncating silently. */
-export const RETRIEVAL_SUPPORT_LIMITS = {
-  maximumCandidates: 200,
-  maximumPathsPerCandidate: 32,
-  maximumRows: 4_096,
-  maximumCaptureBytes: 4_000_000,
-} as const;
-
-export type RetrievalTargetKind = "entity" | "record" | "chunk" | "claim" | "summary";
-
-export interface RetrievalSupportPathRow {
-  readonly claimId: string;
-  readonly claimStatus: "verified" | "superseded";
-  readonly verificationRunId: string;
-  readonly assessmentVerdict: "directly_supported" | "supported_with_qualification" | "derived_verified";
-  readonly admissionDigest: `sha256:${string}`;
-  readonly locatorId: string;
-  readonly selectorDigest: `sha256:${string}`;
-  readonly selectedContentDigest: `sha256:${string}`;
-  readonly captureId: string;
-  readonly sourceFamilyId: string;
-  readonly representationId: string;
-  readonly captureArtifact: {
-    readonly artifactId: string; readonly tenantId: string; readonly digest: `sha256:${string}`;
-    readonly mediaType: string; readonly byteLength: number;
-  };
-  readonly qualifiers: readonly string[];
-}
-
-export interface ResolvedRetrievalSupport {
-  readonly vectorItemId: string;
-  readonly searchProjectionId: string;
-  readonly target: { readonly kind: RetrievalTargetKind; readonly canonicalId: string; readonly projectionTargetId: string };
-  readonly paths: readonly RetrievalSupportPathRow[];
-  readonly sourceFamilyIds: readonly string[];
-  readonly graphPaths: readonly (readonly string[])[];
-  readonly contradictionIds: readonly string[];
-  readonly supersedesIds: readonly string[];
-  readonly truncated: boolean;
-}
-
-export interface RetrievalSupportRequest {
-  readonly tenantId: string;
-  readonly vectorItemIds: readonly string[];
-  readonly knowledgeSeq: number;
-}
+// Support traversal shapes and bounds are owned by the application retrieval port.
+export {
+  RETRIEVAL_SUPPORT_LIMITS,
+  type ResolvedRetrievalSupport,
+  type RetrievalSupportPathRow,
+  type RetrievalSupportRequest,
+  type RetrievalTargetKind,
+} from "@aiengineer/knowledge-application";
+import {
+  RETRIEVAL_SUPPORT_LIMITS,
+  type ResolvedRetrievalSupport,
+  type RetrievalSupportPathRow,
+  type RetrievalSupportRequest,
+  type RetrievalTargetKind,
+} from "@aiengineer/knowledge-application";
 
 const TARGET_COLUMNS: ReadonlyMap<RetrievalTargetKind, string> = new Map([
   ["entity", "entity_id"], ["record", "record_id"], ["chunk", "chunk_id"], ["claim", "claim_id"], ["summary", "summary_id"],

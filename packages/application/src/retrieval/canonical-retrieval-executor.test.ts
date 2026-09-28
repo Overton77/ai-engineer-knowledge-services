@@ -4,7 +4,7 @@ import {
   unavailableRetrievalCapabilities,
   isRetrievalUnsupportedError,
   RetrievalUnsupportedError,
-} from "../retrieval-executor.js";
+} from "./canonical-retrieval-executor.js";
 import {
   RetrievalPlanSchema,
   RetrievalUnsupportedResponseSchema,

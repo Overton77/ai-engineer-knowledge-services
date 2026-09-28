@@ -43,11 +43,6 @@ import {
   type VerificationBenchmarkComparisonReadService,
 } from "@aiengineer/knowledge-application";
 import {
-  EvidencePacketSchema,
-  ArtifactResourceSchema,
-  DurableReceiptResourceSchema,
-  EvaluationFailuresResourceSchema,
-  EvaluationReportResourceSchema,
   ExploratoryEvaluationInputSchema,
   MutationEnvelopeSchema,
   OperationKindSchema,
@@ -61,11 +56,6 @@ import {
   ReplayRunRequestSchema,
   VerificationOperationContextHintsSchema,
   RetrievalPlanSchema,
-  RetrievalRunInputSchema,
-  RetrievalCitationReplaySchema,
-  RetrievalExplanationResourceSchema,
-  RetrievalRunResourceSchema,
-  VectorStoreResourceSchema,
   VectorStoreCreateInputSchema,
   VectorStoreDocumentsInputSchema,
   VectorStoreIngestionInputSchema,
@@ -120,7 +110,13 @@ import {
   registerA2AHttpRoutes,
   type ResolveCallbackSigningSecret,
 } from "./a2a-http.js";
-import { isRetrievalUnsupportedError, type CanonicalRetrievalExecutorPort } from "./retrieval-executor.js";
+import {
+  createKnowledgeResourceReads,
+  retrievalExecutionProblem,
+  submitCanonicalRetrievalRun,
+  type CanonicalRetrievalExecutorPort,
+  type ResourceReadResult,
+} from "@aiengineer/knowledge-application";
 
 export interface ServerOptions {
   service?: KnowledgeIntegrationService;
@@ -501,35 +497,23 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             correlation,
           ),
         );
-    if (isRetrievalUnsupportedError(error))
+    const retrieval = retrievalExecutionProblem(error);
+    if (retrieval?.status === 422)
       return reply
         .status(422)
         .type("application/json")
-        .send(error.response);
-    if (
-      message.startsWith("RETRIEVAL_") ||
-      message.startsWith("NO_ACTIVE_PUBLISHED_")
-    )
+        .send(retrieval.response);
+    if (retrieval)
       return reply
-        .status(409)
+        .status(retrieval.status)
         .type("application/problem+json")
         .send(
           problem(
-            409,
-            "CONFLICT",
-            "Retrieval request is not executable under the active policy",
-            correlation,
-          ),
-        );
-    if (message.startsWith("AI_GATEWAY_"))
-      return reply
-        .status(503)
-        .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "INTERNAL_ERROR",
-            "Retrieval embedding provider unavailable",
+            retrieval.status,
+            retrieval.code,
+            retrieval.status === 409
+              ? "Retrieval request is not executable under the active policy"
+              : "Retrieval embedding provider unavailable",
             correlation,
           ),
         );
@@ -663,6 +647,50 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           ),
         );
     return value;
+  };
+  const knowledgeReads = createKnowledgeResourceReads({
+    ...(options.resourceReader ? { resources: options.resourceReader } : {}),
+    operations: operationService,
+    ...(options.getEvidencePacket
+      ? { getEvidencePacket: options.getEvidencePacket }
+      : {}),
+    ...(options.replayEvidencePacketCitations
+      ? { replayEvidencePacketCitations: options.replayEvidencePacketCitations }
+      : {}),
+    ...(options.maximumResourceResponseBytes === undefined
+      ? {}
+      : { maximumResponseBytes: options.maximumResourceResponseBytes }),
+  });
+  /** Maps a shared knowledge read onto this route family's historical replies. */
+  const sendKnowledgeRead = <T>(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    result: ResourceReadResult<T>,
+    notFound: string,
+    inconsistent?: string,
+  ) => {
+    if (result.ok) return result.value;
+    const { reason } = result.failure;
+    if (reason === "too_large")
+      return reply
+        .status(413)
+        .type("application/problem+json")
+        .send(
+          problem(
+            413,
+            "LIMIT_EXCEEDED",
+            "Stored resource exceeds the bounded response contract",
+            correlationId(request),
+          ),
+        );
+    if (reason === "inconsistent" && inconsistent)
+      return reply
+        .status(409)
+        .send(problem(409, "CONFLICT", inconsistent, correlationId(request)));
+    if (reason === "unavailable") return requireResourceReader(request, reply);
+    return reply
+      .status(404)
+      .send(problem(404, "NOT_FOUND", notFound, correlationId(request)));
   };
   const verificationContext = async (
     request: FastifyRequest,
@@ -837,15 +865,6 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         options.verificationCaptureCatalog,
       ),
     };
-  };
-  const validatedStoredResource = <T>(
-    schema: ZodType<T>,
-    value: unknown,
-  ): T => {
-    const result = schema.safeParse(value);
-    if (!result.success)
-      throw new Error("RESOURCE_INTEGRITY_CONFLICT", { cause: result.error });
-    return result.data;
   };
   const submit = async (
     request: FastifyRequest,
@@ -2841,8 +2860,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             correlationId(request),
           ),
         );
-    RetrievalRunInputSchema.parse(envelope.input);
-    if (envelope.expectedVersions.retrieval !== "v1")
+    const submission = await submitCanonicalRetrievalRun(
+      {
+        operations: retrievalOperationService,
+        ...(options.canonicalRetrievalExecutor
+          ? { executor: options.canonicalRetrievalExecutor }
+          : {}),
+      },
+      { envelope, identity: access.identity, origin: origin(request) },
+    );
+    if (!submission.ok && submission.reason === "retrieval_version_required")
       return reply
         .status(400)
         .type("application/problem+json")
@@ -2854,7 +2881,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             correlationId(request),
           ),
         );
-    if (!options.canonicalRetrievalExecutor)
+    if (!submission.ok)
       return reply
         .status(503)
         .type("application/problem+json")
@@ -2866,13 +2893,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             correlationId(request),
           ),
         );
-    const accepted = await retrievalOperationService.submit(
-      "retrieval_run",
-      envelope,
-      origin(request),
-    );
-    await options.canonicalRetrievalExecutor.execute(envelope, access.identity);
-    return reply.status(202).send(accepted);
+    return reply.status(202).send(submission.accepted);
   });
   server.get("/v1/retrieval-runs", async (request, reply) => {
     const access = await requireAccess(request, reply, "knowledge.read");
@@ -3056,12 +3077,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const packet = await options.getEvidencePacket?.(
+      const packet = await knowledgeReads.evidencePacket(
         access.tenant,
         request.params.id,
       );
-      return packet
-        ? EvidencePacketSchema.parse(packet)
+      return packet.ok
+        ? packet.value
         : reply
             .status(404)
             .send(
@@ -3091,31 +3112,23 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
               correlationId(request),
             ),
           );
-      try {
-        return RetrievalCitationReplaySchema.parse(
-          await options.replayEvidencePacketCitations(
-            access.tenant,
-            UuidSchema.parse(request.params.id),
-          ),
-        );
-      } catch (error) {
-        if (
-          !(error instanceof Error) ||
-          error.message !== "EVIDENCE_PACKET_NOT_FOUND"
-        )
-          throw error;
-        return reply
-          .status(404)
-          .type("application/problem+json")
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Evidence packet not found",
-              correlationId(request),
-            ),
-          );
-      }
+      const replay = await knowledgeReads.citationReplay(
+        access.tenant,
+        UuidSchema.parse(request.params.id),
+      );
+      return replay.ok
+        ? replay.value
+        : reply
+            .status(404)
+            .type("application/problem+json")
+            .send(
+              problem(
+                404,
+                "NOT_FOUND",
+                "Evidence packet not found",
+                correlationId(request),
+              ),
+            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3123,28 +3136,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getRetrievalRunResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.retrievalRun(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Retrieval run not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(RetrievalRunResourceSchema, resource),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Retrieval run not found",
-                correlationId(request),
-              ),
-            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3152,28 +3153,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getVectorStoreResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.vectorStore(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Vector store not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(VectorStoreResourceSchema, resource),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Vector store not found",
-                correlationId(request),
-              ),
-            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3181,31 +3170,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getRetrievalExplanationResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.retrievalExplanation(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Retrieval explanation not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(
-              RetrievalExplanationResourceSchema,
-              resource,
-            ),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Retrieval explanation not found",
-                correlationId(request),
-              ),
-            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3213,28 +3187,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getEvaluationReportResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.evaluationReport(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Evaluation report not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(EvaluationReportResourceSchema, resource),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Evaluation report not found",
-                correlationId(request),
-              ),
-            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3242,28 +3204,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getEvaluationFailuresResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.evaluationFailures(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Evaluation run not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(EvaluationFailuresResourceSchema, resource),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Evaluation run not found",
-                correlationId(request),
-              ),
-            );
     },
   );
   server.get<{ Params: Params }>(
@@ -3271,95 +3221,51 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const resource = await reader.getArtifactResource(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.artifact(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Artifact not found",
       );
-      return resource
-        ? boundedResource(
-            request,
-            reply,
-            validatedStoredResource(ArtifactResourceSchema, resource),
-          )
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Artifact not found",
-                correlationId(request),
-              ),
-            );
     },
   );
-  server.get<{ Params: Params }>("/v1/receipts/:id", async (request, reply) => {
-    const access = await requireAccess(request, reply, "knowledge.read");
-    if (!access) return;
-    const reader = requireResourceReader(request, reply);
-    if (!reader) return;
-    const resource = await reader.getReceiptResource(
-      access.tenant,
-      UuidSchema.parse(request.params.id),
-    );
-    return resource
-      ? boundedResource(
-          request,
-          reply,
-          validatedStoredResource(DurableReceiptResourceSchema, resource),
-        )
-      : reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Receipt not found",
-              correlationId(request),
-            ),
-          );
-  });
+  server.get<{ Params: Params }>(
+    "/v1/receipts/:id",
+    async (request, reply) => {
+      const access = await requireAccess(request, reply, "knowledge.read");
+      if (!access) return;
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.receipt(
+          access.tenant,
+          UuidSchema.parse(request.params.id),
+        ),
+        "Receipt not found",
+      );
+    },
+  );
   server.get<{ Params: { id: string; operationId: string } }>(
     "/v1/vector-stores/:id/operations/:operationId",
     async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
-      const reader = requireResourceReader(request, reply);
-      if (!reader) return;
-      const vectorStoreId = UuidSchema.parse(request.params.id);
-      const operationId = UuidSchema.parse(request.params.operationId);
-      if (
-        !(await reader.operationBelongsToVectorStore(
+      if (!requireResourceReader(request, reply)) return;
+      return sendKnowledgeRead(
+        request,
+        reply,
+        await knowledgeReads.vectorStoreOperation(
           access.tenant,
-          vectorStoreId,
-          operationId,
-        ))
-      )
-        return reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Vector-store operation not found",
-              correlationId(request),
-            ),
-          );
-      const operation = await operationService.get(operationId, access.tenant);
-      return (
-        operation ??
-        reply
-          .status(409)
-          .send(
-            problem(
-              409,
-              "CONFLICT",
-              "Vector-store operation metadata is inconsistent",
-              correlationId(request),
-            ),
-          )
+          UuidSchema.parse(request.params.id),
+          UuidSchema.parse(request.params.operationId),
+        ),
+        "Vector-store operation not found",
+        "Vector-store operation metadata is inconsistent",
       );
     },
   );

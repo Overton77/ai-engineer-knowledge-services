@@ -200,18 +200,17 @@ describe("durable MCP operation facade", () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it("routes status and explanation tools to canonical API reads without admitting writes", async () => {
+  it("routes status and explanation tools to canonical in-process reads without admitting writes", async () => {
     const submit = vi.fn<KnowledgeOperationPort["submit"]>(
       async () => accepted,
     );
-    const apiClient = {
-      getVectorStoreOperation: vi.fn(),
-      getRetrievalExplanation: vi.fn(async () => ({
-        retrievalRunId: id(20),
-        candidates: [],
+    const reads = {
+      vectorStoreOperation: vi.fn(),
+      retrievalExplanation: vi.fn(async () => ({
+        ok: true as const,
+        value: { retrievalRunId: id(20), candidates: [] },
       })),
-      getEvaluationFailures: vi.fn(),
-      createRetrievalRun: vi.fn(),
+      evaluationFailures: vi.fn(),
     };
     const execute = createMcpToolExecutor({
       operationService: {
@@ -220,7 +219,7 @@ describe("durable MCP operation facade", () => {
       },
       apiOrigin: "https://api.example",
       identity,
-      apiClient: apiClient as never,
+      knowledge: { reads: reads as never },
     });
     const status = await execute("embedding.run_status", "embedding_run", {
       context,
@@ -236,6 +235,10 @@ describe("durable MCP operation facade", () => {
     expect(explanation).toMatchObject({
       structuredContent: { retrievalRunId: id(20) },
     });
+    expect(reads.retrievalExplanation).toHaveBeenCalledWith(
+      context.tenantId,
+      id(20),
+    );
     expect(submit).not.toHaveBeenCalled();
   });
 

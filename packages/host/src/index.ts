@@ -6,6 +6,7 @@ export * from "./create-host.js";
 export * from "./server/api.js";
 export * from "./server/mcp.js";
 export * from "./server/worker.js";
+export * from "./server/knowledge.js";
 export type { HostEnvironment } from "./server/shared.js";
 export { HostResources, constructWithResources } from "./lifecycle/resources.js";
 export { startPollingLoop, type PollingLoop } from "./lifecycle/polling.js";

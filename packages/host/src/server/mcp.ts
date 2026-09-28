@@ -1,8 +1,13 @@
-import { VerificationOperationApplicationService, type KnowledgeOperationPort } from "@aiengineer/knowledge-application";
+import {
+  apiOwnedOperationKinds,
+  VerificationOperationApplicationService,
+  type KnowledgeOperationPort,
+} from "@aiengineer/knowledge-application";
 import { PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { loadServerConfig, type ServerConfig } from "../config/index.js";
 import { constructWithResources } from "../lifecycle/resources.js";
 import { createVerificationHostRuntime, type VerificationHostRuntime } from "../verification/host-runtime.js";
+import { composeKnowledgeServices, type KnowledgeServices } from "./knowledge.js";
 import { openCanonicalRepository, type HostEnvironment } from "./shared.js";
 
 export interface McpHostOptions {
@@ -17,8 +22,15 @@ export interface McpHost {
   readonly profile: "server";
   readonly role: "mcp";
   readonly config: ServerConfig;
+  /** Public API origin advertised in accepted-operation poll links; MCP never calls it. */
   readonly apiOrigin: string;
-  readonly operations: { readonly service: KnowledgeOperationPort };
+  readonly operations: {
+    readonly service: KnowledgeOperationPort;
+    /** Admits the API-owned synchronous kinds (retrieval_run), exactly as the API role does. */
+    readonly retrieval: KnowledgeOperationPort;
+  };
+  /** The same knowledge services the API role composes. */
+  readonly knowledge: KnowledgeServices;
   readonly verify: {
     /** Shared admission gates; the same factories the API host composes. */
     readonly runtime: VerificationHostRuntime;
@@ -37,11 +49,16 @@ export async function createMcpHost(options: McpHostOptions): Promise<McpHost> {
   const { value, resources } = await constructWithResources((resources) => {
     const database = openCanonicalRepository(resources, connectionString, environment);
     const operationService = new PostgresKnowledgeOperationService(database);
+    const knowledge = composeKnowledgeServices(database, environment);
     const runtime = createVerificationHostRuntime(database, environment, {
       production: config.NODE_ENV === "production",
     });
     return {
-      operations: { service: operationService },
+      operations: {
+        service: operationService,
+        retrieval: new PostgresKnowledgeOperationService(database, { admittedOperationKinds: apiOwnedOperationKinds }),
+      },
+      knowledge,
       verify: {
         runtime,
         ...(runtime.verificationOperationService

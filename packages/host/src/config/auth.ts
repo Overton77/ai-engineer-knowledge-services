@@ -1,35 +1,26 @@
 import { createHash } from "node:crypto";
-import { ActorSchema, type Actor, type OperationKind } from "@aiengineer/knowledge-contracts";
+import {
+  API_ACTIONS,
+  API_ROLES,
+  type LocalApiIdentity,
+  type ResolveApiIdentity,
+} from "@aiengineer/knowledge-application";
+import { ActorSchema } from "@aiengineer/knowledge-contracts";
 import { z } from "zod";
 
-export const API_ACTIONS = [
-  "system.read",
-  "knowledge.read",
-  "operation.submit",
-  "operation.control",
-  "verification.drift.consume",
-  "decision.record",
-  "publication.execute",
-  "callback.receive",
-  "retrieval.plan.validate",
-  "demo.evaluate",
-] as const;
-export type ApiAction = (typeof API_ACTIONS)[number];
-
-export const requiredSubmissionAction = (kind: OperationKind): ApiAction =>
-  ["representation_decision","promotion_decision","review_decision"].includes(kind)
-    ? "decision.record"
-    : ["space_publication","publication_rollback"].includes(kind)
-      ? "publication.execute"
-      : "operation.submit";
-
-export const API_ROLES = [
-  "knowledge_reader",
-  "knowledge_operator",
-  "knowledge_evaluator",
-  "knowledge_admin",
-] as const;
-export type ApiRole = (typeof API_ROLES)[number];
+// Tenant action rules are application policy; host configuration resolves identities.
+export {
+  API_ACTIONS,
+  API_ROLES,
+  actorsMatch,
+  isAuthorized,
+  requiredSubmissionAction,
+  type ApiAction,
+  type ApiRole,
+  type LocalApiIdentity,
+  type ResolveApiIdentity,
+  type TenantGrant,
+} from "@aiengineer/knowledge-application";
 
 const actionSchema = z.enum(API_ACTIONS);
 const roleSchema = z.enum(API_ROLES);
@@ -44,40 +35,6 @@ const configuredIdentitySchema = z.strictObject({
   grants: z.array(grantSchema).min(1),
 });
 const configuredIdentitiesSchema = z.array(configuredIdentitySchema);
-
-export interface TenantGrant {
-  readonly tenantId: string;
-  readonly roles: readonly ApiRole[];
-  readonly scopes: readonly ApiAction[];
-}
-
-export interface LocalApiIdentity {
-  readonly actor: Actor;
-  readonly grants: readonly TenantGrant[];
-}
-
-export type ResolveApiIdentity = (
-  token: string,
-) => LocalApiIdentity | undefined | Promise<LocalApiIdentity | undefined>;
-
-const ROLE_ACTIONS: Readonly<Record<ApiRole, readonly ApiAction[]>> = {
-  knowledge_reader: ["system.read", "knowledge.read", "retrieval.plan.validate"],
-  knowledge_operator: [
-    "system.read",
-    "knowledge.read",
-    "retrieval.plan.validate",
-    "operation.submit",
-    "operation.control",
-    "callback.receive",
-  ],
-  knowledge_evaluator: [
-    "system.read",
-    "knowledge.read",
-    "retrieval.plan.validate",
-    "demo.evaluate",
-  ],
-  knowledge_admin: API_ACTIONS,
-};
 
 const digestToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -101,36 +58,4 @@ export function createLocalIdentityResolver(
     });
   }
   return (token) => byDigest.get(digestToken(token));
-}
-
-export function isAuthorized(
-  identity: LocalApiIdentity,
-  tenantId: string,
-  action: ApiAction,
-): boolean {
-  const grant = identity.grants.find(
-    (candidate) => candidate.tenantId === tenantId,
-  );
-  if (!grant) return false;
-  const actions = new Set<ApiAction>(grant.scopes);
-  for (const role of grant.roles)
-    for (const roleAction of ROLE_ACTIONS[role]) actions.add(roleAction);
-  return actions.has(action);
-}
-
-export function actorsMatch(authenticated: Actor, asserted: Actor): boolean {
-  if (
-    authenticated.kind !== asserted.kind ||
-    authenticated.id !== asserted.id
-  )
-    return false;
-  if (authenticated.kind === "service" && asserted.kind === "service")
-    return authenticated.serviceIdentity === asserted.serviceIdentity;
-  if (authenticated.kind === "model" && asserted.kind === "model")
-    return (
-      authenticated.serviceIdentity === asserted.serviceIdentity &&
-      authenticated.model === asserted.model &&
-      authenticated.providerRunId === asserted.providerRunId
-    );
-  return true;
 }

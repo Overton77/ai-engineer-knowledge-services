@@ -14,10 +14,16 @@ import { pathToFileURL } from "node:url";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   assertOperationKindAdmitted,
+  createKnowledgeResourceReads,
   productionWorkerOperationKinds,
+  retrievalExecutionProblem,
+  submitCanonicalRetrievalRun,
   VerificationOperationApplicationService,
+  type CanonicalRetrievalExecutorPort,
   type KnowledgeOperationPort,
+  type KnowledgeResourceReads,
   type ResolveVerificationContext,
+  type ResourceReadResult,
 } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import {
@@ -40,6 +46,7 @@ import {
   VerifyMetricObservationRequestSchema,
   VerificationOperationContextHintsSchema,
   OperationContextSchema,
+  MutationEnvelopeSchema,
   type JsonValue,
   type OperationContext,
   type OperationKind,
@@ -85,6 +92,8 @@ export interface KnowledgeMcpServerOptions {
   readonly verificationOperations?: VerificationOperationApplicationService;
   readonly resolveVerificationContext?: ResolveVerificationContext;
   readonly verificationAdmission?: VerificationHostAdmission;
+  /** In-process knowledge reads and canonical retrieval; absent capabilities are not admitted. */
+  readonly knowledge?: KnowledgeMcpServices;
   readonly incomingRequest?: {
     readonly headers: Record<string, unknown>;
     readonly body: unknown;
@@ -110,14 +119,6 @@ export interface KnowledgeMcpServerOptions {
     | "getVerificationRunManifest"
     | "getVerificationOperation"
     | "getOperation"
-    | "getVectorStoreOperation"
-    | "getRetrievalExplanation"
-    | "getRetrievalRun"
-    | "getEvidencePacket"
-    | "replayEvidencePacketCitations"
-    | "getEvaluationFailures"
-    | "validateRetrievalPlan"
-    | "createRetrievalRun"
     | "captureVerificationSource"
     | "parseArtifact"
     | "verifyExtraction"
@@ -131,6 +132,13 @@ export interface KnowledgeMcpServerOptions {
     | "runBenchmark"
     | "compareBenchmarkRuns"
   >;
+}
+
+export interface KnowledgeMcpServices {
+  readonly reads: KnowledgeResourceReads;
+  /** Admits API-owned synchronous kinds; retrieval.search submits through it before executing. */
+  readonly retrievalOperations?: Pick<KnowledgeOperationPort, "submit">;
+  readonly retrievalExecutor?: CanonicalRetrievalExecutorPort;
 }
 
 const verificationContextSchema = z.strictObject({
@@ -596,22 +604,97 @@ export interface KnowledgeMcpAppOptions {
   readonly verificationOperations?: VerificationOperationApplicationService;
   readonly resolveVerificationContext?: ResolveVerificationContext;
   readonly verificationAdmission?: VerificationHostAdmission;
+  readonly knowledge?: KnowledgeMcpServices;
   readonly createApiClient?: (
     accessToken: string,
   ) => KnowledgeMcpServerOptions["apiClient"];
 }
+
+type ResourceReadFailureCode = Extract<
+  ResourceReadResult<unknown>,
+  { ok: false }
+>["failure"]["code"];
 
 function toolError(
   code:
     | "FORBIDDEN"
     | "ACTOR_MISMATCH"
     | "CAPABILITY_NOT_ADMITTED"
-    | "RESOURCE_ID_REQUIRED",
+    | "RESOURCE_ID_REQUIRED"
+    | ResourceReadFailureCode
+    | "RETRIEVAL_CAPABILITY_UNSUPPORTED",
+  details?: unknown,
 ) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify({ code }) }],
+    ...(details === undefined
+      ? {}
+      : { structuredContent: details as Record<string, unknown> }),
     isError: true,
   };
+}
+
+/**
+ * Returns a shared read result as MCP content. A failure carries the same problem
+ * code the API route returns; a missing capability is CAPABILITY_NOT_ADMITTED.
+ */
+function readToolResult<T>(result: ResourceReadResult<T>) {
+  if (!result.ok)
+    return toolError(
+      result.failure.reason === "unavailable"
+        ? "CAPABILITY_NOT_ADMITTED"
+        : result.failure.code,
+    );
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(result.value) }],
+    structuredContent: result.value as unknown as Record<string, unknown>,
+  };
+}
+
+/** Runs canonical retrieval in process with the API route's admission and failure codes. */
+async function searchCanonicalRetrieval(
+  options: KnowledgeMcpServerOptions,
+  context: OperationContext,
+  plan: unknown,
+) {
+  const knowledge = options.knowledge;
+  if (!knowledge?.retrievalOperations || !knowledge.retrievalExecutor)
+    return toolError("CAPABILITY_NOT_ADMITTED");
+  // The envelope the public client submitted: JSON-normalized, retrieval contract v1.
+  const envelope = MutationEnvelopeSchema.parse(
+    JSON.parse(
+      JSON.stringify({
+        context,
+        input: { plan: RetrievalPlanSchema.parse(plan) },
+        expectedVersions: { api: "v1", retrieval: "v1" },
+      }),
+    ),
+  );
+  try {
+    const submission = await submitCanonicalRetrievalRun(
+      {
+        operations: knowledge.retrievalOperations,
+        executor: knowledge.retrievalExecutor,
+      },
+      { envelope, identity: options.identity, origin: options.apiOrigin },
+    );
+    if (!submission.ok) return toolError("CAPABILITY_NOT_ADMITTED");
+    return {
+      content: [
+        { type: "text" as const, text: JSON.stringify(submission.accepted) },
+      ],
+      structuredContent: submission.accepted as unknown as Record<
+        string,
+        unknown
+      >,
+    };
+  } catch (error) {
+    const problem = retrievalExecutionProblem(error);
+    if (!problem) throw error;
+    return problem.status === 422
+      ? toolError(problem.code, problem.response)
+      : toolError(problem.code);
+  }
 }
 
 /**
@@ -657,7 +740,7 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       const parsed = UuidSchema.safeParse(inputObject[name]);
       return parsed.success ? parsed.data : undefined;
     };
-    const client = options.apiClient;
+    const reads = options.knowledge?.reads;
     let readResult: unknown;
     if (name === "chunk.strategy_list")
       readResult = {
@@ -669,29 +752,30 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       };
     else if (name === "retrieval.plan_validate")
       readResult = RetrievalPlanSchema.parse(inputObject.plan ?? inputObject);
-    else if (name === "retrieval.search" && client)
-      readResult = await client.createRetrievalRun(
-        RetrievalPlanSchema.parse(inputObject.plan ?? inputObject),
+    else if (name === "retrieval.search" && options.knowledge)
+      return searchCanonicalRetrieval(
+        options,
         context,
+        inputObject.plan ?? inputObject,
       );
-    else if (name === "retrieval.explain_run" && client) {
+    else if (name === "retrieval.explain_run" && reads) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = await client.getRetrievalExplanation(id, context);
-    } else if (name === "retrieval.read_run" && client) {
+      return readToolResult(await reads.retrievalExplanation(context.tenantId, id));
+    } else if (name === "retrieval.read_run" && reads) {
       const id = uuid("runId");
       if (!id || Object.keys(inputObject).some(key => key !== "runId")) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = await client.getRetrievalRun(id, context);
-    } else if ((name === "retrieval.read_evidence_packet" || name === "retrieval.replay_citations") && client) {
+      return readToolResult(await reads.retrievalRun(context.tenantId, id));
+    } else if ((name === "retrieval.read_evidence_packet" || name === "retrieval.replay_citations") && reads) {
       const id = uuid("packetId");
       if (!id || Object.keys(inputObject).some(key => key !== "packetId")) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = name === "retrieval.read_evidence_packet"
-        ? await client.getEvidencePacket(id, context)
-        : await client.replayEvidencePacketCitations(id, context);
-    } else if (name === "evaluation.inspect_failures" && client) {
+      return name === "retrieval.read_evidence_packet"
+        ? readToolResult(await reads.evidencePacket(context.tenantId, id))
+        : readToolResult(await reads.citationReplay(context.tenantId, id));
+    } else if (name === "evaluation.inspect_failures" && reads) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = await client.getEvaluationFailures(id, context);
+      return readToolResult(await reads.evaluationFailures(context.tenantId, id));
     } else if (
       name === "embedding.run_status" ||
       name === "promotion.status"
@@ -702,14 +786,12 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       if (!item)
         throw Object.assign(new Error("NOT_FOUND"), { code: "NOT_FOUND" });
       readResult = item;
-    } else if (name === "vector_store.ingestion_status" && client) {
+    } else if (name === "vector_store.ingestion_status" && reads) {
       const storeId = uuid("vectorStoreId"),
         operationId = uuid("operationId");
       if (!storeId || !operationId) return toolError("RESOURCE_ID_REQUIRED");
-      readResult = await client.getVectorStoreOperation(
-        storeId,
-        operationId,
-        context,
+      return readToolResult(
+        await reads.vectorStoreOperation(context.tenantId, storeId, operationId),
       );
     }
     if (readResult !== undefined)
@@ -1079,6 +1161,7 @@ export function buildKnowledgeMcpApp(
       ...(options.verificationAdmission
         ? { verificationAdmission: options.verificationAdmission }
         : {}),
+      ...(options.knowledge ? { knowledge: options.knowledge } : {}),
       apiClient: options.createApiClient?.(token!),
     });
     const transport = new StreamableHTTPServerTransport({
@@ -1129,10 +1212,29 @@ export async function createMcpRuntime(environment: Environment = process.env) {
       ),
   });
   try {
-    const { apiOrigin, verify } = host;
+    const { apiOrigin, knowledge, operations, verify } = host;
     const app = buildKnowledgeMcpApp({
-      operationService: host.operations.service,
+      operationService: operations.service,
       apiOrigin,
+      knowledge: {
+        reads: createKnowledgeResourceReads({
+          ...(knowledge.resources ? { resources: knowledge.resources } : {}),
+          operations: operations.service,
+          ...(knowledge.getEvidencePacket
+            ? { getEvidencePacket: knowledge.getEvidencePacket }
+            : {}),
+          ...(knowledge.replayEvidencePacketCitations
+            ? {
+                replayEvidencePacketCitations:
+                  knowledge.replayEvidencePacketCitations,
+              }
+            : {}),
+        }),
+        retrievalOperations: operations.retrieval,
+        ...(knowledge.canonicalRetrievalExecutor
+          ? { retrievalExecutor: knowledge.canonicalRetrievalExecutor }
+          : {}),
+      },
       resolveIdentity: createLocalIdentityResolver(
         environment.KNOWLEDGE_API_IDENTITIES,
       ),
