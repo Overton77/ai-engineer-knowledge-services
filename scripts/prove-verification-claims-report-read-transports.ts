@@ -10,6 +10,7 @@ import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationClaimsReportReads } from "../packages/host/src/verification/api/verification-claims-report-reads-runtime.js";
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 import { createClaimsReportReadMcpExecutor } from "../apps/mcp/src/index.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 type Proof={namespace:string;tenantId:string;publicKeyPem:string;results:{claimsRecovery:{operationId:string};reportRecovery:{operationId:string}}};
 type OwnershipRow={id:string;mission_id:string;agent_deployment_id:string;capability_version:string;actor:Actor;external_execution:unknown};
@@ -59,7 +60,7 @@ try{
     const httpResponse=await fetch(`${baseUrl}${path}`,{headers});assert.equal(httpResponse.status,200);const http=schema.parse(await httpResponse.json());
     const typed=family==="claims"?await client.getVerificationClaimsResult(operationId,context):await client.getVerificationReportResult(operationId,context);
     const cli=await dispatchCliCommand(client as never,resolveCommand("verify",family==="claims"?"claims-result":"report-result")!,{operationId},context);
-    const mcp=(await createClaimsReportReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity:{actor,grants:[{tenantId:proof.tenantId,roles:["knowledge_reader"],scopes:[]}]},apiClient:client},family)({context:{tenantId:proof.tenantId,correlationId:context.correlationId},operationId}) as {structuredContent:unknown}).structuredContent;
+    const mcp:unknown=(await createClaimsReportReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity:{actor,grants:[{tenantId:proof.tenantId,roles:["knowledge_reader"],scopes:[]}]},...inProcessMcpOptions({verificationClaimsReportReads:reads},baseUrl)},family)({context:{tenantId:proof.tenantId,correlationId:context.correlationId},operationId}) as {structuredContent:unknown}).structuredContent;
     for(const candidate of [http,typed,cli,mcp])assert.equal(canonicalizeJson(schema.parse(candidate)),canonicalizeJson(direct));
     const serialized=JSON.stringify(direct);for(const forbidden of ["objectKey","rawBundle","providerResponse","BEGIN PUBLIC KEY","selectorResolutions","missingQualifierAssertionIds","pointerFailures"]){assert.equal(serialized.includes(forbidden),false);}
     results.push({family,surface:"http+typescript-client+cli+mcp",operationId,resultArtifact:direct.resultArtifact,manifestArtifact:direct.sealedRun.manifestArtifact,policyOutcome:direct.sealedRun.policyOutcome});

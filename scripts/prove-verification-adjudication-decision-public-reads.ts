@@ -19,6 +19,7 @@ import {PostgresCanonicalRepository,PostgresVerificationRepository,PostgresVerif
 import {SupabaseArtifactStore} from "@aiengineer/knowledge-core";
 import {canonicalizeJson,digestCanonicalJson} from "@aiengineer/knowledge-verification";
 import {createVerificationAdjudicationRequestService} from "../apps/worker/src/verification-adjudication-runtime.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 const proofPath=resolve(process.argv[2]??"../internal/verification-claims-report-worker-22c6b3e4-b5d6-4d34-923b-4846e37fdfaa.json");
 const proof=JSON.parse(await readFile(proofPath,"utf8")) as {namespace:string;tenantId:string;publicKeyPem:string;projection:{captureId:string;projectionArtifact:VerificationArtifactHandle;transformationArtifact:VerificationArtifactHandle};results:{claimsRecovery:{operationId:string;runId:string;manifestArtifact:VerificationArtifactHandle};reportRecovery:{operationId:string;runId:string;manifestArtifact:VerificationArtifactHandle}}};
 const fixture=JSON.parse(await readFile(resolve("../internal/verification-frozen-source-registry-7a74a7a8-0dc4-4591-8bb1-5781ebddef42.json"),"utf8")) as {records:readonly{captureId:string;projections:readonly[{sourceArtifact:VerificationArtifactHandle;projectionArtifact:VerificationArtifactHandle;transformationArtifact:VerificationArtifactHandle;parserVersion:string;imageDigest:`sha256:${string}`}]}[]};
@@ -62,7 +63,7 @@ try{
   const http=await client.getAdjudicationDecision(operationId,context);
   assert.equal(http.terminalFencingToken,839);assert.equal(http.output.reviewerProvenance,"synthetic_engineering");
   const cli=await dispatchCliCommand(client,resolveCommand("adjudication","get-decision")!,{operationId},context as never);assert.deepEqual(cli,http);
-  const mcp=await createAdjudicationDecisionReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity,apiClient:client})({context,operationId});assert.deepEqual(mcp.structuredContent,http);
+  const mcp=await createAdjudicationDecisionReadMcpExecutor({operationService:{} as never,apiOrigin:baseUrl,identity,...inProcessMcpOptions(runtime,baseUrl)})({context,operationId});assert.deepEqual(mcp.structuredContent,http);
   const denied=await fetch(`${baseUrl}/v1/verification/adjudication-decisions/${operationId}`,{headers:{authorization:"Bearer foreign","x-tenant-id":tenantId}});assert.equal(denied.status,404);
   const request={verificationContractVersion:"verification.v1" as const,subjectId:http.output.subjectId,packetArtifact:http.output.packetArtifact,decision:"affirm" as const,rationale:"Denied non-reviewer fixture"};
   assert.equal(await runtime.isAdjudicationDecisionAdmitted({request,context:{...ownership.context,actor}}),false);

@@ -17,6 +17,7 @@ import { buildServer } from "../apps/api/src/server.js";
 import { createVerificationOwnershipResolver } from "../packages/host/src/verification/api/verification-ownership.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { createVerificationMcpToolExecutor } from "../apps/mcp/src/index.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const {loadVerifiedLocalDevelopmentConfig}=await import("../../internal/verification-local-direct-config.mjs") as {loadVerifiedLocalDevelopmentConfig():Promise<{DB_URL:string;API_URL:string;SECRET_KEY:string}>};
 const local=await loadVerifiedLocalDevelopmentConfig();
@@ -58,7 +59,7 @@ try{
   const client=new KnowledgeClient({baseUrl,getAccessToken:()=>token});
   const typed=await client.parseArtifact(request,context);
   const cli=await dispatchCliCommand(client,resolveCommand("artifact","parse")!,request,context) as {operationId:string};
-  const mcp=await createVerificationMcpToolExecutor({operationService:operations,apiOrigin:baseUrl,identity,apiClient:client})("knowledge_parse_artifact",{context,request});
+  const mcp=await createVerificationMcpToolExecutor({operationService:operations,apiOrigin:baseUrl,identity,...inProcessMcpOptions({verificationOperationService:operations,resolveVerificationContext:ownership,isParseArtifactRequestAdmitted:()=>true},baseUrl)})("knowledge_parse_artifact",{context,request});
   const mcpResult=(mcp as any).structuredContent as {operationId:string};
   for(const accepted of [typed,cli,mcpResult])assert.equal(accepted.operationId,http.operationId);
   assert.equal((await database.getOperationRecord(tenantId,http.operationId))?.operationKind,"verification_parse_artifact");

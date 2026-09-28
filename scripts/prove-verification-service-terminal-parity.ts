@@ -16,6 +16,7 @@ import { CanonicalActivityRegistry } from "../apps/worker/src/activity-registry.
 import { CanonicalDurableKnowledgeWorker } from "../apps/worker/src/canonical-worker.js";
 import { createVerificationOperationExecutor, verificationActivityHandlers } from "../apps/worker/src/verification-activities.js";
 import { KnowledgeClient } from "../packages/client-typescript/src/client.js";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const { loadVerifiedLocalDevelopmentConfig } = await import("../../internal/verification-local-direct-config.mjs") as { loadVerifiedLocalDevelopmentConfig(): Promise<{ DB_URL: string; API_URL: string; SECRET_KEY: string }> };
 const local = await loadVerifiedLocalDevelopmentConfig();
@@ -65,7 +66,7 @@ try {
     const client = new KnowledgeClient({ baseUrl, getAccessToken: () => token });
     const typed = await client.verifyExtraction(verifyRequest, context);
     const cli = await dispatchCliCommand(client, resolveCommand("verify", "extract")!, verifyRequest, context) as any;
-    const mcp = await createVerificationMcpToolExecutor({ operationService: operations, apiOrigin: baseUrl, identity: { actor, grants: [{ tenantId, roles: ["knowledge_operator" as const], scopes: [] }] }, apiClient: client })("knowledge_verify_extraction", { context, request: verifyRequest }) as any;
+    const mcp = await createVerificationMcpToolExecutor({ operationService: operations, apiOrigin: baseUrl, identity: { actor, grants: [{ tenantId, roles: ["knowledge_operator" as const], scopes: [] }] }, ...inProcessMcpOptions({ verificationOperationService: operations, resolveVerificationContext: createVerificationOwnershipResolver(database, grants) }, baseUrl) })("knowledge_verify_extraction", { context, request: verifyRequest }) as any;
     for (const accepted of [typed, cli, mcp.structuredContent]) assert.equal(accepted.operationId, http.operationId);
     const verified = await execute(http.operationId, catalog); const verifiedPayload = payload(verified); assert.equal(verifiedPayload.result.output.result.valid, true, JSON.stringify(verifiedPayload.result));
     const fieldEvidence=VerificationExtractionFieldEvidenceResultSchema.parse(verifiedPayload.result.output.result);
@@ -85,7 +86,7 @@ try {
     const replayRaw = await fetch(`${baseUrl}/v1/verification/runs/${http.operationId}:replay`, { method: "POST", headers: replayHeaders, body: JSON.stringify(replayRequest) }); assert.equal(replayRaw.status, 202); const replayHttp = await replayRaw.json() as any;
     const replayTyped = await client.replayVerificationRun(replayRequest, replayContext);
     const replayCli = await dispatchCliCommand(client, resolveCommand("bundle", "replay")!, replayRequest, replayContext) as any;
-    const replayMcp = await createVerificationMcpToolExecutor({ operationService: operations, apiOrigin: baseUrl, identity: { actor, grants: [{ tenantId, roles: ["knowledge_operator" as const], scopes: [] }] }, apiClient: client })("knowledge_replay_run", { context: replayContext, request: replayRequest }) as any;
+    const replayMcp = await createVerificationMcpToolExecutor({ operationService: operations, apiOrigin: baseUrl, identity: { actor, grants: [{ tenantId, roles: ["knowledge_operator" as const], scopes: [] }] }, ...inProcessMcpOptions({ verificationOperationService: operations, resolveVerificationContext: createVerificationOwnershipResolver(database, grants) }, baseUrl) })("knowledge_replay_run", { context: replayContext, request: replayRequest }) as any;
     for (const accepted of [replayTyped, replayCli, replayMcp.structuredContent]) assert.equal(accepted.operationId, replayHttp.operationId);
     const replayed = await execute(replayHttp.operationId, catalog); const replayPayload = payload(replayed); assert.equal(replayPayload.result.output.replayMatched, true, JSON.stringify(replayPayload.result));
     assert.deepEqual(replayPayload.result.output.result,fieldEvidence,"LEAF_EVIDENCE_REPLAY_DRIFT");

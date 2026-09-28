@@ -16,6 +16,7 @@ import { createVerificationOwnershipResolver } from "../packages/host/src/verifi
 import { dispatchCliCommand,resolveCommand } from "../apps/cli/src/commands.js";
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { spawn } from "node:child_process";
+import { inProcessMcpOptions } from "./mcp-in-process-options.js";
 
 const connectionString=process.env.POSTGRES_URL,projectUrl=process.env.SUPABASE_URL,serviceRoleKey=process.env.SUPABASE_SECRET_KEY;
 if(!connectionString||!projectUrl||!serviceRoleKey)throw new Error("LOCAL_CONFIGURATION_REQUIRED");
@@ -150,7 +151,7 @@ try {
     await operations.cancel(timeoutOperation.operationId,tenantId,timeoutContext);
     const mcp=buildKnowledgeMcpApp({operationService:operations,apiOrigin:baseUrl,
       resolveIdentity:value=>value===token?{actor:publicContext.actor,grants:[{tenantId,roles:["knowledge_operator"],scopes:[]}]}:undefined,
-      createApiClient:accessToken=>new KnowledgeClient({baseUrl,getAccessToken:()=>accessToken})});
+      ...inProcessMcpOptions({operationService:operations,verificationOperationService:operations,resourceReader:database,resolveVerificationContext:resolver},baseUrl)});
     try {
       const mcpUrl=await mcp.listen({host:"127.0.0.1",port:0});
       const mcpContext={tenantId,missionId,workItemId,attemptId,correlationId:publicContext.correlationId,idempotencyKey:`${namespace}-mcp`};

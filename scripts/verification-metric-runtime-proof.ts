@@ -5,8 +5,8 @@ import type { VerificationMetricProfileGrant,VerificationSealPolicyGrant } from 
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { createApiRuntime } from "../apps/api/src/index.js";
+import { createMcpRuntime } from "../apps/mcp/src/index.js";
 import { startWorker } from "../apps/worker/src/index.js";
-import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { dispatchCliCommand, resolveCommand } from "../apps/cli/src/commands.js";
 import { waitForVerification } from "../apps/cli/src/verification-completion.js";
 
@@ -92,9 +92,8 @@ export async function proveMetricRuntime(input: {
     const cliAccepted = await dispatchCliCommand(client, resolveCommand("verify", "metric")!, input.request, cliContext) as { operationId: string };
     assert.equal((await waitForVerification(client, cliAccepted.operationId, cliContext, 15_000)).exitCode, 0);
     checks.metricCliDispatcherCompleted = true;
-    const mcp = buildKnowledgeMcpApp({ operationService: {} as never, apiOrigin: baseUrl,
-      resolveIdentity: value => value === token ? identity : undefined,
-      createApiClient: accessToken => new KnowledgeClient({ baseUrl, getAccessToken: () => accessToken }) });
+    const mcpRuntime = await createMcpRuntime({ ...environment, KNOWLEDGE_API_URL: baseUrl });
+    const mcp = mcpRuntime.app;
     try {
       const mcpUrl = await mcp.listen({ host: "127.0.0.1", port: 0 });
       const mcpContext = { ...routing, idempotencyKey: `metric-mcp-${randomUUID()}` };
@@ -110,7 +109,7 @@ export async function proveMetricRuntime(input: {
       const operation = rpc.result.structuredContent ?? JSON.parse(rpc.result.content[0]!.text);
       assert.equal((await waitForVerification(client, operation.operationId, mcpContext, 15_000)).qualityPassed, true);
       checks.metricMcpHttpCompleted = true;
-    } finally { await mcp.close(); }
+    } finally { await mcpRuntime.close(); }
     if(process.env.VERIFICATION_PROVE_TEMPORAL==="1"){
       const {proveVerificationTemporal}=await import("../../ai-engineer-mission-control/scripts/prove-verification-temporal.js");
       for(const testCase of [{context,deployment:input.verifierDeploymentId,expectedDisposition:"succeeded" as const},
