@@ -29,7 +29,6 @@ import {
   type ResourceReadResult,
   type VerificationResourceReads,
 } from "@aiengineer/knowledge-application";
-import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import {
   actorsMatch,
   createHost,
@@ -105,40 +104,6 @@ export interface KnowledgeMcpServerOptions {
     readonly headers: Record<string, unknown>;
     readonly body: unknown;
   };
-  readonly apiClient?: Pick<
-    KnowledgeClient,
-    | "applyProviderReconciliation"
-    | "getProviderReconciliation"
-    | "getStructuredExtraction"
-    | "getAuditInspection"
-    | "getAdjudicationSubject"
-    | "getAdjudicationDecision"
-    | "getVerificationClaimsResult"
-    | "getVerificationReportResult"
-    | "extractStructuredData"
-    | "getBenchmarkComparison"
-    | "getBenchmarkRun"
-    | "getBenchmarkRunManifest"
-    | "listVerificationRunCases"
-    | "getVerificationCase"
-    | "getVerificationEvidence"
-    | "getVerificationRun"
-    | "getVerificationRunManifest"
-    | "getVerificationOperation"
-    | "getOperation"
-    | "captureVerificationSource"
-    | "parseArtifact"
-    | "verifyExtraction"
-    | "verifyClaims"
-    | "verifyReport"
-    | "verifyMetricObservation"
-    | "requestAdjudication"
-    | "recordAdjudicationDecision"
-    | "inspectAuditBundle"
-    | "replayVerificationRun"
-    | "runBenchmark"
-    | "compareBenchmarkRuns"
-  >;
 }
 
 export interface KnowledgeMcpServices {
@@ -557,9 +522,6 @@ export interface KnowledgeMcpAppOptions {
   readonly verificationAdmission?: VerificationHostAdmission;
   readonly knowledge?: KnowledgeMcpServices;
   readonly verificationReads?: VerificationResourceReads;
-  readonly createApiClient?: (
-    accessToken: string,
-  ) => KnowledgeMcpServerOptions["apiClient"];
 }
 
 type ResourceReadFailureCode = Extract<
@@ -1106,7 +1068,6 @@ export function buildKnowledgeMcpApp(
       ...(options.verificationReads
         ? { verificationReads: options.verificationReads }
         : {}),
-      apiClient: options.createApiClient?.(token!),
     });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
@@ -1199,12 +1160,6 @@ export async function createMcpRuntime(environment: Environment = process.env) {
       verificationReads: createVerificationResourceReads(
         verificationReadServices(verify),
       ),
-      // Temporary HTTP shim; Unit 3 replaces these calls with application ports.
-      createApiClient: (accessToken) =>
-        new KnowledgeClient({
-          baseUrl: apiOrigin,
-          getAccessToken: () => accessToken,
-        }),
     });
     let closing: Promise<void> | undefined;
     return {
