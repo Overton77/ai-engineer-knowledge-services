@@ -89,7 +89,7 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -119,7 +119,7 @@ Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, at
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -146,7 +146,7 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -175,7 +175,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
@@ -254,7 +254,7 @@ Composes knowledge use cases, capability admission, preparation, retrieval execu
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
@@ -333,7 +333,7 @@ Server composition root: configuration and identity resolution, shared knowledge
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -364,14 +364,15 @@ Versioned Zod schemas and types shared by transports, application composition, a
 
 Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers.
 
-**Enter:** [`packages/knowledge-db/src/index.ts`](../../packages/knowledge-db/src/index.ts), [`packages/knowledge-db/src/schema-workspace/index.ts`](../../packages/knowledge-db/src/schema-workspace/index.ts), [`packages/knowledge-db/src/db-read/index.ts`](../../packages/knowledge-db/src/db-read/index.ts), [`packages/knowledge-db/src/db-read/read-executor.ts`](../../packages/knowledge-db/src/db-read/read-executor.ts), [`packages/knowledge-db/src/db-read/sql-guard.ts`](../../packages/knowledge-db/src/db-read/sql-guard.ts), [`packages/knowledge-db/src/db-read/space-manifest.ts`](../../packages/knowledge-db/src/db-read/space-manifest.ts), [`packages/knowledge-db/src/ingestion/index.ts`](../../packages/knowledge-db/src/ingestion/index.ts), [`packages/knowledge-db/src/ingestion/plan.ts`](../../packages/knowledge-db/src/ingestion/plan.ts), [`packages/knowledge-db/src/ingestion/apply.ts`](../../packages/knowledge-db/src/ingestion/apply.ts), [`packages/knowledge-db/src/ingestion/executor.ts`](../../packages/knowledge-db/src/ingestion/executor.ts), [`packages/knowledge-db/src/ingestion/duplicate.ts`](../../packages/knowledge-db/src/ingestion/duplicate.ts)
-**Interface:** loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/., ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH., buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[]., IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf.
+**Enter:** [`packages/knowledge-db/src/index.ts`](../../packages/knowledge-db/src/index.ts), [`packages/knowledge-db/src/ports.ts`](../../packages/knowledge-db/src/ports.ts), [`packages/knowledge-db/src/schema-workspace/index.ts`](../../packages/knowledge-db/src/schema-workspace/index.ts), [`packages/knowledge-db/src/db-read/index.ts`](../../packages/knowledge-db/src/db-read/index.ts), [`packages/knowledge-db/src/db-read/read-executor.ts`](../../packages/knowledge-db/src/db-read/read-executor.ts), [`packages/knowledge-db/src/db-read/sql-guard.ts`](../../packages/knowledge-db/src/db-read/sql-guard.ts), [`packages/knowledge-db/src/db-read/space-manifest.ts`](../../packages/knowledge-db/src/db-read/space-manifest.ts), [`packages/knowledge-db/src/ingestion/index.ts`](../../packages/knowledge-db/src/ingestion/index.ts), [`packages/knowledge-db/src/ingestion/plan.ts`](../../packages/knowledge-db/src/ingestion/plan.ts), [`packages/knowledge-db/src/ingestion/apply.ts`](../../packages/knowledge-db/src/ingestion/apply.ts), [`packages/knowledge-db/src/ingestion/executor.ts`](../../packages/knowledge-db/src/ingestion/executor.ts), [`packages/knowledge-db/src/ingestion/duplicate.ts`](../../packages/knowledge-db/src/ingestion/duplicate.ts)
+**Interface:** Owns its ports (ports.ts): KnowledgeSqlClient, KnowledgeTransactions/KnowledgeDatabase, KnowledgeTransactionScope, KnowledgeRole and ContentAdmission; persistence implements them (TenantPostgres, postgresContentAdmission) and the composition root injects them., loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/., ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH., buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[]., IngestionExecutor.plan/apply/receipt; buildPlan; applyPlan inside temporal.begin_batch/assert_*/commit_batch; same idempotency key returns duplicateOf.
 **Package:** @aiengineer/knowledge-db ([`packages/knowledge-db/package.json`](../../packages/knowledge-db/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [contracts](#contracts), [core](#core), [persistence](#persistence)
+**Declared internal package dependencies:** [contracts](#contracts), [core](#core)
 **Other runtime dependencies:** @aiengineer/database-contract, zod
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts`](../../packages/knowledge-db/src/schema-workspace/schema-workspace.test.ts), [`packages/knowledge-db/src/db-read/db-read.test.ts`](../../packages/knowledge-db/src/db-read/db-read.test.ts), [`packages/knowledge-db/src/db-read/read-executor.integration.test.ts`](../../packages/knowledge-db/src/db-read/read-executor.integration.test.ts), [`packages/knowledge-db/src/db-read/space-manifest.test.ts`](../../packages/knowledge-db/src/db-read/space-manifest.test.ts), [`packages/knowledge-db/src/ingestion/tests/plan.test.ts`](../../packages/knowledge-db/src/ingestion/tests/plan.test.ts), [`packages/knowledge-db/src/ingestion/tests/duplicate.test.ts`](../../packages/knowledge-db/src/ingestion/tests/duplicate.test.ts), [`packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts`](../../packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts) Package script names: build, test, typecheck.
+- No production dependency on persistence (R1); persistence remains a devDependency for database integration tests and fixtures.
 - Consumes the committed workspace tree; it does not regenerate IR from the live database at request time.
 - Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.
 - space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3).
@@ -379,7 +380,7 @@ Pinned schema workspace navigation, bounded read snapshots and deterministic ing
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5B), linked spec
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
@@ -468,7 +469,7 @@ Postgres, storage, operation ledger, verification records, and runtime wiring ad
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, pg, zod
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/persistence/src/eve-verification-binding.test.ts`](../../packages/persistence/src/eve-verification-binding.test.ts), [`packages/persistence/src/operation-service.test.ts`](../../packages/persistence/src/operation-service.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/persistence/src/eve-verification-binding.test.ts`](../../packages/persistence/src/eve-verification-binding.test.ts), [`packages/persistence/src/operation-service.test.ts`](../../packages/persistence/src/operation-service.test.ts), [`packages/persistence/src/role-transaction.test.ts`](../../packages/persistence/src/role-transaction.test.ts) Package script names: build, test, typecheck.
 
 **Architecture and detailed docs:**
 

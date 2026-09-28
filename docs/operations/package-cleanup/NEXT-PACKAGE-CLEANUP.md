@@ -1,8 +1,10 @@
 # Package cleanup delivery and continuation
 
-Status: reference. Execution handoff, 2026-09-28 (Unit 4 delivery).
+Status: reference. Execution handoff, 2026-09-28 (Unit 5 slice 5A delivery).
 
 ## Current delivery
+
+Unit 5 slice **5A** (entry evidence and the R1 inversion) is merged into local `main` from `refactor/ks-unit-5a-r1-inversion`: knowledge-db owns its transaction and content-admission ports (`packages/knowledge-db/src/ports.ts`), persistence implements them (`TenantPostgres`, `postgresContentAdmission`), the executor composition injects them, and the production `knowledge-db → persistence` edge is gone. Commits `4dd7510`, `8ec3f3c`, `2c474ad` and a documentation/evidence commit; validation, the replay decision and the carried test-only edge are in the [ledger](./workspace/PROGRESS.md) and [`unit5a-validation.json`](./workspace/evidence/unit5a-validation.json).
 
 Unit 4 (application order, naming pass and catalog parity) is merged into local `main` from `refactor/ks-unit-4-application-order-and-catalog`. Implementation commits: application folders by tool group `c995cbc`, benchmark/diagnostics split `d187c4e`, diagnostics quarantine test `e44da60`, A2A binding into the API `677fd48`, demo bundle port (testkit off the API runtime) `95561dd`, folder renames `577864d` (`packages/sources`), `8e81d51` (`packages/client`), `f428a69` (`services/parser`), the catalog parity test `e0e032d`, and review fixes `edd4533`; the documentation commit records evidence, navigation and the [Unit 5 specification](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md). Exact validation, the fixture reassessment and the recorded decisions are in the [ledger](./workspace/PROGRESS.md) and the [Unit 4 delivered section](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md#delivered-structure-and-decisions). Units 1–3 remain as recorded.
 
@@ -27,7 +29,7 @@ Prerequisites, by owner — a proposed mapping to confirm when the experiment is
 | --- | --- |
 | In-process MCP retrieval, evidence packet and citation replay; no sibling-HTTP shims | Unit 3 — delivered in the KS service; Eve's t14 platform host still composes MCP with the removed client (Unit 5) |
 | Profile-aware operation catalog, where stage tool subsets depend on it | Unit 4 — delivered: `apps/mcp/src/tests/operation-catalog.ts` classifies every operation by tool group, admission and transport; the local profile and executor rows arrive with Unit 5 |
-| Eve adapted to the new services, CLI/MCP surfaces and packaging; stage/child input and result manifests | Unit 5 and the Eve repository |
+| Eve adapted to the new services, CLI/MCP surfaces and packaging; stage/child input and result manifests | Unit 5 and the Eve repository — 5A removed the database cycle blocking the fold; slices 5B–5H and Eve's 5E1/5E2 remain |
 | Canonical skills materialized for each stage role | Unit 6 |
 | Fixture inputs, disposable database/storage target, budget ceiling and stage manifests/validator | Experiment setup (meta spec P2/P4/P6 scope) |
 
@@ -35,7 +37,7 @@ Do not build the experiment runner inside a cleanup unit. Preserve this mileston
 
 ## Next unit
 
-Implement [Unit 5](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) in the slices of [UNIT-5-SLICES.md](./UNIT-5-SLICES.md), one slice per session and branch: 5A (entry evidence and the R1 `knowledge-db → persistence` inversion) first; the Eve early path repair 5E1 may run in parallel in the Eve repository. Reassess the missing historical receipt explicitly at every slice entry.
+Implement [Unit 5](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) in the slices of [UNIT-5-SLICES.md](./UNIT-5-SLICES.md), one slice per session and branch. 5A is delivered; next is **5B** (local host profile and capability matrix) on `refactor/ks-unit-5b-local-profile`; the Eve early path repair 5E1 may run in parallel in the Eve repository. 5D1 must first remove the test-only `knowledge-db → persistence` edge recorded by 5A. Reassess the missing historical receipt explicitly at every slice entry; reuse `unit5-catalog-snapshot.ts` and copy `unit5a-inventory.mjs` for the slice inventory.
 
 ## Branch and delivery rule — developer accepted
 
@@ -51,4 +53,4 @@ See [Jev architecture](../../architecture/modules/jev.md). Preserve `packages/je
 
 ## Suggested next-session instruction
 
-> Continue the Knowledge Services package cleanup, Unit 5 slice 5A, from local main. Read repository AGENTS.md, `docs/operations/package-cleanup/workspace/PROGRESS.md`, `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`, `docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md` and `docs/operations/package-cleanup/UNIT-5-SLICES.md`. Implement only that slice on its own branch, following its scope, "must not" and exit criteria and the rules for every slice (replay gate decision, inventories, catalog rows, sequential full test graph, packaging smoke, docs check). Record it in the ledger and evidence, merge locally, return to a clean main and name the next slice. Keep the bounded stage-graph experiment milestone (research → reports → ingestion consuming both manifests → restoration and fresh consumer; provisional results distinct from fixture acceptance) in the handoff; do not build its runner inside the cleanup.
+> Continue the Knowledge Services package cleanup, Unit 5 slice 5B, from local main. Read repository AGENTS.md, `docs/operations/package-cleanup/workspace/PROGRESS.md`, `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`, `docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md` and `docs/operations/package-cleanup/UNIT-5-SLICES.md`. Implement only that slice on its own branch, following its scope, "must not" and exit criteria and the rules for every slice (replay gate decision, inventories, catalog rows, sequential full test graph, packaging smoke, docs check). Record it in the ledger and evidence, merge locally, return to a clean main and name the next slice. Keep the bounded stage-graph experiment milestone (research → reports → ingestion consuming both manifests → restoration and fresh consumer; provisional results distinct from fixture acceptance) in the handoff; do not build its runner inside the cleanup.

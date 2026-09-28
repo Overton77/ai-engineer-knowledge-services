@@ -401,6 +401,7 @@
       "summary": "Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers.",
       "entrypoints": [
         "packages/knowledge-db/src/index.ts",
+        "packages/knowledge-db/src/ports.ts",
         "packages/knowledge-db/src/schema-workspace/index.ts",
         "packages/knowledge-db/src/db-read/index.ts",
         "packages/knowledge-db/src/db-read/read-executor.ts",
@@ -413,6 +414,7 @@
         "packages/knowledge-db/src/ingestion/duplicate.ts"
       ],
       "interface": [
+        "Owns its ports (ports.ts): KnowledgeSqlClient, KnowledgeTransactions/KnowledgeDatabase, KnowledgeTransactionScope, KnowledgeRole and ContentAdmission; persistence implements them (TenantPostgres, postgresContentAdmission) and the composition root injects them.",
         "loadWorkspace, searchWorkspace, getPage, compareHeads/assertHeadMatches, materializeScope; locate via SCHEMA_WORKSPACE_DIR or the pinned contract workspace/.",
         "ReadExecutor.validateIntent/runIntent/sqlReadonly/explain/head; ArtifactLedger persist of intent+snapshot; assertSingleReadStatement admits one SELECT/WITH.",
         "buildSpaceManifest is pure and generic in the space type; readSpaceManifest reads only the catalog queries that exist and records the rest in unavailable[].",
@@ -428,6 +430,7 @@
         "packages/knowledge-db/src/ingestion/tests/executor.integration.test.ts"
       ],
       "constraints": [
+        "No production dependency on persistence (R1); persistence remains a devDependency for database integration tests and fixtures.",
         "Consumes the committed workspace tree; it does not regenerate IR from the live database at request time.",
         "Retrieval operations are skipped (RETRIEVAL_UNAVAILABLE). Named queries and artifact ops run.",
         "space_manifest reports only its static half today: contract 0.4.16 has no space, store, version or publication catalog query, and no per-space budget exists at all. No executor operation is registered yet (Track K, after G3).",
@@ -545,7 +548,8 @@
       ],
       "tests": [
         "packages/persistence/src/eve-verification-binding.test.ts",
-        "packages/persistence/src/operation-service.test.ts"
+        "packages/persistence/src/operation-service.test.ts",
+        "packages/persistence/src/role-transaction.test.ts"
       ],
       "constraints": [],
       "uses": [],

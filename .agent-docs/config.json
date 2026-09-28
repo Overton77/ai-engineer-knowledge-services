@@ -23,8 +23,8 @@
       "status": "reference"
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md",
-      "task": "Next unit: executor fold, ks, Eve",
+      "path": "docs/operations/package-cleanup/UNIT-5-SLICES.md",
+      "task": "Next: Unit 5 slices (5B), linked spec",
       "status": "proposed",
       "modules": [
         "verification-executor",
