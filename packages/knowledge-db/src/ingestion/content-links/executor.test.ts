@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ContentLinkIntentSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import type { ArtifactLedger } from "../../db-read/index.js";
-import type { TenantPostgres } from "@aiengineer/knowledge-persistence";
+import type { ContentAdmission, KnowledgeDatabase } from "../../ports.js";
 import { domainError, type Workspace } from "../../schema-workspace/index.js";
 import type { ContentOperationContext, PreparedContentOperation } from "./operations.js";
 import type { ContentLinkAuthority, ContentLinkReceipt } from "./types.js";
@@ -41,12 +41,13 @@ function fixture() {
     if (!options.readOnly && state.loseAcknowledgement) throw new Error("lost acknowledgement");
     return result;
   });
-  const db = { transaction, migrationHead: vi.fn(async () => intent.contract.migrationHead) } as unknown as TenantPostgres;
+  const db = { transaction, migrationHead: vi.fn(async () => intent.contract.migrationHead) } as unknown as KnowledgeDatabase;
   const snapshot = { record: { storageState: "available", digest: intent.inputSnapshot.artifact.digest }, json: { snapshotDigest: digest("b") } };
   const get = vi.fn(async () => snapshot);
   const artifacts = { get } as unknown as ArtifactLedger;
   const authenticate = vi.fn(async () => ({ eligible: true }));
-  const config = { db, artifacts, workspace: { migrationHead: intent.contract.migrationHead, fingerprint: intent.contract.workspaceFingerprint } as Workspace,
+  const admission: ContentAdmission = { readRepresentationAdmission: vi.fn(), persistPreparedSummary: vi.fn() };
+  const config = { db, admission, artifacts, workspace: { migrationHead: intent.contract.migrationHead, fingerprint: intent.contract.workspaceFingerprint } as Workspace,
     authority: { authenticate } as unknown as ContentLinkAuthority, tenantId: id(1), missionId: id(2), attemptId: id(3), policyDigest: digest(), executorVersion: "offline-test" };
   return { executor: new ContentLinkExecutor(config), intent, state, events, query, transaction, snapshot, get, authenticate, config };
 }

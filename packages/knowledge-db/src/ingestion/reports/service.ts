@@ -1,11 +1,11 @@
 import { ArtifactLedger, sha256Hex, type ArtifactRecord } from "../../db-read/index.js";
-import type { TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeTransactions, KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 import { ReportStructureSchema, renderReport, type ReportStructure } from "./structure.js";
 import { writeReportProjections } from "./projections.js";
 
 export const REPORT_BUCKET = "research-reports";
-export interface ReportServiceConfig { readonly db: TenantPostgres; readonly artifacts: ArtifactLedger }
+export interface ReportServiceConfig { readonly db: KnowledgeTransactions; readonly artifacts: ArtifactLedger }
 export interface RegisterReportInput { readonly tenantId: string; readonly report: unknown }
 export interface ReportRegistration {
   readonly reportId: string; readonly reportVersionId: string; readonly duplicate?: boolean;
@@ -77,7 +77,7 @@ export class ReportService {
   }
 }
 
-async function sealAvailablePackage(client: TenantSqlClient, reportVersionId: string): Promise<boolean> {
+async function sealAvailablePackage(client: KnowledgeSqlClient, reportVersionId: string): Promise<boolean> {
   const artifacts = (await client.query<{ artifact_id: string; role: string; storage_state: string }>(`select r.artifact_id,r.role,a.storage_state from research.report_artifact r
     join orchestration.artifact a on a.id=r.artifact_id where r.report_version_id=$1`, [reportVersionId])).rows;
   if (artifacts.some((artifact) => artifact.storage_state !== "available")) return false;
@@ -87,7 +87,7 @@ async function sealAvailablePackage(client: TenantSqlClient, reportVersionId: st
   return true;
 }
 
-async function verifyReferences(client: TenantSqlClient, report: ReportStructure): Promise<void> {
+async function verifyReferences(client: KnowledgeSqlClient, report: ReportStructure): Promise<void> {
   const references = [...report.inputArtifacts, ...report.sections.flatMap((section) => section.blocks.flatMap((block) => block.assertions.flatMap((assertion) => assertion.claims.map((claim) => claim.evidenceManifest))))];
   for (const reference of references) {
     const row = (await client.query<{ sha256: string; storage_state: string }>("select sha256,storage_state from orchestration.artifact where id=$1", [reference.artifactId])).rows[0];
@@ -95,7 +95,7 @@ async function verifyReferences(client: TenantSqlClient, report: ReportStructure
   }
 }
 
-async function insertPackage(client: TenantSqlClient, input: { report: ReportStructure; structure: ArtifactRecord; markdown: ArtifactRecord }): Promise<void> {
+async function insertPackage(client: KnowledgeSqlClient, input: { report: ReportStructure; structure: ArtifactRecord; markdown: ArtifactRecord }): Promise<void> {
   const { report } = input;
   await client.query("insert into research.report(id,slug,title,report_type,purpose) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [report.reportId, report.slug, report.title, report.reportType, report.purpose]);
   await client.query("insert into research.report_version(id,report_id,version,markdown_artifact_id,json_artifact_id) values($1,$2,$3,$4,$5)", [report.revisionId, report.reportId, report.version, input.markdown.artifactId, input.structure.artifactId]);

@@ -538,13 +538,13 @@ importers:
       '@aiengineer/knowledge-core':
         specifier: workspace:*
         version: link:../core
-      '@aiengineer/knowledge-persistence':
-        specifier: workspace:*
-        version: link:../persistence
       zod:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-persistence':
+        specifier: workspace:*
+        version: link:../persistence
       '@aiengineer/knowledge-preparation':
         specifier: workspace:*
         version: link:../preparation

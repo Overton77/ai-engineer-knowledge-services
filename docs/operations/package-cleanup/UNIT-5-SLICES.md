@@ -4,24 +4,24 @@ Status: proposed delivery plan, 2026-09-28. Scope and acceptance come from [UNIT
 
 ## Why slices, and the adjusted branch rule
 
-Unit 5 is larger than Units 1–4 combined and is the first unit that changes public surfaces and edits Eve. The developer prefers smaller slices because they produce higher-quality work. Adjustment to the one-branch-per-unit rule (developer preference, 2026-09-28; confirm when the first slice starts): **one branch per slice**, named `refactor/ks-unit-5<letter>-<topic>`. Each slice is validated, reviewed, recorded in the ledger and merged locally before the next dependent slice starts. Eve slices use the same names in `research_ingestion_systems_agent`.
+Unit 5 is larger than Units 1–4 combined and is the first unit that changes public surfaces and edits Eve. The developer prefers smaller slices because they produce higher-quality work. Adjustment to the one-branch-per-unit rule (developer preference, 2026-09-28; confirmed by the developer's 5A instruction): **one branch per slice**, named `refactor/ks-unit-5<letter>-<topic>`. Each slice is validated, reviewed, recorded in the ledger and merged locally before the next dependent slice starts. Eve slices use the same names in `research_ingestion_systems_agent`.
 
 Between slices, `main` may briefly hold both the executor and the folded platform surfaces. During the transition, the executor calls the same application use cases. That is not a forwarding adapter or a dual-running service: nothing preserves an old interface for compatibility, and slice 5H deletes the executor. No slice may add an alias, shim or legacy environment name.
 
 ## Slice map
 
-| Slice | Repository | Topic | Depends on | Parallel with |
-| --- | --- | --- | --- | --- |
-| 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | 5E1 |
-| 5B | KS | Local host profile and capability matrix | 5A | 5E1 |
-| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | 5E1 |
-| 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5C | — |
-| 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — |
-| 5D3 | KS | Fold the `verification` group (intent pipeline, `verify_*`, recovery), executor HTTP routes, MCP stdio | 5D2 | 5F |
-| 5F | KS | Jev transport consolidation (`ks jev`) | 5C | 5D3 |
-| 5E1 | Eve | Early path repair: t14 hosts on current KS packages | Unit 4 main | 5A–5C |
-| 5E2 | Eve | Adapt Eve to `ks`, the folded surfaces and new packaging | 5D3, 5F | — |
-| 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5E2 | — |
+| Slice | Repository | Topic | Depends on | Parallel with | Status |
+| --- | --- | --- | --- | --- | --- |
+| 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | 5E1 | merged locally 2026-09-28 |
+| 5B | KS | Local host profile and capability matrix | 5A | 5E1 | queued |
+| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | 5E1 | queued |
+| 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5C | — | queued |
+| 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
+| 5D3 | KS | Fold the `verification` group (intent pipeline, `verify_*`, recovery), executor HTTP routes, MCP stdio | 5D2 | 5F | queued |
+| 5F | KS | Jev transport consolidation (`ks jev`) | 5C | 5D3 | queued |
+| 5E1 | Eve | Early path repair: t14 hosts on current KS packages | Unit 4 main | 5A–5C | queued |
+| 5E2 | Eve | Adapt Eve to `ks`, the folded surfaces and new packaging | 5D3, 5F | — | queued |
+| 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5E2 | — | queued |
 
 Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/operation-catalog.ts`, the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
 
@@ -58,6 +58,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - Manifest graph acyclic, with no `knowledge-db → persistence` production edge.
   - `knowledge-db` and executor suites keep their identities.
   - Adapters tested in persistence.
+- **Delivered:** `packages/knowledge-db/src/ports.ts` (`KnowledgeSqlClient`, `KnowledgeTransactions`/`KnowledgeDatabase`, `KnowledgeTransactionScope`, `KnowledgeRole`, `ContentAdmission`); persistence's `TenantPostgres` and new `postgresContentAdmission` implement them; the executor composition injects them because host does not compose knowledge-db before 5D1. Persistence stays a knowledge-db **devDependency** for the database integration tests, their fixtures and the source-reader test. See the ledger's 5A entry.
 
 ### 5B — Local host profile
 
@@ -96,6 +97,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - Ingestion keeps its transaction and receipt semantics, with no durable operation kind.
   - The executor's registry calls the same use cases until 5H.
   - Record the MCP names chosen per R3.
+  - **First, remove the test-only `knowledge-db → persistence` edge** (carried from 5A). Turbo and pnpm order builds over devDependencies, so `application → knowledge-db` plus that edge closes `knowledge-db → persistence → application → knowledge-db`. Move the database-backed knowledge-db suites that need `TenantPostgres` (the seven `*.integration.test.ts` files, `test/ingestion` fixtures and `content-links/sources.test.ts`) to where host composes knowledge-db, or inject the transaction adapter through a test setup owned there; record every moved identity. Move the executor's `knowledge-db-ports.test.ts` conformance test with the composition into host.
 - **Exit:**
   - Every db-group catalog row leaves `executor`.
   - Bounded-read and ingestion tests keep their identities.

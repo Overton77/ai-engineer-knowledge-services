@@ -3,7 +3,9 @@ import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger } from "../../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
+// The reader runs the real persistence admission read against the fake client below.
+import { postgresContentAdmission } from "@aiengineer/knowledge-persistence";
 import { ContentSourceReader } from "./sources.js";
 import type { DocumentNode } from "@aiengineer/knowledge-contracts";
 
@@ -53,7 +55,7 @@ function fixture(nodeDigest: (node: DocumentNode) => string = node => node.diges
     selector: document.nodes.find(node => node.id === span.nodeId)!.locator }));
   const denied = new Set<string>();
   const queries: { sql: string; values: readonly unknown[] }[] = [];
-  const client: TenantSqlClient = { async query<R extends Row>(sql: string, values?: readonly unknown[]) {
+  const client: KnowledgeSqlClient = { async query<R extends Row>(sql: string, values?: readonly unknown[]) {
     queries.push({ sql, values: values ?? [] });
     expect(values?.[0]).toBe(tenantId);
     let rows: Row[];
@@ -87,7 +89,7 @@ function fixture(nodeDigest: (node: DocumentNode) => string = node => node.diges
     if (!value) throw new Error("Missing test artifact");
     return value;
   } } as ArtifactLedger;
-  const reader = new ContentSourceReader({ client, tenantId, artifacts: ledger });
+  const reader = new ContentSourceReader({ client, tenantId, artifacts: ledger, admission: postgresContentAdmission });
   const reference = { id: prepared.id, digest: prepared.sourceTextDigest, documentVersionId,
     representation: { id: representationId, digest }, captureId,
     sourceNodes: persistedNodes.map(node => ({ id: node.id, digest: node.digest, representationId })) };

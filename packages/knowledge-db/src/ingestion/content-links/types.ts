@@ -1,5 +1,5 @@
 import type { ContentLinkIntent, ContentLinkOperation } from "@aiengineer/knowledge-contracts";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 
 export type ContentLinkEvidenceReference = ContentLinkOperation["evidence"][number];
 
@@ -23,7 +23,7 @@ export interface AuthenticatedContentEvidence {
 
 export interface ContentLinkAuthority {
   authenticate(input: {
-    readonly client: TenantSqlClient;
+    readonly client: KnowledgeSqlClient;
     readonly tenantId: string;
     readonly policyDigest: string;
     readonly reference: ContentLinkEvidenceReference;

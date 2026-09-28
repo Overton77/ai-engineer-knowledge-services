@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { convertStructuralDocument } from "@aiengineer/knowledge-preparation";
 import { chunkDocument, defaultChunkProfileRegistry } from "@aiengineer/knowledge-preparation";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { verifyContentChunkManifest } from "./chunk-manifest.js";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { DocumentNode } from "@aiengineer/knowledge-contracts";
@@ -24,7 +24,7 @@ function fixture(nodeDigest: (node: DocumentNode) => string = node => node.diges
   const spans: Row[] = result.chunks.flatMap(chunk => chunk.spans.map((span, ordinal) => ({ chunk_id: chunk.id, ordinal,
     document_node_id: span.nodeId, start_offset: span.startOffset, end_offset: span.endOffset,
     representation_id: representationId, selector: document.nodes.find(node => node.id === span.nodeId)!.locator })));
-  const client: TenantSqlClient = { async query<R extends Row>(sql: string, values?: readonly unknown[]) {
+  const client: KnowledgeSqlClient = { async query<R extends Row>(sql: string, values?: readonly unknown[]) {
     expect(values?.[0]).toBe(tenantId);
     let rows: Row[];
     if (sql.includes("from retrieval.chunk_set")) rows = [set];

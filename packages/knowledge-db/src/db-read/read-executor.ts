@@ -1,4 +1,4 @@
-import type { BoundedRole, TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeRole, KnowledgeDatabase, KnowledgeSqlClient } from "../ports.js";
 import { assertHeadMatches, domainError, infrastructureError, requireCatalog, type CatalogEntry, type QueryCatalog, type Workspace } from "../schema-workspace/index.js";
 import type { ArtifactLedger } from "./artifacts.js";
 import { digestOf, type Digest } from "./canonical.js";
@@ -11,7 +11,7 @@ import { assertSingleReadStatement } from "./sql-guard.js";
 import { uuidv7 } from "./uuid.js";
 
 export interface ReadExecutorConfig {
-  readonly db: TenantPostgres;
+  readonly db: KnowledgeDatabase;
   readonly workspace: Workspace;
   readonly artifacts?: ArtifactLedger;
   readonly executorVersion: string;
@@ -34,14 +34,14 @@ export interface SqlReadResult {
   readonly rows: readonly Row[];
   readonly rowCount: number;
   readonly truncated: boolean;
-  readonly role: BoundedRole;
+  readonly role: KnowledgeRole;
   readonly knowledgeHead: KnowledgeHead;
   readonly contentDigest: Digest;
   readonly durationMs: number;
 }
 
 const HEAD_SQL = "select knowledge_seq, updated_at from api.knowledge_head()";
-const SQL_SURFACE_ROLE: BoundedRole = "pipeline_agent";
+const SQL_SURFACE_ROLE: KnowledgeRole = "pipeline_agent";
 const DEFAULT_SQL_LIMIT = 200;
 const INLINE_ARTIFACT_MAX_BYTES = 256_000;
 const ROLE_RANK: Record<string, number> = { app_reader: 0, pipeline_agent: 1 };
@@ -140,7 +140,7 @@ export class ReadExecutor {
     });
   }
 
-  async explain(input: Pick<SqlReadInput, "tenantId" | "sql" | "params">): Promise<{ plan: unknown; role: BoundedRole }> {
+  async explain(input: Pick<SqlReadInput, "tenantId" | "sql" | "params">): Promise<{ plan: unknown; role: KnowledgeRole }> {
     const statement = assertSingleReadStatement(input.sql);
     return this.config.db.transaction({ tenantId: input.tenantId, role: SQL_SURFACE_ROLE, readOnly: true, statementTimeoutMs: 15_000 }, async (client) => {
       const result = await runSql(client, `explain (format json, costs true) ${statement}`, input.params ?? []);
@@ -166,12 +166,12 @@ export class ReadExecutor {
     return results;
   }
 
-  private async runQueryOperation(client: TenantSqlClient, step: QueryStep): Promise<OperationResult> {
+  private async runQueryOperation(client: KnowledgeSqlClient, step: QueryStep): Promise<OperationResult> {
     const { operation, intent, catalog, completed } = step;
     const started = performance.now();
     if (operation.kind === "retrieval") return skipped(operation, "RETRIEVAL_UNAVAILABLE", started);
     const entry = findEntry(catalog, operation.query);
-    const role: BoundedRole = operation.role ?? entry.role;
+    const role: KnowledgeRole = operation.role ?? entry.role;
     const references = resolveReferences(operation.params, completed);
     if (references.unresolved.length > 0) return { ...skipped(operation, "REF_UNRESOLVED", started), query: entry.name, role, params: operation.params, ...(Object.keys(references.resolvedFrom).length ? { resolvedFrom: references.resolvedFrom } : {}) };
     const params = bindKnowledgeClock(entry, applyDefaults(entry.params, references.params), step.atKnowledgeSeq, step.currentKnowledgeSeq);
@@ -222,7 +222,7 @@ interface QueryStep {
 
 interface Fetched { readonly columns: readonly string[]; readonly rows: readonly Row[] }
 
-async function runSql(client: TenantSqlClient, sql: string, params: readonly unknown[]): Promise<Fetched> {
+async function runSql(client: KnowledgeSqlClient, sql: string, params: readonly unknown[]): Promise<Fetched> {
   const result = await client.query<Row>(sql, params.map(sqlParam));
   const rows = result.rows.map(jsonSafeRow);
   const columns = rows[0] ? Object.keys(rows[0]) : [];
@@ -235,11 +235,11 @@ function sqlParam(value: unknown): unknown {
   return value;
 }
 
-async function setRole(client: TenantSqlClient, role: BoundedRole): Promise<void> {
+async function setRole(client: KnowledgeSqlClient, role: KnowledgeRole): Promise<void> {
   await client.query(`set local role ${role}`);
 }
 
-async function readHead(client: TenantSqlClient): Promise<KnowledgeHead> {
+async function readHead(client: KnowledgeSqlClient): Promise<KnowledgeHead> {
   const row = (await client.query<{ knowledge_seq: string | number; updated_at: Date | string }>(HEAD_SQL)).rows[0];
   return { knowledgeSeq: Number(row?.knowledge_seq ?? 0), updatedAt: row?.updated_at instanceof Date ? row.updated_at.toISOString() : String(row?.updated_at ?? "1970-01-01T00:00:00.000Z") };
 }
@@ -259,7 +259,7 @@ function skipped(operation: ReadOperation, reason: string, started: number): Ope
   return { opId: operation.opId, kind: operation.kind, status: "skipped", rowCount: 0, truncated: false, contentDigest: digestOf(null), reason, durationMs: Math.round(performance.now() - started) };
 }
 
-interface ShapeInput { operation: QueryOperation; entry: CatalogEntry; role: BoundedRole; params: Record<string, unknown>; resolvedFrom: Record<string, string>; fetched: Fetched; cap: number; started: number }
+interface ShapeInput { operation: QueryOperation; entry: CatalogEntry; role: KnowledgeRole; params: Record<string, unknown>; resolvedFrom: Record<string, string>; fetched: Fetched; cap: number; started: number }
 
 function shapeResult(input: ShapeInput): OperationResult {
   const { operation, entry, fetched, cap } = input;

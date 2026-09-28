@@ -1,7 +1,7 @@
 import type { ContentLinkOperation, JsonValue } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { ArtifactLedger } from "../../db-read/index.js";
-import { readContentRepresentationAdmission, type TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { ContentAdmission, KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 import { verifyContentChunkManifest } from "./chunk-manifest.js";
 
@@ -9,7 +9,9 @@ type Row = Record<string, unknown>;
 type ChunkReference = Extract<ContentLinkOperation, { kind: "chunk.claim.link" }>["chunk"];
 type NodeReference = ChunkReference["sourceNodes"][number];
 type RepresentationReference = ChunkReference["representation"];
-export interface ContentSourceContext { readonly client: TenantSqlClient; readonly tenantId: string; readonly artifacts: ArtifactLedger }
+export interface ContentSourceContext { readonly client: KnowledgeSqlClient; readonly tenantId: string; readonly artifacts: ArtifactLedger }
+/** Source reads also need canonical representation admission, which persistence implements. */
+export interface ContentSourceReaderContext extends ContentSourceContext { readonly admission: ContentAdmission }
 export interface ContentSourceNode { readonly id: string; readonly representationId: string; readonly text: string; readonly kind: string }
 export interface ContentSourceChunk { readonly id: string; readonly text: string; readonly nodes: readonly ContentSourceNode[] }
 
@@ -29,7 +31,7 @@ function hasBytes(artifact: Awaited<ReturnType<ArtifactLedger["get"]>>): boolean
 
 /** Reconstructs selected source spans from canonical nodes and verifies their retained byte custody. */
 export class ContentSourceReader {
-  constructor(private readonly context: ContentSourceContext) {}
+  constructor(private readonly context: ContentSourceReaderContext) {}
 
   async representation(reference: RepresentationReference, documentVersionId: string): Promise<Row> {
     const row = (await this.context.client.query<Row>(`select r.*,d.correction_state from content.document_representation r
@@ -37,7 +39,7 @@ export class ContentSourceReader {
       where r.tenant_id=$1 and r.id=$2`, [this.context.tenantId, reference.id])).rows[0];
     if (!row || row.document_version_id !== documentVersionId || digestOf(row.content_sha256) !== reference.digest
       || ["retracted", "withdrawn"].includes(String(row.correction_state))) reject("Representation is missing, changed or unaccepted");
-    const admission = await readContentRepresentationAdmission(this.context.client, { tenantId: this.context.tenantId,
+    const admission = await this.context.admission.readRepresentationAdmission(this.context.client, { tenantId: this.context.tenantId,
       representationId: reference.id, guardedDigest: reference.digest });
     if (!admission.accepted) reject("Representation has no current independent acceptance");
     const artifact = await this.context.artifacts.get(this.context.tenantId, String(row.artifact_id));

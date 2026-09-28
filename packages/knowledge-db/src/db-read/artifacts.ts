@@ -1,4 +1,4 @@
-import type { TenantPostgres, TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeTransactions, KnowledgeSqlClient } from "../ports.js";
 import type { ArtifactStore } from "@aiengineer/knowledge-core";
 import { domainError, infrastructureError } from "../schema-workspace/index.js";
 import { canonicalJson, sha256Hex, type Digest } from "./canonical.js";
@@ -44,7 +44,7 @@ export interface LineageEdge {
 }
 
 export interface ArtifactLedgerConfig {
-  readonly db: TenantPostgres;
+  readonly db: KnowledgeTransactions;
   readonly store: ArtifactStore;
   readonly bucket: string;
   /** True when `store` writes to the named bucket; false marks rows `storage_state='pending'` (bytes kept locally). */
@@ -68,7 +68,7 @@ export class ArtifactLedger {
   }
 
   /** Same as `put`, inside a caller-owned transaction that already runs as `executor_service`. */
-  async putWith(client: TenantSqlClient, input: PutArtifactInput): Promise<ArtifactRecord> {
+  async putWith(client: KnowledgeSqlClient, input: PutArtifactInput): Promise<ArtifactRecord> {
     const encoded = encode(input);
     const stored = await this.writeVerified(input.tenantId, encoded);
     const sha256 = stored.digest.slice(7);
@@ -104,7 +104,7 @@ export class ArtifactLedger {
     return { ...fetched.record, storageState: "available" };
   }
 
-  private async markAvailable(client: TenantSqlClient, input: { tenantId: string; artifactId: string; digest: Digest; sizeBytes: number }): Promise<void> {
+  private async markAvailable(client: KnowledgeSqlClient, input: { tenantId: string; artifactId: string; digest: Digest; sizeBytes: number }): Promise<void> {
     await client.query("select orchestration.reconcile_legacy_artifact_custody($1,$2,$3,$4,$5)",
       [input.artifactId, input.digest.slice(7), input.sizeBytes, this.config.bucket, input.tenantId]);
   }
@@ -134,7 +134,7 @@ export class ArtifactLedger {
    * `orchestration.artifact_lineage` (db-contract follow-up), so a permission refusal is
    * reported as `"denied"` instead of aborting the caller's transaction.
    */
-  async link(client: TenantSqlClient, edge: LineageEdge): Promise<"written" | "denied"> {
+  async link(client: KnowledgeSqlClient, edge: LineageEdge): Promise<"written" | "denied"> {
     if (edge.from === edge.to) return "written";
     const signature = sha256Hex(canonicalJson({ from: edge.from, to: edge.to, relation: edge.relation }));
     await client.query("savepoint lineage_edge");

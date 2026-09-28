@@ -7,7 +7,7 @@ import { verificationStoreOracle } from "./evidence-oracle.js";
 import { ArtifactLedger, ReadExecutor } from "@aiengineer/knowledge-db";
 import { ContentLinkExecutor, ContentSummaryPreparer, IngestionExecutor, ReportService, REPORT_BUCKET } from "@aiengineer/knowledge-db";
 import { createContentLinkAuthority } from "./content-links.js";
-import { TenantPostgres, PostgresCanonicalRepository, PostgresSourceDiscoveryStore, PostgresCheckpointStore, PostgresGovernedIndexRepository, PostgresClaimsReportReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
+import { TenantPostgres, postgresContentAdmission, PostgresCanonicalRepository, PostgresSourceDiscoveryStore, PostgresCheckpointStore, PostgresGovernedIndexRepository, PostgresClaimsReportReadRepository, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
 import { SourceDiscoveryApplicationService, CheckpointApplicationService, type SourceDiscoveryHost } from "@aiengineer/knowledge-application";
 import { LocalArtifactStore, SupabaseArtifactStore, type ArtifactStore } from "@aiengineer/knowledge-core";
 import { loadWorkspace, resolveWorkspaceDir, type Workspace } from "@aiengineer/knowledge-db";
@@ -170,7 +170,7 @@ export function createKnowledgeServices(config: KnowledgeConfig, options: Knowle
   });
   const reads = new ReadExecutor({ db, workspace, artifacts, executorVersion: KNOWLEDGE_EXECUTOR_VERSION, allowStale: config.allowStale });
   const ingestion = new IngestionExecutor({ db, workspace, artifacts, executorVersion: KNOWLEDGE_EXECUTOR_VERSION, allowStale: config.allowStale, evidence });
-  const contentConfig = config.contentLinksEnabled ? { db, workspace, artifacts, tenantId: config.defaultTenantId,
+  const contentConfig = config.contentLinksEnabled ? { db, admission: postgresContentAdmission, workspace, artifacts, tenantId: config.defaultTenantId,
     missionId: config.missionId!, attemptId: config.producerAttemptId!, policyDigest: config.evidencePolicyDigest ?? digestCanonicalJson(defaultPolicy),
     executorVersion: KNOWLEDGE_EXECUTOR_VERSION,
     authority: createContentLinkAuthority({ verification: options.verification, tenantId: config.defaultTenantId,

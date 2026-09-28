@@ -1,7 +1,7 @@
 import { ContentLinkOperationSchema, JsonValueSchema, type ContentLinkOperation } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, type ArtifactLedger, type ArtifactRecord } from "../../db-read/index.js";
 import { canonicalJson as exactCanonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
-import { persistPreparedContentSummary, readContentRepresentationAdmission, type TenantPostgres, type TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { ContentAdmission, KnowledgeSqlClient, KnowledgeTransactions } from "../../ports.js";
 import { isOfficiallyAdmittedVerdict } from "../evidence-admission.js";
 import { ContentSourceReader } from "./sources.js";
 import { contentLinkEffect } from "./operations.js";
@@ -9,7 +9,7 @@ import type { AuthenticatedContentEvidence, ContentLinkAuthority } from "./types
 
 type SummaryOperation = Extract<ContentLinkOperation, { kind: "summary.materialize" }>;
 interface SummaryPreparationConfig {
-  readonly db: TenantPostgres; readonly artifacts: ArtifactLedger; readonly authority: ContentLinkAuthority;
+  readonly db: KnowledgeTransactions; readonly admission: ContentAdmission; readonly artifacts: ArtifactLedger; readonly authority: ContentLinkAuthority;
   readonly tenantId: string; readonly missionId: string; readonly attemptId: string; readonly policyDigest: string;
 }
 export interface ContentSummaryPreparationResult {
@@ -26,7 +26,7 @@ export class ContentSummaryPreparer {
     const operation = ContentLinkOperationSchema.parse(JsonValueSchema.parse(raw));
     if (operation.kind !== "summary.materialize") throw new Error("CONTENT_SUMMARY_OPERATION_REQUIRED");
     return this.config.db.transaction({ tenantId: this.config.tenantId, role: "executor_service", isolationLevel: "repeatable read", statementTimeoutMs: 120000 }, async client => {
-      const sources = new ContentSourceReader({ client, tenantId: this.config.tenantId, artifacts: this.config.artifacts });
+      const sources = new ContentSourceReader({ client, tenantId: this.config.tenantId, artifacts: this.config.artifacts, admission: this.config.admission });
       const evidence: AuthenticatedContentEvidence[] = [];
       for (const reference of operation.evidence) evidence.push(await this.config.authority.authenticate({ client,
         tenantId: this.config.tenantId, policyDigest: this.config.policyDigest, reference }));
@@ -46,7 +46,7 @@ export class ContentSummaryPreparer {
           outputArtifact: { id: outputArtifact.artifactId, digest: outputArtifact.digest, mediaType: outputArtifact.mediaType, sizeBytes: outputArtifact.sizeBytes },
           admittedClaims: evidence.map(item => ({ reference: item.reference, statement: item.statement, qualifiers: item.qualifiers,
             selectedText: item.selectedText, selectedContentDigest: item.selectedContentDigest, representationArtifactId: item.representationArtifactId })) })) });
-      await persistPreparedContentSummary(client, { tenantId: this.config.tenantId, missionId: this.config.missionId, attemptId: this.config.attemptId,
+      await this.config.admission.persistPreparedSummary(client, { tenantId: this.config.tenantId, missionId: this.config.missionId, attemptId: this.config.attemptId,
         transformationRunId: operation.transformationRunId, representationId: operation.representation.id, documentVersionId: operation.documentVersion.id,
         inputRepresentationId: operation.derivedFrom.id, inputArtifact: { id: String(input.artifact_id), digest: operation.derivedFrom.digest },
         outputArtifact: { id: outputArtifact.artifactId, digest: outputArtifact.digest }, receiptArtifact: { id: receiptArtifact.artifactId, digest: receiptArtifact.digest },
@@ -55,7 +55,7 @@ export class ContentSummaryPreparer {
       const row = (await client.query<{ acceptance_state: string }>("select acceptance_state from content.document_representation where tenant_id=$1 and id=$2",
         [this.config.tenantId, operation.representation.id])).rows[0];
       if (!row) throw new Error("CONTENT_SUMMARY_OUTPUT_MISSING");
-      const admission = await readContentRepresentationAdmission(client, { tenantId: this.config.tenantId,
+      const admission = await this.config.admission.readRepresentationAdmission(client, { tenantId: this.config.tenantId,
         representationId: operation.representation.id, guardedDigest: operation.representation.digest });
       return { transformationRunId: operation.transformationRunId, representationId: operation.representation.id,
         outputArtifact, receiptArtifact, acceptanceState: admission.accepted ? "accepted" : admission.decision === "accept" ? "unaccepted" : admission.decision ?? "pending" };
@@ -78,7 +78,7 @@ export class ContentSummaryPreparer {
     if (used.size !== evidence.length) throw new Error("CONTENT_SUMMARY_EVIDENCE_CENSUS_MISMATCH");
   }
 
-  private async linkReceipt(client: TenantSqlClient, receipt: ArtifactRecord, output: ArtifactRecord, inputId: string, evidence: readonly AuthenticatedContentEvidence[]): Promise<void> {
+  private async linkReceipt(client: KnowledgeSqlClient, receipt: ArtifactRecord, output: ArtifactRecord, inputId: string, evidence: readonly AuthenticatedContentEvidence[]): Promise<void> {
     const parents = new Set([output.artifactId, inputId, ...evidence.flatMap(item => [item.reference.manifest.id, item.captureArtifactId, item.representationArtifactId])]);
     for (const parent of parents) {
       if (await this.config.artifacts.link(client, { tenantId: this.config.tenantId, from: receipt.artifactId, to: parent, relation: "derived_from" }) !== "written")

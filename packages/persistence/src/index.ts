@@ -65,6 +65,7 @@ export * from "./checkpoints.js";
 export * from "./verification-recovery-durable.js";
 export { persistPreparedContentSummary, type PreparedContentSummaryInput } from "./content-summary-preparation.js";
 export { readContentRepresentationAdmission } from "./content-representation-admission.js";
+export { postgresContentAdmission } from "./content-admission.js";
 export { readRepresentationDependencies, readRepresentationImpact } from "./representation-dependency.js";
 export { assertSignedReportSourceDependencies } from "./report-source-dependencies.js";
 export * from "./retrieval-evidence.js";

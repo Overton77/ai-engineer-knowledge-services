@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ContentLinkIntentSchema, type ContentLinkIntent } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { uuidv7, type ArtifactLedger, type ArtifactRecord, type LineageEdge } from "../../db-read/index.js";
-import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
+import type { KnowledgeSqlClient } from "../../ports.js";
 import { domainError } from "../../schema-workspace/index.js";
 import type { ContentLinkOperationResult, ContentLinkPlan, ContentLinkReceipt } from "./types.js";
 import { orderContentOperations } from "./dependencies.js";
@@ -10,7 +10,7 @@ import { orderContentOperations } from "./dependencies.js";
 type Row = Record<string, unknown>;
 type ReceiptSummary = { artifacts?: { intent: ArtifactRecord; plan: ArtifactRecord; receipt: ArtifactRecord }; intentDigest?: string; receiptArtifactId?: string; head?: unknown; operations?: unknown };
 export interface ContentLedgerIds { readonly operationIntentId: string; readonly receiptId: string; readonly receiptArtifactId: string }
-interface LedgerDependencies { readonly client: TenantSqlClient; readonly artifacts: ArtifactLedger }
+interface LedgerDependencies { readonly client: KnowledgeSqlClient; readonly artifacts: ArtifactLedger }
 interface ReconciliationDependencies extends LedgerDependencies { readonly reconcileRows: (receipt: ContentLinkReceipt) => Promise<void> }
 interface BeginInput { readonly intent: ContentLinkIntent; readonly intentDigest: string; readonly idempotencyKey: string; readonly executorVersion: string }
 interface FinishInput { readonly intent: ContentLinkIntent; readonly plan: ContentLinkPlan; readonly ids: ContentLedgerIds;
@@ -85,7 +85,7 @@ function outcome(operations: readonly ContentLinkOperationResult[]): ContentLink
   return operations.some(operation => operation.outcome === "applied") ? "applied" : "noop";
 }
 
-export async function beginContentLedger(client: TenantSqlClient, input: BeginInput): Promise<ContentLedgerIds> {
+export async function beginContentLedger(client: KnowledgeSqlClient, input: BeginInput): Promise<ContentLedgerIds> {
   validateIntent(input.intent, input.intentDigest);
   const ids = { operationIntentId: uuidv7(), receiptId: uuidv7(), receiptArtifactId: uuidv7() };
   await client.query(`insert into orchestration.operation_intent
@@ -120,7 +120,7 @@ function edges(receipt: ContentLinkReceipt): LineageEdge[] {
   ];
 }
 
-async function verifyEdges(client: TenantSqlClient, receipt: ContentLinkReceipt): Promise<void> {
+async function verifyEdges(client: KnowledgeSqlClient, receipt: ContentLinkReceipt): Promise<void> {
   const expected = edges(receipt);
   const rows = (await client.query<Row>(`select from_artifact_id,to_artifact_id,relation_kind,receipt_id from orchestration.artifact_lineage
     where tenant_id=$1 and from_artifact_id=any($2::uuid[])`, [receipt.tenantId, [receipt.artifacts.intentId, receipt.artifacts.planId, receipt.artifacts.receiptId]])).rows;
