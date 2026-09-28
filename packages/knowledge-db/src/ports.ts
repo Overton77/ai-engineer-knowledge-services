@@ -46,12 +46,15 @@ export interface PreparedContentSummaryInput {
   readonly requestDigest: string; readonly language?: string;
 }
 
-/** Canonical content-representation admission and summary persistence, run inside the caller's transaction. */
+/**
+ * Canonical content-representation admission and summary persistence, run inside the caller's transaction.
+ * Members are function-typed properties so an adapter's parameters are checked strictly, not bivariantly.
+ */
 export interface ContentAdmission {
   /** The latest independent decision on an immutable representation; only an accepted one admits its bytes. */
-  readRepresentationAdmission(client: KnowledgeSqlClient, input: {
+  readonly readRepresentationAdmission: (client: KnowledgeSqlClient, input: {
     readonly tenantId: string; readonly representationId: string; readonly guardedDigest: string;
-  }): Promise<ContentRepresentationAdmission>;
+  }) => Promise<ContentRepresentationAdmission>;
   /** Persists a completed deterministic summary rendering; its acceptance stays pending until independent review. */
-  persistPreparedSummary(client: KnowledgeSqlClient, input: PreparedContentSummaryInput): Promise<void>;
+  readonly persistPreparedSummary: (client: KnowledgeSqlClient, input: PreparedContentSummaryInput) => Promise<void>;
 }
