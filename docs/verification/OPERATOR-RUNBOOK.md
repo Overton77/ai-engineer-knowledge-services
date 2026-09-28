@@ -6,7 +6,7 @@ Practical local procedures. Commands below exist in this repository. On Windows 
 
 - Node.js **>= 24** (`package.json` `engines.node`)
 - pnpm **10.34.5** via Corepack (`packageManager`)
-- Docker, for the verification parser image (`services/verification-parser`)
+- Docker, for the verification parser image (`services/parser`)
 - Local Postgres / Supabase (`POSTGRES_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`)
 - Do not load the Knowledge Services `.env` file for local proofs. Export only the vars a profile needs. Never print grants, PEMs, or tokens.
 
@@ -84,7 +84,7 @@ Shared non-verification deps for durable surfaces: `POSTGRES_URL`, `SUPABASE_URL
 Parser image (required when any verification worker block is on):
 
 ```bash
-docker build -t aiengineer-verification-parser:v1 services/verification-parser
+docker build -t aiengineer-verification-parser:v1 services/parser
 docker image inspect --format '{{.Id}}' aiengineer-verification-parser:v1
 ```
 

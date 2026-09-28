@@ -23,26 +23,31 @@
       "status": "reference"
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md",
-      "task": "Next unit: app order, naming, catalog",
+      "path": "docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md",
+      "task": "Next unit: executor fold, ks, Eve",
       "status": "proposed",
       "modules": [
+        "verification-executor",
+        "host",
         "application",
-        "contracts",
-        "api",
+        "knowledge-db",
+        "cli",
         "mcp",
-        "cli"
+        "api"
       ]
     },
     {
-      "path": "docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md",
-      "task": "Unit 3 in-process MCP",
+      "path": "docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md",
+      "task": "Unit 4 folders, names, catalog",
       "status": "reference",
       "modules": [
         "application",
-        "host",
         "api",
-        "mcp"
+        "mcp",
+        "cli",
+        "sources",
+        "client",
+        "parser"
       ]
     },
     {
@@ -65,7 +70,7 @@
       "task": "Internal fallbacks and application folder order",
       "status": "proposed",
       "modules": [
-        "acquisition",
+        "sources",
         "application",
         "preparation",
         "skill-knowledge-ingest",
@@ -82,7 +87,7 @@
       "task": "Acquisition HTTP, upload, and sealed-byte inspection review record",
       "status": "accepted",
       "modules": [
-        "acquisition",
+        "sources",
         "worker"
       ]
     },
@@ -253,7 +258,7 @@
       "path": "docs/architecture/0002-deterministic-preparation.md",
       "task": "Preparation pipeline",
       "modules": [
-        "acquisition",
+        "sources",
         "preparation",
         "retrieval",
         "application",
@@ -281,7 +286,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "application",
         "worker",
         "persistence"
@@ -295,7 +300,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "application"
       ]
     },
@@ -325,7 +330,7 @@
         "api",
         "mcp",
         "cli",
-        "client-typescript",
+        "client",
         "contracts"
       ]
     },
@@ -345,7 +350,7 @@
       "modules": [
         "api",
         "worker",
-        "verification-parser",
+        "parser",
         "docling"
       ]
     },
@@ -364,7 +369,7 @@
       "modules": [
         "host",
         "policy",
-        "verification-parser",
+        "parser",
         "verification-providers"
       ]
     },
@@ -414,7 +419,7 @@
         "jev-service",
         "application",
         "contracts",
-        "client-typescript",
+        "client",
         "skill-jev-system-one"
       ]
     }

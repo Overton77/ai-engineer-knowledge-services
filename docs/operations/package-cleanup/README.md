@@ -2,7 +2,7 @@
 
 Status: reference. Current execution index.
 
-Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Units 1 and 2 are merged into local main, each under an explicitly reassessed missing-input exception; acceptance evidence is recorded in the ledger. The continuation also carries the bounded pre–Mission Control stage-graph experiment milestone.
+Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Units 1–4 are merged into local main, each under an explicitly reassessed missing-input exception; acceptance evidence is recorded in the ledger. The continuation also carries the bounded pre–Mission Control stage-graph experiment milestone.
 
 ## Start here
 
@@ -18,7 +18,8 @@ Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Unit
 - [UNIT-1-PACKAGE-MERGES.md](./UNIT-1-PACKAGE-MERGES.md): mechanical package merges and their preservation gates.
 - [UNIT-2-HOST-COMPOSITION.md](./UNIT-2-HOST-COMPOSITION.md): delivered host composition, lifecycle and the remaining Unit 3/5 seams.
 - [UNIT-3-APPLICATION-AND-MCP.md](./UNIT-3-APPLICATION-AND-MCP.md): delivered application use cases, in-process MCP (no HTTP shims) and API/MCP parity.
-- [UNIT-4-APPLICATION-ORDER-AND-CATALOG.md](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md): next bounded specification. Write specifications for units 5–7 as their turn arrives.
+- [UNIT-4-APPLICATION-ORDER-AND-CATALOG.md](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md): delivered application folders by tool group, A2A binding in the API, testkit off the API runtime, the folder naming pass and the operation catalog parity test.
+- [UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md): next bounded specification. Write specifications for units 6–7 as their turn arrives.
 
 No live consumers require compatibility support. Adapt Eve directly to the new services and skills, then run pre–Mission Control testing after cleanup. Preserve stored evidence and the populated shared database.
 

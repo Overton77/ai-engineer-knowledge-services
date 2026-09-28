@@ -15,7 +15,7 @@ import {
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import type { EmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import { deterministicUuid } from "@aiengineer/knowledge-core";
-import type { LocalApiIdentity } from "../access/api-access.js";
+import type { LocalApiIdentity } from "../../access/api-access.js";
 import {
   RETRIEVAL_SUPPORT_LIMITS,
   type CanonicalRetrievalRepository,

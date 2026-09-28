@@ -1,5 +1,5 @@
 import { OperationCapabilityUnavailableError } from "../operations/surface.js";
-import { retrievalExecutionProblem } from "../retrieval/canonical-retrieval-run.js";
+import { retrievalExecutionProblem } from "../knowledge/retrieval/canonical-retrieval-run.js";
 
 export interface TransportProblem {
   readonly status: 400 | 409 | 413 | 422 | 500 | 503;

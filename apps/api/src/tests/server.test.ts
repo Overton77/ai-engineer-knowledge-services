@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import { PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { buildServer } from "../server.js";
+import { loadRepositoryDemoEvaluationBundles } from "../demo-evaluation-bundles.js";
 import type { ApiRole, LocalApiIdentity } from "../auth.js";
 
 const server = buildServer();
@@ -226,6 +227,7 @@ describe("Gate 6 operation API", () => {
       service,
       publicOrigin: "https://knowledge.example",
       resolveIdentity: resolver(identity(["knowledge_evaluator"])),
+      loadDemoEvaluationBundles: loadRepositoryDemoEvaluationBundles,
     });
     const request = {
       method: "POST" as const,
@@ -262,6 +264,29 @@ describe("Gate 6 operation API", () => {
       vectorCount: 41,
     });
     expect(first.headers["x-correlation-id"]).toBe(context.correlationId);
+    await api.close();
+  });
+  it("answers fixture unavailable when no demo bundle loader is composed", async () => {
+    const api = buildServer({
+      service: new KnowledgeIntegrationService(),
+      resolveIdentity: resolver(identity(["knowledge_evaluator"])),
+    });
+    const response = await api.inject({
+      method: "POST",
+      url: "/v1/demo/evaluations",
+      headers: {
+        authorization: `Bearer ${TOKEN}`,
+        "x-tenant-id": context.tenantId,
+        "x-correlation-id": context.correlationId,
+      },
+      payload: {
+        context: { ...context, operationId: id(32), attemptId: id(33), idempotencyKey: "no-demo-loader-01" },
+        input: { mode: "three_bundle_internal_exploratory", bundles: descriptors },
+        expectedVersions: { api: "v1", bundle: "0.1.0" },
+      },
+    });
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ code: "INTERNAL_ERROR", title: "Allow-listed exploratory fixture unavailable" });
     await api.close();
   });
   it("rejects descriptor sets outside the exact allow-list", async () => {

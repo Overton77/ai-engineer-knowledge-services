@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --sourcemap",
+    "build": "tsup src/index.ts --format esm --sourcemap --external @aiengineer/knowledge-testkit",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -17,13 +17,13 @@
     "@aiengineer/knowledge-host": "workspace:*",
     "@aiengineer/knowledge-persistence": "workspace:*",
     "@aiengineer/knowledge-retrieval": "workspace:*",
-    "@aiengineer/knowledge-testkit": "workspace:*",
     "fastify": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@aiengineer/knowledge-client": "workspace:*",
     "@aiengineer/knowledge-db": "workspace:*",
+    "@aiengineer/knowledge-testkit": "workspace:*",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

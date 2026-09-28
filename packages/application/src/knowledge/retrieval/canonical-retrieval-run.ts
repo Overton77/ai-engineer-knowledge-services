@@ -3,8 +3,8 @@ import {
   type AcceptedOperation,
   type MutationEnvelope,
 } from "@aiengineer/knowledge-contracts";
-import type { LocalApiIdentity } from "../access/api-access.js";
-import type { KnowledgeOperationPort } from "../operations/surface.js";
+import type { LocalApiIdentity } from "../../access/api-access.js";
+import type { KnowledgeOperationPort } from "../../operations/surface.js";
 import {
   isRetrievalUnsupportedError,
   type CanonicalRetrievalExecutorPort,

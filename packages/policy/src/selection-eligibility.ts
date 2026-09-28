@@ -146,7 +146,7 @@ export interface SelectionEligibility {
  * other four kinds), and it requires a `source_native_sections` member to be
  * `"chunk"` or `"node"` ("source-native sections require faithful source
  * content rather than derived projections"). A `node`-content candidate is
- * exactly what `packages/application/src/preparation/preparation.ts` builds
+ * exactly what `packages/application/src/knowledge/preparation/preparation.ts` builds
  * for a source-native section today, so reporting it as terminally
  * ineligible would mislead the S2 executor host this function exists to
  * inform. A candidate (of either kind) that supplies `locators` is

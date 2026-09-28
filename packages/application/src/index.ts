@@ -18,10 +18,28 @@ export function createKnowledgeApplication(): KnowledgeApplication {
   };
 }
 
-export * from "./preparation/preparation.js";
-export * from "./preparation/knowledge.js";
+// Shared transport-neutral access rules, read results and problem mapping.
+export * from "./access/api-access.js";
+export * from "./reads/resource-read-result.js";
+export * from "./errors/transport-problem.js";
+
+// Operations: durable operation surface, admission and A2A callback signing (the task binding lives in apps/api).
 export * from "./operations/surface.js";
-export * from "./operations/a2a-adapter.js";
+export * from "./operations/a2a-callbacks.js";
+
+// Knowledge tool group: preparation, source discovery, checkpoints, promotion selection, retrieval and reads.
+export * from "./knowledge/preparation/preparation.js";
+export * from "./knowledge/preparation/knowledge.js";
+export * from "./knowledge/source-discovery/source-discovery.js";
+export * from "./knowledge/checkpoints/checkpoints-ports.js";
+export * from "./knowledge/checkpoints/checkpoints.js";
+export * from "./knowledge/promotion-selection/promotion-selection.js";
+export * from "./knowledge/retrieval/canonical-retrieval-ports.js";
+export * from "./knowledge/retrieval/canonical-retrieval-executor.js";
+export * from "./knowledge/retrieval/canonical-retrieval-run.js";
+export * from "./knowledge/reads/knowledge-resource-reads.js";
+
+// Verification tool group (the `verify` group).
 export * from "./verification/admission/verification-admission.js";
 export * from "./verification/operations/verification-replay.js";
 export * from "./verification/operations/verification-provider.js";
@@ -54,9 +72,7 @@ export * from "./verification/benchmark/verification-benchmark-comparison-runtim
 export * from "./verification/benchmark/verification-benchmark-comparison-reads.js";
 export * from "./verification/admission/verification-seal-policy.js";
 export * from "./verification/operations/verification-structured-extraction-profile.js";
-
 export * from "./verification/operations/verification-provider-transport.js";
-
 export * from "./verification/operations/verification-structured-extraction-replay.js";
 export * from "./verification/operations/verification-structured-extraction-candidate.js";
 export * from "./verification/operations/verification-structured-extraction-publication.js";
@@ -64,9 +80,7 @@ export * from "./verification/operations/verification-structured-extraction-fail
 export * from "./verification/operations/verification-structured-extraction-result.js";
 export * from "./verification/operations/verification-structured-extraction-failure-result.js";
 export * from "./verification/operations/verification-structured-extraction-reads.js";
-
 export * from "./verification/operations/verification-structured-extraction-runtime.js";
-
 export * from "./verification/operations/verification-provider-reconciliation.js";
 export * from "./verification/operations/verification-semantic.js";
 export * from "./verification/operations/verification-claims-report-reads.js";
@@ -81,9 +95,23 @@ export * from "./verification/operations/verification-semantic-replay.js";
 export * from "./verification/operations/verification-semantic-audit-replay.js";
 export * from "./verification/operations/verification-semantic-profile.js";
 export * from "./verification/operations/verification-semantic-provider-reconciliation.js";
+export * from "./verification/source-acquisition/verification-source-acquisition.js";
+export * from "./verification/benchmark/verification-benchmark-version-diff.js";
+export * from "./verification/benchmark/verification-benchmark-refresh-proposal.js";
+export * from "./verification/operations/verification-capture-reads.js";
+export * from "./verification/operations/verification-adjudication-decision.js";
+export * from "./verification/recovery/verification-recovery.js";
+export * from "./verification/recovery/verification-recovery-durable-ports.js";
+export * from "./verification/recovery/verification-recovery-durable.js";
+export * from "./verification/reads/verification-resource-reads.js";
+export * from "./verification/operations/verification-drift-revalidation-queue.js";
+export * from "./verification/benchmark/verification-benchmark-capture-profile.js";
+export * from "./verification/operations/verification-context-binding.js";
 
+// Diagnostics: quarantined offline demo and fixture helpers; export names kept for the CLI and scripts.
 export * from "./diagnostics/verification-diagnostics-offline-catalog.js";
-
+export * from "./diagnostics/verification-diagnostics-provider-grant.js";
+export * from "./diagnostics/verification-diagnostics-companies-demo.js";
 export * from "./diagnostics/verification-diagnostics-semantic-fixture.js";
 export * from "./diagnostics/verification-diagnostics-generated-report-semantic-fixture.js";
 export * from "./diagnostics/verification-diagnostics-semantic-replay.js";
@@ -91,30 +119,3 @@ export * from "./diagnostics/verification-diagnostics-adversarial.js";
 export * from "./diagnostics/verification-diagnostics-mutation-report.js";
 export * from "./diagnostics/verification-diagnostics-report-coverage.js";
 export * from "./diagnostics/verification-diagnostics-quality-gates.js";
-export * from "./verification/source-acquisition/verification-source-acquisition.js";
-export * from "./verification/benchmark/verification-benchmark-version-diff.js";
-export * from "./verification/benchmark/verification-benchmark-refresh-proposal.js";
-export * from "./verification/operations/verification-capture-reads.js";
-export * from "./verification/operations/verification-adjudication-decision.js";
-export * from "./verification/recovery/verification-recovery.js";
-export * from "./source-discovery/source-discovery.js";
-
-export * from "./checkpoints/checkpoints-ports.js";
-
-export * from "./checkpoints/checkpoints.js";
-export * from "./verification/recovery/verification-recovery-durable-ports.js";
-export * from "./verification/recovery/verification-recovery-durable.js";
-export * from "./promotion-selection/promotion-selection.js";
-
-// Transport-neutral access rules and in-process use cases shared by API and MCP.
-export * from "./access/api-access.js";
-export * from "./retrieval/canonical-retrieval-ports.js";
-export * from "./retrieval/canonical-retrieval-executor.js";
-export * from "./retrieval/canonical-retrieval-run.js";
-export * from "./reads/resource-read-result.js";
-export * from "./reads/knowledge-resource-reads.js";
-export * from "./reads/verification-resource-reads.js";
-export * from "./verification/operations/verification-drift-revalidation-queue.js";
-export * from "./verification/benchmark/verification-benchmark-capture-profile.js";
-export * from "./verification/operations/verification-context-binding.js";
-export * from "./errors/transport-problem.js";

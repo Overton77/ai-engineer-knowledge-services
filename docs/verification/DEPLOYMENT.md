@@ -9,7 +9,7 @@ Processes, environment, rollout, and rollback for the verification module. Runti
 | api | `@aiengineer/knowledge-api` | Fastify HTTP; admission, 202 receipts, terminal reads | Vercel Fluid Compute or Node container. Default `PORT=4100` |
 | worker | `@aiengineer/knowledge-worker` | Durable verification activities | Always-on container (AWS ECS/Fargate in the infra template) |
 | mcp | `@aiengineer/knowledge-mcp` | Streamable HTTP MCP facade; every tool calls application in process (no HTTP to the API) | Vercel or Node. Default `PORT` fallback **4101** |
-| parser (optional) | `services/verification-parser` | Sandboxed native PDF/HTML parse | Local/remote Docker image pinned by digest |
+| parser (optional) | `services/parser` | Sandboxed native PDF/HTML parse | Local/remote Docker image pinned by digest |
 
 `services/docling` is a separate conversion boundary, not the verification parser.
 
@@ -219,7 +219,7 @@ Tables touched by `packages/persistence` verification files include `knowledge_s
 
 ## Parser image
 
-Build from `services/verification-parser`. Pin `VERIFICATION_PARSER_IMAGE_DIGEST` to `docker image inspect` id (`sha256:`+64 hex). Requests cannot choose the executable, image, URL, path, mount, environment, or command. See `services/verification-parser/README.md`.
+Build from `services/parser`. Pin `VERIFICATION_PARSER_IMAGE_DIGEST` to `docker image inspect` id (`sha256:`+64 hex). Requests cannot choose the executable, image, URL, path, mount, environment, or command. See `services/parser/README.md`.
 
 ## Code identity (sealing)
 

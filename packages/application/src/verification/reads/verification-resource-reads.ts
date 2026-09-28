@@ -24,7 +24,7 @@ import {
   classifyResourceReadError,
   resourceReadFailure,
   type ResourceReadResult,
-} from "./resource-read-result.js";
+} from "../../reads/resource-read-result.js";
 
 /** An authenticated actor reading one tenant-owned verification operation. */
 export interface OwnedOperationRead {

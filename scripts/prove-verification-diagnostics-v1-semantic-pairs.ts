@@ -31,6 +31,8 @@ async function freezeExecutionSources(): Promise<Readonly<Record<string, string>
     "apps/worker/src/verification-claims-sealer.ts",
     "packages/application/src/verification/operations/verification-claims.ts",
     "packages/application/src/verification/benchmark/verification-benchmark.ts",
+    "packages/application/src/verification/benchmark/verification-benchmark-shared.ts",
+    "packages/application/src/diagnostics/verification-diagnostics-provider-grant.ts",
     "../ai-engineer-mission-control/scripts/prove-verification-semantic-temporal.ts",
   ] as const;
   return Object.freeze(Object.fromEntries(await Promise.all(paths.map(async path => [path, createHash("sha256").update(await readFile(resolve(path))).digest("hex")] as const))));

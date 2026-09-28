@@ -1,6 +1,6 @@
 import {createVerificationAdjudicationDecisionRuntime} from "../packages/host/src/verification/api/verification-adjudication-decision-runtime.js";
 import {buildServer} from "../apps/api/src/server.js";
-import {KnowledgeClient} from "../packages/client-typescript/src/index.js";
+import {KnowledgeClient} from "../packages/client/src/index.js";
 import {dispatchCliCommand,resolveCommand} from "../apps/cli/src/commands.js";
 import {createAdjudicationDecisionReadMcpExecutor} from "../apps/mcp/src/index.js";
 import {PostgresVerificationAdjudicationDecisionReadRepository} from "../packages/persistence/src/verification-adjudication-decision-reads.js";

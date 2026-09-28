@@ -91,7 +91,7 @@ skills + CLI  ──HTTP/MCP──►   verification-executor
               ┌───────────────┴────────────────┐
               ▼                                ▼
      apps/api + mcp + worker          apps/verification-executor
-     services/docling                 services/verification-parser
+     services/docling                 services/parser
 ```
 
 | Runtime | Path | Role |
@@ -102,7 +102,7 @@ skills + CLI  ──HTTP/MCP──►   verification-executor
 | CLI | `apps/cli` | Machine-readable `knowledge` client of the HTTP API. |
 | Verification executor | `apps/verification-executor` | Sandbox host: `knowledge-verify` plus schema/read/ingest. CLI, HTTP, MCP stdio, MCP Streamable HTTP. Default serve port **4310**. |
 | Docling | `services/docling` | Pinned conversion boundary. `docker compose -f services/docling/compose.yaml up -d` → `http://127.0.0.1:5001/health`. |
-| Verification parser | `services/verification-parser` | Isolated native PDF/HTML parser for verification projections. Not Docling. |
+| Verification parser | `services/parser` | Isolated native PDF/HTML parser for verification projections. Not Docling. |
 
 HTTP, MCP, and the worker do not own business rules. The executor creates its knowledge tools only when a database URL is configured.
 

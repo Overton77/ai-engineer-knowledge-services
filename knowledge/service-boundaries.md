@@ -109,11 +109,11 @@ Every MCP tool runs in process; MCP has no API client and issues no HTTP
 request to the API
 ([fetch-trap test](../apps/mcp/src/tests/no-http-shims.test.ts)). Knowledge and
 verification reads call the shared
-[`createKnowledgeResourceReads`](../packages/application/src/reads/knowledge-resource-reads.ts)
+[`createKnowledgeResourceReads`](../packages/application/src/knowledge/reads/knowledge-resource-reads.ts)
 and
-[`createVerificationResourceReads`](../packages/application/src/reads/verification-resource-reads.ts);
+[`createVerificationResourceReads`](../packages/application/src/verification/reads/verification-resource-reads.ts);
 `retrieval.search` calls
-[`submitCanonicalRetrievalRun`](../packages/application/src/retrieval/canonical-retrieval-run.ts).
+[`submitCanonicalRetrievalRun`](../packages/application/src/knowledge/retrieval/canonical-retrieval-run.ts).
 Verification mutations call application after
 [`bindResolvedVerificationContext`](../packages/application/src/verification/operations/verification-context-binding.ts)
 and the shared admission gates. `knowledge_get_verification_operation`,

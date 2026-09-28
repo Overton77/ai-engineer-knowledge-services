@@ -2,7 +2,7 @@
 
 Runnable, mocked demonstrations of the internal acquisition and inspection fallbacks. Default examples need no vendor key.
 
-From `packages/acquisition`:
+From `packages/sources`:
 
 ```bash
 pnpm exec tsx examples/01-http-acquire.ts

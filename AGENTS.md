@@ -44,7 +44,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - Change an HTTP/MCP/CLI verification surface: contracts → application → api → mcp → cli
 - Change locator or evidence verification: verification → verification-evidence-selection → verification-deterministic → verification-semantic
 - Debug worker retry or persistence: worker → core → persistence
-- Change parsing and conversion: preparation → verification-parser → docling
+- Change parsing and conversion: preparation → parser → docling
 - Change retrieval or embedding: retrieval → policy
 - Find proof and evaluation commands: script-proofs → script-evaluation → script-reconciliation
 - Change schema workspace, knowledge read, or ingestion: knowledge-db → verification-executor
@@ -52,8 +52,8 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 ### Task routes
 
 - [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next unit: app order, naming, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
-- [reference] Unit 3 in-process MCP: `docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`
+- [proposed] Next unit: executor fold, ks, Eve: `docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`
+- [reference] Unit 4 folders, names, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
 - [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Module review and delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
@@ -99,7 +99,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-3-APPLICATION-AND-MCP.md,UNIT-4-APPLICATION-ORDER-AND-CATALOG.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-4-APPLICATION-ORDER-AND-CATALOG.md,UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

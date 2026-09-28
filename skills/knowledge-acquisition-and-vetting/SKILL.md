@@ -34,7 +34,7 @@ Do not wrap Firecrawl or Tavily inside Knowledge Services MCP. Attach their MCP 
 
 - Exact HTTPS GET (`knowledge.capture/v1` target `{ kind: "http", url }`) — default platform acquire.
 - Local/operator upload (`target: { kind: "upload", uploadId, declaredOrigin }`) when the worker has `ACQUISITION_UPLOAD_ROOT`. Remote agents without that disk use `verify_capture_file`.
-- Package inspection: `readSealedCapture` / `searchSealedCapture` / `observeSealedCapture` in `@aiengineer/knowledge-acquisition`. See `packages/acquisition/examples`.
+- Package inspection: `readSealedCapture` / `searchSealedCapture` / `observeSealedCapture` in `@aiengineer/knowledge-acquisition`. See `packages/sources/examples`.
 
 Repository archives, paper `execute`, and Firecrawl scrape adapters exist in the library and are **not** worker-wired. Paper identity: resolve, then HTTP-acquire one representation URL.
 

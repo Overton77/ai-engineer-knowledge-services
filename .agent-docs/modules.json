@@ -64,7 +64,7 @@
       "task": "Change parsing and conversion",
       "modules": [
         "preparation",
-        "verification-parser",
+        "parser",
         "docling"
       ]
     },
@@ -101,16 +101,18 @@
       "entrypoints": [
         "apps/api/src/index.ts",
         "apps/api/src/composition.ts",
-        "apps/api/src/server.ts"
+        "apps/api/src/server.ts",
+        "apps/api/src/a2a-adapter.ts"
       ],
       "interface": [
-        "Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. Routes keep their historical problem titles over shared application reads (createKnowledgeResourceReads, createVerificationResourceReads), submitCanonicalRetrievalRun and bindResolvedVerificationContext."
+        "Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. Routes keep their historical problem titles over shared application reads (createKnowledgeResourceReads, createVerificationResourceReads), submitCanonicalRetrievalRun and bindResolvedVerificationContext. The A2A task binding (a2a-adapter.ts: task-to-operation mapping and A2AKnowledgeAdapter) lives here; callback signing and replay protection stay in application. The demo evaluation route loads bundles only through the optional loadDemoEvaluationBundles port (demo-evaluation-bundles.ts lazily imports the test kit, a devDependency)."
       ],
       "tests": [
         "apps/api/src/tests/server.test.ts",
         "apps/api/src/tests/bootstrap.test.ts",
         "apps/api/src/tests/host-lifecycle.test.ts",
-        "apps/api/src/tests/resource-reads.test.ts"
+        "apps/api/src/tests/resource-reads.test.ts",
+        "apps/api/src/tests/a2a-adapter.test.ts"
       ],
       "constraints": [
         "The API route is the behavioral reference for MCP parity (apps/mcp/src/tests/api-mcp-parity.test.ts). Public-origin validation, credential resolution, callbacks, listeners, drift consumer routes and the serverless singleton stay in the API; close the server before the host."
@@ -159,11 +161,11 @@
       "tests": [
         "apps/mcp/src/tests/api-mcp-parity.test.ts",
         "apps/mcp/src/tests/no-http-shims.test.ts",
-        "apps/mcp/src/tests/index.test.ts",
+        "apps/mcp/src/tests/operation-catalog.test.ts",
         "apps/mcp/src/tests/verification-surface-inventory.test.ts"
       ],
       "constraints": [
-        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links."
+        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in tests/operation-catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed."
       ],
       "uses": [
         "application",
@@ -229,27 +231,27 @@
       "packageJson": "apps/worker/package.json"
     },
     {
-      "id": "acquisition",
-      "path": "packages/acquisition",
+      "id": "sources",
+      "path": "packages/sources",
       "kind": "package",
       "state": "implemented",
-      "summary": "HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.",
+      "summary": "Source acquisition and inspection (folder renamed from packages/acquisition; npm name @aiengineer/knowledge-acquisition unchanged): HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.",
       "entrypoints": [
-        "packages/acquisition/src/index.ts"
+        "packages/sources/src/index.ts"
       ],
       "interface": [
         "Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection."
       ],
       "tests": [
-        "packages/acquisition/src/http/adapter.test.ts",
-        "packages/acquisition/src/http/deadline.test.ts",
-        "packages/acquisition/src/route.test.ts",
-        "packages/acquisition/src/inspect/inspect.test.ts",
-        "packages/acquisition/examples/examples.test.ts"
+        "packages/sources/src/http/adapter.test.ts",
+        "packages/sources/src/http/deadline.test.ts",
+        "packages/sources/src/route.test.ts",
+        "packages/sources/src/inspect/inspect.test.ts",
+        "packages/sources/examples/examples.test.ts"
       ],
       "constraints": [],
       "uses": [],
-      "packageJson": "packages/acquisition/package.json"
+      "packageJson": "packages/sources/package.json"
     },
     {
       "id": "application",
@@ -260,17 +262,19 @@
       "entrypoints": [
         "packages/application/src/index.ts",
         "packages/application/src/access/api-access.ts",
-        "packages/application/src/reads/verification-resource-reads.ts",
-        "packages/application/src/retrieval/canonical-retrieval-executor.ts",
+        "packages/application/src/operations/surface.ts",
+        "packages/application/src/knowledge/retrieval/canonical-retrieval-executor.ts",
+        "packages/application/src/verification/reads/verification-resource-reads.ts",
         "packages/application/src/verification/operations/verification-transport.ts"
       ],
       "interface": [
-        "Application service facades and use-case functions; transports call these rather than implementing algorithms. access/api-access.ts owns isAuthorized/actorsMatch; reads/ owns the transport-neutral knowledge and verification resource reads; retrieval/ owns canonical retrieval execution over the CanonicalRetrievalRepository port; verification-context-binding.ts binds a resolved context to the authenticated submission."
+        "Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission."
       ],
       "tests": [
-        "packages/application/src/operations/a2a-adapter.test.ts",
         "packages/application/src/operations/capability-admission.test.ts",
-        "packages/application/src/retrieval/canonical-retrieval-executor.test.ts"
+        "packages/application/src/operations/a2a-callbacks.test.ts",
+        "packages/application/src/knowledge/retrieval/canonical-retrieval-executor.test.ts",
+        "packages/application/src/diagnostics/verification-diagnostics-quarantine.test.ts"
       ],
       "constraints": [
         "Transports compose these ports; they are not algorithm authority. Application never imports host or persistence; persistence implements its ports."
@@ -320,26 +324,26 @@
       "packageJson": "packages/preparation/package.json"
     },
     {
-      "id": "client-typescript",
-      "path": "packages/client-typescript",
+      "id": "client",
+      "path": "packages/client",
       "kind": "package",
       "state": "implemented",
-      "summary": "Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.",
+      "summary": "Out-of-process typed HTTP SDK (@aiengineer/knowledge-client, folder packages/client) for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.",
       "entrypoints": [
-        "packages/client-typescript/src/index.ts"
+        "packages/client/src/index.ts"
       ],
       "interface": [
         "KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application."
       ],
       "tests": [
-        "packages/client-typescript/src/adjudication-decision-read.test.ts",
-        "packages/client-typescript/src/adjudication.test.ts"
+        "packages/client/src/adjudication-decision-read.test.ts",
+        "packages/client/src/adjudication.test.ts"
       ],
       "constraints": [
         "Do not use from in-process KS servers; API, MCP and workers call application."
       ],
       "uses": [],
-      "packageJson": "packages/client-typescript/package.json"
+      "packageJson": "packages/client/package.json"
     },
     {
       "id": "host",
@@ -885,14 +889,14 @@
       ]
     },
     {
-      "id": "verification-parser",
-      "path": "services/verification-parser",
+      "id": "parser",
+      "path": "services/parser",
       "kind": "service",
       "state": "implemented",
-      "summary": "Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.",
+      "summary": "Isolated native PDF geometry and HTML DOM parser (folder renamed from services/verification-parser; image tags unchanged); separate from Docling and OCR.",
       "entrypoints": [
-        "services/verification-parser/parser.py",
-        "services/verification-parser/Dockerfile"
+        "services/parser/parser.py",
+        "services/parser/Dockerfile"
       ],
       "interface": [
         "Bounded stdin/stdout parser job invoked by SandboxedVerificationParser."
@@ -1094,7 +1098,7 @@
         "No source_resolve_identity operation; identity is resolved from captured bytes. Firecrawl/Tavily MCP stay in the agent environment and are imported as self-reported receipts."
       ],
       "uses": [
-        "acquisition",
+        "sources",
         "verification-executor",
         "cli"
       ]
@@ -1333,7 +1337,7 @@
       ],
       "uses": [
         "application",
-        "client-typescript",
+        "client",
         "contracts",
         "jev"
       ],

@@ -10,7 +10,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 - Change an HTTP/MCP/CLI verification surface: [contracts](#contracts) → [application](#application) → [api](#api) → [mcp](#mcp) → [cli](#cli)
 - Change locator or evidence verification: [verification](#verification) → [verification-evidence-selection](#verification-evidence-selection) → [verification-deterministic](#verification-deterministic) → [verification-semantic](#verification-semantic)
 - Debug worker retry or persistence: [worker](#worker) → [core](#core) → [persistence](#persistence)
-- Change parsing and conversion: [preparation](#preparation) → [verification-parser](#verification-parser) → [docling](#docling)
+- Change parsing and conversion: [preparation](#preparation) → [parser](#parser) → [docling](#docling)
 - Change retrieval or embedding: [retrieval](#retrieval) → [policy](#policy)
 - Find proof and evaluation commands: [script-proofs](#script-proofs) → [script-evaluation](#script-evaluation) → [script-reconciliation](#script-reconciliation)
 - Change schema workspace, knowledge read, or ingestion: [knowledge-db](#knowledge-db) → [verification-executor](#verification-executor)
@@ -24,10 +24,10 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [mcp](#mcp) | apps/mcp | In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHost (role mcp), which supplies the same knowledge, verify and operations groups as the API role; MCP never calls the API. | implemented |
 | [verification-executor](#verification-executor) | apps/verification-executor | Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP. | implemented |
 | [worker](#worker) | apps/worker | Durable knowledge-operation execution and activity dispatch over host-composed adapters; verification runtime wiring stays in the worker execution factory. | implemented |
-| [acquisition](#acquisition) | packages/acquisition | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | implemented |
+| [sources](#sources) | packages/sources | Source acquisition and inspection (folder renamed from packages/acquisition; npm name @aiengineer/knowledge-acquisition unchanged): HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | implemented |
 | [application](#application) | packages/application | Composes knowledge use cases, capability admission, preparation, retrieval execution, shared resource reads, and verification surfaces, including tenant access rules, ownership and transport admission ports. | implemented |
 | [preparation](#preparation) | packages/preparation | Artifact conversion, immutable document nodes, admitted chunk profiles and reconstructable-span quality checks. | implemented |
-| [client-typescript](#client-typescript) | packages/client-typescript | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
+| [client](#client) | packages/client | Out-of-process typed HTTP SDK (@aiengineer/knowledge-client, folder packages/client) for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | implemented |
 | [host](#host) | packages/host | Server composition root: configuration and identity resolution, shared knowledge and verification composition, and createHost for API, MCP and worker with owned lifecycle. | implemented |
 | [contracts](#contracts) | packages/contracts | Versioned Zod schemas and types shared by transports, application composition, and clients. | implemented |
 | [knowledge-db](#knowledge-db) | packages/knowledge-db | Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers. | implemented |
@@ -49,7 +49,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [verification-semantic](#verification-semantic) | packages/verification/src/semantic | Evidence-closed semantic verification: closure, authorization, judge ports, output lattice validation, cross-family reconciliation, drift, rescue, attribution. | implemented |
 | [verification-providers](#verification-providers) | packages/verification/src/providers | Provider port, HTTP bounds, one bounded dispatch procedure, Gateway/Interfaze adapters, recorded/NLI judges, and conformance registry. | implemented |
 | [docling](#docling) | services/docling | Pinned Docling Serve conversion deployment boundary. | implemented |
-| [verification-parser](#verification-parser) | services/verification-parser | Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR. | implemented |
+| [parser](#parser) | services/parser | Isolated native PDF geometry and HTML DOM parser (folder renamed from services/verification-parser; image tags unchanged); separate from Docling and OCR. | implemented |
 | [script-proofs](#script-proofs) | scripts | Targeted durability, transport, recovery, and integration proof executables. | implemented |
 | [script-evaluation](#script-evaluation) | scripts | Corpus/bundle evaluation and review sampling helpers. | implemented |
 | [script-reconciliation](#script-reconciliation) | scripts | Provider accounting and reconciliation operations. | implemented |
@@ -77,20 +77,20 @@ Paths below are repository-relative. Use the task routes, then search the module
 
 Fastify HTTP transport. createApiRuntime composes through createHost (role api) and maps host services onto buildServer.
 
-**Enter:** [`apps/api/src/index.ts`](../../apps/api/src/index.ts), [`apps/api/src/composition.ts`](../../apps/api/src/composition.ts), [`apps/api/src/server.ts`](../../apps/api/src/server.ts)
-**Interface:** Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. Routes keep their historical problem titles over shared application reads (createKnowledgeResourceReads, createVerificationResourceReads), submitCanonicalRetrievalRun and bindResolvedVerificationContext.
+**Enter:** [`apps/api/src/index.ts`](../../apps/api/src/index.ts), [`apps/api/src/composition.ts`](../../apps/api/src/composition.ts), [`apps/api/src/server.ts`](../../apps/api/src/server.ts), [`apps/api/src/a2a-adapter.ts`](../../apps/api/src/a2a-adapter.ts)
+**Interface:** Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. Routes keep their historical problem titles over shared application reads (createKnowledgeResourceReads, createVerificationResourceReads), submitCanonicalRetrievalRun and bindResolvedVerificationContext. The A2A task binding (a2a-adapter.ts: task-to-operation mapping and A2AKnowledgeAdapter) lives here; callback signing and replay protection stay in application. The demo evaluation route loads bundles only through the optional loadDemoEvaluationBundles port (demo-evaluation-bundles.ts lazily imports the test kit, a devDependency).
 **Package:** @aiengineer/knowledge-api ([`apps/api/package.json`](../../apps/api/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [host](#host), [persistence](#persistence), [retrieval](#retrieval), [testkit](#testkit)
+**Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [host](#host), [persistence](#persistence), [retrieval](#retrieval)
 **Other runtime dependencies:** fastify, zod
 **Reviewed runtime/data relationships:** [host](#host), [persistence](#persistence)
-**Checks:** [`apps/api/src/tests/server.test.ts`](../../apps/api/src/tests/server.test.ts), [`apps/api/src/tests/bootstrap.test.ts`](../../apps/api/src/tests/bootstrap.test.ts), [`apps/api/src/tests/host-lifecycle.test.ts`](../../apps/api/src/tests/host-lifecycle.test.ts), [`apps/api/src/tests/resource-reads.test.ts`](../../apps/api/src/tests/resource-reads.test.ts) Package script names: build, dev, start, test, typecheck.
+**Checks:** [`apps/api/src/tests/server.test.ts`](../../apps/api/src/tests/server.test.ts), [`apps/api/src/tests/bootstrap.test.ts`](../../apps/api/src/tests/bootstrap.test.ts), [`apps/api/src/tests/host-lifecycle.test.ts`](../../apps/api/src/tests/host-lifecycle.test.ts), [`apps/api/src/tests/resource-reads.test.ts`](../../apps/api/src/tests/resource-reads.test.ts), [`apps/api/src/tests/a2a-adapter.test.ts`](../../apps/api/src/tests/a2a-adapter.test.ts) Package script names: build, dev, start, test, typecheck.
 - The API route is the behavioral reference for MCP parity (apps/mcp/src/tests/api-mcp-parity.test.ts). Public-origin validation, credential resolution, callbacks, listeners, drift consumer routes and the serverless singleton stay in the API; close the server before the host.
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Next unit: app order, naming, catalog
-- [reference] [`docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`](../../docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md) — Unit 3 in-process MCP
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
@@ -111,7 +111,7 @@ Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, at
 **Interface:** Remote catalog requires API URL and token and dispatches through KnowledgeClient. Local commands stay outside the remote catalog and must not use HTTP.
 **Package:** @aiengineer/knowledge-cli ([`apps/cli/package.json`](../../apps/cli/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts), [verification](#verification)
+**Declared internal package dependencies:** [application](#application), [client](#client), [contracts](#contracts), [verification](#verification)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
 **Checks:** [`apps/cli/src/tests/commands.test.ts`](../../apps/cli/src/tests/commands.test.ts) Package script names: build, dev, test, typecheck.
@@ -119,7 +119,8 @@ Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, at
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Next unit: app order, naming, catalog
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
@@ -140,13 +141,13 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [host](#host), [persistence](#persistence)
 **Other runtime dependencies:** @modelcontextprotocol/sdk, fastify, zod
 **Reviewed runtime/data relationships:** [application](#application), [host](#host)
-**Checks:** [`apps/mcp/src/tests/api-mcp-parity.test.ts`](../../apps/mcp/src/tests/api-mcp-parity.test.ts), [`apps/mcp/src/tests/no-http-shims.test.ts`](../../apps/mcp/src/tests/no-http-shims.test.ts), [`apps/mcp/src/tests/index.test.ts`](../../apps/mcp/src/tests/index.test.ts), [`apps/mcp/src/tests/verification-surface-inventory.test.ts`](../../apps/mcp/src/tests/verification-surface-inventory.test.ts) Package script names: build, dev, start, test, typecheck.
-- No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links.
+**Checks:** [`apps/mcp/src/tests/api-mcp-parity.test.ts`](../../apps/mcp/src/tests/api-mcp-parity.test.ts), [`apps/mcp/src/tests/no-http-shims.test.ts`](../../apps/mcp/src/tests/no-http-shims.test.ts), [`apps/mcp/src/tests/operation-catalog.test.ts`](../../apps/mcp/src/tests/operation-catalog.test.ts), [`apps/mcp/src/tests/verification-surface-inventory.test.ts`](../../apps/mcp/src/tests/verification-surface-inventory.test.ts) Package script names: build, dev, start, test, typecheck.
+- No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in tests/operation-catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed.
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Next unit: app order, naming, catalog
-- [reference] [`docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`](../../docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md) — Unit 3 in-process MCP
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
@@ -174,6 +175,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
@@ -193,7 +195,7 @@ Durable knowledge-operation execution and activity dispatch over host-composed a
 **Interface:** startWorker composes through createHost (role worker): host builds adapters, reconciles before scheduling and owns release; the worker supplies activity execution, leases and receipts. Preserve lease ownership and idempotent terminal receipts.
 **Package:** @aiengineer/knowledge-worker ([`apps/worker/package.json`](../../apps/worker/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [application](#application), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [host](#host), [persistence](#persistence), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
+**Declared internal package dependencies:** [sources](#sources), [application](#application), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [host](#host), [persistence](#persistence), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** [host](#host)
 **Checks:** [`apps/worker/src/worker.test.ts`](../../apps/worker/src/worker.test.ts), [`apps/worker/src/activity-registry.test.ts`](../../apps/worker/src/activity-registry.test.ts) Package script names: build, dev, start, test, typecheck.
@@ -212,23 +214,24 @@ Durable knowledge-operation execution and activity dispatch over host-composed a
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
 
-## acquisition
+## sources
 
-**packages/acquisition** · package · implemented
+**packages/sources** · package · implemented
 
-HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.
+Source acquisition and inspection (folder renamed from packages/acquisition; npm name @aiengineer/knowledge-acquisition unchanged): HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.
 
-**Enter:** [`packages/acquisition/src/index.ts`](../../packages/acquisition/src/index.ts)
+**Enter:** [`packages/sources/src/index.ts`](../../packages/sources/src/index.ts)
 **Interface:** Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection.
-**Package:** @aiengineer/knowledge-acquisition ([`packages/acquisition/package.json`](../../packages/acquisition/package.json))
+**Package:** @aiengineer/knowledge-acquisition ([`packages/sources/package.json`](../../packages/sources/package.json))
 **Export subpaths:** .. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [core](#core)
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/acquisition/src/http/adapter.test.ts`](../../packages/acquisition/src/http/adapter.test.ts), [`packages/acquisition/src/http/deadline.test.ts`](../../packages/acquisition/src/http/deadline.test.ts), [`packages/acquisition/src/route.test.ts`](../../packages/acquisition/src/route.test.ts), [`packages/acquisition/src/inspect/inspect.test.ts`](../../packages/acquisition/src/inspect/inspect.test.ts), [`packages/acquisition/examples/examples.test.ts`](../../packages/acquisition/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
+**Checks:** [`packages/sources/src/http/adapter.test.ts`](../../packages/sources/src/http/adapter.test.ts), [`packages/sources/src/http/deadline.test.ts`](../../packages/sources/src/http/deadline.test.ts), [`packages/sources/src/route.test.ts`](../../packages/sources/src/route.test.ts), [`packages/sources/src/inspect/inspect.test.ts`](../../packages/sources/src/inspect/inspect.test.ts), [`packages/sources/examples/examples.test.ts`](../../packages/sources/examples/examples.test.ts) Package script names: build, examples, test, typecheck.
 
 **Architecture and detailed docs:**
 
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
@@ -239,20 +242,20 @@ HTTP and local-upload acquisition wired; inspect library for sealed bytes; repos
 
 Composes knowledge use cases, capability admission, preparation, retrieval execution, shared resource reads, and verification surfaces, including tenant access rules, ownership and transport admission ports.
 
-**Enter:** [`packages/application/src/index.ts`](../../packages/application/src/index.ts), [`packages/application/src/access/api-access.ts`](../../packages/application/src/access/api-access.ts), [`packages/application/src/reads/verification-resource-reads.ts`](../../packages/application/src/reads/verification-resource-reads.ts), [`packages/application/src/retrieval/canonical-retrieval-executor.ts`](../../packages/application/src/retrieval/canonical-retrieval-executor.ts), [`packages/application/src/verification/operations/verification-transport.ts`](../../packages/application/src/verification/operations/verification-transport.ts)
-**Interface:** Application service facades and use-case functions; transports call these rather than implementing algorithms. access/api-access.ts owns isAuthorized/actorsMatch; reads/ owns the transport-neutral knowledge and verification resource reads; retrieval/ owns canonical retrieval execution over the CanonicalRetrievalRepository port; verification-context-binding.ts binds a resolved context to the authenticated submission.
+**Enter:** [`packages/application/src/index.ts`](../../packages/application/src/index.ts), [`packages/application/src/access/api-access.ts`](../../packages/application/src/access/api-access.ts), [`packages/application/src/operations/surface.ts`](../../packages/application/src/operations/surface.ts), [`packages/application/src/knowledge/retrieval/canonical-retrieval-executor.ts`](../../packages/application/src/knowledge/retrieval/canonical-retrieval-executor.ts), [`packages/application/src/verification/reads/verification-resource-reads.ts`](../../packages/application/src/verification/reads/verification-resource-reads.ts), [`packages/application/src/verification/operations/verification-transport.ts`](../../packages/application/src/verification/operations/verification-transport.ts)
+**Interface:** Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission.
 **Package:** @aiengineer/knowledge-application ([`packages/application/package.json`](../../packages/application/package.json))
 **Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [jev](#jev), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
+**Declared internal package dependencies:** [sources](#sources), [contracts](#contracts), [core](#core), [evaluation](#evaluation), [jev](#jev), [policy](#policy), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/application/src/operations/a2a-adapter.test.ts`](../../packages/application/src/operations/a2a-adapter.test.ts), [`packages/application/src/operations/capability-admission.test.ts`](../../packages/application/src/operations/capability-admission.test.ts), [`packages/application/src/retrieval/canonical-retrieval-executor.test.ts`](../../packages/application/src/retrieval/canonical-retrieval-executor.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/application/src/operations/capability-admission.test.ts`](../../packages/application/src/operations/capability-admission.test.ts), [`packages/application/src/operations/a2a-callbacks.test.ts`](../../packages/application/src/operations/a2a-callbacks.test.ts), [`packages/application/src/knowledge/retrieval/canonical-retrieval-executor.test.ts`](../../packages/application/src/knowledge/retrieval/canonical-retrieval-executor.test.ts), [`packages/application/src/diagnostics/verification-diagnostics-quarantine.test.ts`](../../packages/application/src/diagnostics/verification-diagnostics-quarantine.test.ts) Package script names: build, test, typecheck.
 - Transports compose these ports; they are not algorithm authority. Application never imports host or persistence; persistence implements its ports.
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Next unit: app order, naming, catalog
-- [reference] [`docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`](../../docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md) — Unit 3 in-process MCP
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -288,24 +291,25 @@ Artifact conversion, immutable document nodes, admitted chunk profiles and recon
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 
-## client-typescript
+## client
 
-**packages/client-typescript** · package · implemented
+**packages/client** · package · implemented
 
-Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.
+Out-of-process typed HTTP SDK (@aiengineer/knowledge-client, folder packages/client) for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers.
 
-**Enter:** [`packages/client-typescript/src/index.ts`](../../packages/client-typescript/src/index.ts)
+**Enter:** [`packages/client/src/index.ts`](../../packages/client/src/index.ts)
 **Interface:** KnowledgeClient methods plus public contract types. Callers construct HTTP; they do not import application.
-**Package:** @aiengineer/knowledge-client ([`packages/client-typescript/package.json`](../../packages/client-typescript/package.json))
+**Package:** @aiengineer/knowledge-client ([`packages/client/package.json`](../../packages/client/package.json))
 **Export subpaths:** ., ./jev. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [contracts](#contracts)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`packages/client-typescript/src/adjudication-decision-read.test.ts`](../../packages/client-typescript/src/adjudication-decision-read.test.ts), [`packages/client-typescript/src/adjudication.test.ts`](../../packages/client-typescript/src/adjudication.test.ts) Package script names: build, test, typecheck.
+**Checks:** [`packages/client/src/adjudication-decision-read.test.ts`](../../packages/client/src/adjudication-decision-read.test.ts), [`packages/client/src/adjudication.test.ts`](../../packages/client/src/adjudication.test.ts) Package script names: build, test, typecheck.
 - Do not use from in-process KS servers; API, MCP and workers call application.
 
 **Architecture and detailed docs:**
 
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
@@ -321,7 +325,7 @@ Server composition root: configuration and identity resolution, shared knowledge
 **Interface:** createHost({ profile: "server", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); the local profile is reserved and fails with HOST_PROFILE_UNAVAILABLE. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; access rules are re-exported from application.
 **Package:** @aiengineer/knowledge-host ([`packages/host/package.json`](../../packages/host/package.json))
 **Export subpaths:** ., ./config. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [acquisition](#acquisition), [application](#application), [contracts](#contracts), [core](#core), [persistence](#persistence), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
+**Declared internal package dependencies:** [sources](#sources), [application](#application), [contracts](#contracts), [core](#core), [persistence](#persistence), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** [application](#application), [persistence](#persistence)
 **Checks:** [`packages/host/src/tests/composition.test.ts`](../../packages/host/src/tests/composition.test.ts), [`packages/host/src/tests/lifecycle.test.ts`](../../packages/host/src/tests/lifecycle.test.ts) Package script names: build, test, typecheck.
@@ -329,7 +333,7 @@ Server composition root: configuration and identity resolution, shared knowledge
 
 **Architecture and detailed docs:**
 
-- [reference] [`docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`](../../docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md) — Unit 3 in-process MCP
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -350,7 +354,6 @@ Versioned Zod schemas and types shared by transports, application composition, a
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Next unit: app order, naming, catalog
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
@@ -376,6 +379,7 @@ Pinned schema workspace navigation, bounded read snapshots and deterministic ing
 
 **Architecture and detailed docs:**
 
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md`](../../docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) — Next unit: executor fold, ks, Eve
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
@@ -773,13 +777,13 @@ Pinned Docling Serve conversion deployment boundary.
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 
-## verification-parser
+## parser
 
-**services/verification-parser** · service · implemented
+**services/parser** · service · implemented
 
-Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.
+Isolated native PDF geometry and HTML DOM parser (folder renamed from services/verification-parser; image tags unchanged); separate from Docling and OCR.
 
-**Enter:** [`services/verification-parser/parser.py`](../../services/verification-parser/parser.py), [`services/verification-parser/Dockerfile`](../../services/verification-parser/Dockerfile)
+**Enter:** [`services/parser/parser.py`](../../services/parser/parser.py), [`services/parser/Dockerfile`](../../services/parser/Dockerfile)
 **Interface:** Bounded stdin/stdout parser job invoked by SandboxedVerificationParser.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
@@ -791,6 +795,7 @@ Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.
 
 **Architecture and detailed docs:**
 
+- [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -964,7 +969,7 @@ Source discovery, acquisition, sealed-byte inspection and vetting-proposal proce
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** [acquisition](#acquisition), [verification-executor](#verification-executor), [cli](#cli)
+**Reviewed runtime/data relationships:** [sources](#sources), [verification-executor](#verification-executor), [cli](#cli)
 **Checks:** No specific test anchor registered.
 - No source_resolve_identity operation; identity is resolved from captured bytes. Firecrawl/Tavily MCP stay in the agent environment and are imported as self-reported receipts.
 
@@ -1163,9 +1168,9 @@ Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the
 **Interface:** jev serve/mcp-stdio; /v1/jev/jobs, batches, health and /mcp; jev_submit/batch/get/list/cancel/workers.
 **Package:** @aiengineer/knowledge-jev-service ([`apps/jev/package.json`](../../apps/jev/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts)
+**Declared internal package dependencies:** [application](#application), [client](#client), [contracts](#contracts)
 **Other runtime dependencies:** @modelcontextprotocol/sdk, zod
-**Reviewed runtime/data relationships:** [application](#application), [client-typescript](#client-typescript), [contracts](#contracts), [jev](#jev)
+**Reviewed runtime/data relationships:** [application](#application), [client](#client), [contracts](#contracts), [jev](#jev)
 **Checks:** [`apps/jev/src/http.test.ts`](../../apps/jev/src/http.test.ts) Package script names: build, test, typecheck.
 - HTTP/MCP call application /jev; CLI uses KnowledgeJevClient. Dedicated service is user-authorized; broader ks CLI consolidation remains separate.
 
