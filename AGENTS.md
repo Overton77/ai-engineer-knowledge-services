@@ -8,7 +8,7 @@ Lifecycle: Active service repository; see deployment docs for rollout state.
 Read the relevant documents below before changing behavior. Inspect more-specific AGENTS.md files in the destination directory. Accepted docs record settled decisions; proposed, reference, and deprecated docs are labelled context. The map is navigation, not proof of implementation or deployment.
 
 - Transport handlers share packages/application. Cross-repository consumers use published HTTP/client, CLI, or MCP contracts; do not import internal algorithm packages.
-- API, MCP, and workers call packages/application. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct. Never add MCP apiClient methods.
+- API, MCP, and workers call packages/application in process; MCP has no API client. Out-of-process callers use KnowledgeClient HTTP. Local CLI demo/attestation stays application-direct.
 - Verification execution and policy admission are separate. Semantic judgment cannot override a deterministic failure. Preserve immutable captures, selectors, provenance, and tenant isolation.
 - Mission Control dispatches verification and classifies retry/cancellation; Knowledge Services owns algorithms, policy admission, and durable knowledge execution.
 - Shared Supabase migrations and generated database types are owned by ai-engineer-db-contract; consume its pinned contract. Do not create another migration/type authority.
@@ -52,8 +52,8 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 ### Task routes
 
 - [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next unit: application use cases, no MCP HTTP shims: `docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`
-- [reference] Unit 2 host composition and seams: `docs/operations/package-cleanup/UNIT-2-HOST-COMPOSITION.md`
+- [proposed] Next unit: app order, naming, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
+- [reference] Unit 3 in-process MCP: `docs/operations/package-cleanup/UNIT-3-APPLICATION-AND-MCP.md`
 - [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Module review and delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
@@ -99,7 +99,7 @@ Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .ag
 |docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
 |docs/architecture/modules:{jev.md}
 |docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-2-HOST-COMPOSITION.md,UNIT-3-APPLICATION-AND-MCP.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-3-APPLICATION-AND-MCP.md,UNIT-4-APPLICATION-ORDER-AND-CATALOG.md}
 |docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}

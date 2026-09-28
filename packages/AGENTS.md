@@ -8,10 +8,10 @@ Full interfaces, dependencies, tests, and architecture: [semantic map](../docs/a
 | Module | Responsibility | Enter |
 |---|---|---|
 | [acquisition](../docs/agents/CODE-MAP.md#acquisition) | HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired. | packages/acquisition/src/index.ts |
-| [application](../docs/agents/CODE-MAP.md#application) | Composes knowledge use cases, capability admission, preparation, and verification surfaces, including ownership and transport admission ports. | packages/application/src/index.ts |
+| [application](../docs/agents/CODE-MAP.md#application) | Composes knowledge use cases, capability admission, preparation, retrieval execution, shared resource reads, and verification surfaces, including tenant access rules, ownership and transport admission ports. | packages/application/src/index.ts |
 | [preparation](../docs/agents/CODE-MAP.md#preparation) | Artifact conversion, immutable document nodes, admitted chunk profiles and reconstructable-span quality checks. | packages/preparation/src/index.ts |
 | [client-typescript](../docs/agents/CODE-MAP.md#client-typescript) | Out-of-process typed HTTP SDK for the Knowledge Services contract. Laptop CLI, Eve, Mission Control, and other repos. Not the long-term seam for API, MCP, or workers. | packages/client-typescript/src/index.ts |
-| [host](../docs/agents/CODE-MAP.md#host) | Server composition root: configuration and identity (absorbed config), shared verification host, and createHost for API, MCP and worker with owned lifecycle. | packages/host/src/index.ts |
+| [host](../docs/agents/CODE-MAP.md#host) | Server composition root: configuration and identity resolution, shared knowledge and verification composition, and createHost for API, MCP and worker with owned lifecycle. | packages/host/src/index.ts |
 | [contracts](../docs/agents/CODE-MAP.md#contracts) | Versioned Zod schemas and types shared by transports, application composition, and clients. | packages/contracts/src/index.ts |
 | [knowledge-db](../docs/agents/CODE-MAP.md#knowledge-db) | Pinned schema workspace navigation, bounded read snapshots and deterministic ingestion through canonical temporal helpers. | packages/knowledge-db/src/index.ts |
 | [core](../docs/agents/CODE-MAP.md#core) | Shared identity, digest, authority and state primitives; artifact custody, operation lifecycle and in-memory telemetry. | packages/core/src/index.ts |

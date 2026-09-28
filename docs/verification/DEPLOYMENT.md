@@ -8,7 +8,7 @@ Processes, environment, rollout, and rollback for the verification module. Runti
 | --- | --- | --- | --- |
 | api | `@aiengineer/knowledge-api` | Fastify HTTP; admission, 202 receipts, terminal reads | Vercel Fluid Compute or Node container. Default `PORT=4100` |
 | worker | `@aiengineer/knowledge-worker` | Durable verification activities | Always-on container (AWS ECS/Fargate in the infra template) |
-| mcp | `@aiengineer/knowledge-mcp` | Streamable HTTP MCP facade; verification tools proxy the HTTP API | Vercel or Node. Default `PORT` fallback **4101** |
+| mcp | `@aiengineer/knowledge-mcp` | Streamable HTTP MCP facade; every tool calls application in process (no HTTP to the API) | Vercel or Node. Default `PORT` fallback **4101** |
 | parser (optional) | `services/verification-parser` | Sandboxed native PDF/HTML parse | Local/remote Docker image pinned by digest |
 
 `services/docling` is a separate conversion boundary, not the verification parser.
@@ -17,7 +17,7 @@ Mission Control / Temporal (`../ai-engineer-mission-control`) dispatches KS capa
 
 ## Environment variable matrix
 
-Host configuration (`@aiengineer/knowledge-host/config`, formerly `packages/config`) has no `VERIFICATION_*` keys. MCP and CLI do not read `VERIFICATION_*`. API and worker read `process.env` (or an injected `Environment`).
+Host configuration (`@aiengineer/knowledge-host/config`, formerly `packages/config`) has no `VERIFICATION_*` keys. The CLI does not read `VERIFICATION_*`. API, MCP and worker read `process.env` (or an injected `Environment`). Since Unit 3 the MCP role composes the same verification read, reconciliation, decision and capture-profile services as the API, so an MCP deployment needs the same `VERIFICATION_*` read configuration, Supabase Storage credentials and (for `retrieval.search`) gateway credentials for those tools; the same configuration failure codes apply at MCP startup. `KNOWLEDGE_API_URL` remains required: it roots accepted-operation poll links, and MCP never calls it.
 
 ### Shared / ownership
 

@@ -55,12 +55,14 @@ resolver) and
 [`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts)
 wires those ports for both servers.
 
-MCP verification mutations, operation/status, and `retrieval.plan_validate`
-call application in-process. MCP does not always proxy HTTP. Remaining
-retrieval-evidence-eval reads, most verification reads, provider
-reconciliation, and record-decision without `isAdjudicationDecisionAdmitted`
-still do. Decision and most read runtimes remain API-local composition; that
-remainder is observed, not an accepted redesign.
+Every MCP verification tool calls application in process; MCP never proxies
+HTTP. Reads, reconciliation and decisions go through
+[`createVerificationResourceReads`](../packages/application/src/reads/verification-resource-reads.ts);
+submissions apply
+[`bindResolvedVerificationContext`](../packages/application/src/verification/operations/verification-context-binding.ts)
+and the reviewer rule exactly as the API route does. Host
+[`composeVerificationServices`](../packages/host/src/server/verification.ts)
+builds those services once for both roles.
 
 Cross-service consumers use the published HTTP, CLI, or MCP contract rather
 than importing verification internals. The current operation and use-case
@@ -160,9 +162,9 @@ benchmark work. It also documents surface deviations from the design
 specification. Read [current acceptance state](../docs/verification/README.md#current-acceptance-state)
 before treating a passing service result as proof of those broader claims.
 
-Most verification and retrieval-evidence-eval read ports are still composed
-only in the API. MCP still HTTP-shims those reads. That is an observed
-remainder, not a claim that MCP is HTTP-only for verification writes.
+Verification read ports are composed by host for both the API and MCP, and
+the [API/MCP parity test](../apps/mcp/src/tests/api-mcp-parity.test.ts) covers
+success, tenant, actor, missing-capability and not-found outcomes per tool.
 
 For recovery, deployment, and operator actions, use the authoritative
 [operator runbook](../docs/verification/OPERATOR-RUNBOOK.md) and

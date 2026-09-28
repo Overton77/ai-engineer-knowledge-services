@@ -8,9 +8,9 @@ sources:
   - id: retrieval-contract
     resource: ../packages/contracts/src/retrieval.ts
     title: Retrieval plan and evidence packet contract
-  - id: api-retrieval-executor
-    resource: ../apps/api/src/retrieval-executor.ts
-    title: API retrieval executor
+  - id: canonical-retrieval-executor
+    resource: ../packages/application/src/retrieval/canonical-retrieval-executor.ts
+    title: Canonical retrieval executor (application; API and MCP)
   - id: bounded-read-executor
     resource: ../packages/knowledge-db/src/db-read/read-executor.ts
     title: Bounded knowledge read executor
@@ -48,7 +48,7 @@ The contract enforces distinct bounded entity anchors, unique vector spaces and 
 
 Some plan features may be expressed as optional, but that declaration is explicit. When a requested feature is absent, the service returns a typed `RETRIEVAL_CAPABILITY_UNSUPPORTED` response before calling a provider. If the caller marks that same capability optional, the omission is recorded in the packet instead of silently changing the query.
 
-The current API executor supports the tested world/K/entity scope and rejects required graph expansion, freshness upper bounds, observed-time upper bounds, soft boosts, context, concept anchors, and use-case anchors when they are not implemented. See capability preflight in [`apps/api/src/retrieval-executor.ts`](../apps/api/src/retrieval-executor.ts) and tests in [`apps/api/src/tests/retrieval-executor.test.ts`](../apps/api/src/tests/retrieval-executor.test.ts). This is a local-working-copy observation; configured providers and live endpoint behavior need separate operational proof.
+The canonical executor, shared by `POST /v1/retrieval-runs` and the MCP `retrieval.search` tool, supports the tested world/K/entity scope and rejects required graph expansion, freshness upper bounds, observed-time upper bounds, soft boosts, context, concept anchors, and use-case anchors when they are not implemented. See capability preflight in [`canonical-retrieval-executor.ts`](../packages/application/src/retrieval/canonical-retrieval-executor.ts) and tests in [`canonical-retrieval-executor.test.ts`](../packages/application/src/retrieval/canonical-retrieval-executor.test.ts). This is a local-working-copy observation; configured providers and live endpoint behavior need separate operational proof.
 
 ## From candidate to packet member
 
