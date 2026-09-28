@@ -272,6 +272,9 @@ importers:
         specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
+      '@aiengineer/knowledge-host':
+        specifier: workspace:*
+        version: link:../../packages/host
       '@aiengineer/knowledge-preparation':
         specifier: workspace:*
         version: link:../../packages/preparation

@@ -1,8 +1,10 @@
 # Package cleanup delivery and continuation
 
-Status: reference. Execution handoff, 2026-09-28 (Unit 5 slice 5A delivery).
+Status: reference. Execution handoff, 2026-09-28 (Unit 5 slice 5B delivery).
 
 ## Current delivery
+
+Unit 5 slice **5B** (local host profile and capability matrix) is merged into local `main` from `refactor/ks-unit-5b-local-profile`: `createHost({ profile: "local" })` composes the verification intent pipeline lazily over the executor's file store (`packages/host/src/local/`), with the server/local/remote-CLI capability matrix; offline operations need no network, database or credentials, online capture, document conversion and semantic judging need explicit provider configuration (otherwise `CAPABILITY_NOT_ADMITTED`), and everything else is server-only. The executor supplies the file-backed services through a typed seam that 5D3 retires; no transport changed. Validation, the replay decision and the recorded decisions are in the [ledger](./workspace/PROGRESS.md) and [`unit5b-validation.json`](./workspace/evidence/unit5b-validation.json).
 
 Unit 5 slice **5A** (entry evidence and the R1 inversion) is merged into local `main` from `refactor/ks-unit-5a-r1-inversion`: knowledge-db owns its transaction and content-admission ports (`packages/knowledge-db/src/ports.ts`), persistence implements them (`TenantPostgres`, `postgresContentAdmission`), the executor composition injects them, and the production `knowledge-db → persistence` edge is gone. Commits `4dd7510`, `8ec3f3c`, `2c474ad` and a documentation/evidence commit; validation, the replay decision and the carried test-only edge are in the [ledger](./workspace/PROGRESS.md) and [`unit5a-validation.json`](./workspace/evidence/unit5a-validation.json).
 
@@ -29,7 +31,7 @@ Prerequisites, by owner — a proposed mapping to confirm when the experiment is
 | --- | --- |
 | In-process MCP retrieval, evidence packet and citation replay; no sibling-HTTP shims | Unit 3 — delivered in the KS service; Eve's t14 platform host still composes MCP with the removed client (Unit 5) |
 | Profile-aware operation catalog, where stage tool subsets depend on it | Unit 4 — delivered: `apps/mcp/src/tests/operation-catalog.ts` classifies every operation by tool group, admission and transport; the local profile and executor rows arrive with Unit 5 |
-| Eve adapted to the new services, CLI/MCP surfaces and packaging; stage/child input and result manifests | Unit 5 and the Eve repository — 5A removed the database cycle blocking the fold; slices 5B–5H and Eve's 5E1/5E2 remain |
+| Eve adapted to the new services, CLI/MCP surfaces and packaging; stage/child input and result manifests | Unit 5 and the Eve repository — 5A removed the database cycle blocking the fold and 5B added the local host profile; slices 5C–5H and Eve's 5E1/5E2 remain |
 | Canonical skills materialized for each stage role | Unit 6 |
 | Fixture inputs, disposable database/storage target, budget ceiling and stage manifests/validator | Experiment setup (meta spec P2/P4/P6 scope) |
 
@@ -37,7 +39,7 @@ Do not build the experiment runner inside a cleanup unit. Preserve this mileston
 
 ## Next unit
 
-Implement [Unit 5](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) in the slices of [UNIT-5-SLICES.md](./UNIT-5-SLICES.md), one slice per session and branch. 5A is delivered; next is **5B** (local host profile and capability matrix) on `refactor/ks-unit-5b-local-profile`; the Eve early path repair 5E1 may run in parallel in the Eve repository. 5D1 must first remove the test-only `knowledge-db → persistence` edge recorded by 5A. Reassess the missing historical receipt explicitly at every slice entry; reuse `unit5-catalog-snapshot.ts` and copy `unit5a-inventory.mjs` for the slice inventory.
+Implement [Unit 5](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md) in the slices of [UNIT-5-SLICES.md](./UNIT-5-SLICES.md), one slice per session and branch. 5A and 5B are delivered; next is **5C** (`ks` CLI skeleton, remote mode, lazy offline dispatch and packaging) on `refactor/ks-unit-5c-ks-cli`; the Eve early path repair 5E1 may run in parallel in the Eve repository. 5C starts with the decision carried from 5B: how `ks` reaches the local verification seam (today in the executor app) before 5D3, and how CLI flags and environment map onto the local host's `providers` and `identity` without legacy `VERIFY_*` names. 5D1 must first remove the test-only `knowledge-db → persistence` edge recorded by 5A; 5D3 retires the 5B seam. Reassess the missing historical receipt explicitly at every slice entry; reuse `unit5-catalog-snapshot.ts` (it now also records each row's local host state) and copy `unit5b-inventory.mjs` for the slice inventory.
 
 ## Branch and delivery rule — developer accepted
 
@@ -53,4 +55,4 @@ See [Jev architecture](../../architecture/modules/jev.md). Preserve `packages/je
 
 ## Suggested next-session instruction
 
-> Continue the Knowledge Services package cleanup, Unit 5 slice 5B, from local main. Read repository AGENTS.md, `docs/operations/package-cleanup/workspace/PROGRESS.md`, `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`, `docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md` and `docs/operations/package-cleanup/UNIT-5-SLICES.md`. Implement only that slice on its own branch, following its scope, "must not" and exit criteria and the rules for every slice (replay gate decision, inventories, catalog rows, sequential full test graph, packaging smoke, docs check). Record it in the ledger and evidence, merge locally, return to a clean main and name the next slice. Keep the bounded stage-graph experiment milestone (research → reports → ingestion consuming both manifests → restoration and fresh consumer; provisional results distinct from fixture acceptance) in the handoff; do not build its runner inside the cleanup.
+> Continue the Knowledge Services package cleanup, Unit 5 slice 5C (`ks` CLI skeleton and packaging), from local main. Read repository AGENTS.md, `docs/operations/package-cleanup/workspace/PROGRESS.md`, `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`, `docs/operations/package-cleanup/UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md` and `docs/operations/package-cleanup/UNIT-5-SLICES.md`. Implement only that slice on its own branch `refactor/ks-unit-5c-ks-cli`, starting with the decisions carried from 5B, following its scope, "must not" and exit criteria and the rules for every slice (replay gate decision, inventories, catalog rows, sequential full test graph, packaging smoke, docs check). Record it in the ledger and evidence, merge locally, return to a clean main and name the next slice. Keep the bounded stage-graph experiment milestone (research → reports → ingestion consuming both manifests → restoration and fresh consumer; provisional results distinct from fixture acceptance) in the handoff; do not build its runner inside the cleanup.

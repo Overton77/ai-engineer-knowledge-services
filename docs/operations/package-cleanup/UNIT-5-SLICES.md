@@ -13,7 +13,7 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | Slice | Repository | Topic | Depends on | Parallel with | Status |
 | --- | --- | --- | --- | --- | --- |
 | 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | 5E1 | merged locally 2026-09-28 |
-| 5B | KS | Local host profile and capability matrix | 5A | 5E1 | queued |
+| 5B | KS | Local host profile and capability matrix | 5A | 5E1 | merged locally 2026-09-28 |
 | 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | 5E1 | queued |
 | 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5C | — | queued |
 | 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
@@ -74,6 +74,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
 - **Exit:**
   - The host test proves no network or database is touched at construction and offline operations work.
   - The Unit 2 lifecycle tests still pass.
+- **Delivered:** `packages/host/src/local/` — `createHost({ profile: "local", storeDir, identity?, providers?, verification })` and the capability matrix (`localVerificationOperations`, `profileAvailability` over `server`, `local`, `remote-cli`; `HostCapabilityNotAdmittedError`, code `CAPABILITY_NOT_ADMITTED`). Provider configuration is an explicit option (`providers.capture`, optional Firecrawl key for document conversion; `providers.semantic`, AI gateway key); the local path never reads provider credentials from the environment. Host cannot import an app, so the executor supplies its file-backed intent pipeline through a typed **5D3 seam** (`executorLocalVerification` in `apps/verification-executor/src/local-services.ts`: a pure `captureMediaKind` and a lazy `create`); the executor has a type-only devDependency on host. The executor's own CLI, MCP and HTTP surfaces are unchanged. See the ledger's 5B entry.
 
 ### 5C — `ks` CLI skeleton and packaging
 
@@ -85,6 +86,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - Exit codes `0`/`1` gate failed/`2` usage-auth-network-executor.
   - `pack:sandbox` becomes a CLI build target producing a `ks` tarball with required skills; the executor tarball stays until 5H.
   - Record final command names; remove the CLI's `knowledge` binary.
+  - Carried from 5B: decide how `ks` obtains the local verification seam before 5D3 (it lives in the executor app; the CLI must not import another app's internals without a recorded decision), map CLI flags/environment onto `providers` and `identity` (no legacy `VERIFY_*` names), and replace `apps/cli/src/tests/remote-profile.test.ts`'s no-host-dependency check with one over the module graph `--help` and remote commands load.
 - **Exit:**
   - The installed `ks` tarball, outside the workspace with no secrets, passes `--help`, a remote command against a local API, and an offline command.
   - Catalog CLI bindings updated to `ks` command names.
@@ -122,6 +124,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - MCP registers the group, with `verify_*` names unchanged unless recorded.
   - MCP stdio in `apps/mcp` runs on the local profile; `ks verify …` covers the CLI.
   - Decide replacements for `root-host/v1`, `scoped-host/v1` and `evidence-reader/v1` per consumer.
+  - Retire 5B's `verification` seam: the local profile composes the application use cases directly, and the executor's `local-services.ts` and host devDependency go.
 - **Exit:**
   - No catalog row left in `executor` admission.
   - The offline example passes through `ks` with receipts and zero provider calls.

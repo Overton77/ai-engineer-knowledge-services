@@ -1,6 +1,6 @@
 // Unit 5 evidence helper (copy of unit4-catalog-snapshot.ts): prints the transport catalog as JSON — durable kinds and
 // their admission state, API routes, registered MCP tools and CLI commands — and every operation-catalog
-// row with its admission, bindings and per-profile transport state. Run by the Unit 5 slice inventories
+// row with its admission, bindings and per-profile transport state (and, from 5B, its local host profile state). Run by the Unit 5 slice inventories
 // (unit5a-inventory.mjs, …) through tsx from the repository root; it reads source, not dist.
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
@@ -13,7 +13,11 @@ import {
 import { buildServer } from "../../../../../apps/api/src/server.js";
 import { CLI_COMMANDS } from "../../../../../apps/cli/src/commands.js";
 import { createKnowledgeMcpServer } from "../../../../../apps/mcp/src/index.js";
-import { operationCatalog, transportState } from "../../../../../apps/mcp/src/tests/operation-catalog.js";
+import * as catalogModule from "../../../../../apps/mcp/src/tests/operation-catalog.js";
+
+const { operationCatalog, transportState } = catalogModule;
+// From 5B the catalog also derives each row's state on the local host profile; earlier slices lack it.
+const localProfileState = (catalogModule as { localProfileState?: (operation: unknown) => string }).localProfileState;
 
 // The MCP SDK is a dependency of apps/mcp only; resolve it from there.
 const mcpRequire = createRequire(new URL("../../../../../apps/mcp/package.json", import.meta.url));
@@ -61,5 +65,6 @@ process.stdout.write(`${JSON.stringify({
     ...operation,
     state: Object.fromEntries((["server", "local"] as const).flatMap((profile) =>
       (["api", "mcp", "cli"] as const).map((transport) => [`${profile}.${transport}`, transportState(operation, profile, transport)]))),
+    ...(localProfileState ? { localProfile: localProfileState(operation) } : {}),
   })),
 }, null, 2)}\n`);

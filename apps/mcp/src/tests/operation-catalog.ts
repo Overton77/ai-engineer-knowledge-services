@@ -14,10 +14,12 @@
 //   executor — served only by the verification executor (its own MCP/CLI and store mode), not by ks api/mcp/cli.
 // Parity never promotes a declared operation: declared rows may only use `failsClosed` bindings.
 // transportState() derives the per-profile, per-transport state: executable, executable when composed,
-// declared (fails closed), excluded, executor only, or unavailable. createHost rejects the `local`
-// profile until Unit 5, so no platform row is available locally; executor rows run in the verification
-// executor's own store mode today.
+// declared (fails closed), excluded, executor only, or server only. The local host profile composes only
+// the verification intent pipeline over the executor's file store, so every platform row is server only
+// there; executor rows stay executor only on ks transports until 5C/5D bind them. localProfileState()
+// reports what the local host itself admits, from host's capability matrix (profileAvailability).
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
+import { profileAvailability, type ProfileAvailability } from "@aiengineer/knowledge-host";
 
 export type Group = "operations" | "knowledge" | "verify" | "db" | "system";
 export type Admission = "admitted" | "gated" | "declared" | "executor";
@@ -302,16 +304,23 @@ const executorVerify: readonly CatalogOperation[] = ([
 });
 
 export type Profile = "server" | "local";
-export type TransportState = "executable" | "executable when composed" | "declared (fails closed)" | "excluded" | "executor only" | "unavailable";
+export type TransportState = "executable" | "executable when composed" | "declared (fails closed)" | "excluded" | "executor only" | "server only";
 
 /** The declared/admitted/executable state of one operation on one transport under one host profile. */
 export function transportState(operation: CatalogOperation, profile: Profile, transport: "api" | "mcp" | "cli"): TransportState {
   if (operation.admission === "executor") return "executor only";
-  if (profile === "local") return "unavailable";
+  if (profile === "local") return "server only";
   const binding = operation[transport];
   if ("excluded" in binding) return "excluded";
   if ("failsClosed" in binding) return "declared (fails closed)";
   return operation.admission === "gated" ? "executable when composed" : "executable";
+}
+
+/** What the local host profile admits for this row: offline, a provider it needs, or server only. */
+export function localProfileState(operation: CatalogOperation): Exclude<ProfileAvailability, "server" | "remote"> {
+  const state = profileAvailability("local", operation.executor?.mcp ?? operation.id);
+  if (state === "server" || state === "remote") throw new Error(`UNEXPECTED_LOCAL_STATE:${operation.id}`);
+  return state;
 }
 
 export const operationCatalog: readonly CatalogOperation[] = [

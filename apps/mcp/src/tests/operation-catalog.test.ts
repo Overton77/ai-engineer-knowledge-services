@@ -17,6 +17,7 @@ import { MCP_TOOL_CATALOG, VERIFICATION_MCP_TOOL_NAMES } from "../catalog.js";
 import { createKnowledgeMcpServer, createMcpToolExecutor } from "../index.js";
 import {
   declaredApiRequests,
+  localProfileState,
   operationCatalog,
   transportState,
   type Binding,
@@ -107,16 +108,35 @@ describe("operation catalog parity", async () => {
   });
 
   it("derives each operation's state per profile and transport", async () => {
-    await expect(createHost({ profile: "local" })).rejects.toMatchObject({ code: "HOST_PROFILE_UNAVAILABLE", profile: "local" });
     const states = (profile: "server" | "local", transport: Transport) =>
       operationCatalog.reduce<Record<string, number>>((counts, operation) => {
         const state = transportState(operation, profile, transport);
         return { ...counts, [state]: (counts[state] ?? 0) + 1 };
       }, {});
-    for (const transport of transports) expect(states("local", transport)).toEqual({ unavailable: 98, "executor only": 58 });
+    for (const transport of transports) expect(states("local", transport)).toEqual({ "server only": 98, "executor only": 58 });
     expect(states("server", "api")).toEqual({ executable: 47, "executable when composed": 34, "declared (fails closed)": 9, excluded: 8, "executor only": 58 });
     expect(states("server", "mcp")).toEqual({ executable: 28, "executable when composed": 30, "declared (fails closed)": 8, excluded: 32, "executor only": 58 });
     expect(states("server", "cli")).toEqual({ executable: 31, "executable when composed": 30, "declared (fails closed)": 10, excluded: 27, "executor only": 58 });
+  });
+
+  it("reports each operation's local host state as the local host admits it", async () => {
+    const counts = operationCatalog.reduce<Record<string, number>>((total, operation) => {
+      const state = localProfileState(operation);
+      return { ...total, [state]: (total[state] ?? 0) + 1 };
+    }, {});
+    expect(counts).toEqual({ "server only": 140, offline: 14, "capture provider": 1, "semantic provider": 1 });
+    const verification = { captureMediaKind: () => "text" as const, create: (() => { throw new Error("NOT_CONSTRUCTED"); }) as never };
+    const bare = await createHost({ profile: "local", storeDir: "never-created-store", verification });
+    const configured = await createHost({ profile: "local", storeDir: "never-created-store", verification,
+      providers: { capture: {}, semantic: { aiGatewayApiKey: "explicit" } } });
+    for (const operation of operationCatalog) {
+      const name = operation.executor?.mcp ?? operation.id;
+      const state = localProfileState(operation);
+      expect(bare.admits(name), operation.id).toBe(state === "offline");
+      expect(configured.admits(name), operation.id).toBe(state !== "server only");
+      if (state !== "server only") expect(operation.admission, operation.id).toBe("executor");
+    }
+    await Promise.all([bare.close(), configured.close()]);
   });
 
   it("covers every declared durable kind and derives its admission from the production catalogs", () => {
