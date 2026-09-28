@@ -1,6 +1,6 @@
 # Acquisition and inspection examples
 
-Placeholder UUIDs are RFC-layout (`…-4000-8000-…`). Replace them with admitted IDs. Package exemplars under `packages/acquisition/examples` are mocked and need no paid key.
+Placeholder UUIDs are RFC-layout (`…-4000-8000-…`). Replace them with admitted IDs. Package exemplars under `packages/sources/examples` are mocked and need no paid key.
 
 ## 1. Platform HTTP capture
 
@@ -20,8 +20,8 @@ The read payload is an excerpt. Do not copy `text` into a verification locator. 
 
 ## 3. Failure: private or redirected-to-private URL
 
-A mocked DNS answer of `10.0.0.4` fails with `ADDRESS_DENIED` and does not store bytes. Runnable copy: `packages/acquisition/examples/06-http-policy-failure.ts`.
+A mocked DNS answer of `10.0.0.4` fails with `ADDRESS_DENIED` and does not store bytes. Runnable copy: `packages/sources/examples/06-http-policy-failure.ts`.
 
 ## 4. Paper identity
 
-Normalize DOI / arXiv / OpenReview, pick one HTTPS representation, then HTTP-acquire. Do not call paper `execute` on the worker. Runnable copy: `packages/acquisition/examples/05-paper-resolve-then-http.ts`.
+Normalize DOI / arXiv / OpenReview, pick one HTTPS representation, then HTTP-acquire. Do not call paper `execute` on the worker. Runnable copy: `packages/sources/examples/05-paper-resolve-then-http.ts`.

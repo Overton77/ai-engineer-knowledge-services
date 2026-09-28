@@ -6,7 +6,7 @@ import {
   FirecrawlAcquisitionAdapter,
   type AcquisitionRequest,
   type DnsResolver,
-} from "../packages/acquisition/src/index.js";
+} from "../packages/sources/src/index.js";
 import {
   ConversionRouter,
   DeterministicTextConversionProvider,

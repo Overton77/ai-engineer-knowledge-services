@@ -65,7 +65,7 @@
       "task": "Internal fallbacks and application folder order",
       "status": "proposed",
       "modules": [
-        "acquisition",
+        "sources",
         "application",
         "preparation",
         "skill-knowledge-ingest",
@@ -82,7 +82,7 @@
       "task": "Acquisition HTTP, upload, and sealed-byte inspection review record",
       "status": "accepted",
       "modules": [
-        "acquisition",
+        "sources",
         "worker"
       ]
     },
@@ -253,7 +253,7 @@
       "path": "docs/architecture/0002-deterministic-preparation.md",
       "task": "Preparation pipeline",
       "modules": [
-        "acquisition",
+        "sources",
         "preparation",
         "retrieval",
         "application",

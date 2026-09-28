@@ -37,7 +37,7 @@ const genericPreparationPaths = new Set([
   "packages/preparation/src/conversion/deterministic.ts",
   "packages/preparation/src/conversion/providers.ts",
 ]);
-const genericAcquisitionPrefix = "packages/acquisition/src/";
+const genericAcquisitionPrefix = "packages/sources/src/";
 const classifiedDirectWrites = directWrites.map((record) => ({
   ...record,
   classification: record.path === expectedDirectPath ? "canonical_verification_registrar"

@@ -229,27 +229,27 @@
       "packageJson": "apps/worker/package.json"
     },
     {
-      "id": "acquisition",
-      "path": "packages/acquisition",
+      "id": "sources",
+      "path": "packages/sources",
       "kind": "package",
       "state": "implemented",
       "summary": "HTTP and local-upload acquisition wired; inspect library for sealed bytes; repository, Firecrawl scrape, and paper execute remain unwired.",
       "entrypoints": [
-        "packages/acquisition/src/index.ts"
+        "packages/sources/src/index.ts"
       ],
       "interface": [
         "Acquisition request/result types, routed HTTP/upload adapters, and sealed-byte inspection."
       ],
       "tests": [
-        "packages/acquisition/src/http/adapter.test.ts",
-        "packages/acquisition/src/http/deadline.test.ts",
-        "packages/acquisition/src/route.test.ts",
-        "packages/acquisition/src/inspect/inspect.test.ts",
-        "packages/acquisition/examples/examples.test.ts"
+        "packages/sources/src/http/adapter.test.ts",
+        "packages/sources/src/http/deadline.test.ts",
+        "packages/sources/src/route.test.ts",
+        "packages/sources/src/inspect/inspect.test.ts",
+        "packages/sources/examples/examples.test.ts"
       ],
       "constraints": [],
       "uses": [],
-      "packageJson": "packages/acquisition/package.json"
+      "packageJson": "packages/sources/package.json"
     },
     {
       "id": "application",
@@ -1094,7 +1094,7 @@
         "No source_resolve_identity operation; identity is resolved from captured bytes. Firecrawl/Tavily MCP stay in the agent environment and are imported as self-reported receipts."
       ],
       "uses": [
-        "acquisition",
+        "sources",
         "verification-executor",
         "cli"
       ]

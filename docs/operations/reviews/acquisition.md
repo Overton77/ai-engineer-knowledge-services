@@ -20,7 +20,7 @@ Normal path: HTTP or upload → seal → inspect excerpts. Failure path: `ADDRES
 
 Provider restrictions: do not grow Firecrawl scrape; do not wire repository or paper `execute`; do not admit platform inspect.
 
-Evidence: `packages/acquisition/src/*.test.ts`, `packages/acquisition/examples/`, `apps/worker/src/activity-registry.test.ts`.
+Evidence: `packages/sources/src/*.test.ts`, `packages/sources/examples/`, `apps/worker/src/activity-registry.test.ts`.
 
 Explicitly skipped checks: live Firecrawl, live paper resolvers, platform inspect admission, lifting `artifacts.length === 1`.
 
@@ -36,7 +36,7 @@ Structural change only; no behavior change; nothing newly wired. Decision P1-1 f
 | Firecrawl | `src/firecrawl.ts` | `src/firecrawl/adapter.ts` |
 | Root tests | `acquisition.test.ts`, `deadline.test.ts`, `mapped-address.test.ts`, `residuals.test.ts` | `http/adapter.test.ts`, `http/deadline.test.ts`, `http/mapped-address.test.ts`; `residuals.test.ts` split by adapter into `firecrawl/adapter.test.ts`, `upload/adapter.test.ts`, `repository/adapter.test.ts`, `paper/adapter.test.ts`. `route.test.ts` stays at the root. Assertions unchanged. |
 | Root barrel | flat re-exports | banners: Contract, Route, HTTP (wired), Upload (wired), Inspect (library), Paper (identity wired; execute unwired), Repository (unwired), Firecrawl (unwired), Fakes |
-| Wiring status | prose only | table in `packages/acquisition/examples/README.md` |
+| Wiring status | prose only | table in `packages/sources/examples/README.md` |
 
 Names unchanged: 58 exports on `src/index.ts` before and after, checked by emitting declarations (`tsc --declaration --emitDeclarationOnly`) for both trees and diffing the flattened export list (name, kind, hash of the resolved declaration text); only source paths differ.
 
