@@ -60,11 +60,23 @@ describe("host import and profile admission", () => {
     }
   });
 
-  it("rejects the reserved local profile explicitly without reaching the network or a database", async () => {
+  it("composes the local profile lazily without reaching the network or a database", async () => {
+    const { createHost } = await import("../index.js");
+    const verificationServices = vi.fn();
+    const host = await createHost({ profile: "local", storeDir: "never-created-store", verificationServices: verificationServices as never });
+    expect(host.profile).toBe("local");
+    expect(host.capabilities).toEqual({ onlineCapture: false, documentConversion: false, semanticJudging: false, database: false });
+    await host.close();
+    expect(verificationServices).not.toHaveBeenCalled();
+    expect(pools.created).toBe(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects a profile it does not compose explicitly without reaching the network or a database", async () => {
     const { createHost, HostProfileUnavailableError } = await import("../index.js");
-    const failure = await createHost({ profile: "local" }).catch((error: unknown) => error);
+    const failure = await createHost({ profile: "remote-cli" } as never).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(HostProfileUnavailableError);
-    expect(failure).toMatchObject({ code: "HOST_PROFILE_UNAVAILABLE", profile: "local" });
+    expect(failure).toMatchObject({ code: "HOST_PROFILE_UNAVAILABLE", profile: "remote-cli" });
     expect(pools.created).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
   });

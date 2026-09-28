@@ -8,6 +8,8 @@ export * from "./server/mcp.js";
 export * from "./server/worker.js";
 export * from "./server/knowledge.js";
 export * from "./server/verification.js";
+export * from "./local/capabilities.js";
+export * from "./local/local-host.js";
 export type { HostEnvironment } from "./server/shared.js";
 export { HostResources, constructWithResources } from "./lifecycle/resources.js";
 export { startPollingLoop, type PollingLoop } from "./lifecycle/polling.js";

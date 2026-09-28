@@ -1,0 +1,61 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import {
+  localVerificationOperations,
+  profileAvailability,
+  type ExecutionProfile,
+  type LocalOperation,
+} from "../local/capabilities.js";
+
+const profiles: readonly ExecutionProfile[] = ["server", "local", "remote-cli"];
+const operations = Object.keys(localVerificationOperations) as LocalOperation[];
+// Database-backed executor registry operations (one per group) and platform operations.
+const serverBacked = ["schema_search", "db_read_intent", "ingest_apply", "artifact_get", "source_discover", "content_link_apply",
+  "checkpoint_commit", "report_register", "recovery_submit", "knowledge_get_verification_run", "retrieval.read_run"];
+
+describe("capability matrix", () => {
+  it("classifies the verification intent pipeline for server, local and remote CLI", () => {
+    const matrix = Object.fromEntries(operations.map((operation) =>
+      [operation, Object.fromEntries(profiles.map((profile) => [profile, profileAvailability(profile, operation)]))]));
+    const offline = { server: "server", local: "offline", "remote-cli": "remote" };
+    expect(matrix).toEqual({
+      verify_supported_media_types: offline,
+      verify_capture_file: offline,
+      verify_capture_source: { server: "server", local: "capture provider", "remote-cli": "remote" },
+      verify_list_captures: offline,
+      verify_read_capture: offline,
+      verify_search_capture: offline,
+      verify_locate_quote: offline,
+      verify_register_artifact: offline,
+      verify_claims: offline,
+      verify_extraction: offline,
+      verify_judge_semantics: { server: "server", local: "semantic provider", "remote-cli": "remote" },
+      verify_evaluate_policy: offline,
+      verify_seal_run: offline,
+      verify_check_report: offline,
+      verify_run_status: offline,
+      verify_get_artifact: offline,
+    });
+  });
+
+  it("keeps database-backed and platform operations server-only on the local profile", () => {
+    for (const operation of serverBacked) {
+      expect(profileAvailability("local", operation), operation).toBe("server only");
+      expect(profileAvailability("server", operation), operation).toBe("server");
+      expect(profileAvailability("remote-cli", operation), operation).toBe("remote");
+    }
+  });
+
+  it("keeps the remote CLI client-only, so it cannot construct host or fall back to local execution", () => {
+    const cli = join(import.meta.dirname, "../../../../apps/cli");
+    const manifest = JSON.parse(readFileSync(join(cli, "package.json"), "utf8")) as Record<string, Record<string, string> | undefined>;
+    const dependencies = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies });
+    const local = ["@aiengineer/knowledge-host", "@aiengineer/knowledge-persistence", "@aiengineer/knowledge-verification-executor", "pg"];
+    expect(dependencies.filter((name) => local.includes(name))).toEqual([]);
+    const sources = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory() ? sources(join(directory, entry.name)) : entry.name.endsWith(".ts") ? [join(directory, entry.name)] : []);
+    const importers = sources(join(cli, "src")).filter((file) => local.some((name) => readFileSync(file, "utf8").includes(`"${name}`)));
+    expect(importers).toEqual([]);
+  });
+});
