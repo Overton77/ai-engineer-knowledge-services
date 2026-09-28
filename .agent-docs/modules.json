@@ -64,7 +64,7 @@
       "task": "Change parsing and conversion",
       "modules": [
         "preparation",
-        "verification-parser",
+        "parser",
         "docling"
       ]
     },
@@ -885,14 +885,14 @@
       ]
     },
     {
-      "id": "verification-parser",
-      "path": "services/verification-parser",
+      "id": "parser",
+      "path": "services/parser",
       "kind": "service",
       "state": "implemented",
       "summary": "Isolated native PDF geometry and HTML DOM parser; separate from Docling and OCR.",
       "entrypoints": [
-        "services/verification-parser/parser.py",
-        "services/verification-parser/Dockerfile"
+        "services/parser/parser.py",
+        "services/parser/Dockerfile"
       ],
       "interface": [
         "Bounded stdin/stdout parser job invoked by SandboxedVerificationParser."

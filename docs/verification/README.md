@@ -62,7 +62,7 @@ apps/api | apps/cli | apps/mcp | apps/worker
 - Object storage bucket: `VERIFICATION_STORAGE_BUCKET` (default `ai-engineer-cloud-bucket`). Object key: `{tenantId}/{digest[7:9]}/{digest[7:]}` where digest is the hex after `sha256:`.
 - Mission Control / Temporal in `../ai-engineer-mission-control` is the cross-service orchestrator (`verificationWorkflow`, launch `REJECT_DUPLICATE`). KS owns algorithms and durable execution; MC owns dispatch, cancellation, and retry classification.
 
-Parser jobs run in the pinned Docker image at `services/verification-parser`. Docling (`services/docling`) is a separate conversion boundary.
+Parser jobs run in the pinned Docker image at `services/parser`. Docling (`services/docling`) is a separate conversion boundary.
 
 ## Operation kinds and use cases
 

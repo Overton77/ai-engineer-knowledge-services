@@ -12,7 +12,7 @@ coverage/
 *.tsbuildinfo
 *.log
 
-# Python (verification-parser)
+# Python (services/parser)
 __pycache__/
 *.py[cod]
 .venv/

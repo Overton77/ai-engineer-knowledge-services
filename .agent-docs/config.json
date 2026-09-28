@@ -345,7 +345,7 @@
       "modules": [
         "api",
         "worker",
-        "verification-parser",
+        "parser",
         "docling"
       ]
     },
@@ -364,7 +364,7 @@
       "modules": [
         "host",
         "policy",
-        "verification-parser",
+        "parser",
         "verification-providers"
       ]
     },

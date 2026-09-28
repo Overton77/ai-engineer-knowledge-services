@@ -52,7 +52,7 @@ The platform capture use case is narrower still: the
 [application admission rule](../../../packages/application/src/verification/operations/verification-service.ts)
 admits HTML DOM for web pages and acquired PDFs with ordered PDF-text + geometry projections,
 subject to host catalogs and grants. The
-[native parser](../../../services/verification-parser/README.md) is distinct from the executor's
+[native parser](../../../services/parser/README.md) is distinct from the executor's
 Firecrawl conversion and from Docling.
 
 ## Acquisition behavior and observed limits

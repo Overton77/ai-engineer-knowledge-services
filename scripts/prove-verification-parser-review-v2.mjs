@@ -19,9 +19,9 @@ const snapshotDirectory = resolve(root, "internal", `verification-parser-resourc
 const sourceFiles = Object.freeze([
   "packages/preparation/src/conversion/verification-parser.ts",
   "packages/preparation/dist/index.js",
-  "services/verification-parser/parser.py",
-  "services/verification-parser/requirements.txt",
-  "services/verification-parser/Dockerfile",
+  "services/parser/parser.py",
+  "services/parser/requirements.txt",
+  "services/parser/Dockerfile",
   "scripts/prove-verification-parser-review-v2.mjs",
 ]);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -61,8 +61,8 @@ const imageHashes = Object.fromEntries(integrityOutput.trim().split(/\r?\n/u).ma
   return [match[2].replace(/^app\//u, ""), match[1]];
 }));
 const sourceHashes = Object.fromEntries(await Promise.all(sourceFiles.map(async (relative) => [relative, await hashFile(resolve(relative))])));
-assert.equal(imageHashes["parser.py"], sourceHashes["services/verification-parser/parser.py"], "PARSER_PROOF_IMAGE_PARSER_SOURCE_MISMATCH");
-assert.equal(imageHashes["requirements.txt"], sourceHashes["services/verification-parser/requirements.txt"], "PARSER_PROOF_IMAGE_REQUIREMENTS_SOURCE_MISMATCH");
+assert.equal(imageHashes["parser.py"], sourceHashes["services/parser/parser.py"], "PARSER_PROOF_IMAGE_PARSER_SOURCE_MISMATCH");
+assert.equal(imageHashes["requirements.txt"], sourceHashes["services/parser/requirements.txt"], "PARSER_PROOF_IMAGE_REQUIREMENTS_SOURCE_MISMATCH");
 
 const network = await runProbe("network", "import socket\ntry:\n socket.create_connection(('1.1.1.1',443),1)\n raise Exception('NETWORK_ALLOWED')\nexcept OSError as error:\n assert error.errno == 101, error\n print('network_unreachable')");
 assert.deepEqual({ exitCode: network.exitCode, stdout: network.stdout }, { exitCode: 0, stdout: "network_unreachable" });
