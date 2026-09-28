@@ -7,6 +7,7 @@ import {
   verificationOwnedOperationKinds,
 } from "@aiengineer/knowledge-application";
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
+import { createHost } from "@aiengineer/knowledge-host";
 import { PostgresKnowledgeOperationService, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { buildServer } from "../../../api/src/server.js";
 import { CLI_COMMANDS, dispatchCliCommand, resolveCommand, type CliCommand } from "../../../cli/src/commands.js";
@@ -17,6 +18,7 @@ import { createKnowledgeMcpServer, createMcpToolExecutor } from "../index.js";
 import {
   declaredApiRequests,
   operationCatalog,
+  transportState,
   type Binding,
 } from "./operation-catalog.js";
 import { CORRELATION, id, operationContext, owner, resolveIdentity, tenant, tokens } from "./parity-rows.js";
@@ -98,6 +100,25 @@ describe("operation catalog parity", async () => {
       }
   });
 
+  it("names what every gated operation requires", () => {
+    for (const operation of platform)
+      if (operation.admission === "gated") expect(operation.requires?.trim().length, operation.id).toBeGreaterThan(10);
+      else if (operation.admission !== "admitted") expect(operation.requires, operation.id).toBeUndefined();
+  });
+
+  it("derives each operation's state per profile and transport", async () => {
+    await expect(createHost({ profile: "local" })).rejects.toMatchObject({ code: "HOST_PROFILE_UNAVAILABLE", profile: "local" });
+    const states = (profile: "server" | "local", transport: Transport) =>
+      operationCatalog.reduce<Record<string, number>>((counts, operation) => {
+        const state = transportState(operation, profile, transport);
+        return { ...counts, [state]: (counts[state] ?? 0) + 1 };
+      }, {});
+    for (const transport of transports) expect(states("local", transport)).toEqual({ unavailable: 98, "executor only": 58 });
+    expect(states("server", "api")).toEqual({ executable: 47, "executable when composed": 34, "declared (fails closed)": 9, excluded: 8, "executor only": 58 });
+    expect(states("server", "mcp")).toEqual({ executable: 28, "executable when composed": 30, "declared (fails closed)": 8, excluded: 32, "executor only": 58 });
+    expect(states("server", "cli")).toEqual({ executable: 31, "executable when composed": 30, "declared (fails closed)": 10, excluded: 27, "executor only": 58 });
+  });
+
   it("covers every declared durable kind and derives its admission from the production catalogs", () => {
     for (const kind of Object.keys(operationStepsByKind) as OperationKind[]) {
       const rows = platform.filter((operation) => operation.kind === kind);
@@ -149,6 +170,9 @@ describe("operation catalog parity", async () => {
       expect(bound(row.api).some((route) => route.startsWith("POST ") && routeMatches(route.slice(5), entry.path)), entry.path).toBe(true);
       expect(cliCommands.get(entry.cli.join(" "))).toMatchObject({ mode: "verification_mutation", useCase: entry.useCase });
     }
+    const decision = platform.find((operation) => operation.kind === "verification_adjudication_decision")!;
+    expect(bound(decision.mcp)).toEqual(["knowledge_record_adjudication_decision"]);
+    expect(cliCommands.get(bound(decision.cli)[0]!)).toMatchObject({ mode: "verification_mutation", useCase: "recordAdjudicationDecision" });
     // Decision recording is reviewer-bound with opt-in admission; api-mcp-parity.test.ts covers it
     // instead of the surface inventory.
     const inventoried = new Set<string>(verificationMutationInventory.map((entry) => entry.kind));

@@ -14,7 +14,7 @@ describe("diagnostics quarantine", () => {
   it("keeps product use cases free of diagnostics imports; only the barrel re-exports them", () => {
     const offenders = productFiles(source)
       .filter((path) => relative(source, path) !== "index.ts")
-      .filter((path) => /from "[^"]*\/diagnostics\//u.test(readFileSync(path, "utf8")))
+      .filter((path) => /(?:from|import\()\s*["'][^"']*\/diagnostics\//u.test(readFileSync(path, "utf8")))
       .map((path) => relative(source, path).replaceAll("\\", "/"));
     expect(offenders).toEqual([]);
   });
