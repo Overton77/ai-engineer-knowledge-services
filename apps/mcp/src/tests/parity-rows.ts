@@ -540,3 +540,10 @@ export const decisionRequest = {
   decision: "affirm",
   rationale: "Synthetic engineering review record.",
 };
+
+/** Knowledge transports whose stored retrieval run no longer satisfies its public schema. */
+export function integrityFailureTransports(): Transports {
+  const services = knowledgeServices();
+  services.resources.getRetrievalRunResource = vi.fn(async () => ({ id: KNOWN, tenantId: tenant }) as never);
+  return knowledgeTransports(services, true);
+}

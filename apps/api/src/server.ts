@@ -655,7 +655,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(409)
         .send(problem(409, "CONFLICT", inconsistent, correlationId(request)));
-    if (reason === "unavailable") return requireResourceReader(request, reply);
+    if (reason === "unavailable")
+      return reply
+        .status(503)
+        .type("application/problem+json")
+        .send(
+          problem(
+            503,
+            "INTERNAL_ERROR",
+            "Canonical resource store unavailable",
+            correlationId(request),
+          ),
+        );
     return reply
       .status(404)
       .send(problem(404, "NOT_FOUND", notFound, correlationId(request)));

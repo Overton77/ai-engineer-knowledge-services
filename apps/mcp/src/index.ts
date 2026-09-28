@@ -19,8 +19,8 @@ import {
   isAdjudicationDecisionReviewerActor,
   createVerificationResourceReads,
   productionWorkerOperationKinds,
-  retrievalExecutionProblem,
   submitCanonicalRetrievalRun,
+  transportProblem,
   VerificationOperationApplicationService,
   type CanonicalRetrievalExecutorPort,
   type KnowledgeOperationPort,
@@ -317,14 +317,10 @@ export function createVerificationMcpToolExecutor(
       context = parsed.context;
     if (!isAuthorized(options.identity, context.tenantId, "operation.submit"))
       return toolError("FORBIDDEN");
-    // Submission is in process only. Without trusted operations, ownership resolution
-    // or (for record-decision) decision admission, the capability is not admitted.
-    if (
-      !options.verificationOperations ||
-      !options.resolveVerificationContext ||
-      (name === "knowledge_record_adjudication_decision" &&
-        !options.verificationAdmission?.isAdjudicationDecisionAdmitted)
-    )
+    // Submission is in process only. Without trusted operations and ownership resolution
+    // the capability is not admitted; as on the API route, record-decision reports missing
+    // decision admission only after the context is resolved and bound.
+    if (!options.verificationOperations || !options.resolveVerificationContext)
       return toolError("CAPABILITY_NOT_ADMITTED");
     return executeVerificationInProcess({ name, parsed, options });
   };
@@ -536,7 +532,7 @@ function toolError(
     | "CAPABILITY_NOT_ADMITTED"
     | "RESOURCE_ID_REQUIRED"
     | ResourceReadFailureCode
-    | "RETRIEVAL_CAPABILITY_UNSUPPORTED",
+    | ReturnType<typeof transportProblem>["code"],
   details?: unknown,
 ) {
   return {
@@ -563,6 +559,20 @@ function readToolResult<T>(result: ResourceReadResult<T>) {
     content: [{ type: "text" as const, text: JSON.stringify(result.value) }],
     structuredContent: result.value as unknown as Record<string, unknown>,
   };
+}
+
+/**
+ * Runs a shared read and maps an uncaught failure to the API error handler's problem
+ * code, so no internal message reaches the MCP caller.
+ */
+async function inProcessRead<T>(read: () => Promise<ResourceReadResult<T>>) {
+  let result: ResourceReadResult<T>;
+  try {
+    result = await read();
+  } catch (error) {
+    return toolError(transportProblem(error).code);
+  }
+  return readToolResult(result);
 }
 
 /** Runs canonical retrieval in process with the API route's admission and failure codes. */
@@ -603,11 +613,10 @@ async function searchCanonicalRetrieval(
       >,
     };
   } catch (error) {
-    const problem = retrievalExecutionProblem(error);
-    if (!problem) throw error;
-    return problem.status === 422
-      ? toolError(problem.code, problem.response)
-      : toolError(problem.code);
+    const problem = transportProblem(error);
+    return problem.response === undefined
+      ? toolError(problem.code)
+      : toolError(problem.code, problem.response);
   }
 }
 
@@ -675,21 +684,21 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
     else if (name === "retrieval.explain_run" && reads) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
-      return readToolResult(await reads.retrievalExplanation(context.tenantId, id));
+      return inProcessRead(() => reads.retrievalExplanation(context.tenantId, id));
     } else if (name === "retrieval.read_run" && reads) {
       const id = uuid("runId");
       if (!id || Object.keys(inputObject).some(key => key !== "runId")) return toolError("RESOURCE_ID_REQUIRED");
-      return readToolResult(await reads.retrievalRun(context.tenantId, id));
+      return inProcessRead(() => reads.retrievalRun(context.tenantId, id));
     } else if ((name === "retrieval.read_evidence_packet" || name === "retrieval.replay_citations") && reads) {
       const id = uuid("packetId");
       if (!id || Object.keys(inputObject).some(key => key !== "packetId")) return toolError("RESOURCE_ID_REQUIRED");
       return name === "retrieval.read_evidence_packet"
-        ? readToolResult(await reads.evidencePacket(context.tenantId, id))
-        : readToolResult(await reads.citationReplay(context.tenantId, id));
+        ? inProcessRead(() => reads.evidencePacket(context.tenantId, id))
+        : inProcessRead(() => reads.citationReplay(context.tenantId, id));
     } else if (name === "evaluation.inspect_failures" && reads) {
       const id = uuid("runId");
       if (!id) return toolError("RESOURCE_ID_REQUIRED");
-      return readToolResult(await reads.evaluationFailures(context.tenantId, id));
+      return inProcessRead(() => reads.evaluationFailures(context.tenantId, id));
     } else if (
       name === "embedding.run_status" ||
       name === "promotion.status"
@@ -704,8 +713,8 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       const storeId = uuid("vectorStoreId"),
         operationId = uuid("operationId");
       if (!storeId || !operationId) return toolError("RESOURCE_ID_REQUIRED");
-      return readToolResult(
-        await reads.vectorStoreOperation(context.tenantId, storeId, operationId),
+      return inProcessRead(() =>
+        reads.vectorStoreOperation(context.tenantId, storeId, operationId),
       );
     }
     if (readResult !== undefined)

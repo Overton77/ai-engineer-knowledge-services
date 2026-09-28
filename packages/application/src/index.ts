@@ -117,3 +117,4 @@ export * from "./reads/verification-resource-reads.js";
 export * from "./verification/operations/verification-drift-revalidation-queue.js";
 export * from "./verification/benchmark/verification-benchmark-capture-profile.js";
 export * from "./verification/operations/verification-context-binding.js";
+export * from "./errors/transport-problem.js";

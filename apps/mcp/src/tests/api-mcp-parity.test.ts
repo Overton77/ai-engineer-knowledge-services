@@ -5,6 +5,7 @@ import {
   decisionRequest,
   foreignTenant,
   IDEMPOTENCY,
+  integrityFailureTransports,
   CORRELATION,
   KNOWN,
   mutationTransports,
@@ -93,6 +94,21 @@ describe.each(readRows)("$tool API/MCP parity", (row) => {
   });
 });
 
+describe("uncaught read failure API/MCP parity", () => {
+  it("maps a stored resource that fails its integrity checks to the same problem code", async () => {
+    const transports = integrityFailureTransports();
+    const context = operationContext(tenant, owner);
+    const api = await viaApi(transports.api, tokens.owner, tenant, { method: "GET", url: `/v1/retrieval-runs/${KNOWN}` });
+    const mcp = await viaMcp(transports.mcp, tokens.owner, "retrieval.read_run", {
+      context,
+      input: { runId: KNOWN },
+      expectedVersions: { api: "v1" },
+    });
+    expect(api).toEqual({ status: 409, code: "CONFLICT" });
+    expect(mcp).toEqual({ code: "CONFLICT" });
+  });
+});
+
 describe("retrieval.search API/MCP parity", () => {
   const search = async (options: {
     configured?: boolean;
@@ -144,6 +160,16 @@ describe("retrieval.search API/MCP parity", () => {
     const { api, mcp } = await search({ configured: false });
     expect(api).toEqual({ status: 503, code: "INTERNAL_ERROR" });
     expect(mcp).toEqual({ code: "CAPABILITY_NOT_ADMITTED" });
+  });
+
+  it("sanitizes an unclassified execution failure identically", async () => {
+    const { api, mcp } = await search({
+      execute: vi.fn(async () => {
+        throw new Error("private database detail");
+      }),
+    });
+    expect(api).toEqual({ status: 500, code: "INTERNAL_ERROR" });
+    expect(mcp).toEqual({ code: "INTERNAL_ERROR" });
   });
 
   it("classifies a policy-rejected execution identically", async () => {
@@ -204,6 +230,12 @@ describe("verification mutation API/MCP parity", () => {
     const { api, mcp } = await mutate(kind, { configured: false });
     expect(api).toEqual({ status: 503, code: "CAPABILITY_NOT_ADMITTED" });
     expect(mcp).toEqual({ code: "CAPABILITY_NOT_ADMITTED" });
+  });
+
+  it("decision: denies missing ownership before reporting missing decision admission", async () => {
+    const { api, mcp } = await mutate("decision", { token: tokens.stranger, decisions: false });
+    expect(api).toEqual({ status: 403, code: "FORBIDDEN" });
+    expect(mcp).toEqual({ code: "FORBIDDEN" });
   });
 
   it("decision: reports missing decision admission without an HTTP fallback", async () => {
