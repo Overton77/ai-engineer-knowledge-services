@@ -14,7 +14,7 @@ export type KsGroup = "knowledge" | "verify" | "db" | "jev";
 export const KS_GROUPS: Readonly<Record<KsGroup, string>> = Object.freeze({
   knowledge: "sources, stores, preparation, promotion, embedding, retrieval, evaluation, publication and operations",
   verify: "verification runs, results, benchmarks, bundles and adjudication; the local capture and verification chain",
-  db: "database maintenance and fixture workflows (offline; not served)",
+  db: "database maintenance and fixture workflows (declared: every command fails closed with CAPABILITY_NOT_ADMITTED)",
   jev: "reserved: Unit 5F binds `ks jev`; until then use the `jev` binary",
 });
 

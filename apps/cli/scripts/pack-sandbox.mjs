@@ -96,7 +96,7 @@ writeFileSync(
   }, null, 2)}\n`,
 );
 
-const packOutput = execFileSync(process.platform === "win32" ? "npm.cmd" : "npm", ["pack", "--json", "--pack-destination", stage],
+const packOutput = execFileSync(process.platform === "win32" ? "npm.cmd" : "npm", ["pack", "--json", "--pack-destination", process.platform === "win32" ? `"${stage}"` : stage],
   { cwd: stage, encoding: "utf8", shell: process.platform === "win32" });
 const packed = JSON.parse(packOutput)[0];
 const tarball = join(stage, packed.filename);

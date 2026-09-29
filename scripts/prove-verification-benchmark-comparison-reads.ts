@@ -70,7 +70,7 @@ function runCli(baseUrl: string) {
     correlationId: namespace,
   };
   return new Promise<{ code: number | null; stdout: string; stderr: string }>((done, reject) => {
-    const child = spawn(process.execPath, [resolve("apps/cli/dist/index.js"), "benchmark", "comparison", "--base-url", baseUrl, "--context", JSON.stringify(context), "--input", JSON.stringify({ comparisonId })], {
+    const child = spawn(process.execPath, [resolve("apps/cli/dist/index.js"), "verify","benchmark", "comparison", "--base-url", baseUrl, "--context", JSON.stringify(context), "--input", JSON.stringify({ comparisonId })], {
       windowsHide: true,
       env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, KNOWLEDGE_API_TOKEN: token },
       stdio: ["ignore", "pipe", "pipe"],

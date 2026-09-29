@@ -236,6 +236,7 @@ describe("local profile entry", () => {
     const directory = join(import.meta.dirname, "../local");
     const specifiers = readdirSync(directory).filter((name) => name.endsWith(".ts"))
       .flatMap((name) => [...readFileSync(join(directory, name), "utf8").matchAll(/^(?:import|export)[^;]*?from\s+"([^"]+)"/gmu)].map((match) => match[1]!));
+    expect(specifiers).toContain("../lifecycle/resources.js");
     expect(specifiers.filter((specifier) => !specifier.startsWith("./") && specifier !== "../lifecycle/resources.js" && !specifier.startsWith("node:"))).toEqual([]);
   });
 });

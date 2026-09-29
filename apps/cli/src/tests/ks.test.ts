@@ -181,10 +181,23 @@ describe("ks local profile", () => {
     expect(existsSync(store)).toBe(false);
   });
 
-  it("rejects unknown local options as usage errors", async () => {
-    const terminal = io();
-    expect(await runKs(["verify", "capture", "list", "--remote", "https://knowledge.example"], terminal)).toBe(2);
-    expect(JSON.parse(terminal.err.join(""))).toMatchObject({ code: "USAGE", command: "verify capture list" });
+  it("rejects unknown local options and value options without a value as usage errors", async () => {
+    for (const argv of [["verify", "capture", "list", "--remote", "https://knowledge.example"], ["verify", "capture", "list", "--store"],
+      ["verify", "capture", "list", "--out", "--human"]]) {
+      const terminal = io();
+      expect(await runKs(argv, terminal), argv.join(" ")).toBe(2);
+      expect(JSON.parse(terminal.err.join("")), argv.join(" ")).toMatchObject({ code: "USAGE", command: "verify capture list" });
+    }
+  });
+
+  it("treats --human as a switch that never consumes an argument", async () => {
+    const directory = await workspace(), source = join(directory, "source.txt");
+    await writeFile(source, "Alpha beta.\n");
+    const env = { KNOWLEDGE_LOCAL_STORE_DIR: join(directory, "store"), KNOWLEDGE_LOCAL_GIT_SHA: "ks-test" };
+    expect(await runKs(["verify", "capture", "file", source, "--capture-id", "c1"], io(env))).toBe(0);
+    const terminal = io(env);
+    expect(await runKs(["verify", "capture", "read", "--human", "c1"], terminal), terminal.err.join("")).toBe(0);
+    expect(terminal.out.join("")).toContain("\n  ");
   });
 });
 

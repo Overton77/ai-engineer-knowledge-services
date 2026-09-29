@@ -34,8 +34,15 @@ export async function runRemoteCommand(command: CliCommand, argv: readonly strin
   if (!baseUrl) throw new KsUsageError(`${REMOTE_ENVIRONMENT.url} or --base-url is required`);
   const token = io.env[REMOTE_ENVIRONMENT.token];
   if (!token) throw new KsUsageError(`${REMOTE_ENVIRONMENT.token} is required`);
-  const context = OperationContextSchema.parse(JSON.parse(values.get("--context") ?? "null"));
-  const input = JsonValueSchema.parse(JSON.parse(values.get("--input") ?? "{}"));
+  const json = (flag: string, fallback: string): unknown => {
+    try {
+      return JSON.parse(values.get(flag) ?? fallback);
+    } catch {
+      throw new KsUsageError(`${flag} must be JSON`);
+    }
+  };
+  const context = OperationContextSchema.parse(json("--context", "null"));
+  const input = JsonValueSchema.parse(json("--input", "{}"));
   const timeoutMs = Number(values.get("--timeout-ms") ?? "60000");
   if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 300000) throw new KsUsageError("CLI_TIMEOUT_INVALID");
   const deadline = Date.now() + timeoutMs,

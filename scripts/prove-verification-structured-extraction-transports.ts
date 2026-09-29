@@ -60,7 +60,7 @@ try{
   const mcpAccepted=await createVerificationMcpToolExecutor(options)("knowledge_extract_structured_data",{context:{tenantId,correlationId:namespace,idempotencyKey:`mcp-${namespace}`,attemptId:ownership.attempt_id,workItemId:ownership.work_item_id,missionId:ownership.mission_id},request:original.request});
   assert.ok("structuredContent" in mcpAccepted);operations.push(AcceptedOperationSchema.parse(mcpAccepted.structuredContent).operationId);
   const runCli=(action:string,input:unknown)=>new Promise<unknown>((done,reject)=>{
-    const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"extraction",action,"--base-url",origin,"--context",JSON.stringify({...context,idempotencyKey:`cli-process-${namespace}`}),"--input",JSON.stringify(input)],
+    const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"verify","extraction",action,"--base-url",origin,"--context",JSON.stringify({...context,idempotencyKey:`cli-process-${namespace}`}),"--input",JSON.stringify(input)],
       {windowsHide:true,env:{SYSTEMROOT:process.env.SYSTEMROOT,WINDIR:process.env.WINDIR,KNOWLEDGE_API_TOKEN:"valid"},stdio:["ignore","pipe","pipe"]});
     let stdout="",stderr="";const timer=setTimeout(()=>child.kill("SIGKILL"),30_000);
     child.stdout.on("data",value=>{stdout+=value;});child.stderr.on("data",value=>{stderr+=value;});

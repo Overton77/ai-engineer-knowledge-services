@@ -62,6 +62,16 @@ describe("remote CLI profile", () => {
     expect(forbidden(lazy.inputs).some((path) => path.includes("/apps/verification-executor/"))).toBe(true);
     expect(forbidden(lazy.inputs).filter((path) => path.includes("/packages/persistence/") || path.includes("/packages/knowledge-db/"))).toEqual([]);
     expect(lazy.externals.filter((name) => name === "pg" || name.startsWith("pg/"))).toEqual([]);
+
+    // The executor seam arrives prebuilt (its own bundle inlines workspace packages), so the CLI metafile sees it as one
+    // input; its own metafile shows what that bundle contains.
+    const executor = JSON.parse(readFileSync(join(application, "../verification-executor/dist/metafile-esm.json"), "utf8")) as Metafile;
+    const seam = Object.keys(executor.outputs).find((output) => executor.outputs[output]!.entryPoint === "src/local-services.ts")!;
+    expect(seam).toBe("dist/local-services.js");
+    const seamInputs = Object.keys(executor.outputs[seam]!.inputs).map((path) => resolve(application, "../verification-executor", path).replaceAll("\\", "/"));
+    expect(seamInputs.some((path) => path.endsWith("/apps/verification-executor/src/executor.ts"))).toBe(true);
+    expect(seamInputs.filter((path) => ["/packages/host/", "/packages/persistence/", "/packages/knowledge-db/"].some((segment) => path.includes(segment)))).toEqual([]);
+    expect(executor.outputs[seam]!.imports.filter((item) => item.external && (item.path === "pg" || item.path.startsWith("pg/")))).toEqual([]);
   });
 
   it("surfaces remote network and authorization failures without falling back", async () => {

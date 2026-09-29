@@ -71,6 +71,8 @@ function openLocalHost(flags: Flags, env: KsIo["env"]) {
 // ---- commands ------------------------------------------------------------------------------------------------
 
 interface Parsed { readonly positionals: readonly string[]; readonly flags: Flags }
+/** Options that take no value; every other option requires one. */
+const SWITCHES: readonly string[] = ["human"];
 function parse(argv: readonly string[], allowed: readonly string[]): Parsed {
   const positionals: string[] = [];
   const flags: Record<string, string | true> = {};
@@ -80,8 +82,11 @@ function parse(argv: readonly string[], allowed: readonly string[]): Parsed {
     const key = item.slice(2);
     if (!allowed.includes(key)) throw new KsUsageError(`unknown option --${key}`);
     if (Object.hasOwn(flags, key)) throw new KsUsageError(`duplicate option --${key}`);
+    if (SWITCHES.includes(key)) { flags[key] = true; continue; }
     const next = argv[index + 1];
-    if (next !== undefined && !next.startsWith("--")) { flags[key] = next; index += 1; } else flags[key] = true;
+    if (next === undefined || next.startsWith("--") || next.trim() === "") throw new KsUsageError(`--${key} requires a value`);
+    flags[key] = next;
+    index += 1;
   }
   return { positionals, flags };
 }
