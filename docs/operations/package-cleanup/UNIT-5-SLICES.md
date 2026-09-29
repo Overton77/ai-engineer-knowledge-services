@@ -4,7 +4,7 @@ Status: proposed delivery plan, 2026-09-28. Scope and acceptance come from [UNIT
 
 ## Why slices, and the adjusted branch rule
 
-Unit 5 is larger than Units 1–4 combined and is the first unit that changes public surfaces and edits Eve. The developer prefers smaller slices because they produce higher-quality work. Adjustment to the one-branch-per-unit rule (developer preference, 2026-09-28; confirmed by the developer's 5A instruction): **one branch per slice**, named `refactor/ks-unit-5<letter>-<topic>`. Each slice is validated, reviewed, recorded in the ledger and merged locally before the next dependent slice starts. Eve slices use the same names in `research_ingestion_systems_agent`.
+Unit 5 is larger than Units 1–4 combined and is the first unit that changes public surfaces and folds the executor. The developer prefers smaller slices because they produce higher-quality work. Adjustment to the one-branch-per-unit rule (developer preference, 2026-09-28; confirmed by the developer's 5A instruction): **one branch per slice**, named `refactor/ks-unit-5<letter>-<topic>`. Each slice is validated, reviewed, recorded in the ledger and merged locally before the next dependent slice starts. Eve slices 5E1/5E2 are superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md); they are historical scope only and no longer gate cleanup.
 
 Between slices, `main` may briefly hold both the executor and the folded platform surfaces. During the transition, the executor calls the same application use cases. That is not a forwarding adapter or a dual-running service: nothing preserves an old interface for compatibility, and slice 5H deletes the executor. No slice may add an alias, shim or legacy environment name.
 
@@ -12,16 +12,16 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 
 | Slice | Repository | Topic | Depends on | Parallel with | Status |
 | --- | --- | --- | --- | --- | --- |
-| 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | 5E1 | merged locally 2026-09-28 |
-| 5B | KS | Local host profile and capability matrix | 5A | 5E1 | merged locally 2026-09-28 |
-| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | 5E1 | queued |
+| 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | — | merged locally 2026-09-28 |
+| 5B | KS | Local host profile and capability matrix | 5A | — | merged locally 2026-09-28 |
+| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | — | queued |
 | 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5C | — | queued |
 | 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
 | 5D3 | KS | Fold the `verification` group (intent pipeline, `verify_*`, recovery), executor HTTP routes, MCP stdio | 5D2 | 5F | queued |
 | 5F | KS | Jev transport consolidation (`ks jev`) | 5C | 5D3 | queued |
-| 5E1 | Eve | Early path repair: t14 hosts on current KS packages | Unit 4 main | 5A–5C | queued |
-| 5E2 | Eve | Adapt Eve to `ks`, the folded surfaces and new packaging | 5D3, 5F | — | queued |
-| 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5E2 | — | queued |
+| 5E1 | Eve | Historical early path repair | — | — | superseded by [DR1–DR5](./DEEPAGENTS-READINESS.md) |
+| 5E2 | Eve | Historical adaptation | — | — | superseded by [DR1–DR5](./DEEPAGENTS-READINESS.md) |
+| 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5C–5D3, 5F; DeepAgents smoke against ks (DR2 exit) | — | queued |
 
 Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/operation-catalog.ts`, the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
 
@@ -140,7 +140,9 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
 - **Must not:** remove `apps/jev` before equivalent surfaces and lifecycle proofs pass (recovery, cancel, retry, auth).
 - **Exit:** Jev core, service and client suites pass, with lifecycle proofs recorded.
 
-### 5E1 — Eve early path repair (Eve repository)
+### 5E1 — Eve early path repair (superseded history)
+
+Superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md). Do not implement for this fixture; the former scope below is retained only as history.
 
 - **Goal:** Eve's t14 hosts load the current KS packages, independent of the fold.
 - **Scope:**
@@ -150,7 +152,9 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
 - **Must not:** edit KS; change binaries, skills or packaging (that is 5E2).
 - **Exit:** Eve's t14 unit and integration tests pass, or are listed with the prerequisite they need (for example a disposable database).
 
-### 5E2 — Eve adaptation to `ks` and the folded surfaces (Eve repository)
+### 5E2 — Eve adaptation to `ks` and the folded surfaces (superseded history)
+
+Superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md). Eve stays in its repository, unmaintained for the fixture; an adapter may come later. The former scope below is history, not acceptance.
 
 - **Goal:** Eve uses `ks`, the folded API/MCP surfaces and the new packaging.
 - **Scope:**
@@ -168,15 +172,15 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
 - **Goal:** delete `apps/verification-executor` and finish the unit.
 - **Scope:**
   - Remove its package, exports, binaries and sandbox packer; move its skill home to `skills/` if 5C did not.
-  - Final Unit 5 acceptance (full graph, inventories, installed `ks` smoke, Eve smoke).
+  - Final Unit 5 acceptance (full graph, inventories, installed `ks` smoke, DeepAgents smoke against ks).
   - Update the documentation and ledger, and write the bounded Unit 6 (skills) specification.
-- **Exit:** everything in the Unit 5 specification's acceptance evidence, recorded.
+- **Exit:** everything in the Unit 5 specification's acceptance evidence, recorded; rerun the DR2 smoke after executor removal. Full DR4/Unit 6 readiness is not a prerequisite for this minimal smoke.
 
 ## Instruction template
 
-Paste this into the next session, replacing `<slice>` with the next slice from the map (start with **5A**; 5E1 may run in a separate Eve session at any time):
+Paste this into the next session, replacing `<slice>` with the next slice from the map (next is **5C**; 5A/5B are delivered and 5E1/5E2 are superseded):
 
-> Continue the Knowledge Services package cleanup, Unit 5 slice `<slice>`, from local main in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services` (and `research_ingestion_systems_agent` for Eve slices).
+> Continue the Knowledge Services package cleanup, Unit 5 slice `<slice>`, from local main in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`.
 >
 > Read repository AGENTS.md, then these files in `docs/operations/package-cleanup/`: `workspace/PROGRESS.md` (latest entries), `NEXT-PACKAGE-CLEANUP.md`, `UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md` and `UNIT-5-SLICES.md`.
 >
