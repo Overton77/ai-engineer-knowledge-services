@@ -189,9 +189,9 @@ A passing report verification is still not admission — read the report assessm
 
 **Inputs.** Request: `RequestAdjudicationRequestSchema` (`target` kind `assertion`|`evidence`|`run`, `reason`, `evidencePacket`, optional `requesterNote`). Decision: `VerificationAdjudicationDecisionRequestSchema` (`subjectId`, `packetArtifact`, `decision` `affirm`|`reject`|`defer`, `rationale`). Decision HTTP accepts actor `human`, or `service` with `serviceIdentity: human_reviewer`; never `model`. Model agents request only; they do not record decisions.
 
-**CLI.** `ks verify adjudication request --context '...' --input '<RequestAdjudicationRequest>'`  
-`ks verify adjudication decision --context '...' --input '<VerificationAdjudicationDecisionRequest>'`  
-Reads: `adjudication get` / `adjudication get-decision` with `{operationId}`.
+**CLI.** `ks verify adjudication request --context '...' --input '<RequestAdjudicationRequest>'`<br>
+`ks verify adjudication decision --context '...' --input '<VerificationAdjudicationDecisionRequest>'`<br>
+Reads: `ks verify adjudication get` / `ks verify adjudication get-decision` with `{operationId}`.
 
 **MCP.** `knowledge_request_adjudication`, `knowledge_record_adjudication_decision`, `knowledge_get_adjudication`, `knowledge_get_adjudication_decision`.
 
