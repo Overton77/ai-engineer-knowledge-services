@@ -6,14 +6,14 @@ This is the developer's execution brief for a new session. Use **GPT 6 Astra as 
 
 ## Objective and scope
 
-Implement the accepted `FINAL-LAYOUT.md` in its prescribed order, adapt the Eve research agent to the new services and updated skills, and then run the pre–Mission Control testing. Begin with bounded planning and immediately move into execution. Do not stop after producing another plan, or ask for permission at each mechanical step.
+Implement the accepted `FINAL-LAYOUT.md` in its prescribed order, prepare the DeepAgents stage runner for the new services and updated skills, and then run the pre–Mission Control testing. Begin with bounded planning and immediately move into execution. Do not stop after producing another plan, or ask for permission at each mechanical step.
 
-There are **no live consumers** of these services. Eve (`research_ingestion_systems_agent`) is the existing test consumer and intended real integration. Update it directly to the new contracts, packaging, configuration, and skills. Do not build legacy adapters, maintain old binaries for compatibility, or stage a production migration. The populated shared database and stored evidence still must be preserved.
+There are **no live consumers** of these services. The DeepAgents stage runner (`research_ingestion_systems_agent/agents/deepagents-stage`) is the test consumer and real fixture harness. Follow [DR1–DR5](./DEEPAGENTS-READINESS.md) and the [real fixture stage graph](./REAL-FIXTURE-STAGE-GRAPH.md), including config-composed compiled sync and native async children. Historical Eve adaptation is superseded: Eve remains untouched and unmaintained for this fixture; an adapter may come later. Do not build legacy adapters, maintain old binaries for compatibility, or stage a production migration. The populated shared database and stored evidence still must be preserved.
 
 Repository roots relative to the workspace:
 
 - `ai-engineer-knowledge-services/`: primary implementation and this cleanup ledger.
-- `research_ingestion_systems_agent/`: Eve integration, skill synchronization, and research tests.
+- `research_ingestion_systems_agent/`: DeepAgents readiness and fixture execution; preserve existing Eve/proof work.
 - `ai-engineer-meta/`: accepted cross-system intent and the pre–Mission Control test plan; use its navigation to locate the current plan.
 - `ai-engineer-db-contract/`: shared database authority; consume the pinned contract. A package cleanup does not authorize unrelated schema changes.
 
@@ -22,7 +22,7 @@ Repository roots relative to the workspace:
 Developer-accepted branch rule: one cleanup unit per branch, created from integrated local `main`; multiple cohesive commits per branch are expected. Complete and validate the unit, update its evidence and next-unit handoff, then merge it into local `main` before branching for the next unit. Routine local unit merges are authorized. Do not stack unfinished units or implement them directly on main. Follow [the current handoff](./NEXT-PACKAGE-CLEANUP.md) for the exact next branch and baseline exception. Preserve functionality; specify and test deliberate enhancements in the appropriate later units. Remote publication and deployment are separate from this local workflow.
 
 1. Read workspace `AGENTS.md`, primary repository `AGENTS.md`, and this folder's `FINAL-LAYOUT.md`.
-2. Read `workspace/README.md`, `workspace/PROGRESS.md`, `FINAL-REVIEW.md`, and the current unit's specification. Follow links to source-specific guides and accepted architecture as needed. Read Eve's own instructions before changing that repository.
+2. Read `workspace/README.md`, `workspace/PROGRESS.md`, `FINAL-REVIEW.md`, and the current unit's specification. Follow links to source-specific guides and accepted architecture as needed. Read the research repository's own instructions before changing that repository.
 3. Inspect actual Git status, branch, HEAD, worktrees, and relevant source. The preparation session was based on `9084428` and left documentation uncommitted; this is historical context, not a command to reset to that commit. Preserve those authored and generated documentation changes and any unrelated user work.
 4. Establish one implementation branch/worktree and record its absolute path and baseline SHA. If creating a worktree, explicitly carry the reviewed preparation documents into it: a new worktree does not include uncommitted changes. Do not silently execute from the pre-review version of the plan. Inspect and checkpoint only intended files; do not indiscriminately stage the workspace.
 5. Locate the applicable pre–Mission Control test plan through meta's instructions/navigation. Record its exact path and relevant commands in the ledger early, including any prerequisites that can be prepared during cleanup. Historical S0–S7 sequencing does not override this cleanup's unit order. Do not invent a substitute evaluation and call it the requested test plan.
@@ -35,7 +35,7 @@ Developer-accepted branch rule: one cleanup unit per branch, created from integr
 You own sequencing, interface decisions, specifications, integration, review, and final acceptance. Sol owns bounded implementation tasks you assign.
 
 - Turn each unit into a small number of concrete tasks with explicit paths, invariants, expected output, and checks. Write specifications for units 2–7 immediately before they begin, against the preceding validated state. Do not spec every implementation detail up front.
-- Make the architectural decisions yourself: dependency direction, host interfaces and profiles, authorization placement, catalog semantics, and Eve's new integration contract. Give workers decisions to implement rather than asking each to redesign the repository.
+- Make the architectural decisions yourself: dependency direction, host interfaces and profiles, authorization placement, catalog semantics, and DeepAgents' published consumer contract. Give workers decisions to implement rather than asking each to redesign the repository.
 - Be the sole writer of `workspace/PROGRESS.md` and coordinator-owned unit specs. Keep path reservations and validation ownership explicit.
 - While a worker implements, do useful independent work: inspect adjacent consumers, prepare acceptance cases, inspect baseline evidence, or review untouched interfaces. Do not concurrently edit the worker's reserved paths.
 - Inspect each returned diff and evidence before accepting it. Check behavior and dependency direction, not only test exit codes. Reuse the worker for bounded fixes when useful; use a fresh worker when its task/context is exhausted.
@@ -98,10 +98,12 @@ results from assumptions. Do not mark the overall unit complete yourself.
 | 2 — host | Specify profile capabilities/lifecycle and reuse the existing shared verification host | Extract config and composition into host without duplicating admission implementations |
 | 3 — application/MCP | Specify remaining ownership/admission/retrieval moves and new transport contracts | Move one remaining concern or shim at a time, with shared authorization/admission tests |
 | 4 — organization/catalog | Specify folder/service renames, internal import rules, and complete operation descriptors | Implement bounded renames, then catalog parity covering reads, mutations, profile availability and exclusions |
-| 5 — executor/Eve | First design the dependency inversion; then define the unified services and direct Eve adaptation | Remove `knowledge-db → persistence` coupling before adding `application → knowledge-db`; fold executor and adapt Eve in bounded steps |
-| 6 — skills | Specify eight canonical skills and accurate operation/procedure coverage | Consolidate skills, references and manifest; update Eve's skill sync, capability profiles and sandbox packaging |
+| 5 — executor/CLI | Define unified services and the DeepAgents smoke against ks | Follow unchanged KS slices 5C–5D3 and 5F; 5E1/5E2 are superseded; validate 5H with DR2 smoke |
+| 6 — skills | Specify eight canonical skills and accurate operation/procedure coverage | Consolidate skills, references and manifest; validate with DeepAgents parser and installed packaging; stage configs own role bindings |
 | 7 — proofs | Classify runnable proof commands versus build tooling and historical records | Move active proofs and repair entrypoints/fixtures/assets; archive historical material without changing receipts |
-| Final testing | Execute the identified pre–Mission Control plan using the new Eve integration and skills | Delegate bounded test execution/triage; coordinate results and fix implementation regressions |
+| Final testing | Execute the identified pre–Mission Control plan using the DeepAgents stage graph after DR1–DR5 and Unit 6 conformance | Delegate bounded test execution/triage; coordinate results and fix implementation regressions |
+
+Sequence: KS cleanup/readiness → DeepAgents readiness → real fixtures → Mission Control. Runner implementation belongs to the research repository, not a cleanup slice. Unit 7 retains its accepted scheduling exception.
 
 Do not insert new feature-development tracks merely because historical documents list them. Keep Jev and planned research capabilities accurately represented; do not claim them implemented through renaming or skill prose. Do not unify the deferred capture/parser paths during package cleanup.
 
@@ -116,13 +118,13 @@ Pay particular attention to:
 - Local filesystem storage versus offline capability. Offline commands must not silently reach providers/databases; remote CLI must remain client-only. The host owns construction and cleanup.
 - Declared versus admitted versus executable operation kinds. Catalog parity must not activate unavailable operations or give ingestion a second durable ledger.
 - Test and export identity, not just counts; root `verify` does not cover every preparation/retrieval example. Installed sandbox packages must work without monorepo module resolution.
-- Eve must use the new services and new skills for final testing. Passing the old executor integration does not validate the new one.
+- DeepAgents must use the new services and canonical skills, and demonstrate both real sync and async children for final testing. Passing the old executor integration does not validate the new one.
 
 Use isolated disposable databases for destructive/fresh-chain proofs. Preserve the populated shared database, immutable receipts and persisted identities. Keep secrets and raw private research out of logs and committed evidence. Follow the actual test plan and existing service authorization; do not invent deployment or paid-provider permissions just to complete a checklist.
 
 Keep validated changes in small, scoped commits when appropriate, with baseline fixes separated from mechanical moves and surface changes. Local implementation can proceed across validated commits without waiting for a PR merge after every unit. Do not infer authorization to merge future PRs or deploy from the earlier request to merge Claude Code's PR. Record commit/PR status accurately; use `landed` only when the ledger's definition is met.
 
-At the end, report the achieved layout, Eve/skill integration status, pre–Mission Control test results, actual commands/evidence, and any remaining limitations. If a real blocker prevents completion, record precisely what is missing and the next executable action; do not substitute an optimistic completion claim.
+At the end, report the achieved layout, DeepAgents/skill integration status, pre–Mission Control test results, actual commands/evidence, and any remaining limitations. If a real blocker prevents completion, record precisely what is missing and the next executable action; do not substitute an optimistic completion claim.
 
 ## Ledger and restart discipline
 

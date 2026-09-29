@@ -19,9 +19,12 @@ Current continuation: [NEXT-PACKAGE-CLEANUP.md](./NEXT-PACKAGE-CLEANUP.md). Unit
 - [UNIT-2-HOST-COMPOSITION.md](./UNIT-2-HOST-COMPOSITION.md): delivered host composition, lifecycle and the remaining Unit 3/5 seams.
 - [UNIT-3-APPLICATION-AND-MCP.md](./UNIT-3-APPLICATION-AND-MCP.md): delivered application use cases, in-process MCP (no HTTP shims) and API/MCP parity.
 - [UNIT-4-APPLICATION-ORDER-AND-CATALOG.md](./UNIT-4-APPLICATION-ORDER-AND-CATALOG.md): delivered application folders by tool group, A2A binding in the API, testkit off the API runtime, the folder naming pass and the operation catalog parity test.
-- [UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md): next bounded specification. [UNIT-5-SLICES.md](./UNIT-5-SLICES.md) divides it into sessions (5A–5H), one branch each. Write specifications for units 6–7 as their turn arrives.
+- [UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md](./UNIT-5-EXECUTOR-FOLD-CLI-AND-EVE.md): next bounded specification. [UNIT-5-SLICES.md](./UNIT-5-SLICES.md) divides it into sessions (5A–5H), one branch each. 5A/5B are delivered; **5C is next**. 5E1/5E2 are superseded. Write full specifications for units 6–7 as their turn arrives.
+- [UNIT-6-SKILLS-DIRECTION.md](./UNIT-6-SKILLS-DIRECTION.md): proposed canonical eight skills and DeepAgents parser conformance.
+- [DEEPAGENTS-READINESS.md](./DEEPAGENTS-READINESS.md): proposed DR1–DR5, config-composed sync/async agents, model routes, artifacts and budget.
+- [REAL-FIXTURE-STAGE-GRAPH.md](./REAL-FIXTURE-STAGE-GRAPH.md): proposed seven-stage mission, validators, operator continuation and $25 allocation.
 
-No live consumers require compatibility support. Adapt Eve directly to the new services and skills, then run pre–Mission Control testing after cleanup. Preserve stored evidence and the populated shared database.
+No live consumers require compatibility support. Order: KS cleanup/readiness → DeepAgents readiness → real fixtures → Mission Control. Eve adaptation is superseded; its repository code stays untouched. Preserve stored evidence and the populated shared database.
 
 ## Historical material
 
