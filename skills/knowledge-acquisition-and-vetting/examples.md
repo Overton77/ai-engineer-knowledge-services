@@ -4,7 +4,7 @@ Placeholder UUIDs are RFC-layout (`…-4000-8000-…`). Replace them with admitt
 
 ## 1. Platform HTTP capture
 
-`knowledge source fetch --input capture.json --context context.json`
+`ks knowledge source fetch --input capture.json --context context.json`
 
 See [cli-reference.md](cli-reference.md) for the `knowledge.capture/v1` HTTP body. Success returns `knowledge.capture-result/v1` with one `contentDigests` entry. Seal is a later step of the same operation.
 

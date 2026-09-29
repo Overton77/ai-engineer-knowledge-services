@@ -1,18 +1,18 @@
 # Knowledge verification CLI reference
 
-Bin name: `knowledge` (`apps/cli/package.json` → `./dist/index.js`). Package: `@aiengineer/knowledge-cli`.
+Bin name: `ks` (`apps/cli/package.json` → `./dist/index.js`). Package: `@aiengineer/knowledge-cli`. Command names are listed by `ks --help` and defined in `apps/cli/src/ks-commands.ts`.
 
 ## Generic invocation
 
-Catalog commands (not the five specials) parse argv as `knowledge <group> <action> [flags]`.
+Remote catalog commands (not the local specials) parse argv as `ks <group> <command…> [flags]`; the command table picks the profile, never a failure.
 
 | item | contract |
 | --- | --- |
 | flags | `--base-url`, `--context` (JSON `OperationContextSchema`), `--input` (JSON, default `{}`), `--timeout-ms` (100–300000, default 60000), `--wait` (verification_mutation only), `--human` (pretty JSON) |
 | env | `KNOWLEDGE_API_URL` (or `--base-url`), `KNOWLEDGE_API_TOKEN` (required for catalog commands) |
 | stdout | JSON of the accepted mutation/read payload, or the `--wait` completion object |
-| stderr | `{code,message}` — generic `{code:"CLI_ERROR",message}`; unknown command `{code:"UNKNOWN_COMMAND",group,action}` |
-| exit | implicit `0` on success without `--wait`; `--wait` uses `completed.exitCode`; catch → `2` |
+| stderr | JSON — `{code:"CLI_ERROR",command,message}`; usage `{code:"USAGE",command,message,help}`; unknown command `{code:"UNKNOWN_COMMAND",command,help}` |
+| exit | `0` on success without `--wait`; `--wait` uses `completed.exitCode` (`1` when the quality gate fails); usage, auth, network or executor error → `2`, never a fallback |
 
 `--context` is the full envelope in `packages/contracts/src/identity.ts` (`OperationContextSchema`): `tenantId`, `operationId`, `attemptId`, `correlationId`, `actor`, `capabilityVersion`, `idempotencyKey`, `reason`, `contractVersion` (`"v1"`), optional `projectId`, `missionId`, `workItemId`, `causationId`, `externalExecution`. Spec-style flags such as `--operation-id`, `--mission-id`, `--policy` are **not** implemented.
 
@@ -38,46 +38,46 @@ Catalog commands (not the five specials) parse argv as `knowledge <group> <actio
 
 `--wait` does **not** handle these kinds (throws a message that starts with `VERIFICATION_WAIT_UNSUPPORTED_KIND:<kind>` → exit `2` even after `succeeded`): `verification_parse_artifact`, `verification_adjudication`, `verification_adjudication_decision`, `verification_audit_bundle`, `verification_structured_extraction`.
 
-Poll instead: `knowledge verify status --input '{"operationId":"<uuid>"}'` then the terminal read in the catalog. Prefer `verify status` (`getVerificationOperation` → `GET /v1/verification/operations/:id`) over `operation status` (generic `GET /v1/operations/:id`). Claims/report `held_for_review` / `needs_review` / `review_required`: escalate to adjudication; do not retry or override. The signed `verify claims-result` / `verify report-result` read remains authoritative.
+Poll instead: `ks verify status --input '{"operationId":"<uuid>"}'` then the terminal read in the catalog. Prefer `verify status` (`getVerificationOperation` → `GET /v1/verification/operations/:id`) over `operation status` (generic `GET /v1/operations/:id`). Claims/report `held_for_review` / `needs_review` / `review_required`: escalate to adjudication; do not retry or override. The signed `verify claims-result` / `verify report-result` read remains authoritative.
 
 ## Command catalog
 
-Verification rows from `CLI_COMMANDS` + `dispatchCliCommand` (30). `--input` keys are required unless marked optional.
+Verification rows from `KS_COMMANDS` → `CLI_COMMANDS` + `dispatchCliCommand` (30). `--input` keys are required unless marked optional.
 
-| group | action | mode | use case / resource | required input keys |
-| --- | --- | --- | --- | --- |
-| reconciliation | apply | provider_reconciliation | apply | `operationId`, `providerAttemptId`, `artifact` |
-| reconciliation | show | provider_reconciliation | show | `operationId`, `providerAttemptId` |
-| extraction | run | verification_mutation | extractStructuredData | full `ExtractStructuredDataRequestSchema` |
-| extraction | show | read | structured_extraction | `operationId` only |
-| benchmark | comparison | read | benchmark_comparison | `comparisonId` only |
-| benchmark | compare | verification_mutation | compareBenchmarkRuns | full `CompareBenchmarkRunsRequestSchema` |
-| benchmark | show | read | benchmark_run | `runId` |
-| benchmark | manifest | read | benchmark_manifest | `runId` |
-| benchmark | run | verification_mutation | runBenchmark | full `RunBenchmarkRequestSchema` |
-| benchmark | capture | verification_mutation | captureSource | full `CaptureSourceRequestSchema` |
-| artifact | parse | verification_mutation | parseArtifact | full `ParseArtifactRequestSchema` |
-| verify | status | read | verification_operation (`getVerificationOperation`) | `operationId` only |
-| verify | claims-result | read | claims_result | `operationId` only |
-| verify | report-result | read | report_result | `operationId` only |
-| verify | cases | read | verification_cases | `runId`; optional `pageSize`, `cursor` |
-| verify | case | read | verification_case | `caseRunId` |
-| verify | evidence | read | verification_evidence | `evidenceId` |
-| verify | run | read | verification_run | `runId` |
-| verify | manifest | read | verification_manifest | `runId` |
-| verify | extract | verification_mutation | verifyExtraction | full `VerifyExtractionRequestSchema` (exactly one `captureId`) |
-| verify | citations | verification_mutation | verifyClaims | full `VerifyClaimsRequestSchema` |
-| verify | report | verification_mutation | verifyReport | full `VerifyReportRequestSchema` |
-| verify | metric | verification_mutation | verifyMetricObservation | full `VerifyMetricObservationRequestSchema` |
-| bundle | inspect | verification_mutation | inspectAuditBundle | full `InspectAuditBundleRequestSchema` |
-| bundle | show | read | audit_inspection | `operationId` only |
-| bundle | replay | verification_mutation | replayRun | full `ReplayRunRequestSchema` |
-| adjudication | request | verification_mutation | requestAdjudication | full `RequestAdjudicationRequestSchema` |
-| adjudication | decision | verification_mutation | recordAdjudicationDecision | full `VerificationAdjudicationDecisionRequestSchema` |
-| adjudication | get | read | adjudication | `operationId` only |
-| adjudication | get-decision | read | adjudication_decision | `operationId` only |
+| ks command | mode | use case / resource | required input keys |
+| --- | --- | --- | --- |
+| `verify reconciliation apply` | provider_reconciliation | apply | `operationId`, `providerAttemptId`, `artifact` |
+| `verify reconciliation show` | provider_reconciliation | show | `operationId`, `providerAttemptId` |
+| `verify extraction run` | verification_mutation | extractStructuredData | full `ExtractStructuredDataRequestSchema` |
+| `verify extraction show` | read | structured_extraction | `operationId` only |
+| `verify benchmark comparison` | read | benchmark_comparison | `comparisonId` only |
+| `verify benchmark compare` | verification_mutation | compareBenchmarkRuns | full `CompareBenchmarkRunsRequestSchema` |
+| `verify benchmark show` | read | benchmark_run | `runId` |
+| `verify benchmark manifest` | read | benchmark_manifest | `runId` |
+| `verify benchmark run` | verification_mutation | runBenchmark | full `RunBenchmarkRequestSchema` |
+| `verify benchmark capture` | verification_mutation | captureSource | full `CaptureSourceRequestSchema` |
+| `verify artifact parse` | verification_mutation | parseArtifact | full `ParseArtifactRequestSchema` |
+| `verify status` | read | verification_operation (`getVerificationOperation`) | `operationId` only |
+| `verify claims-result` | read | claims_result | `operationId` only |
+| `verify report-result` | read | report_result | `operationId` only |
+| `verify cases` | read | verification_cases | `runId`; optional `pageSize`, `cursor` |
+| `verify case` | read | verification_case | `caseRunId` |
+| `verify evidence` | read | verification_evidence | `evidenceId` |
+| `verify run` | read | verification_run | `runId` |
+| `verify manifest` | read | verification_manifest | `runId` |
+| `verify extract` | verification_mutation | verifyExtraction | full `VerifyExtractionRequestSchema` (exactly one `captureId`) |
+| `verify citations` | verification_mutation | verifyClaims | full `VerifyClaimsRequestSchema` |
+| `verify report` | verification_mutation | verifyReport | full `VerifyReportRequestSchema` |
+| `verify metric` | verification_mutation | verifyMetricObservation | full `VerifyMetricObservationRequestSchema` |
+| `verify bundle inspect` | verification_mutation | inspectAuditBundle | full `InspectAuditBundleRequestSchema` |
+| `verify bundle show` | read | audit_inspection | `operationId` only |
+| `verify bundle replay` | verification_mutation | replayRun | full `ReplayRunRequestSchema` |
+| `verify adjudication request` | verification_mutation | requestAdjudication | full `RequestAdjudicationRequestSchema` |
+| `verify adjudication decision` | verification_mutation | recordAdjudicationDecision | full `VerificationAdjudicationDecisionRequestSchema` |
+| `verify adjudication get` | read | adjudication | `operationId` only |
+| `verify adjudication get-decision` | read | adjudication_decision | `operationId` only |
 
-`benchmark capture` is overridden when `argv[2] === "diagnostics-companies"` (special below). Adjacent non-verification groups (`operation status|events|retry|reconcile`, retrieve, eval, …) exist on the same bin but are out of scope for this skill.
+`ks verify benchmark capture diagnostics-companies` is a separate local command (special below). The `knowledge` group (`ks knowledge operation status|events|retry|reconcile`, retrieve, eval, …) is on the same bin but out of scope for this skill.
 
 There is no `capture show` catalog action.
 
@@ -85,13 +85,13 @@ There is no `capture show` catalog action.
 
 These bypass `KNOWLEDGE_API_TOKEN` except where noted. Stderr codes: `DEMO_ERROR`, `BENCHMARK_CAPTURE_ERROR`, `BENCHMARK_DIFF_ERROR`, attestation codes.
 
-| group | action | mode | flags | exit |
-| --- | --- | --- | --- | --- |
-| demo | diagnostics-companies | local | `--dataset` (must `diagnostics-companies-v1`), `--output` (required), `--open` | `qualityGate.exitCode`: pass `0`, fail `1`, unavailable/`verification_incomplete` `2`; catch `2` |
-| benchmark | capture diagnostics-companies | local+HTTP optional | `--propose-version` (must `diagnostics-companies-v2`), `--output` (default `.knowledge/benchmark-proposals/diagnostics-companies-v2`), `--profile` (must `diagnostics-companies`), `--base-url`, `--timeout-ms` (100–60000, default 60000) | `0` `proposed_review_required`; `2` `refresh_incomplete` |
-| benchmark | diff | local | positional previous/proposed; `--catalog-root`, `--proposal-root` | success `0`; catch `2` |
-| verification | attestation-export | local | `--audit-bundle`, `--trusted-public-keys`, `--trusted-binding`, `--output` | `0`; catch `2` |
-| verification | attestation-inspect | local | `--audit-bundle`, `--trusted-public-keys`, `--trusted-binding`, `--attestation` | `0` verified / `1` not; catch `2` |
+| ks command | mode | flags | exit |
+| --- | --- | --- | --- |
+| `verify demo diagnostics-companies` | local | `--dataset` (must `diagnostics-companies-v1`), `--output` (required), `--open` | `qualityGate.exitCode`: pass `0`, fail `1`, unavailable/`verification_incomplete` `2`; catch `2` |
+| `verify benchmark capture diagnostics-companies` | local+HTTP optional | `--propose-version` (must `diagnostics-companies-v2`), `--output` (default `.knowledge/benchmark-proposals/diagnostics-companies-v2`), `--profile` (must `diagnostics-companies`), `--base-url`, `--timeout-ms` (100–60000, default 60000) | `0` `proposed_review_required`; `2` `refresh_incomplete` |
+| `verify benchmark diff` | local | positional previous/proposed; `--catalog-root`, `--proposal-root` | success `0`; catch `2` |
+| `verify attestation export` | local | `--audit-bundle`, `--trusted-public-keys`, `--trusted-binding`, `--output` | `0`; catch `2` |
+| `verify attestation inspect` | local | `--audit-bundle`, `--trusted-public-keys`, `--trusted-binding`, `--attestation` | `0` verified / `1` not; catch `2` |
 
 ## How to run from the repo
 
@@ -101,11 +101,11 @@ Working directory: `ai-engineer-knowledge-services/`. There is no root `package.
 
 ```text
 corepack pnpm --filter @aiengineer/knowledge-cli build
-node apps/cli/dist/index.js demo diagnostics-companies --dataset diagnostics-companies-v1 --output <dir>
+node apps/cli/dist/index.js verify demo diagnostics-companies --dataset diagnostics-companies-v1 --output <dir>
 node apps/cli/dist/index.js verify citations --context '<json>' --input '<json>'
 ```
 
-If the `knowledge` bin is on `PATH` after install/link, the same argv works.
+If the `ks` bin is on `PATH` after install (the `pack:sandbox` tarball) or link, the same argv works.
 
 2. **Dev (catalog HTTP commands).** `apps/cli` script `dev` is `tsx src/index.ts`. Extra args after `--`:
 
@@ -113,4 +113,4 @@ If the `knowledge` bin is on `PATH` after install/link, the same argv works.
 corepack pnpm --filter @aiengineer/knowledge-cli dev -- verify citations --context '<json>' --input '<json>'
 ```
 
-Do not use `tsx src/index.ts` for `demo diagnostics-companies` unless demo assets exist beside the executing module; the supported path is the built `dist/index.js`.
+Do not use `tsx src/index.ts` for `verify demo diagnostics-companies` unless demo assets exist beside the executing module; the supported path is the built `dist/index.js`.

@@ -1,6 +1,6 @@
 # Acquisition CLI reference
 
-Two binaries share the `knowledge` name. Use the one your environment loaded.
+The executor ships `knowledge` (and `knowledge-verify`); the platform CLI is `ks` (`@aiengineer/knowledge-cli`). Use the one your environment loaded.
 
 ## Executor (`apps/verification-executor`)
 
@@ -26,9 +26,9 @@ knowledge source reconcile <attemptId>
 ## Platform (`apps/cli`)
 
 ```text
-knowledge source discover --input <candidates.json> --context <context.json>
-knowledge source fetch --input <capture.json> --context <context.json>
-knowledge source vet --input <vetting.json> --context <context.json>
+ks knowledge source discover --input <candidates.json> --context <context.json>
+ks knowledge source fetch --input <capture.json> --context <context.json>
+ks knowledge source vet --input <vetting.json> --context <context.json>
 ```
 
 `source fetch` submits operation kind `capture`. HTTP body:

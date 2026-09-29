@@ -2,7 +2,7 @@
 description: Use when creating or operating official, exploratory, or user-managed vector stores through Knowledge Services.
 license: Proprietary
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   contract: "knowledge-service/v1"
 ---
 
@@ -14,17 +14,17 @@ Use idempotent API or MCP operations to create a store, add exact document-versi
 
 ## Evaluated publication, activation, and rollback
 
-The admitted platform CLI names the two public publication submissions `knowledge space publish`
-and `knowledge space rollback`. Publish submits `space_publication`; the deterministic authorized
+The admitted platform CLI names the two public publication submissions `ks knowledge space publish`
+and `ks knowledge space rollback`. Publish submits `space_publication`; the deterministic authorized
 executor verifies the independent evaluation and moves the official pointer. That completed pointer
 switch is activation. Rollback submits `publication_rollback`; the authorized executor verifies the
 frozen baseline and restores its pointer. Poll the returned operation using `knowledge operation
 status` and retain the terminal receipt.
 
 ```text
-knowledge space publish --context '<OperationContext>' --input '<space publication input>'
-knowledge space rollback --context '<OperationContext>' --input '<publication rollback input>'
-knowledge operation status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
+ks knowledge space publish --context '<OperationContext>' --input '<space publication input>'
+ks knowledge space rollback --context '<OperationContext>' --input '<publication rollback input>'
+ks knowledge operation status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
 ```
 
 The platform MCP catalog deliberately has no `publication.publish`, `publication.approve`,

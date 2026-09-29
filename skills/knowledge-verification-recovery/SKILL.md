@@ -8,7 +8,7 @@ description: >-
   an operator repair, or a checkpointed wait. Never use it to retry an unchanged input.
 license: Proprietary
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   contract: "verification.v1"
   recoveryContracts: "verification-failure-set.v1, verification-recovery-plan.v1, verification-recovery-receipt.v1"
   surfaces: "executor-cli, executor-mcp, platform-cli (adjudication only)"
@@ -32,8 +32,8 @@ Recovery runs on the **verification executor** distribution (`knowledge` from
 `@aiengineer/knowledge-verification-executor`, or `recovery_*` tools on its `/mcp`). It is host
 configured: without `KNOWLEDGE_RECOVERY_CONFIG_JSON` plus remote artifact custody the operations
 answer `RECOVERY_HOST_NOT_CONFIGURED` and nothing you send changes that. Adjudication lives on the
-platform CLI (`knowledge adjudication request`). Two distributions ship a `knowledge` binary; use
-the one your run pin names.
+platform CLI (`ks verify adjudication request`). The executor's `knowledge` and the platform `ks` are separate
+distributions; use the one your run pin names.
 
 The host owns the original questions, requirements, budgets, verdicts and usage. You supply
 selectors, bindings and reasons. `recovery_plan` re-authenticates every action against the current
