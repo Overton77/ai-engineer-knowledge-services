@@ -10,7 +10,8 @@ import type { OperationKind } from "@aiengineer/knowledge-contracts";
 import { createHost } from "@aiengineer/knowledge-host";
 import { PostgresKnowledgeOperationService, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { buildServer } from "../../../api/src/server.js";
-import { CLI_COMMANDS, dispatchCliCommand, resolveCommand, type CliCommand } from "../../../cli/src/commands.js";
+import { dispatchCliCommand, type CliCommand } from "../../../cli/src/commands.js";
+import { KS_COMMANDS, ksNameOf, remoteCommand, type KsCommand } from "../../../cli/src/ks-commands.js";
 import { knowledgeOperations } from "../../../verification-executor/src/knowledge/operations.js";
 import { createVerificationMcpServer } from "../../../verification-executor/src/mcp.js";
 import { MCP_TOOL_CATALOG, VERIFICATION_MCP_TOOL_NAMES } from "../catalog.js";
@@ -53,9 +54,10 @@ async function toolNames(server: { connect(transport: InMemoryTransport): Promis
   return names;
 }
 
+// Remote `ks` commands, by name, and the dispatcher entry each binds; local-profile commands bind executor rows.
+const ksCommands = Object.entries(KS_COMMANDS) as [string, KsCommand][];
 const cliCommands = new Map<string, CliCommand>(
-  Object.entries(CLI_COMMANDS).flatMap(([group, actions]) =>
-    Object.entries(actions).map(([action, command]) => [`${group} ${action}`, command as CliCommand] as const)),
+  ksCommands.flatMap(([name, command]) => (command.profile === "remote" ? [[name, remoteCommand(command)] as const] : [])),
 );
 
 /** Server-profile admission computed from the production catalogs, for rows that submit a durable kind. */
@@ -113,7 +115,8 @@ describe("operation catalog parity", async () => {
         const state = transportState(operation, profile, transport);
         return { ...counts, [state]: (counts[state] ?? 0) + 1 };
       }, {});
-    for (const transport of transports) expect(states("local", transport)).toEqual({ "server only": 98, "executor only": 58 });
+    for (const transport of ["api", "mcp"] as const) expect(states("local", transport)).toEqual({ "server only": 98, "executor only": 58 });
+    expect(states("local", "cli")).toEqual({ "server only": 98, "executor only": 42, "local profile": 16 });
     expect(states("server", "api")).toEqual({ executable: 47, "executable when composed": 34, "declared (fails closed)": 9, excluded: 8, "executor only": 58 });
     expect(states("server", "mcp")).toEqual({ executable: 28, "executable when composed": 30, "declared (fails closed)": 8, excluded: 32, "executor only": 58 });
     expect(states("server", "cli")).toEqual({ executable: 31, "executable when composed": 30, "declared (fails closed)": 10, excluded: 27, "executor only": 58 });
@@ -186,9 +189,10 @@ describe("operation catalog parity", async () => {
       const row = platform.find((operation) => operation.kind === entry.kind)!;
       expect(row, entry.kind).toBeDefined();
       expect(bound(row.mcp)).toContain(entry.tool);
-      expect(bound(row.cli)).toContain(entry.cli.join(" "));
+      const name = ksNameOf(entry.cli[0], entry.cli[1])!;
+      expect(bound(row.cli)).toContain(name);
       expect(bound(row.api).some((route) => route.startsWith("POST ") && routeMatches(route.slice(5), entry.path)), entry.path).toBe(true);
-      expect(cliCommands.get(entry.cli.join(" "))).toMatchObject({ mode: "verification_mutation", useCase: entry.useCase });
+      expect(cliCommands.get(name)).toMatchObject({ mode: "verification_mutation", useCase: entry.useCase });
     }
     const decision = platform.find((operation) => operation.kind === "verification_adjudication_decision")!;
     expect(bound(decision.mcp)).toEqual(["knowledge_record_adjudication_decision"]);
@@ -209,6 +213,18 @@ describe("operation catalog parity", async () => {
     for (const row of executorRows) for (const transport of transports) expect("excluded" in row[transport], `${row.id} ${transport}`).toBe(true);
     for (const row of executorRows.filter((operation) => operation.id.startsWith("executor.ingest_")))
       expect("excluded" in row.api && row.api.excluded).toMatch(/receipt semantics/u);
+  });
+
+  it("binds every local-profile ks command to its executor row and the local host's admission", () => {
+    const local = ksCommands.flatMap(([name, command]) => (command.profile === "local" ? [[command.operation, name]] : []));
+    const rows = operationCatalog.filter((operation) => operation.executor?.ks);
+    expect(rows.map((row) => [row.executor!.mcp, row.executor!.ks]).sort()).toEqual(local.sort());
+    expect(rows.map((row) => row.executor!.mcp).sort()).toEqual([...executorVerifyTools].sort());
+    for (const row of rows) {
+      expect(row.admission, row.id).toBe("executor");
+      expect(localProfileState(row), row.id).not.toBe("server only");
+      expect("excluded" in row.cli && row.cli.excluded, row.id).toMatch(/local profile only/u);
+    }
   });
 
   describe("declared operations fail closed on every bound transport", () => {
@@ -260,8 +276,9 @@ describe("operation catalog parity", async () => {
       "$id CLI command refuses before any client call", async (operation) => {
         const client = new Proxy({}, { get: () => vi.fn(() => { throw new Error("CLIENT_CALLED"); }) });
         for (const name of bound(operation.cli)) {
-          const [group, action] = name.split(" ");
-          await expect(dispatchCliCommand(client as never, resolveCommand(group!, action!)!, {}, operationContext(tenant, owner)))
+          const command = KS_COMMANDS[name as keyof typeof KS_COMMANDS];
+          expect(command?.profile, name).toBe("remote");
+          await expect(dispatchCliCommand(client as never, remoteCommand(command as Extract<KsCommand, { profile: "remote" }>), {}, operationContext(tenant, owner)))
             .rejects.toThrow(/^CAPABILITY_NOT_ADMITTED:/u);
         }
       });
