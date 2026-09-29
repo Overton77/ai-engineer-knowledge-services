@@ -35,7 +35,7 @@ const runBuiltCli = (
   }>((resolve, reject) => {
     execFile(
       process.execPath,
-      [join(import.meta.dirname, "../../dist/index.js"), ...args],
+      [join(import.meta.dirname, "../../dist/index.js"), "verify", ...args],
       { env: environment },
       (error, stdout, stderr) => {
         if (
@@ -223,8 +223,8 @@ describe("offline verification attestation CLI", () => {
       ]);
       const exported = await runVerificationAttestationExport(
         [
-          "verification",
-          "attestation-export",
+          "attestation",
+          "export",
           "--audit-bundle",
           auditPath,
           "--trusted-public-keys",
@@ -245,8 +245,8 @@ describe("offline verification attestation CLI", () => {
       });
       expect(JSON.stringify(exported)).not.toContain(attestationPrivate);
       const inspected = await runVerificationAttestationInspect([
-        "verification",
-        "attestation-inspect",
+        "attestation",
+        "inspect",
         "--audit-bundle",
         auditPath,
         "--trusted-public-keys",
@@ -261,8 +261,8 @@ describe("offline verification attestation CLI", () => {
         output: { verified: true, signerKeyId: "attestation-key" },
       });
       const built = await runBuiltCli([
-        "verification",
-        "attestation-inspect",
+        "attestation",
+        "inspect",
         "--audit-bundle",
         auditPath,
         "--trusted-public-keys",
@@ -280,8 +280,8 @@ describe("offline verification attestation CLI", () => {
       const builtOutput = join(directory, "built.dsse.json");
       const builtExport = await runBuiltCli(
         [
-          "verification",
-          "attestation-export",
+          "attestation",
+          "export",
           "--audit-bundle",
           auditPath,
           "--trusted-public-keys",
@@ -302,8 +302,8 @@ describe("offline verification attestation CLI", () => {
       await expect(
         runVerificationAttestationExport(
           [
-            "verification",
-            "attestation-export",
+            "attestation",
+            "export",
             "--audit-bundle",
             auditPath,
             "--trusted-public-keys",
@@ -322,8 +322,8 @@ describe("offline verification attestation CLI", () => {
       await expect(
         runVerificationAttestationExport(
           [
-            "verification",
-            "attestation-export",
+            "attestation",
+            "export",
             "--audit-bundle",
             auditPath,
             "--trusted-public-keys",
@@ -345,8 +345,8 @@ describe("offline verification attestation CLI", () => {
         JSON.stringify(tampered),
       );
       const rejected = await runVerificationAttestationInspect([
-        "verification",
-        "attestation-inspect",
+        "attestation",
+        "inspect",
         "--audit-bundle",
         auditPath,
         "--trusted-public-keys",
@@ -364,8 +364,8 @@ describe("offline verification attestation CLI", () => {
       await writeFile(oversized, Buffer.alloc(96 * 1024 + 1));
       await expect(
         runVerificationAttestationInspect([
-          "verification",
-          "attestation-inspect",
+          "attestation",
+          "inspect",
           "--audit-bundle",
           auditPath,
           "--trusted-public-keys",
@@ -382,20 +382,20 @@ describe("offline verification attestation CLI", () => {
   });
   it("rejects missing, unknown, duplicate, and forbidden signing-key arguments with fixed codes", async () => {
     await expect(
-      runVerificationAttestationExport(["verification", "attestation-export"]),
+      runVerificationAttestationExport(["attestation", "export"]),
     ).rejects.toMatchObject({ code: "ATTESTATION_ARGUMENT_REQUIRED" });
     await expect(
       runVerificationAttestationInspect([
-        "verification",
-        "attestation-inspect",
+        "attestation",
+        "inspect",
         "--unknown",
         "x",
       ]),
     ).rejects.toMatchObject({ code: "ATTESTATION_ARGUMENT_UNKNOWN" });
     await expect(
       runVerificationAttestationInspect([
-        "verification",
-        "attestation-inspect",
+        "attestation",
+        "inspect",
         "--audit-bundle",
         "a",
         "--audit-bundle",

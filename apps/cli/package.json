@@ -4,19 +4,23 @@
   "private": true,
   "type": "module",
   "bin": {
-    "knowledge": "./dist/index.js"
+    "ks": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --sourcemap && node scripts/copy-demo-assets.mjs",
+    "build": "tsup && node scripts/copy-demo-assets.mjs",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pack:sandbox": "node scripts/pack-sandbox.mjs"
   },
   "dependencies": {
+    "@aiengineer/knowledge-application": "workspace:*",
     "@aiengineer/knowledge-client": "workspace:*",
     "@aiengineer/knowledge-contracts": "workspace:*",
-    "@aiengineer/knowledge-application": "workspace:*",
-    "@aiengineer/knowledge-verification": "workspace:*"
+    "@aiengineer/knowledge-host": "workspace:*",
+    "@aiengineer/knowledge-verification": "workspace:*",
+    "@aiengineer/knowledge-verification-executor": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "tsup": "catalog:",
