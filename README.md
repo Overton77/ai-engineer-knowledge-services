@@ -99,7 +99,7 @@ skills + CLI  ──HTTP/MCP──►   verification-executor
 | HTTP API | `apps/api` | Versioned Fastify API. Default `HOST=127.0.0.1`, `PORT=4100`. Vercel Fluid or a Node container. |
 | MCP | `apps/mcp` | Stateless Streamable HTTP over the same application services. Default port **4101**. Route `POST /mcp`. |
 | Worker | `apps/worker` | Durable executor for queued knowledge operations. Always-on container. Requires `WORKER_TENANT_ID`. |
-| CLI | `apps/cli` | Machine-readable `knowledge` client of the HTTP API. |
+| CLI | `apps/cli` | `ks`: remote `knowledge`/`verify`/`db` commands through the HTTP API, the verification intent pipeline on the local file-store profile, and offline utilities. `pack:sandbox` builds the installable `ks` tarball. |
 | Verification executor | `apps/verification-executor` | Sandbox host: `knowledge-verify` plus schema/read/ingest. CLI, HTTP, MCP stdio, MCP Streamable HTTP. Default serve port **4310**. |
 | Docling | `services/docling` | Pinned conversion boundary. `docker compose -f services/docling/compose.yaml up -d` → `http://127.0.0.1:5001/health`. |
 | Verification parser | `services/parser` | Isolated native PDF/HTML parser for verification projections. Not Docling. |
@@ -161,7 +161,7 @@ Offline CLI demo (no API, Docker, or network). It writes reports from a frozen f
 
 ```bash
 corepack pnpm --filter @aiengineer/knowledge-cli... build
-node apps/cli/dist/index.js demo diagnostics-companies \
+node apps/cli/dist/index.js verify demo diagnostics-companies \
   --dataset diagnostics-companies-v1 \
   --output ./diagnostics-reports
 ```
@@ -202,6 +202,8 @@ This is the path for “I have an agent that must research and ingest, and I do 
    ```
 
    The tarball stages `knowledge-verify`, the `knowledge` bin, and the required skills (`schema-explore`, `knowledge-db`, `knowledge-ingest`, `knowledge-verification-recovery`, plus `knowledge-verify`). Pack fails if a required skill is missing.
+
+   The platform `ks` tarball is separate (Unit 5C): `pnpm --filter @aiengineer/knowledge-cli... build` then `pnpm --filter @aiengineer/knowledge-cli pack:sandbox` writes `apps/cli/dist/sandbox/ks-<version>.tgz` with the `platform-cli` skills and `zod` as its only runtime dependency. It runs remote commands against an API URL and bearer, and the intent pipeline offline on its local profile (`ks verify capture|chain|artifact …`); the executor tarball above stays until 5H.
 
 2. On the **host**, serve the executor (store and credentials stay here):
 
@@ -265,7 +267,7 @@ corepack pnpm --filter @aiengineer/knowledge-cli dev -- verify citations \
   --wait
 ```
 
-After build: `node apps/cli/dist/index.js <group> <action> ...`.
+After build: `node apps/cli/dist/index.js <group> <command…> ...` (`ks --help` lists them).
 
 ### 3. Skills in Cursor, Claude Code, or Codex
 
@@ -396,7 +398,7 @@ MCP and CLI skills share one rule: no raw SQL beyond the guarded read-only capab
 | **HTTP** | `/v1/*` | Cross-repo default. OpenAPI in `packages/contracts/generated/openapi.json`. |
 | **MCP (platform)** | `POST /mcp` on `apps/mcp` | Allow-listed tools. Forbidden: `raw_sql`, `secret.read`, `publication.publish`, and the rest of `FORBIDDEN_MCP_CAPABILITIES`. |
 | **MCP (executor)** | `POST /mcp` or `mcp-stdio` | `verify_*` plus generated `schema_*` / `db_*` / `ingest_*` / … from one operation registry. `knowledge ops` prints the catalog; do not hand-write an operation list. |
-| **CLI** | `knowledge` / `knowledge-verify` | Platform CLI is an HTTP client. Executor CLI can be local or remote. |
+| **CLI** | `ks` / executor `knowledge` and `knowledge-verify` | `ks` calls the HTTP API and runs the intent pipeline on its local profile, never falling back between them. The executor CLI (until 5H) can be local or remote. |
 | **A2A** | `POST /v1/a2a/tasks`, `POST /v1/a2a/callbacks` | Async admission + signed callbacks. |
 
 Representative platform HTTP families (see OpenAPI for the full set): `/v1/sources:discover`, `/v1/captures`, `/v1/transformations`, `/v1/documents`, `/v1/chunk-previews`, `/v1/chunk-sets`, `/v1/embedding-runs`, `/v1/vector-stores`, `/v1/retrieval-runs`, `/v1/evidence-packets/{id}`, `/v1/verification/*`, `/v1/operations/{id}`, `/v1/a2a/tasks`.
@@ -482,7 +484,7 @@ These are easy to get wrong in a README or an agent prompt. Do not weaken them.
 1. **Call the contract.** External agents and repos use HTTP, CLI, MCP, or `@aiengineer/knowledge-client`. They do not import `@aiengineer/knowledge-verification` or other internal packages.
 2. **Deterministic failures are monotonic.** Semantic and policy stages cannot reverse a mechanical failure.
 3. **Preview is not publication.** `preparePreview` / `vetOnly` stop at a review proposal.
-4. **Two verification surfaces.** Platform `knowledge verify …` and sandbox `knowledge-verify` are not one run.
+4. **Two verification surfaces.** Platform `ks verify …` (remote) and the intent pipeline (`ks verify capture|chain|artifact …` locally, or sandbox `knowledge-verify`) are not one run.
 5. **Ingestion is an intent.** Agents plan and apply through the executor as `executor_service`. A receipt is authority; a row guess is not.
 6. **Workspace ≠ database.** Schema workspace is a contract view. Head mismatch fails closed.
 7. **Read-intent retrieval is unavailable.** Use the retrieval service. `RETRIEVAL_UNAVAILABLE` is not a negative search result.
