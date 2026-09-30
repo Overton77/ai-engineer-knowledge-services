@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1),
   actor = {
     kind: "service" as const,
@@ -12,9 +11,7 @@ const tenant = id(1),
   };
 const identity = {
   actor,
-  grants: [
-    { tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] },
-  ],
+  grants: [{ tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] }],
 };
 const headers = {
   authorization: "Bearer adjudication-test-token",
@@ -28,12 +25,7 @@ const request = {
   reason: "appeal",
   evidencePacket: { artifactId: id(3), digest: `sha256:${"a".repeat(64)}` },
 };
-const context = ({
-  tenantId,
-  identity,
-  correlationId,
-  idempotencyKey,
-}: any) => ({
+const context = ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
   tenantId,
   operationId: id(4),
   attemptId: id(5),

@@ -4,7 +4,9 @@ import { EXIT, type KsIo } from "./io.js";
 type Run = (args: readonly string[], io: KsIo) => Promise<number>;
 const print = (io: KsIo, value: unknown) => io.stdout(`${JSON.stringify(value)}\n`);
 const failure = (io: KsIo, code: string, error?: unknown) => {
-  io.stderr(`${JSON.stringify(error === undefined ? { code } : { code, message: error instanceof Error ? error.message : "Unknown error" })}\n`);
+  io.stderr(
+    `${JSON.stringify(error === undefined ? { code } : { code, message: error instanceof Error ? error.message : "Unknown error" })}\n`,
+  );
   return EXIT.error;
 };
 
@@ -27,7 +29,8 @@ const UTILITIES: Readonly<Record<KsUtility, Run>> = {
   "benchmark-capture": async (args, io) => {
     try {
       const [{ runDiagnosticsBenchmarkCapture }, { writeBenchmarkRefreshProposal }] = await Promise.all([
-        import("./benchmark-capture.js"), import("./benchmark-refresh-writer.js"),
+        import("./benchmark-capture.js"),
+        import("./benchmark-refresh-writer.js"),
       ]);
       const result = await runDiagnosticsBenchmarkCapture(args, { writer: { writeBenchmarkRefreshProposal } });
       print(io, result);
@@ -52,7 +55,10 @@ const UTILITIES: Readonly<Record<KsUtility, Run>> = {
       print(io, result.output);
       return result.exitCode;
     } catch (error) {
-      return failure(io, attestation.isVerificationAttestationCliError(error) ? error.code : "ATTESTATION_EXPORT_FAILED");
+      return failure(
+        io,
+        attestation.isVerificationAttestationCliError(error) ? error.code : "ATTESTATION_EXPORT_FAILED",
+      );
     }
   },
   "attestation-inspect": async (args, io) => {
@@ -62,9 +68,13 @@ const UTILITIES: Readonly<Record<KsUtility, Run>> = {
       print(io, result.output);
       return result.exitCode;
     } catch (error) {
-      return failure(io, attestation.isVerificationAttestationCliError(error) ? error.code : "ATTESTATION_INSPECTION_FAILED");
+      return failure(
+        io,
+        attestation.isVerificationAttestationCliError(error) ? error.code : "ATTESTATION_INSPECTION_FAILED",
+      );
     }
   },
 };
 
-export const runUtility = (utility: KsUtility, args: readonly string[], io: KsIo): Promise<number> => UTILITIES[utility](args, io);
+export const runUtility = (utility: KsUtility, args: readonly string[], io: KsIo): Promise<number> =>
+  UTILITIES[utility](args, io);

@@ -16,21 +16,12 @@ import {
   type BenchmarkCaptureClient,
 } from "../benchmark-capture.js";
 
-const catalog = resolve(
-  import.meta.dirname,
-  "../../../../catalog/verification-benchmarks/diagnostics-companies-v1",
-);
-const id = (value: number) =>
-  `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
-const digest = (value: string) =>
-  `sha256:${value.repeat(64)}` as `sha256:${string}`;
+const catalog = resolve(import.meta.dirname, "../../../../catalog/verification-benchmarks/diagnostics-companies-v1");
+const id = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+const digest = (value: string) => `sha256:${value.repeat(64)}` as `sha256:${string}`;
 const tenant = id(1),
   otherTenant = id(2);
-const artifact = (
-  value: number,
-  char: string,
-  mediaType = "application/json",
-) => ({
+const artifact = (value: number, char: string, mediaType = "application/json") => ({
   artifactId: id(value),
   digest: digest(char),
   mediaType,
@@ -55,9 +46,9 @@ const denied = () =>
 
 async function sources() {
   return (
-    JSON.parse(
-      await readFile(resolve(catalog, "source-ledger.json"), "utf8"),
-    ) as { sources: readonly { sourceKey: string; url: string }[] }
+    JSON.parse(await readFile(resolve(catalog, "source-ledger.json"), "utf8")) as {
+      sources: readonly { sourceKey: string; url: string }[];
+    }
   ).sources;
 }
 function capture(
@@ -191,9 +182,7 @@ function clientFor(
   values: readonly { sourceKey: string; url: string }[],
   options: {
     readonly submit?: (index: number) => "deny" | "accept" | "other";
-    readonly poll?: (
-      index: number,
-    ) => "pending" | "success" | "other" | "mismatch";
+    readonly poll?: (index: number) => "pending" | "success" | "other" | "mismatch";
   } = {},
 ) {
   const accepted = new Map<string, number>();
@@ -223,34 +212,26 @@ function clientFor(
       const mode = options.poll?.(index) ?? "success";
       if (mode === "pending") throw pending();
       const terminal = {
-        ...capture(
-          values[index]!,
-          index,
-          mode === "other" ? otherTenant : tenant,
-        ),
+        ...capture(values[index]!, index, mode === "other" ? otherTenant : tenant),
         operationId,
       };
-      return mode === "mismatch"
-        ? { ...terminal, operationId: id(9_000 + index) }
-        : terminal;
+      return mode === "mismatch" ? { ...terminal, operationId: id(9_000 + index) } : terminal;
     }),
   };
   return client;
 }
 const writer = () => ({
-  writeBenchmarkRefreshProposal: vi.fn(
-    async ({ outputDirectory, proposal }) => ({
-      outputDirectory,
-      manifestDigest: proposal.proposalDigest,
-      files: [
-        {
-          name: "proposal.json" as const,
-          digest: proposal.proposalDigest,
-          bytes: 1,
-        },
-      ],
-    }),
-  ),
+  writeBenchmarkRefreshProposal: vi.fn(async ({ outputDirectory, proposal }) => ({
+    outputDirectory,
+    manifestDigest: proposal.proposalDigest,
+    files: [
+      {
+        name: "proposal.json" as const,
+        digest: proposal.proposalDigest,
+        bytes: 1,
+      },
+    ],
+  })),
 });
 const command = [
   "benchmark",
@@ -277,40 +258,24 @@ describe("installed diagnostics benchmark capture", () => {
         "diagnostics-companies-v2",
       ]),
     ).toThrow("BENCHMARK_CAPTURE_COMMAND_INVALID");
-    expect(() =>
-      parseDiagnosticsBenchmarkCaptureArgs([
-        ...command,
-        "--profile",
-        "caller-authority",
-      ]),
-    ).toThrow("BENCHMARK_CAPTURE_PROFILE_INVALID");
-    expect(() =>
-      parseDiagnosticsBenchmarkCaptureArgs([
-        ...command,
-        "--base-url",
-        "file:///untrusted",
-      ]),
-    ).toThrow("BENCHMARK_CAPTURE_BASE_URL_INVALID");
-    expect(() =>
-      parseDiagnosticsBenchmarkCaptureArgs([
-        ...command,
-        "--timeout-ms",
-        "60001",
-      ]),
-    ).toThrow("BENCHMARK_CAPTURE_TIMEOUT_INVALID");
+    expect(() => parseDiagnosticsBenchmarkCaptureArgs([...command, "--profile", "caller-authority"])).toThrow(
+      "BENCHMARK_CAPTURE_PROFILE_INVALID",
+    );
+    expect(() => parseDiagnosticsBenchmarkCaptureArgs([...command, "--base-url", "file:///untrusted"])).toThrow(
+      "BENCHMARK_CAPTURE_BASE_URL_INVALID",
+    );
+    expect(() => parseDiagnosticsBenchmarkCaptureArgs([...command, "--timeout-ms", "60001"])).toThrow(
+      "BENCHMARK_CAPTURE_TIMEOUT_INVALID",
+    );
   });
 
   it("submits each pinned source sequentially, uses server tenant custody, and delegates immutable persistence", async () => {
     const values = await sources(),
       client = clientFor(values),
       persisted = writer();
-    const pdfIndex = values.findIndex(
-      (source) => source.sourceKey === "tru-sample-report",
-    );
+    const pdfIndex = values.findIndex((source) => source.sourceKey === "tru-sample-report");
     const expectedPdf = capture(values[pdfIndex]!, pdfIndex);
-    expect(
-      VerificationCaptureTerminalResourceSchema.parse(expectedPdf).source.kind,
-    ).toBe("pdf");
+    expect(VerificationCaptureTerminalResourceSchema.parse(expectedPdf).source.kind).toBe("pdf");
     expect(expectedPdf.requestDigest).toBe(
       digestCanonicalJson({
         verificationContractVersion: "verification.v1",
@@ -329,24 +294,16 @@ describe("installed diagnostics benchmark capture", () => {
       environment: {},
       sleep: async () => {},
     });
-    expect(client.captureVerificationSourceWithProfile).toHaveBeenCalledTimes(
-      16,
-    );
+    expect(client.captureVerificationSourceWithProfile).toHaveBeenCalledTimes(16);
     expect(client.getVerificationCaptureResult).toHaveBeenCalledTimes(16);
     expect(result.tenantId).toBe(tenant);
     expect(result).toMatchObject({
       status: "proposed_review_required",
       exitCode: 0,
     });
-    expect(
-      result.sourceOutcomes.every((item) => item.state === "succeeded"),
-    ).toBe(true);
-    const pdfCall = (
-      client.captureVerificationSourceWithProfile as ReturnType<typeof vi.fn>
-    ).mock.calls.find(
-      (call) =>
-        call[1].source.sourceUri ===
-        values.find((source) => source.sourceKey === "tru-sample-report")!.url,
+    expect(result.sourceOutcomes.every((item) => item.state === "succeeded")).toBe(true);
+    const pdfCall = (client.captureVerificationSourceWithProfile as ReturnType<typeof vi.fn>).mock.calls.find(
+      (call) => call[1].source.sourceUri === values.find((source) => source.sourceKey === "tru-sample-report")!.url,
     );
     expect(pdfCall?.[1]).toMatchObject({
       source: { mode: "acquire", sourceKind: "pdf" },
@@ -362,9 +319,7 @@ describe("installed diagnostics benchmark capture", () => {
         ]),
       }),
     );
-    for (const call of (
-      client.captureVerificationSourceWithProfile as ReturnType<typeof vi.fn>
-    ).mock.calls)
+    for (const call of (client.captureVerificationSourceWithProfile as ReturnType<typeof vi.fn>).mock.calls)
       expect(call[2]).not.toHaveProperty("tenantId");
   });
 
@@ -398,11 +353,10 @@ describe("installed diagnostics benchmark capture", () => {
       pendingOperationId: id(901),
     });
     expect(result).toMatchObject({ status: "refresh_incomplete", exitCode: 2 });
-    expect(
-      result.proposal.sourceDiff.find(
-        (item) => item.sourceKey === values[0]!.sourceKey,
-      ),
-    ).toMatchObject({ status: "unavailable", unavailableCode: "FORBIDDEN" });
+    expect(result.proposal.sourceDiff.find((item) => item.sourceKey === values[0]!.sourceKey)).toMatchObject({
+      status: "unavailable",
+      unavailableCode: "FORBIDDEN",
+    });
   });
 
   it("fails closed on mixed accepted/result tenant identities or no authenticated acceptance", async () => {
@@ -470,17 +424,14 @@ describe("installed diagnostics benchmark capture", () => {
       }),
       getVerificationCaptureResult: vi.fn(),
     };
-    const result = await runDiagnosticsBenchmarkCapture(
-      [...command, "--timeout-ms", "100"],
-      {
-        client,
-        writer: persisted,
-        catalogDirectory: catalog,
-        environment: {},
-        now: () => time,
-        sleep: async () => {},
-      },
-    );
+    const result = await runDiagnosticsBenchmarkCapture([...command, "--timeout-ms", "100"], {
+      client,
+      writer: persisted,
+      catalogDirectory: catalog,
+      environment: {},
+      now: () => time,
+      sleep: async () => {},
+    });
     expect(result.sourceOutcomes[0]).toMatchObject({
       state: "unavailable",
       failureStage: "poll",
@@ -491,28 +442,21 @@ describe("installed diagnostics benchmark capture", () => {
   });
 
   it("fails before any source submit when the requested output already exists", async () => {
-    const directory = await mkdtemp(
-      resolve(tmpdir(), "benchmark-capture-output-"),
-    );
+    const directory = await mkdtemp(resolve(tmpdir(), "benchmark-capture-output-"));
     const output = resolve(directory, "proposal");
     const values = await sources(),
       client = clientFor(values);
     await writeFile(output, "existing");
     try {
       await expect(
-        runDiagnosticsBenchmarkCapture(
-          [...command.slice(0, -2), "--output", output],
-          {
-            client,
-            writer: writer(),
-            catalogDirectory: catalog,
-            environment: {},
-          },
-        ),
+        runDiagnosticsBenchmarkCapture([...command.slice(0, -2), "--output", output], {
+          client,
+          writer: writer(),
+          catalogDirectory: catalog,
+          environment: {},
+        }),
       ).rejects.toThrow("BENCHMARK_CAPTURE_OUTPUT_EXISTS");
-      expect(
-        client.captureVerificationSourceWithProfile,
-      ).not.toHaveBeenCalled();
+      expect(client.captureVerificationSourceWithProfile).not.toHaveBeenCalled();
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

@@ -1,13 +1,7 @@
 import { isAbsolute, normalize, posix } from "node:path";
 
 export function normalizeUploadPath(path: string, maximumLength: number): string {
-  if (
-    !path ||
-    path.length > maximumLength ||
-    path.includes("\0") ||
-    isAbsolute(path) ||
-    /^[a-zA-Z]:/.test(path)
-  )
+  if (!path || path.length > maximumLength || path.includes("\0") || isAbsolute(path) || /^[a-zA-Z]:/.test(path))
     throw new Error("UPLOAD_PATH_DENIED");
   const portable = path.replaceAll("\\", "/");
   const canonical = posix.normalize(portable);

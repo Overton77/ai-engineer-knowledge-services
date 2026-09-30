@@ -11,9 +11,7 @@ describe("example 02: fuse channels", () => {
   });
 
   it("collects contributions from exact, trigram and semantic channels for r0", async () => {
-    expect((await fuseChannelsExample()).topChannels).toEqual(
-      expect.arrayContaining(["exact", "trigram", "semantic"]),
-    );
+    expect((await fuseChannelsExample()).topChannels).toEqual(expect.arrayContaining(["exact", "trigram", "semantic"]));
   });
 
   it("expands the verified graph edge to r0's neighbor", async () => {

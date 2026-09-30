@@ -93,11 +93,13 @@ export const VerificationRunManifestResourceSchema = VerificationRunSummaryCoreS
     platform: PublicStringSchema,
     deploymentId: VerificationIdSchema,
   }),
-  provider: z.strictObject({
-    endpointIdentity: PublicStringSchema,
-    model: PublicStringSchema,
-    pricingSnapshotArtifact: VerificationArtifactReferenceSchema,
-  }).optional(),
+  provider: z
+    .strictObject({
+      endpointIdentity: PublicStringSchema,
+      model: PublicStringSchema,
+      pricingSnapshotArtifact: VerificationArtifactReferenceSchema,
+    })
+    .optional(),
   inputArtifacts: z.array(VerificationArtifactReferenceSchema).max(1_000),
   outputArtifacts: z.array(VerificationArtifactReferenceSchema).max(1_000),
   stages: z.array(VerificationManifestStageSchema).max(256),
@@ -148,9 +150,19 @@ export const VerificationCaseResourceSchema = VerificationCaseSummaryResourceSch
   const keys = new Set<string>();
   let priorOrdinal = -1;
   for (const evidence of value.evidence) {
-    if (evidence.tenantId !== value.tenantId || evidence.runId !== value.runId || evidence.caseRunId !== value.caseRunId
-      || ids.has(evidence.evidenceId) || keys.has(evidence.evidenceKey) || evidence.ordinal <= priorOrdinal) {
-      context.addIssue({ code: "custom", path: ["evidence"], message: "Evidence must be uniquely ordered and bound to this case" });
+    if (
+      evidence.tenantId !== value.tenantId ||
+      evidence.runId !== value.runId ||
+      evidence.caseRunId !== value.caseRunId ||
+      ids.has(evidence.evidenceId) ||
+      keys.has(evidence.evidenceKey) ||
+      evidence.ordinal <= priorOrdinal
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["evidence"],
+        message: "Evidence must be uniquely ordered and bound to this case",
+      });
     }
     ids.add(evidence.evidenceId);
     keys.add(evidence.evidenceKey);
@@ -159,19 +171,21 @@ export const VerificationCaseResourceSchema = VerificationCaseSummaryResourceSch
 });
 export type VerificationCaseResource = z.infer<typeof VerificationCaseResourceSchema>;
 
-export const VerificationRunCasesResourceSchema = z.strictObject({
-  verificationContractVersion: VerificationContractVersionSchema,
-  tenantId: UuidSchema,
-  runId: UuidSchema,
-  cases: z.array(VerificationCaseSummaryResourceSchema).max(100),
-  nextCursor: UuidSchema.optional(),
-}).superRefine((value, context) => {
-  const ids = new Set<string>();
-  for (const item of value.cases) {
-    if (item.tenantId !== value.tenantId || item.runId !== value.runId || ids.has(item.caseRunId)) {
-      context.addIssue({ code: "custom", path: ["cases"], message: "Cases must be unique and bound to this run" });
+export const VerificationRunCasesResourceSchema = z
+  .strictObject({
+    verificationContractVersion: VerificationContractVersionSchema,
+    tenantId: UuidSchema,
+    runId: UuidSchema,
+    cases: z.array(VerificationCaseSummaryResourceSchema).max(100),
+    nextCursor: UuidSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    const ids = new Set<string>();
+    for (const item of value.cases) {
+      if (item.tenantId !== value.tenantId || item.runId !== value.runId || ids.has(item.caseRunId)) {
+        context.addIssue({ code: "custom", path: ["cases"], message: "Cases must be unique and bound to this run" });
+      }
+      ids.add(item.caseRunId);
     }
-    ids.add(item.caseRunId);
-  }
-});
+  });
 export type VerificationRunCasesResource = z.infer<typeof VerificationRunCasesResourceSchema>;

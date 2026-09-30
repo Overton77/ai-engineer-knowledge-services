@@ -26,8 +26,12 @@ export function scopedKnowledgeOperations(knowledge: KnowledgeServices): readonl
     name,
     input: schema,
     execute: (scope, payload) => {
-      if (scope.assignment.tenantId !== knowledge.config.defaultTenantId) throw new ScopedAccessError("SCOPED_TENANT_BINDING");
-      return execute({ tenantId: knowledge.config.defaultTenantId, requireRead: (id) => scope.requireRead(id) }, schema.parse(payload));
+      if (scope.assignment.tenantId !== knowledge.config.defaultTenantId)
+        throw new ScopedAccessError("SCOPED_TENANT_BINDING");
+      return execute(
+        { tenantId: knowledge.config.defaultTenantId, requireRead: (id) => scope.requireRead(id) },
+        schema.parse(payload),
+      );
     },
   });
   const recovery = () => {
@@ -36,21 +40,31 @@ export function scopedKnowledgeOperations(knowledge: KnowledgeServices): readonl
   };
 
   return [
-    operation("schema_search", z.strictObject({
-      query: z.string().min(1).max(200),
-      kinds: z.array(z.string().min(1).max(64)).max(16).optional(),
-      domain: z.string().min(1).max(120).optional(),
-      limit: z.number().int().min(1).max(50).optional(),
-    }), async (_context, payload) => searchWorkspace(knowledge.workspace, payload.query, {
-      ...(payload.kinds ? { kinds: payload.kinds } : {}),
-      ...(payload.domain ? { domain: payload.domain } : {}),
-      ...(payload.limit ? { limit: payload.limit } : {}),
-    })),
+    operation(
+      "schema_search",
+      z.strictObject({
+        query: z.string().min(1).max(200),
+        kinds: z.array(z.string().min(1).max(64)).max(16).optional(),
+        domain: z.string().min(1).max(120).optional(),
+        limit: z.number().int().min(1).max(50).optional(),
+      }),
+      async (_context, payload) =>
+        searchWorkspace(knowledge.workspace, payload.query, {
+          ...(payload.kinds ? { kinds: payload.kinds } : {}),
+          ...(payload.domain ? { domain: payload.domain } : {}),
+          ...(payload.limit ? { limit: payload.limit } : {}),
+        }),
+    ),
 
-    operation("schema_get", z.strictObject({
-      id: z.string().min(1).max(300),
-      maxBytes: z.number().int().min(256).max(64_000).optional(),
-    }), async (_context, payload) => getPage(knowledge.workspace, payload.id, payload.maxBytes ? { maxBytes: payload.maxBytes } : {})),
+    operation(
+      "schema_get",
+      z.strictObject({
+        id: z.string().min(1).max(300),
+        maxBytes: z.number().int().min(256).max(64_000).optional(),
+      }),
+      async (_context, payload) =>
+        getPage(knowledge.workspace, payload.id, payload.maxBytes ? { maxBytes: payload.maxBytes } : {}),
+    ),
 
     operation("db_head", z.strictObject({}), async (context) => ({
       tenantId: context.tenantId,

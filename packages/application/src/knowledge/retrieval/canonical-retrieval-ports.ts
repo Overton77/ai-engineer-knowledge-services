@@ -47,13 +47,30 @@ export interface RetrievalEvidenceRecord {
   readonly vectorItemId: string;
   readonly searchProjectionId: string;
   readonly projectionProcedureId: string;
-  readonly canonicalRecord: { readonly kind: string; readonly schemaVersion: string; readonly recordId: string; readonly tenantId: string };
+  readonly canonicalRecord: {
+    readonly kind: string;
+    readonly schemaVersion: string;
+    readonly recordId: string;
+    readonly tenantId: string;
+  };
   readonly sourceText: string;
   readonly authority: "canonical" | "exploratory" | "user_managed";
   readonly assurance: "high" | "medium" | "low";
   readonly freshnessAt: string;
-  readonly locator?: { readonly representationId: string; readonly nodeId?: string; readonly startOffset?: number; readonly endOffset?: number; readonly quoteDigest?: `sha256:${string}` };
-  readonly artifactReference?: { readonly artifactId: string; readonly tenantId: string; readonly digest: `sha256:${string}`; readonly mediaType: string; readonly byteLength?: number };
+  readonly locator?: {
+    readonly representationId: string;
+    readonly nodeId?: string;
+    readonly startOffset?: number;
+    readonly endOffset?: number;
+    readonly quoteDigest?: `sha256:${string}`;
+  };
+  readonly artifactReference?: {
+    readonly artifactId: string;
+    readonly tenantId: string;
+    readonly digest: `sha256:${string}`;
+    readonly mediaType: string;
+    readonly byteLength?: number;
+  };
 }
 
 export interface PersistRetrievalExecutionInput {
@@ -72,7 +89,14 @@ export interface PersistRetrievalExecutionInput {
     readonly stageScores: unknown;
     readonly finalScore: number;
     readonly rank: number;
-    readonly sources: readonly { readonly id: string; readonly channel: "vector" | "lexical" | "exact" | "graph" | "rerank"; readonly searchProjectionId?: string; readonly sourceRank: number; readonly score: number; readonly explanation: unknown }[];
+    readonly sources: readonly {
+      readonly id: string;
+      readonly channel: "vector" | "lexical" | "exact" | "graph" | "rerank";
+      readonly searchProjectionId?: string;
+      readonly sourceRank: number;
+      readonly score: number;
+      readonly explanation: unknown;
+    }[];
   }[];
 }
 
@@ -99,8 +123,11 @@ export interface RetrievalSupportPathRow {
   readonly sourceFamilyId: string;
   readonly representationId: string;
   readonly captureArtifact: {
-    readonly artifactId: string; readonly tenantId: string; readonly digest: `sha256:${string}`;
-    readonly mediaType: string; readonly byteLength: number;
+    readonly artifactId: string;
+    readonly tenantId: string;
+    readonly digest: `sha256:${string}`;
+    readonly mediaType: string;
+    readonly byteLength: number;
   };
   readonly qualifiers: readonly string[];
 }
@@ -108,7 +135,11 @@ export interface RetrievalSupportPathRow {
 export interface ResolvedRetrievalSupport {
   readonly vectorItemId: string;
   readonly searchProjectionId: string;
-  readonly target: { readonly kind: RetrievalTargetKind; readonly canonicalId: string; readonly projectionTargetId: string };
+  readonly target: {
+    readonly kind: RetrievalTargetKind;
+    readonly canonicalId: string;
+    readonly projectionTargetId: string;
+  };
   readonly paths: readonly RetrievalSupportPathRow[];
   readonly sourceFamilyIds: readonly string[];
   readonly graphPaths: readonly (readonly string[])[];
@@ -130,17 +161,45 @@ export interface RetrievalOperationLease {
 
 /** Everything canonical retrieval execution needs from storage; implemented by PostgresCanonicalRepository. */
 export interface CanonicalRetrievalRepository {
-  getRetrievalRunResource(tenantId: string, runId: string): Promise<{ readonly id: string; readonly evidencePacketIds: readonly string[] } | undefined>;
+  getRetrievalRunResource(
+    tenantId: string,
+    runId: string,
+  ): Promise<{ readonly id: string; readonly evidencePacketIds: readonly string[] } | undefined>;
   getEvidencePacket(tenantId: string, packetId: string): Promise<unknown | undefined>;
-  resolveRetrievalPolicy(tenantId: string, policyVersionId: string, requestedSpaces: readonly string[]): Promise<RetrievalPolicySnapshot>;
+  resolveRetrievalPolicy(
+    tenantId: string,
+    policyVersionId: string,
+    requestedSpaces: readonly string[],
+  ): Promise<RetrievalPolicySnapshot>;
   retrievalKnowledgeClock(tenantId: string, requested?: number): Promise<number>;
-  retrievalPublications(tenantId: string, vectorSpaceVersionIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  retrievalPublications(
+    tenantId: string,
+    vectorSpaceVersionIds: readonly string[],
+  ): Promise<ReadonlyMap<string, string>>;
   hybridSearch(request: HybridSearchRequest): Promise<readonly HybridSearchResult[]>;
-  getRetrievalEvidenceRecords(tenantId: string, vectorItemIds: readonly string[]): Promise<readonly RetrievalEvidenceRecord[]>;
+  getRetrievalEvidenceRecords(
+    tenantId: string,
+    vectorItemIds: readonly string[],
+  ): Promise<readonly RetrievalEvidenceRecord[]>;
   resolveRetrievalSupport(input: RetrievalSupportRequest): Promise<readonly ResolvedRetrievalSupport[]>;
   storeRetrievalExecution(tenantId: string, input: PersistRetrievalExecutionInput): Promise<string>;
-  listSteps(tenantId: string, operationId: string): Promise<readonly { readonly stepKey: string; readonly status: string }[]>;
-  claimOperation(tenantId: string, operationId: string, holderIdentity: string): Promise<RetrievalOperationLease | undefined>;
-  completeStep(tenantId: string, lease: RetrievalOperationLease, receipt: { id: string; idempotencyKey: string; receiptKind: string; executorIdentity: string; output: unknown }): Promise<unknown>;
-  failStep(tenantId: string, lease: RetrievalOperationLease, failure: { id: string; idempotencyKey: string; executorIdentity: string; errorClass: string; retryable: boolean }): Promise<unknown>;
+  listSteps(
+    tenantId: string,
+    operationId: string,
+  ): Promise<readonly { readonly stepKey: string; readonly status: string }[]>;
+  claimOperation(
+    tenantId: string,
+    operationId: string,
+    holderIdentity: string,
+  ): Promise<RetrievalOperationLease | undefined>;
+  completeStep(
+    tenantId: string,
+    lease: RetrievalOperationLease,
+    receipt: { id: string; idempotencyKey: string; receiptKind: string; executorIdentity: string; output: unknown },
+  ): Promise<unknown>;
+  failStep(
+    tenantId: string,
+    lease: RetrievalOperationLease,
+    failure: { id: string; idempotencyKey: string; executorIdentity: string; errorClass: string; retryable: boolean },
+  ): Promise<unknown>;
 }

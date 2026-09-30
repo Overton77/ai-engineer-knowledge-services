@@ -1,9 +1,4 @@
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-  isSha256Digest,
-  sha256Digest,
-} from "../src/index.js";
+import { canonicalizeJson, digestCanonicalJson, isSha256Digest, sha256Digest } from "../src/index.js";
 
 /**
  * Stage 0 — primitives. Every digest in the package is SHA-256 over RFC 8785

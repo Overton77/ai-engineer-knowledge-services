@@ -28,8 +28,7 @@ export async function proposeUncitedEvidenceRescue(
   readonly callsUsed: number;
   readonly candidates: readonly RescueCandidate[];
 }> {
-  if (!query.trim() || query.length > 2_000)
-    throw new Error("RESCUE_QUERY_INVALID");
+  if (!query.trim() || query.length > 2_000) throw new Error("RESCUE_QUERY_INVALID");
   if (
     !Number.isInteger(budget.maximumCalls) ||
     budget.maximumCalls < 1 ||
@@ -47,8 +46,7 @@ export async function proposeUncitedEvidenceRescue(
     maximumFragments: budget.maximumFragments,
     maximumCharacters: budget.maximumCharacters,
   });
-  if (candidates.length > budget.maximumFragments)
-    throw new Error("RESCUE_FRAGMENT_BUDGET_EXCEEDED");
+  if (candidates.length > budget.maximumFragments) throw new Error("RESCUE_FRAGMENT_BUDGET_EXCEEDED");
   const ids = new Set<string>();
   let characters = 0;
   for (const candidate of candidates) {
@@ -63,13 +61,10 @@ export async function proposeUncitedEvidenceRescue(
     ids.add(candidate.candidateId);
     characters += candidate.exactText.length;
   }
-  if (characters > budget.maximumCharacters)
-    throw new Error("RESCUE_CHARACTER_BUDGET_EXCEEDED");
+  if (characters > budget.maximumCharacters) throw new Error("RESCUE_CHARACTER_BUDGET_EXCEEDED");
   return Object.freeze({
     status: "pending_mechanical_admission",
     callsUsed: 1,
-    candidates: Object.freeze(
-      candidates.map((candidate) => Object.freeze({ ...candidate })),
-    ),
+    candidates: Object.freeze(candidates.map((candidate) => Object.freeze({ ...candidate }))),
   });
 }

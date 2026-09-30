@@ -1,18 +1,12 @@
 import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { deepFreeze } from "../internal/deep-freeze.js";
 import { auditBundleSignablePayload, inspectAuditBundle } from "./seal.js";
-import type {
-  AuditBundleSignatureVerifier,
-  AuditBundleSigner,
-  VerificationAuditBundle,
-} from "./model.js";
+import type { AuditBundleSignatureVerifier, AuditBundleSigner, VerificationAuditBundle } from "./model.js";
 
 export const VERIFICATION_DSSE_PAYLOAD_TYPE = "application/vnd.in-toto+json";
 export const IN_TOTO_STATEMENT_TYPE = "https://in-toto.io/Statement/v1";
-export const SLSA_PROVENANCE_V1_PREDICATE_TYPE =
-  "https://slsa.dev/provenance/v1";
-export const VERIFICATION_AUDIT_BUNDLE_BUILD_TYPE =
-  "urn:aiengineer:verification:audit-bundle:v1";
+export const SLSA_PROVENANCE_V1_PREDICATE_TYPE = "https://slsa.dev/provenance/v1";
+export const VERIFICATION_AUDIT_BUNDLE_BUILD_TYPE = "urn:aiengineer:verification:audit-bundle:v1";
 
 const MAX_ENVELOPE_BYTES = 65_536;
 const MAX_PAYLOAD_BYTES = 32_768;
@@ -83,18 +77,10 @@ function fail(code: string): never {
   throw new Error(code);
 }
 
-function exactKeys(
-  value: Record<string, unknown>,
-  keys: readonly string[],
-  code: string,
-): void {
+function exactKeys(value: Record<string, unknown>, keys: readonly string[], code: string): void {
   const actual = Object.keys(value).sort();
   const expected = [...keys].sort();
-  if (
-    actual.length !== expected.length ||
-    actual.some((key, index) => key !== expected[index])
-  )
-    fail(code);
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) fail(code);
 }
 
 function clone<T>(value: T): T {
@@ -102,12 +88,7 @@ function clone<T>(value: T): T {
 }
 
 function publicIdentifier(value: unknown, code: string): string {
-  if (
-    typeof value !== "string" ||
-    value.length < 1 ||
-    value.length > 512 ||
-    /[\u0000-\u001f\u007f]/.test(value)
-  )
+  if (typeof value !== "string" || value.length < 1 || value.length > 512 || /[\u0000-\u001f\u007f]/.test(value))
     fail(code);
   return value;
 }
@@ -116,29 +97,20 @@ function derivedBuilderId(bundle: VerificationAuditBundle): string {
   return `urn:aiengineer:verification:deployment:${encodeURIComponent(publicIdentifier(bundle.manifest.runtime.deploymentId, "DSSE_DEPLOYMENT_ID_INVALID"))}`;
 }
 
-function assertTrustedBinding(
-  binding: VerificationDsseTrustedBinding,
-  builderId: string,
-  keyId: string,
-): void {
+function assertTrustedBinding(binding: VerificationDsseTrustedBinding, builderId: string, keyId: string): void {
   exactKeys(
     binding as unknown as Record<string, unknown>,
     ["builderId", "keyId"],
     "DSSE_TRUSTED_BINDING_FIELDS_INVALID",
   );
   if (
-    publicIdentifier(binding.builderId, "DSSE_BUILDER_ID_INVALID") !==
-      builderId ||
+    publicIdentifier(binding.builderId, "DSSE_BUILDER_ID_INVALID") !== builderId ||
     publicIdentifier(binding.keyId, "DSSE_KEY_ID_INVALID") !== keyId
   )
     fail("DSSE_TRUSTED_BINDING_MISMATCH");
 }
 
-function decodeBase64(
-  value: unknown,
-  maxBytes: number,
-  code: string,
-): Uint8Array {
+function decodeBase64(value: unknown, maxBytes: number, code: string): Uint8Array {
   if (
     typeof value !== "string" ||
     value.length === 0 ||
@@ -147,13 +119,11 @@ function decodeBase64(
     /=.+[^=]/.test(value)
   )
     fail(code);
-  const urlSafe =
-    /[-_]/.test(value) || (!value.includes("=") && value.length % 4 !== 0);
+  const urlSafe = /[-_]/.test(value) || (!value.includes("=") && value.length % 4 !== 0);
   if (urlSafe && /[+/]/.test(value)) fail(code);
   const unpadded = value.replace(/=+$/, "");
   const normalized =
-    (urlSafe ? unpadded.replace(/-/g, "+").replace(/_/g, "/") : unpadded) +
-    "=".repeat((4 - (unpadded.length % 4)) % 4);
+    (urlSafe ? unpadded.replace(/-/g, "+").replace(/_/g, "/") : unpadded) + "=".repeat((4 - (unpadded.length % 4)) % 4);
   let bytes: Buffer;
   try {
     bytes = Buffer.from(normalized, "base64");
@@ -161,42 +131,28 @@ function decodeBase64(
     fail(code);
   }
   if (bytes.byteLength === 0 || bytes.byteLength > maxBytes) fail(code);
-  const canonical = urlSafe
-    ? bytes.toString("base64url")
-    : bytes.toString("base64");
+  const canonical = urlSafe ? bytes.toString("base64url") : bytes.toString("base64");
   if (canonical !== (urlSafe ? unpadded : value)) fail(code);
   return new Uint8Array(bytes);
 }
 
 /** DSSE pre-authentication encoding over UTF-8 byte lengths, per DSSE v1. */
-export function verificationDssePae(
-  payloadType: string,
-  payload: Uint8Array,
-): Uint8Array {
+export function verificationDssePae(payloadType: string, payload: Uint8Array): Uint8Array {
   const type = publicIdentifier(payloadType, "DSSE_PAYLOAD_TYPE_INVALID");
-  if (payload.byteLength === 0 || payload.byteLength > MAX_PAYLOAD_BYTES)
-    fail("DSSE_PAYLOAD_SIZE_INVALID");
-  const prefix = text.encode(
-    `DSSEv1 ${text.encode(type).byteLength} ${type} ${payload.byteLength} `,
-  );
+  if (payload.byteLength === 0 || payload.byteLength > MAX_PAYLOAD_BYTES) fail("DSSE_PAYLOAD_SIZE_INVALID");
+  const prefix = text.encode(`DSSEv1 ${text.encode(type).byteLength} ${type} ${payload.byteLength} `);
   const result = new Uint8Array(prefix.byteLength + payload.byteLength);
   result.set(prefix);
   result.set(payload, prefix.byteLength);
   return result;
 }
 
-function signedBundleDigest(
-  bundle: VerificationAuditBundle,
-): `sha256:${string}` {
-  const payload = text.encode(
-    canonicalizeJson(auditBundleSignablePayload(bundle)),
-  );
+function signedBundleDigest(bundle: VerificationAuditBundle): `sha256:${string}` {
+  const payload = text.encode(canonicalizeJson(auditBundleSignablePayload(bundle)));
   return sha256Digest(payload);
 }
 
-function statementFor(
-  bundle: VerificationAuditBundle,
-): VerificationDsseSlsaStatement {
+function statementFor(bundle: VerificationAuditBundle): VerificationDsseSlsaStatement {
   const subjectDigest = signedBundleDigest(bundle);
   const dependencies = [...bundle.manifest.inputArtifacts]
     .map((handle) => {
@@ -215,19 +171,15 @@ function statementFor(
   if (
     dependencies.length === 0 ||
     dependencies.length > MAX_DEPENDENCIES ||
-    new Set(dependencies.map((dependency) => dependency.uri)).size !==
-      dependencies.length
+    new Set(dependencies.map((dependency) => dependency.uri)).size !== dependencies.length
   )
     fail("DSSE_DEPENDENCIES_INVALID");
   const policy = sha256.exec(bundle.policyBinding.policyArtifact.digest);
-  const policyInputs = sha256.exec(
-    bundle.policyBinding.recordedPolicyInputsArtifact.digest,
-  );
+  const policyInputs = sha256.exec(bundle.policyBinding.recordedPolicyInputsArtifact.digest);
   const manifest = sha256.exec(bundle.manifest.canonicalization.manifestDigest);
   const deterministic = sha256.exec(bundle.deterministicResultDigest);
   const decision = sha256.exec(bundle.policyDecisionDigest);
-  if (!policy || !policyInputs || !manifest || !deterministic || !decision)
-    fail("DSSE_AUDIT_DIGEST_INVALID");
+  if (!policy || !policyInputs || !manifest || !deterministic || !decision) fail("DSSE_AUDIT_DIGEST_INVALID");
   return deepFreeze<VerificationDsseSlsaStatement>({
     _type: IN_TOTO_STATEMENT_TYPE,
     subject: [
@@ -243,13 +195,11 @@ function statementFor(
         externalParameters: {
           auditBundlePayloadDigest: subjectDigest,
           deterministicResultDigest: bundle.deterministicResultDigest,
-          manifestDigest: bundle.manifest.canonicalization
-            .manifestDigest as `sha256:${string}`,
-          policyArtifactDigest: bundle.policyBinding.policyArtifact
-            .digest as `sha256:${string}`,
+          manifestDigest: bundle.manifest.canonicalization.manifestDigest as `sha256:${string}`,
+          policyArtifactDigest: bundle.policyBinding.policyArtifact.digest as `sha256:${string}`,
           policyDecisionDigest: bundle.policyDecisionDigest,
-          recordedPolicyInputsArtifactDigest: bundle.policyBinding
-            .recordedPolicyInputsArtifact.digest as `sha256:${string}`,
+          recordedPolicyInputsArtifactDigest: bundle.policyBinding.recordedPolicyInputsArtifact
+            .digest as `sha256:${string}`,
         },
         resolvedDependencies: dependencies,
       },
@@ -263,8 +213,7 @@ async function assertVerifiedAudit(
   verifier: AuditBundleSignatureVerifier,
 ): Promise<void> {
   const inspection = await inspectAuditBundle(bundle, verifier);
-  if (!inspection.valid || inspection.signatureStatus !== "verified")
-    fail("DSSE_AUDIT_BUNDLE_SIGNATURE_REQUIRED");
+  if (!inspection.valid || inspection.signatureStatus !== "verified") fail("DSSE_AUDIT_BUNDLE_SIGNATURE_REQUIRED");
 }
 
 export async function createVerificationDsseSlsaAttestation(input: {
@@ -287,9 +236,7 @@ export async function createVerificationDsseSlsaAttestation(input: {
   assertTrustedBinding(trustedBinding, builderId, signer.keyId);
   const payload = text.encode(canonicalizeJson(statement));
   if (payload.byteLength > MAX_PAYLOAD_BYTES) fail("DSSE_PAYLOAD_SIZE_INVALID");
-  const signatureBase64 = await signer.sign(
-    verificationDssePae(VERIFICATION_DSSE_PAYLOAD_TYPE, payload),
-  );
+  const signatureBase64 = await signer.sign(verificationDssePae(VERIFICATION_DSSE_PAYLOAD_TYPE, payload));
   const signature = decodeBase64(signatureBase64, 64, "DSSE_SIGNATURE_INVALID");
   if (signature.byteLength !== 64) fail("DSSE_SIGNATURE_INVALID");
   const envelope = deepFreeze<VerificationDsseEnvelope>({
@@ -314,38 +261,30 @@ function parseEnvelope(value: unknown): {
   let raw: unknown;
   if (typeof value === "string" || value instanceof Uint8Array) {
     const bytes = typeof value === "string" ? text.encode(value) : value;
-    if (bytes.byteLength > MAX_ENVELOPE_BYTES)
-      fail("DSSE_ENVELOPE_SIZE_INVALID");
+    if (bytes.byteLength > MAX_ENVELOPE_BYTES) fail("DSSE_ENVELOPE_SIZE_INVALID");
     try {
       raw = JSON.parse(decoder.decode(bytes));
     } catch {
       fail("DSSE_ENVELOPE_JSON_INVALID");
     }
   } else {
-    if (value === null || typeof value !== "object" || Array.isArray(value))
-      fail("DSSE_ENVELOPE_INVALID");
+    if (value === null || typeof value !== "object" || Array.isArray(value)) fail("DSSE_ENVELOPE_INVALID");
     let bytes: Uint8Array;
     try {
       bytes = text.encode(canonicalizeJson(value));
     } catch {
       fail("DSSE_ENVELOPE_JSON_INVALID");
     }
-    if (bytes.byteLength > MAX_ENVELOPE_BYTES)
-      fail("DSSE_ENVELOPE_SIZE_INVALID");
+    if (bytes.byteLength > MAX_ENVELOPE_BYTES) fail("DSSE_ENVELOPE_SIZE_INVALID");
     try {
       raw = JSON.parse(decoder.decode(bytes));
     } catch {
       fail("DSSE_ENVELOPE_JSON_INVALID");
     }
   }
-  if (raw === null || typeof raw !== "object" || Array.isArray(raw))
-    fail("DSSE_ENVELOPE_INVALID");
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) fail("DSSE_ENVELOPE_INVALID");
   const envelope = raw as Record<string, unknown>;
-  exactKeys(
-    envelope,
-    ["payload", "payloadType", "signatures"],
-    "DSSE_ENVELOPE_FIELDS_INVALID",
-  );
+  exactKeys(envelope, ["payload", "payloadType", "signatures"], "DSSE_ENVELOPE_FIELDS_INVALID");
   if (
     envelope.payloadType !== VERIFICATION_DSSE_PAYLOAD_TYPE ||
     !Array.isArray(envelope.signatures) ||
@@ -353,27 +292,11 @@ function parseEnvelope(value: unknown): {
   )
     fail("DSSE_ENVELOPE_INVALID");
   const candidate = envelope.signatures[0];
-  if (
-    candidate === null ||
-    typeof candidate !== "object" ||
-    Array.isArray(candidate)
-  )
-    fail("DSSE_SIGNATURE_INVALID");
-  exactKeys(
-    candidate as Record<string, unknown>,
-    ["keyid", "sig"],
-    "DSSE_SIGNATURE_FIELDS_INVALID",
-  );
-  const keyid = publicIdentifier(
-    (candidate as Record<string, unknown>).keyid,
-    "DSSE_KEY_ID_INVALID",
-  );
+  if (candidate === null || typeof candidate !== "object" || Array.isArray(candidate)) fail("DSSE_SIGNATURE_INVALID");
+  exactKeys(candidate as Record<string, unknown>, ["keyid", "sig"], "DSSE_SIGNATURE_FIELDS_INVALID");
+  const keyid = publicIdentifier((candidate as Record<string, unknown>).keyid, "DSSE_KEY_ID_INVALID");
   const sig = (candidate as Record<string, unknown>).sig;
-  const payload = decodeBase64(
-    envelope.payload,
-    MAX_PAYLOAD_BYTES,
-    "DSSE_PAYLOAD_BASE64_INVALID",
-  );
+  const payload = decodeBase64(envelope.payload, MAX_PAYLOAD_BYTES, "DSSE_PAYLOAD_BASE64_INVALID");
   const signature = decodeBase64(sig, 64, "DSSE_SIGNATURE_INVALID");
   if (signature.byteLength !== 64) fail("DSSE_SIGNATURE_INVALID");
   return {
@@ -392,22 +315,12 @@ function assertStatement(
   bundle: VerificationAuditBundle,
   binding: VerificationDsseTrustedBinding,
 ): VerificationDsseSlsaStatement {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    fail("DSSE_STATEMENT_INVALID");
+  if (value === null || typeof value !== "object" || Array.isArray(value)) fail("DSSE_STATEMENT_INVALID");
   const statement = value as Record<string, unknown>;
-  exactKeys(
-    statement,
-    ["_type", "predicate", "predicateType", "subject"],
-    "DSSE_STATEMENT_FIELDS_INVALID",
-  );
+  exactKeys(statement, ["_type", "predicate", "predicateType", "subject"], "DSSE_STATEMENT_FIELDS_INVALID");
   const expected = statementFor(bundle);
-  if (canonicalizeJson(statement) !== canonicalizeJson(expected))
-    fail("DSSE_STATEMENT_BINDING_MISMATCH");
-  assertTrustedBinding(
-    binding,
-    expected.predicate.runDetails.builder.id,
-    binding.keyId,
-  );
+  if (canonicalizeJson(statement) !== canonicalizeJson(expected)) fail("DSSE_STATEMENT_BINDING_MISMATCH");
+  assertTrustedBinding(binding, expected.predicate.runDetails.builder.id, binding.keyId);
   return expected;
 }
 
@@ -426,11 +339,7 @@ export async function inspectVerificationDsseSlsaAttestation(input: {
     const parsed = parseEnvelope(envelopeInput);
     const keyId = parsed.envelope.signatures[0].keyid;
     const expected = statementFor(bundle);
-    assertTrustedBinding(
-      expectedBinding,
-      expected.predicate.runDetails.builder.id,
-      keyId,
-    );
+    assertTrustedBinding(expectedBinding, expected.predicate.runDetails.builder.id, keyId);
     const validSignature = await input.attestationVerifier.verify({
       keyId,
       payload: verificationDssePae(parsed.envelope.payloadType, parsed.payload),

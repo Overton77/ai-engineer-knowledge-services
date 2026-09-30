@@ -12,9 +12,17 @@ export function chunkAndReconstructExample() {
   const second = chunkDocument(paperWithoutTables.nodes, profile);
   return {
     profile: `${profile.name}@${profile.version}`,
-    chunks: first.chunks.map(({ ordinal, sourceText, contextualPrefix, sourceTokenCount, spans }) => ({ ordinal, sourceText, contextualPrefix, sourceTokenCount, spanCount: spans.length })),
+    chunks: first.chunks.map(({ ordinal, sourceText, contextualPrefix, sourceTokenCount, spans }) => ({
+      ordinal,
+      sourceText,
+      contextualPrefix,
+      sourceTokenCount,
+      spanCount: spans.length,
+    })),
     omittedNodeCount: first.omittedNodeIds.length,
-    everySpanReconstructs: first.chunks.every((chunk) => reconstructChunk(chunk, paperWithoutTables.nodes) === chunk.sourceText),
+    everySpanReconstructs: first.chunks.every(
+      (chunk) => reconstructChunk(chunk, paperWithoutTables.nodes) === chunk.sourceText,
+    ),
     qa: first.qa,
     outputDigest: first.outputDigest,
     deterministic: first.outputDigest === second.outputDigest,

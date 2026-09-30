@@ -1,7 +1,4 @@
-import {
-  LOW_COVERAGE_THRESHOLD,
-  REPEATED_BLOCK_REVIEW_RATIO,
-} from "../constants.js";
+import { LOW_COVERAGE_THRESHOLD, REPEATED_BLOCK_REVIEW_RATIO } from "../constants.js";
 import type {
   ConversionMetrics,
   ConversionNode,
@@ -25,10 +22,7 @@ const FULL_COVERAGE = 1;
 const FULL_LOCATOR_RESOLVABILITY = 1;
 const ALTERNATE_CONVERSION = "alternate_conversion";
 
-function countKinds(
-  nodes: readonly ConversionNode[],
-  kinds: readonly ConversionNodeKind[],
-): number {
+function countKinds(nodes: readonly ConversionNode[], kinds: readonly ConversionNodeKind[]): number {
   return nodes.filter((node) => kinds.includes(node.kind)).length;
 }
 
@@ -41,24 +35,16 @@ function repeatedBlockCount(nodes: readonly ConversionNode[]): number {
 }
 
 function hasResolvableLocator(node: ConversionNode): boolean {
-  return (
-    node.locator.startOffset !== undefined &&
-    node.locator.endOffset !== undefined
-  );
+  return node.locator.startOffset !== undefined && node.locator.endOffset !== undefined;
 }
 
-function conversionMetrics(
-  input: string,
-  output: string,
-  nodes: readonly ConversionNode[],
-): ConversionMetrics {
+function conversionMetrics(input: string, output: string, nodes: readonly ConversionNode[]): ConversionMetrics {
   const nonRoot = nodes.slice(1);
   const repeated = repeatedBlockCount(nonRoot);
   return {
     inputCharacters: input.length,
     outputCharacters: output.length,
-    characterCoverage:
-      input.length === 0 ? FULL_COVERAGE : Math.min(1, output.length / input.length),
+    characterCoverage: input.length === 0 ? FULL_COVERAGE : Math.min(1, output.length / input.length),
     headings: countKinds(nonRoot, ["heading"]),
     tables: countKinds(nonRoot, ["table"]),
     figures: countKinds(nonRoot, ["figure", "image"]),
@@ -69,8 +55,7 @@ function conversionMetrics(
     locatorResolvability: nonRoot.length
       ? nonRoot.filter(hasResolvableLocator).length / nonRoot.length
       : FULL_LOCATOR_RESOLVABILITY,
-    encodingAnomalies: (output.match(new RegExp(REPLACEMENT_CHARACTER, "g")) ?? [])
-      .length,
+    encodingAnomalies: (output.match(new RegExp(REPLACEMENT_CHARACTER, "g")) ?? []).length,
   };
 }
 
@@ -128,12 +113,6 @@ export function inspectConversion(
   };
 }
 
-export function requiresAlternateConversion(
-  fidelity: FidelityReport | undefined,
-): boolean {
-  return Boolean(
-    fidelity?.findings.some(
-      (finding) => finding.disposition === ALTERNATE_CONVERSION,
-    ),
-  );
+export function requiresAlternateConversion(fidelity: FidelityReport | undefined): boolean {
+  return Boolean(fidelity?.findings.some((finding) => finding.disposition === ALTERNATE_CONVERSION));
 }

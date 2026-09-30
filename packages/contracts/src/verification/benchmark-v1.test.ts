@@ -31,11 +31,24 @@ describe("VerificationBenchmarkV1CandidatePool", () => {
   });
 
   it("rejects duplicate fragments, inflated counts, labels, independence, and unknown fields", () => {
-    const duplicate = pool(); duplicate.candidates[1] = { ...duplicate.candidates[1]!, fragmentId: duplicate.candidates[0]!.fragmentId };
+    const duplicate = pool();
+    duplicate.candidates[1] = { ...duplicate.candidates[1]!, fragmentId: duplicate.candidates[0]!.fragmentId };
     expect(VerificationBenchmarkV1CandidatePoolSchema.safeParse(duplicate).success).toBe(false);
     expect(VerificationBenchmarkV1CandidatePoolSchema.safeParse({ ...pool(), count: 151 }).success).toBe(false);
-    expect(VerificationBenchmarkV1CandidatePoolSchema.safeParse({ ...pool(), candidates: pool().candidates.map((item, index) => index ? item : { ...item, labelStatus: "expert_adjudicated" }) }).success).toBe(false);
-    expect(VerificationBenchmarkV1CandidatePoolSchema.safeParse({ ...pool(), candidates: pool().candidates.map((item, index) => index ? item : { ...item, independentObservation: true }) }).success).toBe(false);
+    expect(
+      VerificationBenchmarkV1CandidatePoolSchema.safeParse({
+        ...pool(),
+        candidates: pool().candidates.map((item, index) =>
+          index ? item : { ...item, labelStatus: "expert_adjudicated" },
+        ),
+      }).success,
+    ).toBe(false);
+    expect(
+      VerificationBenchmarkV1CandidatePoolSchema.safeParse({
+        ...pool(),
+        candidates: pool().candidates.map((item, index) => (index ? item : { ...item, independentObservation: true })),
+      }).success,
+    ).toBe(false);
     expect(VerificationBenchmarkV1CandidatePoolSchema.safeParse({ ...pool(), futureField: true }).success).toBe(false);
   });
 });

@@ -1,7 +1,4 @@
-import type {
-  Assertion,
-  SemanticJudgeIdentity,
-} from "@aiengineer/knowledge-contracts";
+import type { Assertion, SemanticJudgeIdentity } from "@aiengineer/knowledge-contracts";
 import type { SEMANTIC_RUBRIC_VERSION } from "../versions.js";
 
 /** Cancellation and deadline for one judge invocation. */
@@ -35,10 +32,7 @@ export interface SemanticJudgeAdapter {
   readonly maximumInputCharacters: number;
   /** A judge is deliberately composed with no external capabilities. */
   readonly toolCatalog?: readonly [];
-  judge(
-    input: SemanticJudgeInput,
-    execution: SemanticJudgeExecution,
-  ): Promise<unknown>;
+  judge(input: SemanticJudgeInput, execution: SemanticJudgeExecution): Promise<unknown>;
 }
 
 export type SemanticJudgePort = SemanticJudgeAdapter;

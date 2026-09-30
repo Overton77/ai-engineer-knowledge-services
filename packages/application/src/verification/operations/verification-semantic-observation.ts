@@ -38,15 +38,18 @@ export function semanticObservationTransformationSignature(bodyValue: unknown): 
  * handle exists, preventing a self-referential digest.
  */
 export class SemanticObservationArtifactComposer {
-  constructor(private readonly repository: SemanticObservationArtifactRegistrationPort, private readonly config: {
-    readonly storageBucket: string;
-    readonly producerActivityId: string;
-    readonly producerVersion: string;
-    readonly encryptionClass: string;
-    readonly retentionClass: string;
-    readonly now: () => string;
-    readonly missionId?: string;
-  }) {}
+  constructor(
+    private readonly repository: SemanticObservationArtifactRegistrationPort,
+    private readonly config: {
+      readonly storageBucket: string;
+      readonly producerActivityId: string;
+      readonly producerVersion: string;
+      readonly encryptionClass: string;
+      readonly retentionClass: string;
+      readonly now: () => string;
+      readonly missionId?: string;
+    },
+  ) {}
 
   async compose(bodyValue: unknown): Promise<SemanticProviderResponseObservation> {
     const body = SemanticProviderResponseObservationBodySchema.parse(bodyValue);
@@ -55,25 +58,45 @@ export class SemanticObservationArtifactComposer {
     const createdAt = this.config.now();
     if (!Number.isFinite(Date.parse(createdAt))) throw new Error("SEMANTIC_OBSERVATION_CLOCK_INVALID");
     const transformationSignature = semanticObservationTransformationSignature(body);
-    const parents = [body.blindedInputArtifact.artifactId, body.responseEnvelopeArtifact.artifactId, body.profileArtifact.artifactId] as const;
+    const parents = [
+      body.blindedInputArtifact.artifactId,
+      body.responseEnvelopeArtifact.artifactId,
+      body.profileArtifact.artifactId,
+    ] as const;
     const artifact = await this.repository.registerSemanticObservationArtifact({
-      tenantId: body.context.tenantId, bytes,
+      tenantId: body.context.tenantId,
+      bytes,
       mediaType: "application/vnd.aiengineer.verification-semantic-response-observation+json",
-      createdAt, producerActivityId: this.config.producerActivityId, producerVersion: this.config.producerVersion,
-      encryptionClass: this.config.encryptionClass, retentionClass: this.config.retentionClass, dataClassification: "restricted",
-      parentArtifactIds: parents, transformationSignature, artifactType: "verification_semantic_response_observation",
-      bucketClass: "ledger", storageBucket: this.config.storageBucket, producerAttemptId: body.context.producerAttemptId,
+      createdAt,
+      producerActivityId: this.config.producerActivityId,
+      producerVersion: this.config.producerVersion,
+      encryptionClass: this.config.encryptionClass,
+      retentionClass: this.config.retentionClass,
+      dataClassification: "restricted",
+      parentArtifactIds: parents,
+      transformationSignature,
+      artifactType: "verification_semantic_response_observation",
+      bucketClass: "ledger",
+      storageBucket: this.config.storageBucket,
+      producerAttemptId: body.context.producerAttemptId,
       ...(this.config.missionId === undefined ? {} : { missionId: this.config.missionId }),
     });
-    if (artifact.tenantId !== body.context.tenantId || artifact.digest !== digest
-      || artifact.mediaType !== "application/vnd.aiengineer.verification-semantic-response-observation+json"
-      || artifact.byteLength !== bytes.byteLength || !Number.isFinite(Date.parse(artifact.createdAt))
-      || Date.parse(artifact.createdAt) > Date.parse(createdAt)
-      || artifact.producerActivityId !== this.config.producerActivityId || artifact.producerVersion !== this.config.producerVersion
-      || artifact.encryptionClass !== this.config.encryptionClass || artifact.retentionClass !== this.config.retentionClass
-      || artifact.dataClassification !== "restricted" || artifact.transformationSignature !== transformationSignature
-      || artifact.parentArtifactIds.length !== parents.length
-      || artifact.parentArtifactIds.some((parent, index) => parent !== parents[index])) {
+    if (
+      artifact.tenantId !== body.context.tenantId ||
+      artifact.digest !== digest ||
+      artifact.mediaType !== "application/vnd.aiengineer.verification-semantic-response-observation+json" ||
+      artifact.byteLength !== bytes.byteLength ||
+      !Number.isFinite(Date.parse(artifact.createdAt)) ||
+      Date.parse(artifact.createdAt) > Date.parse(createdAt) ||
+      artifact.producerActivityId !== this.config.producerActivityId ||
+      artifact.producerVersion !== this.config.producerVersion ||
+      artifact.encryptionClass !== this.config.encryptionClass ||
+      artifact.retentionClass !== this.config.retentionClass ||
+      artifact.dataClassification !== "restricted" ||
+      artifact.transformationSignature !== transformationSignature ||
+      artifact.parentArtifactIds.length !== parents.length ||
+      artifact.parentArtifactIds.some((parent, index) => parent !== parents[index])
+    ) {
       throw new Error("SEMANTIC_OBSERVATION_ARTIFACT_BINDING_MISMATCH");
     }
     return SemanticProviderResponseObservationSchema.parse({ ...body, observationArtifact: artifact });

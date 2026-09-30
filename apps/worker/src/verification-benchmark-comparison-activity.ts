@@ -57,13 +57,25 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
         if (pollFailure) throw pollFailure;
         const current = await dependencies.operations.getOperationRecord(context.tenantId, context.operationId);
         if (!current || current.status !== "running") {
-          const failure = new CanonicalActivityError("VERIFICATION_OPERATION_NOT_ACTIVE", "VERIFICATION_OPERATION_NOT_ACTIVE", false);
+          const failure = new CanonicalActivityError(
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            false,
+          );
           pollFailure ??= failure;
           controller.abort();
           throw failure;
         }
-        if (current.id !== context.operationId || current.tenantId !== context.tenantId || current.operationKind !== "verification_benchmark_compare") {
-          const failure = new CanonicalActivityError("BENCHMARK_COMPARISON_OPERATION_IDENTITY_MISMATCH", "BENCHMARK_COMPARISON_OPERATION_IDENTITY_MISMATCH", false);
+        if (
+          current.id !== context.operationId ||
+          current.tenantId !== context.tenantId ||
+          current.operationKind !== "verification_benchmark_compare"
+        ) {
+          const failure = new CanonicalActivityError(
+            "BENCHMARK_COMPARISON_OPERATION_IDENTITY_MISMATCH",
+            "BENCHMARK_COMPARISON_OPERATION_IDENTITY_MISMATCH",
+            false,
+          );
           pollFailure ??= failure;
           controller.abort();
           throw failure;
@@ -73,16 +85,20 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
         }
       };
       const active = (): Promise<void> => {
-        activeCheck ??= checkActive().finally(() => { activeCheck = undefined; });
+        activeCheck ??= checkActive().finally(() => {
+          activeCheck = undefined;
+        });
         return activeCheck;
       };
       const schedulePoll = (interval: number): void => {
         if (stopped || controller.signal.aborted) return;
         timer = setTimeout(() => {
-          void active().catch((error: unknown) => {
-            pollFailure ??= error;
-            controller.abort();
-          }).finally(() => schedulePoll(interval));
+          void active()
+            .catch((error: unknown) => {
+              pollFailure ??= error;
+              controller.abort();
+            })
+            .finally(() => schedulePoll(interval));
         }, interval);
       };
       const stopPolling = (): void => {
@@ -92,15 +108,24 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
 
       try {
         const input = inputSchema.parse(activity.operationInput);
-        if (claim.tenantId !== context.tenantId || claim.operationId !== context.operationId
-          || operation.tenantId !== context.tenantId || operation.id !== context.operationId
-          || operation.operationKind !== "verification_benchmark_compare") {
+        if (
+          claim.tenantId !== context.tenantId ||
+          claim.operationId !== context.operationId ||
+          operation.tenantId !== context.tenantId ||
+          operation.id !== context.operationId ||
+          operation.operationKind !== "verification_benchmark_compare"
+        ) {
           throw new Error("BENCHMARK_COMPARISON_OPERATION_IDENTITY_MISMATCH");
         }
         await active();
-        const runtime = VerificationBenchmarkComparisonPublicationSchema.shape.runtime.parse(dependencies.runtime.resolve(context));
+        const runtime = VerificationBenchmarkComparisonPublicationSchema.shape.runtime.parse(
+          dependencies.runtime.resolve(context),
+        );
         if (runtime.attemptId !== context.attemptId) throw new Error("BENCHMARK_COMPARISON_RUNTIME_ATTEMPT_MISMATCH");
-        const comparisonId = deterministicUuid("verification-benchmark-comparison", `${context.tenantId}:${context.operationId}`);
+        const comparisonId = deterministicUuid(
+          "verification-benchmark-comparison",
+          `${context.tenantId}:${context.operationId}`,
+        );
         schedulePoll(boundedPollInterval(dependencies.cancellationPollIntervalMs));
 
         const prepared = await dependencies.application.prepare({
@@ -109,7 +134,10 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
           signal: controller.signal,
         });
         await active();
-        if (prepared.input.tenantId !== context.tenantId || digestCanonicalJson(prepared.input.request) !== digestCanonicalJson(input.request)) {
+        if (
+          prepared.input.tenantId !== context.tenantId ||
+          digestCanonicalJson(prepared.input.request) !== digestCanonicalJson(input.request)
+        ) {
           throw new Error("BENCHMARK_COMPARISON_PREPARATION_IDENTITY_MISMATCH");
         }
 
@@ -162,7 +190,11 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
         });
         await active();
         const qualityClaims = publication.manifest.qualityClaims;
-        if (qualityClaims.humanGoldValidated !== false || qualityClaims.sourceAuthorityAssessed !== false || qualityClaims.calibrated !== false) {
+        if (
+          qualityClaims.humanGoldValidated !== false ||
+          qualityClaims.sourceAuthorityAssessed !== false ||
+          qualityClaims.calibrated !== false
+        ) {
           throw new Error("BENCHMARK_COMPARISON_PUBLICATION_QUALITY_CLAIMS_INVALID");
         }
         durable = await dependencies.store.seal({
@@ -195,13 +227,20 @@ export function verificationBenchmarkComparisonActivityHandler(dependencies: {
         const source = pollFailure ?? error;
         if (source instanceof CanonicalActivityError) throw source;
         if (source instanceof z.ZodError) {
-          throw new CanonicalActivityError("INVALID_VERIFICATION_BENCHMARK_COMPARISON_INPUT", "INVALID_VERIFICATION_BENCHMARK_COMPARISON_INPUT", false);
+          throw new CanonicalActivityError(
+            "INVALID_VERIFICATION_BENCHMARK_COMPARISON_INPUT",
+            "INVALID_VERIFICATION_BENCHMARK_COMPARISON_INPUT",
+            false,
+          );
         }
         const message = source instanceof Error ? source.message : "";
-        const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(message) ? message : "VERIFICATION_BENCHMARK_COMPARISON_INFRASTRUCTURE_FAILURE";
-        const retryable = code === "VERIFICATION_BENCHMARK_COMPARISON_INFRASTRUCTURE_FAILURE"
-          || code.startsWith("OBJECT_STORE_")
-          || code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
+        const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(message)
+          ? message
+          : "VERIFICATION_BENCHMARK_COMPARISON_INFRASTRUCTURE_FAILURE";
+        const retryable =
+          code === "VERIFICATION_BENCHMARK_COMPARISON_INFRASTRUCTURE_FAILURE" ||
+          code.startsWith("OBJECT_STORE_") ||
+          code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
         throw new CanonicalActivityError(code, code, retryable, { cause: source });
       } finally {
         stopPolling();
@@ -218,8 +257,12 @@ function side(value: PreparedVerificationBenchmarkComparison["input"]["baseline"
   };
 }
 
-function assertDurableIdentity(durable: DurableVerificationBenchmarkComparison, identity: VerificationBenchmarkComparisonIdentity): void {
-  if (digestCanonicalJson(durable.identity) !== digestCanonicalJson(identity)) throw new Error("BENCHMARK_COMPARISON_DURABLE_IDENTITY_MISMATCH");
+function assertDurableIdentity(
+  durable: DurableVerificationBenchmarkComparison,
+  identity: VerificationBenchmarkComparisonIdentity,
+): void {
+  if (digestCanonicalJson(durable.identity) !== digestCanonicalJson(identity))
+    throw new Error("BENCHMARK_COMPARISON_DURABLE_IDENTITY_MISMATCH");
   if (!Number.isFinite(Date.parse(durable.startedAt))) throw new Error("BENCHMARK_COMPARISON_DURABLE_TIMING_INVALID");
 }
 
@@ -229,12 +272,16 @@ function assertCompleted(
   retained: Awaited<ReturnType<RegisteredBenchmarkComparisonPublicationBuilder["retainResult"]>>,
 ): asserts durable is DurableVerificationBenchmarkComparison & { readonly completedAt: string } {
   assertDurableIdentity(durable, identity);
-  if (durable.status === "running" || durable.completedAt === null || !Number.isFinite(Date.parse(durable.completedAt))
-    || Date.parse(durable.completedAt) < Date.parse(durable.startedAt)
-    || durable.resultArtifact?.artifactId !== retained.resultArtifact.artifactId
-    || durable.resultArtifact.digest !== retained.resultArtifact.digest
-    || durable.resultDigest !== retained.resultDigest
-    || durable.engineeringGateOutcome !== retained.engineeringGateOutcome) {
+  if (
+    durable.status === "running" ||
+    durable.completedAt === null ||
+    !Number.isFinite(Date.parse(durable.completedAt)) ||
+    Date.parse(durable.completedAt) < Date.parse(durable.startedAt) ||
+    durable.resultArtifact?.artifactId !== retained.resultArtifact.artifactId ||
+    durable.resultArtifact.digest !== retained.resultArtifact.digest ||
+    durable.resultDigest !== retained.resultDigest ||
+    durable.engineeringGateOutcome !== retained.engineeringGateOutcome
+  ) {
     throw new Error("BENCHMARK_COMPARISON_DURABLE_RESULT_MISMATCH");
   }
 }
@@ -246,16 +293,19 @@ function assertSealed(
   publication: Awaited<ReturnType<RegisteredBenchmarkComparisonPublicationBuilder["publish"]>>,
 ): void {
   assertCompleted(durable, identity, retained);
-  if (durable.status !== "sealed"
-    || durable.publicationArtifact?.artifactId !== publication.publicationArtifact.artifactId
-    || durable.publicationArtifact.digest !== publication.publicationArtifact.digest
-    || durable.publicationPayloadDigest !== publication.publicationPayloadDigest) {
+  if (
+    durable.status !== "sealed" ||
+    durable.publicationArtifact?.artifactId !== publication.publicationArtifact.artifactId ||
+    durable.publicationArtifact.digest !== publication.publicationArtifact.digest ||
+    durable.publicationPayloadDigest !== publication.publicationPayloadDigest
+  ) {
     throw new Error("BENCHMARK_COMPARISON_DURABLE_PUBLICATION_MISMATCH");
   }
 }
 
 function boundedPollInterval(value: number | undefined): number {
   if (value === undefined) return 250;
-  if (!Number.isInteger(value) || value < 25 || value > 60_000) throw new Error("BENCHMARK_COMPARISON_CANCELLATION_POLL_INTERVAL_INVALID");
+  if (!Number.isInteger(value) || value < 25 || value > 60_000)
+    throw new Error("BENCHMARK_COMPARISON_CANCELLATION_POLL_INTERVAL_INVALID");
   return value;
 }

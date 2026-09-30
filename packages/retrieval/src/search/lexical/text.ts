@@ -2,11 +2,7 @@
 // fts scoring and query-term coverage all call this so "the same query" always means
 // the same normalized string.
 export function normalize(value: string): string {
-  return value
-    .normalize("NFKC")
-    .toLocaleLowerCase("en-US")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.normalize("NFKC").toLocaleLowerCase("en-US").replace(/\s+/g, " ").trim();
 }
 
 export function tokenize(value: string): string[] {

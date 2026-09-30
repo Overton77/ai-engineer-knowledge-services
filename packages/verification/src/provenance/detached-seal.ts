@@ -1,10 +1,7 @@
 import { canonicalizeJson, digestCanonicalJson } from "../canonical/index.js";
 import { ZERO_SHA256_DIGEST } from "../canonical/index.js";
 import { deepFreeze } from "../internal/deep-freeze.js";
-import type {
-  AuditBundleSigner,
-  AuditBundleSignatureVerifier,
-} from "./model.js";
+import type { AuditBundleSigner, AuditBundleSignatureVerifier } from "./model.js";
 
 /** A manifest whose seal (digest plus optional signature) sits beside its body. */
 export interface DetachedlySealedManifest {
@@ -45,23 +42,18 @@ export interface VerifiedDetachedManifest<Manifest> {
 }
 
 /** Signature and payload digest both exclude the detached seal. */
-function signable<Manifest extends DetachedlySealedManifest>(
-  manifest: Manifest,
-): DetachedSealBody<Manifest> {
+function signable<Manifest extends DetachedlySealedManifest>(manifest: Manifest): DetachedSealBody<Manifest> {
   const { seal: _seal, ...body } = manifest;
   return body;
 }
 
-const payloadBytes = (payload: unknown): Uint8Array =>
-  new TextEncoder().encode(canonicalizeJson(payload));
+const payloadBytes = (payload: unknown): Uint8Array => new TextEncoder().encode(canonicalizeJson(payload));
 
 /**
  * Parsing snapshots all caller-owned objects before an asynchronous signer, so
  * the signed bytes are exactly the bytes the returned manifest digests.
  */
-export async function sealDetachedManifest<
-  Manifest extends DetachedlySealedManifest,
->(
+export async function sealDetachedManifest<Manifest extends DetachedlySealedManifest>(
   schema: ManifestSchema<Manifest>,
   body: DetachedSealBody<Manifest>,
   signer?: AuditBundleSigner,
@@ -87,9 +79,7 @@ export async function sealDetachedManifest<
 }
 
 /** Digest integrity does not imply source quality or a trusted signing identity. */
-export async function verifyDetachedManifest<
-  Manifest extends DetachedlySealedManifest,
->(
+export async function verifyDetachedManifest<Manifest extends DetachedlySealedManifest>(
   schema: ManifestSchema<Manifest>,
   value: unknown,
   options: DetachedSealVerificationOptions,
@@ -97,17 +87,14 @@ export async function verifyDetachedManifest<
   const { codes } = options;
   const manifest = deepFreeze(schema.parse(value));
   const payload = signable(manifest);
-  if (digestCanonicalJson(payload) !== manifest.seal.payloadDigest)
-    throw new Error(codes.digestMismatch);
+  if (digestCanonicalJson(payload) !== manifest.seal.payloadDigest) throw new Error(codes.digestMismatch);
   const signature = manifest.seal.signature;
   if (!signature) {
     if (options.requireSignature) throw new Error(codes.signatureRequired);
     return deepFreeze({ manifest, signatureStatus: "unsigned" as const });
   }
   if (!options.verifier) throw new Error(codes.verifierRequired);
-  const wellFormed =
-    Buffer.from(signature.signatureBase64, "base64").toString("base64") ===
-    signature.signatureBase64;
+  const wellFormed = Buffer.from(signature.signatureBase64, "base64").toString("base64") === signature.signatureBase64;
   const verified =
     wellFormed &&
     (await options.verifier.verify({

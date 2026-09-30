@@ -13,9 +13,7 @@ export interface UnstructuredTransformClient {
     bytes: Uint8Array;
     mediaType: string;
   }): Promise<{ jobId: string }>;
-  getJob(
-    jobId: string,
-  ): Promise<{
+  getJob(jobId: string): Promise<{
     state: "queued" | "running" | "succeeded" | "failed";
     error?: string;
   }>;
@@ -34,15 +32,9 @@ export interface UnstructuredHttpConfig {
   maximumResultBytes: number;
 }
 
-type UnstructuredJobInput = Parameters<
-  UnstructuredTransformClient["createJob"]
->[0];
-type UnstructuredJobState = Awaited<
-  ReturnType<UnstructuredTransformClient["getJob"]>
->["state"];
-type UnstructuredDownload = Awaited<
-  ReturnType<UnstructuredTransformClient["downloadResult"]>
->;
+type UnstructuredJobInput = Parameters<UnstructuredTransformClient["createJob"]>[0];
+type UnstructuredJobState = Awaited<ReturnType<UnstructuredTransformClient["getJob"]>>["state"];
+type UnstructuredDownload = Awaited<ReturnType<UnstructuredTransformClient["downloadResult"]>>;
 
 const JOB_ID_PATTERN = /^[a-zA-Z0-9-]+$/;
 const DEFAULT_JOB_PATH = "/jobs/";
@@ -72,15 +64,12 @@ function parseDownloadPayload(bytes: Uint8Array): UnstructuredDownload {
     parsed = undefined;
   }
   const record = isJsonRecord(parsed) ? parsed : undefined;
-  const markdown =
-    typeof record?.markdown === "string" ? record.markdown : text;
+  const markdown = typeof record?.markdown === "string" ? record.markdown : text;
   const plainText = typeof record?.text === "string" ? record.text : markdown;
   return { native: bytes, markdown, plainText };
 }
 
-export class HttpUnstructuredTransformClient
-  implements UnstructuredTransformClient
-{
+export class HttpUnstructuredTransformClient implements UnstructuredTransformClient {
   readonly #baseUrl: string;
 
   constructor(
@@ -98,9 +87,7 @@ export class HttpUnstructuredTransformClient
     return headers;
   }
 
-  async createJob(
-    input: UnstructuredJobInput,
-  ): Promise<{ jobId: string }> {
+  async createJob(input: UnstructuredJobInput): Promise<{ jobId: string }> {
     const form = new FormData();
     form.set(
       "request_data",
@@ -118,15 +105,12 @@ export class HttpUnstructuredTransformClient
       new Blob([body], { type: input.mediaType }),
       sealedArtifactFileName(input.artifactDigest, DEFAULT_FILE_SUFFIX),
     );
-    const response = await this.fetcher(
-      `${this.#baseUrl}${this.config.jobPath ?? DEFAULT_JOB_PATH}`,
-      { method: "POST", headers: this.#headers(), body: form },
-    );
-    const value = await readJsonObject(
-      response,
-      "UNSTRUCTURED_HTTP_",
-      "UNSTRUCTURED_INVALID_OUTPUT",
-    );
+    const response = await this.fetcher(`${this.#baseUrl}${this.config.jobPath ?? DEFAULT_JOB_PATH}`, {
+      method: "POST",
+      headers: this.#headers(),
+      body: form,
+    });
+    const value = await readJsonObject(response, "UNSTRUCTURED_HTTP_", "UNSTRUCTURED_INVALID_OUTPUT");
     const jobId = value.id ?? value.job_id;
     if (typeof jobId !== "string" || !jobId) {
       throw new Error("UNSTRUCTURED_INVALID_JOB_ID");
@@ -134,9 +118,7 @@ export class HttpUnstructuredTransformClient
     return { jobId };
   }
 
-  async getJob(
-    jobId: string,
-  ): Promise<Awaited<ReturnType<UnstructuredTransformClient["getJob"]>>> {
+  async getJob(jobId: string): Promise<Awaited<ReturnType<UnstructuredTransformClient["getJob"]>>> {
     assertJobId(jobId);
     const value = await readJsonObject(
       await this.fetcher(`${this.#baseUrl}/jobs/${encodeURIComponent(jobId)}`, {
@@ -154,10 +136,9 @@ export class HttpUnstructuredTransformClient
 
   async downloadResult(jobId: string): Promise<UnstructuredDownload> {
     assertJobId(jobId);
-    const response = await this.fetcher(
-      `${this.#baseUrl}/jobs/${encodeURIComponent(jobId)}/download`,
-      { headers: this.#headers() },
-    );
+    const response = await this.fetcher(`${this.#baseUrl}/jobs/${encodeURIComponent(jobId)}/download`, {
+      headers: this.#headers(),
+    });
     if (!response.ok) {
       throw new Error(`UNSTRUCTURED_DOWNLOAD_HTTP_${response.status}`);
     }

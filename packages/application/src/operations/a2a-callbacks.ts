@@ -37,22 +37,16 @@ function signatureInput(envelope: Omit<CallbackEnvelope, "signature">): string {
 }
 
 export function signCallback(
-  input: Omit<
-    CallbackEnvelope,
-    "signature" | "payloadDigest" | "signatureVersion"
-  > & { payload: JsonValue },
+  input: Omit<CallbackEnvelope, "signature" | "payloadDigest" | "signatureVersion"> & { payload: JsonValue },
   secret: string,
 ): CallbackEnvelope {
-  if (Buffer.byteLength(secret, "utf8") < 32)
-    throw new Error("CALLBACK_SIGNING_SECRET_TOO_SHORT");
+  if (Buffer.byteLength(secret, "utf8") < 32) throw new Error("CALLBACK_SIGNING_SECRET_TOO_SHORT");
   const unsigned = {
     ...input,
     payloadDigest: sha256Digest(input.payload),
     signatureVersion: "hmac-sha256-v1" as const,
   };
-  const signature = `sha256=${createHmac("sha256", secret)
-    .update(signatureInput(unsigned))
-    .digest("hex")}`;
+  const signature = `sha256=${createHmac("sha256", secret).update(signatureInput(unsigned)).digest("hex")}`;
   return CallbackEnvelopeSchema.parse({ ...unsigned, signature });
 }
 
@@ -68,12 +62,7 @@ export function authenticateCallback(
   const occurredAt = Date.parse(envelope.occurredAt);
   const now = (options.now ?? (() => new Date()))().getTime();
   const maximumAgeMs = options.maximumAgeMs ?? 5 * 60_000;
-  if (
-    !Number.isFinite(occurredAt) ||
-    maximumAgeMs < 1 ||
-    occurredAt > now + 30_000 ||
-    now - occurredAt > maximumAgeMs
-  )
+  if (!Number.isFinite(occurredAt) || maximumAgeMs < 1 || occurredAt > now + 30_000 || now - occurredAt > maximumAgeMs)
     return undefined;
   if (sha256Digest(envelope.payload) !== envelope.payloadDigest) return undefined;
   const expected = signCallback(
@@ -91,8 +80,7 @@ export function authenticateCallback(
   );
   const actualBytes = Buffer.from(envelope.signature, "utf8");
   const expectedBytes = Buffer.from(expected.signature, "utf8");
-  return actualBytes.length === expectedBytes.length &&
-    timingSafeEqual(actualBytes, expectedBytes)
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
     ? envelope
     : undefined;
 }
@@ -127,20 +115,13 @@ export class A2ACallbackHttpSender {
     private readonly fetchImplementation: typeof globalThis.fetch = globalThis.fetch,
     private readonly timeoutMs = 10_000,
   ) {
-    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1)
-      throw new Error("INVALID_CALLBACK_TIMEOUT");
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1) throw new Error("INVALID_CALLBACK_TIMEOUT");
   }
 
-  async sendResult(
-    taskValue: unknown,
-    resultValue: unknown,
-  ): Promise<CallbackAcknowledgement> {
+  async sendResult(taskValue: unknown, resultValue: unknown): Promise<CallbackAcknowledgement> {
     const task = A2ATaskSchema.parse(taskValue);
     const result = A2AResultSchema.parse(resultValue);
-    if (
-      result.taskId !== task.taskId ||
-      result.operationId !== task.context.operationId
-    )
+    if (result.taskId !== task.taskId || result.operationId !== task.context.operationId)
       throw new Error("CALLBACK_RESULT_CONTEXT_MISMATCH");
     const target = await this.resolveTarget(task);
     if (!target) throw new Error("CALLBACK_TARGET_NOT_ADMITTED");
@@ -168,8 +149,7 @@ export class A2ACallbackHttpSender {
         },
         body: JSON.stringify(envelope),
       });
-      if (!response.ok)
-        throw new Error(`CALLBACK_DELIVERY_FAILED:${response.status}`);
+      if (!response.ok) throw new Error(`CALLBACK_DELIVERY_FAILED:${response.status}`);
       return CallbackAcknowledgementSchema.parse(await readBoundedJson(response));
     } finally {
       clearTimeout(timeout);
@@ -186,17 +166,12 @@ export function callbackEnvelopeForA2ATask(
 ): CallbackEnvelope {
   return signCallback(
     {
-      callbackId: deterministicUuid(
-        "a2a-callback",
-        `${task.context.tenantId}:${task.taskId}:${sha256Digest(payload)}`,
-      ),
+      callbackId: deterministicUuid("a2a-callback", `${task.context.tenantId}:${task.taskId}:${sha256Digest(payload)}`),
       tenantId: task.context.tenantId,
       taskId: task.taskId,
       operationId: task.context.operationId,
       correlationId: task.context.correlationId,
-      ...(task.context.causationId
-        ? { causationId: task.context.causationId }
-        : {}),
+      ...(task.context.causationId ? { causationId: task.context.causationId } : {}),
       occurredAt,
       payload,
     },
@@ -204,10 +179,7 @@ export function callbackEnvelopeForA2ATask(
   );
 }
 
-function assertTargetMatchesTask(
-  task: A2ATask,
-  target: ResolvedCallbackTarget,
-): void {
+function assertTargetMatchesTask(task: A2ATask, target: ResolvedCallbackTarget): void {
   if (
     target.url !== task.callback.url ||
     target.authenticationReference !== task.callback.authenticationReference ||
@@ -217,10 +189,7 @@ function assertTargetMatchesTask(
   )
     throw new Error("CALLBACK_TARGET_CONTRACT_MISMATCH");
   const url = new URL(target.url);
-  const loopback =
-    url.hostname === "127.0.0.1" ||
-    url.hostname === "localhost" ||
-    url.hostname === "[::1]";
+  const loopback = url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "[::1]";
   if (
     (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
     url.username ||
@@ -232,8 +201,7 @@ function assertTargetMatchesTask(
 
 async function readBoundedJson(response: Response): Promise<unknown> {
   const contentLength = Number(response.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > 64 * 1024)
-    throw new Error("CALLBACK_RESPONSE_TOO_LARGE");
+  if (Number.isFinite(contentLength) && contentLength > 64 * 1024) throw new Error("CALLBACK_RESPONSE_TOO_LARGE");
   if (!response.body) throw new Error("CALLBACK_RESPONSE_MISSING");
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];

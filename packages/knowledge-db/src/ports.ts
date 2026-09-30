@@ -7,7 +7,10 @@ export type KnowledgeSqlRow = { [column: string]: any };
 
 /** A client bound to one open tenant-scoped transaction. */
 export interface KnowledgeSqlClient {
-  query<R extends KnowledgeSqlRow = KnowledgeSqlRow>(text: string, values?: readonly unknown[]): Promise<{ rows: R[]; rowCount: number | null }>;
+  query<R extends KnowledgeSqlRow = KnowledgeSqlRow>(
+    text: string,
+    values?: readonly unknown[],
+  ): Promise<{ rows: R[]; rowCount: number | null }>;
 }
 
 /** Bounded database roles a transaction may switch to with `set local role`. */
@@ -37,13 +40,23 @@ export interface ContentRepresentationAdmission {
   readonly decision: string | null;
 }
 
-interface ArtifactReference { readonly id: string; readonly digest: string }
+interface ArtifactReference {
+  readonly id: string;
+  readonly digest: string;
+}
 export interface PreparedContentSummaryInput {
-  readonly tenantId: string; readonly missionId: string; readonly attemptId: string;
-  readonly transformationRunId: string; readonly representationId: string; readonly documentVersionId: string;
-  readonly inputRepresentationId: string; readonly inputArtifact: ArtifactReference;
-  readonly outputArtifact: ArtifactReference; readonly receiptArtifact: ArtifactReference;
-  readonly requestDigest: string; readonly language?: string;
+  readonly tenantId: string;
+  readonly missionId: string;
+  readonly attemptId: string;
+  readonly transformationRunId: string;
+  readonly representationId: string;
+  readonly documentVersionId: string;
+  readonly inputRepresentationId: string;
+  readonly inputArtifact: ArtifactReference;
+  readonly outputArtifact: ArtifactReference;
+  readonly receiptArtifact: ArtifactReference;
+  readonly requestDigest: string;
+  readonly language?: string;
 }
 
 /**
@@ -52,9 +65,14 @@ export interface PreparedContentSummaryInput {
  */
 export interface ContentAdmission {
   /** The latest independent decision on an immutable representation; only an accepted one admits its bytes. */
-  readonly readRepresentationAdmission: (client: KnowledgeSqlClient, input: {
-    readonly tenantId: string; readonly representationId: string; readonly guardedDigest: string;
-  }) => Promise<ContentRepresentationAdmission>;
+  readonly readRepresentationAdmission: (
+    client: KnowledgeSqlClient,
+    input: {
+      readonly tenantId: string;
+      readonly representationId: string;
+      readonly guardedDigest: string;
+    },
+  ) => Promise<ContentRepresentationAdmission>;
   /** Persists a completed deterministic summary rendering; its acceptance stays pending until independent review. */
   readonly persistPreparedSummary: (client: KnowledgeSqlClient, input: PreparedContentSummaryInput) => Promise<void>;
 }

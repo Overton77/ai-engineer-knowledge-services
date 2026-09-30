@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VerificationSourceAssessment } from "@aiengineer/knowledge-contracts";
 import { assessSourceAuthority } from "./assessment.js";
 
-function companyStatement(
-  overrides: Partial<VerificationSourceAssessment> = {},
-): VerificationSourceAssessment {
+function companyStatement(overrides: Partial<VerificationSourceAssessment> = {}): VerificationSourceAssessment {
   return {
     assessmentId: "assessment-1",
     assertionId: "claim-1",
@@ -28,9 +26,7 @@ function companyStatement(
   };
 }
 
-function independentPaper(
-  overrides: Partial<VerificationSourceAssessment> = {},
-): VerificationSourceAssessment {
+function independentPaper(overrides: Partial<VerificationSourceAssessment> = {}): VerificationSourceAssessment {
   return companyStatement({
     assessmentId: "assessment-2",
     fragmentId: "fragment-2",
@@ -52,11 +48,10 @@ function independentPaper(
 
 describe("source authority withholding", () => {
   it("withholds authority for a promotional clinical-utility claim", () => {
-    expect(
-      assessSourceAuthority("claim-1", [
-        companyStatement({ claimScope: "clinical_utility" }),
-      ]),
-    ).toMatchObject({ status: "withheld", independentCorroboration: false });
+    expect(assessSourceAuthority("claim-1", [companyStatement({ claimScope: "clinical_utility" })])).toMatchObject({
+      status: "withheld",
+      independentCorroboration: false,
+    });
   });
 
   it("does not let a single-sample technical result carry population accuracy", () => {
@@ -85,9 +80,10 @@ describe("source authority withholding", () => {
 
 describe("source authority sufficiency", () => {
   it("accepts an independent primary source in scope", () => {
-    expect(
-      assessSourceAuthority("claim-1", [independentPaper()]),
-    ).toMatchObject({ status: "sufficient", independentCorroboration: true });
+    expect(assessSourceAuthority("claim-1", [independentPaper()])).toMatchObject({
+      status: "sufficient",
+      independentCorroboration: true,
+    });
   });
 
   it("requires population applicability on the independent source itself", () => {
@@ -107,9 +103,7 @@ describe("source authority sufficiency", () => {
     ).toMatchObject({
       status: "withheld",
       independentCorroboration: true,
-      reasonCodes: expect.arrayContaining([
-        "SINGLE_SAMPLE_TECHNICAL_RESULT_NOT_POPULATION_ACCURACY",
-      ]),
+      reasonCodes: expect.arrayContaining(["SINGLE_SAMPLE_TECHNICAL_RESULT_NOT_POPULATION_ACCURACY"]),
     });
   });
 
@@ -131,9 +125,7 @@ describe("source authority sufficiency", () => {
     ).toMatchObject({
       status: "withheld",
       independentCorroboration: true,
-      reasonCodes: expect.arrayContaining([
-        "PUBLICATION_DOES_NOT_VALIDATE_PRODUCT",
-      ]),
+      reasonCodes: expect.arrayContaining(["PUBLICATION_DOES_NOT_VALIDATE_PRODUCT"]),
     });
   });
 });

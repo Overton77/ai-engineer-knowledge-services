@@ -95,70 +95,135 @@ export const VerificationEventSchema = z.strictObject({
   eventId: UuidSchema,
   operationId: UuidSchema,
   sequence: z.int().nonnegative(),
-  eventType: z.enum(["accepted", "stage_started", "stage_completed", "checkpointed", "succeeded", "failed", "cancelled"]),
+  eventType: z.enum([
+    "accepted",
+    "stage_started",
+    "stage_completed",
+    "checkpointed",
+    "succeeded",
+    "failed",
+    "cancelled",
+  ]),
   stage: NonEmptyStringSchema,
   payloadArtifactId: UuidSchema.optional(),
   payloadDigest: Sha256DigestSchema.optional(),
   occurredAt: IsoDateTimeSchema,
 });
 
-export const VerificationRunManifestSchema = z.strictObject({
-  verificationContractVersion: VerificationContractVersionSchema,
-  manifestId: VerificationIdSchema,
-  runId: VerificationIdSchema,
-  datasetId: VerificationIdSchema.optional(),
-  datasetVersionDigest: Sha256DigestSchema.optional(),
-  experimentDefinitionDigest: Sha256DigestSchema.optional(),
-  variantId: VerificationIdSchema.optional(),
-  versions: z.strictObject({
-    policy: NonEmptyStringSchema,
-    schema: NonEmptyStringSchema,
-    grader: NonEmptyStringSchema.optional(),
-    parser: NonEmptyStringSchema.optional(),
-    normalizer: NonEmptyStringSchema,
-    extractor: NonEmptyStringSchema.optional(),
-    prompt: Sha256DigestSchema.optional(),
-  }),
-  code: z.strictObject({ gitSha: NonEmptyStringSchema, dirty: z.boolean(), dirtyStateArtifactId: UuidSchema.optional() }),
-  runtime: z.strictObject({ container: NonEmptyStringSchema.optional(), platform: NonEmptyStringSchema, deploymentId: VerificationIdSchema }),
-  provider: z.strictObject({ endpointIdentity: NonEmptyStringSchema, model: NonEmptyStringSchema, nativeConfiguration: z.record(z.string(), JsonValueSchema), pricingSnapshotArtifactId: UuidSchema }).optional(),
-  inputArtifacts: z.array(VerificationArtifactHandleSchema),
-  outputArtifacts: z.array(VerificationArtifactHandleSchema),
-  stages: z.array(z.strictObject({ name: NonEmptyStringSchema, status: z.enum(["succeeded", "failed", "skipped"]), startedAt: IsoDateTimeSchema, endedAt: IsoDateTimeSchema })),
-  calls: z.array(z.strictObject({
-    providerResponseId: NonEmptyStringSchema.optional(),
-    requestDigest: Sha256DigestSchema,
-    responseArtifactId: UuidSchema.optional(),
-    retries: z.int().nonnegative(),
-    /** Reservation is always known before dispatch; it is not a billed-cost claim. */
-    reservationCostMicros: z.int().positive(),
-    costState: z.enum(["reserved", "estimated", "actual", "unknown_dispatched"]),
-    estimatedCostMicros: z.int().nonnegative().optional(),
-    actualCostMicros: z.int().nonnegative().optional(),
-  }).superRefine((call, context) => {
-    if (call.costState === "actual" && call.actualCostMicros === undefined) context.addIssue({ code: "custom", path: ["actualCostMicros"], message: "actual cost requires an observed provider amount" });
-    if (call.costState === "estimated" && call.estimatedCostMicros === undefined) context.addIssue({ code: "custom", path: ["estimatedCostMicros"], message: "estimated cost requires a pricing-derived amount" });
-    if (call.costState === "unknown_dispatched" && (call.actualCostMicros !== undefined || call.estimatedCostMicros !== undefined)) context.addIssue({ code: "custom", path: ["costState"], message: "unknown dispatched calls cannot represent unknown cost as zero or an ungrounded estimate" });
-    if (call.actualCostMicros !== undefined && call.actualCostMicros > call.reservationCostMicros) context.addIssue({ code: "custom", path: ["actualCostMicros"], message: "actual cost may not exceed the conservative reservation" });
-    if (call.estimatedCostMicros !== undefined && call.estimatedCostMicros > call.reservationCostMicros) context.addIssue({ code: "custom", path: ["estimatedCostMicros"], message: "estimate may not exceed the conservative reservation" });
-  })),
-  randomSeed: z.int().optional(),
-  toolPolicy: z.array(NonEmptyStringSchema),
-  networkPolicy: z.enum(["disabled", "allowlisted", "unrestricted"]),
-  deterministicResult: DeterministicVerificationResultSchema,
-  judgments: z.array(JudgmentSchema),
-  policyOutcome: PolicyOutcomeSchema,
-  resultDigest: Sha256DigestSchema,
-  gateDigest: Sha256DigestSchema.optional(),
-  lineage: z.array(LineageEdgeSchema),
-  replayOfRunId: VerificationIdSchema.optional(),
-  canonicalization: CanonicalizationDescriptorSchema,
-  signatureArtifactId: UuidSchema.optional(),
-  startedAt: IsoDateTimeSchema,
-  completedAt: IsoDateTimeSchema,
-}).superRefine((manifest, context) => {
-  if (Date.parse(manifest.completedAt) < Date.parse(manifest.startedAt)) context.addIssue({ code: "custom", path: ["completedAt"], message: "completedAt must not precede startedAt" });
-});
+export const VerificationRunManifestSchema = z
+  .strictObject({
+    verificationContractVersion: VerificationContractVersionSchema,
+    manifestId: VerificationIdSchema,
+    runId: VerificationIdSchema,
+    datasetId: VerificationIdSchema.optional(),
+    datasetVersionDigest: Sha256DigestSchema.optional(),
+    experimentDefinitionDigest: Sha256DigestSchema.optional(),
+    variantId: VerificationIdSchema.optional(),
+    versions: z.strictObject({
+      policy: NonEmptyStringSchema,
+      schema: NonEmptyStringSchema,
+      grader: NonEmptyStringSchema.optional(),
+      parser: NonEmptyStringSchema.optional(),
+      normalizer: NonEmptyStringSchema,
+      extractor: NonEmptyStringSchema.optional(),
+      prompt: Sha256DigestSchema.optional(),
+    }),
+    code: z.strictObject({
+      gitSha: NonEmptyStringSchema,
+      dirty: z.boolean(),
+      dirtyStateArtifactId: UuidSchema.optional(),
+    }),
+    runtime: z.strictObject({
+      container: NonEmptyStringSchema.optional(),
+      platform: NonEmptyStringSchema,
+      deploymentId: VerificationIdSchema,
+    }),
+    provider: z
+      .strictObject({
+        endpointIdentity: NonEmptyStringSchema,
+        model: NonEmptyStringSchema,
+        nativeConfiguration: z.record(z.string(), JsonValueSchema),
+        pricingSnapshotArtifactId: UuidSchema,
+      })
+      .optional(),
+    inputArtifacts: z.array(VerificationArtifactHandleSchema),
+    outputArtifacts: z.array(VerificationArtifactHandleSchema),
+    stages: z.array(
+      z.strictObject({
+        name: NonEmptyStringSchema,
+        status: z.enum(["succeeded", "failed", "skipped"]),
+        startedAt: IsoDateTimeSchema,
+        endedAt: IsoDateTimeSchema,
+      }),
+    ),
+    calls: z.array(
+      z
+        .strictObject({
+          providerResponseId: NonEmptyStringSchema.optional(),
+          requestDigest: Sha256DigestSchema,
+          responseArtifactId: UuidSchema.optional(),
+          retries: z.int().nonnegative(),
+          /** Reservation is always known before dispatch; it is not a billed-cost claim. */
+          reservationCostMicros: z.int().positive(),
+          costState: z.enum(["reserved", "estimated", "actual", "unknown_dispatched"]),
+          estimatedCostMicros: z.int().nonnegative().optional(),
+          actualCostMicros: z.int().nonnegative().optional(),
+        })
+        .superRefine((call, context) => {
+          if (call.costState === "actual" && call.actualCostMicros === undefined)
+            context.addIssue({
+              code: "custom",
+              path: ["actualCostMicros"],
+              message: "actual cost requires an observed provider amount",
+            });
+          if (call.costState === "estimated" && call.estimatedCostMicros === undefined)
+            context.addIssue({
+              code: "custom",
+              path: ["estimatedCostMicros"],
+              message: "estimated cost requires a pricing-derived amount",
+            });
+          if (
+            call.costState === "unknown_dispatched" &&
+            (call.actualCostMicros !== undefined || call.estimatedCostMicros !== undefined)
+          )
+            context.addIssue({
+              code: "custom",
+              path: ["costState"],
+              message: "unknown dispatched calls cannot represent unknown cost as zero or an ungrounded estimate",
+            });
+          if (call.actualCostMicros !== undefined && call.actualCostMicros > call.reservationCostMicros)
+            context.addIssue({
+              code: "custom",
+              path: ["actualCostMicros"],
+              message: "actual cost may not exceed the conservative reservation",
+            });
+          if (call.estimatedCostMicros !== undefined && call.estimatedCostMicros > call.reservationCostMicros)
+            context.addIssue({
+              code: "custom",
+              path: ["estimatedCostMicros"],
+              message: "estimate may not exceed the conservative reservation",
+            });
+        }),
+    ),
+    randomSeed: z.int().optional(),
+    toolPolicy: z.array(NonEmptyStringSchema),
+    networkPolicy: z.enum(["disabled", "allowlisted", "unrestricted"]),
+    deterministicResult: DeterministicVerificationResultSchema,
+    judgments: z.array(JudgmentSchema),
+    policyOutcome: PolicyOutcomeSchema,
+    resultDigest: Sha256DigestSchema,
+    gateDigest: Sha256DigestSchema.optional(),
+    lineage: z.array(LineageEdgeSchema),
+    replayOfRunId: VerificationIdSchema.optional(),
+    canonicalization: CanonicalizationDescriptorSchema,
+    signatureArtifactId: UuidSchema.optional(),
+    startedAt: IsoDateTimeSchema,
+    completedAt: IsoDateTimeSchema,
+  })
+  .superRefine((manifest, context) => {
+    if (Date.parse(manifest.completedAt) < Date.parse(manifest.startedAt))
+      context.addIssue({ code: "custom", path: ["completedAt"], message: "completedAt must not precede startedAt" });
+  });
 export type VerificationRunManifest = z.infer<typeof VerificationRunManifestSchema>;
 
 export const VerificationResultEnvelopeSchema = z.strictObject({

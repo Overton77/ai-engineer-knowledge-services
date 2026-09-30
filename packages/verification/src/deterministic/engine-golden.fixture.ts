@@ -5,10 +5,7 @@ import type {
   VerificationMetricObservation,
 } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "../canonical/index.js";
-import type {
-  DeterministicVerificationInput,
-  RuntimePrincipalBinding,
-} from "./bundle-verification.js";
+import type { DeterministicVerificationInput, RuntimePrincipalBinding } from "./bundle-verification.js";
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
 const artifactId = "22222222-2222-4222-8222-222222222222";
@@ -27,9 +24,7 @@ function artifact(content: string): VerificationArtifactHandle {
     artifactId,
     tenantId,
     digest: sha256Digest(content),
-    mediaType: content.trimStart().startsWith("{")
-      ? "application/json"
-      : "text/plain",
+    mediaType: content.trimStart().startsWith("{") ? "application/json" : "text/plain",
     byteLength: new TextEncoder().encode(content).byteLength,
     objectKey: `verification/${artifactId}`,
     createdAt,
@@ -65,9 +60,7 @@ function edge(
     },
     role: "supports",
     origin: "declared",
-    ...(expectedSelectedContentDigest === undefined
-      ? {}
-      : { expectedSelectedContentDigest }),
+    ...(expectedSelectedContentDigest === undefined ? {} : { expectedSelectedContentDigest }),
     authority,
     parserLineageArtifactIds: [],
   };
@@ -153,16 +146,8 @@ export function prototypeClaimInput(): DeterministicVerificationInput {
   return { bundle, artifacts: [{ artifactId, content }], runtimePrincipals };
 }
 
-function jsonEvidence(
-  id: string,
-  pointer: string,
-  value: unknown,
-): EvidenceEdge {
-  return edge(
-    id,
-    { kind: "json_pointer", pointer },
-    sha256Digest(JSON.stringify(value)),
-  );
+function jsonEvidence(id: string, pointer: string, value: unknown): EvidenceEdge {
+  return edge(id, { kind: "json_pointer", pointer }, sha256Digest(JSON.stringify(value)));
 }
 
 function directMetric(
@@ -174,11 +159,7 @@ function directMetric(
   const evidence = [
     jsonEvidence(`value-${evidenceSuffix}`, valuePointer, Number(value)),
     jsonEvidence(`unit-${evidenceSuffix}`, "/unit", "downloads"),
-    jsonEvidence(
-      `identity-${evidenceSuffix}`,
-      "/entity",
-      "@langchain/langgraph",
-    ),
+    jsonEvidence(`identity-${evidenceSuffix}`, "/entity", "@langchain/langgraph"),
   ];
   return {
     observationId,

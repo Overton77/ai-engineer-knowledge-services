@@ -7,8 +7,7 @@ import {
 } from "./benchmark-publication.js";
 import { createEd25519Signer, createEd25519Verifier } from "./seal.js";
 
-const id = (value: number) =>
-  `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+const id = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
 const digest = `sha256:${"a".repeat(64)}`;
 const tenantId = id(1),
   time = "2026-09-05T00:00:00.000Z";
@@ -87,14 +86,9 @@ function body(): Omit<VerificationBenchmarkPublicationManifest, "seal"> {
 const keys = () => {
   const pair = generateKeyPairSync("ed25519");
   return {
-    signer: createEd25519Signer(
-      pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
-      "proof-key",
-    ),
+    signer: createEd25519Signer(pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString(), "proof-key"),
     verifier: createEd25519Verifier({
-      "proof-key": pair.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
+      "proof-key": pair.publicKey.export({ type: "spki", format: "pem" }).toString(),
     }),
   };
 };
@@ -113,9 +107,7 @@ describe("benchmark publication seal", () => {
     ).toBe("verified");
     const changed = structuredClone(sealed);
     changed.arms[0]!.evalRunId = id(900);
-    await expect(
-      verifyVerificationBenchmarkPublication(changed, { verifier }),
-    ).rejects.toThrow("DIGEST_MISMATCH");
+    await expect(verifyVerificationBenchmarkPublication(changed, { verifier })).rejects.toThrow("DIGEST_MISMATCH");
     const rebound = await sealVerificationBenchmarkPublication({
       ...body(),
       runId: id(901),
@@ -139,18 +131,14 @@ describe("benchmark publication seal", () => {
 
   it("distinguishes unsigned integrity from trusted signature verification", async () => {
     const unsigned = await sealVerificationBenchmarkPublication(body());
-    expect(
-      (await verifyVerificationBenchmarkPublication(unsigned)).signatureStatus,
-    ).toBe("unsigned");
+    expect((await verifyVerificationBenchmarkPublication(unsigned)).signatureStatus).toBe("unsigned");
     await expect(
       verifyVerificationBenchmarkPublication(unsigned, {
         requireSignature: true,
       }),
     ).rejects.toThrow("SIGNATURE_REQUIRED");
     await expect(
-      verifyVerificationBenchmarkPublication(
-        await sealVerificationBenchmarkPublication(body(), keys().signer),
-      ),
+      verifyVerificationBenchmarkPublication(await sealVerificationBenchmarkPublication(body(), keys().signer)),
     ).rejects.toThrow("VERIFIER_REQUIRED");
   });
 
@@ -160,14 +148,10 @@ describe("benchmark publication seal", () => {
       const input = body();
       if (mode === "tenant") input.runnerPayload.tenantId = id(999);
       if (mode === "arm") input.arms[1]!.evalRunId = input.arms[0]!.evalRunId;
-      if (mode === "artifact")
-        input.arms[1]!.policyArtifact.parentArtifactIds = [id(998)];
+      if (mode === "artifact") input.arms[1]!.policyArtifact.parentArtifactIds = [id(998)];
       if (mode === "clock") input.completedAt = "2026-09-05T00:00:00Z";
-      if (mode === "quality")
-        Object.assign(input.qualityClaims, { humanGoldValidated: true });
-      await expect(
-        sealVerificationBenchmarkPublication(input),
-      ).rejects.toThrow();
+      if (mode === "quality") Object.assign(input.qualityClaims, { humanGoldValidated: true });
+      await expect(sealVerificationBenchmarkPublication(input)).rejects.toThrow();
     },
   );
 
@@ -183,9 +167,6 @@ describe("benchmark publication seal", () => {
     });
     expect(sealed.dataset.version).toBe(4);
     expect(Object.isFrozen(sealed.arms[0]!.configurationArtifact)).toBe(true);
-    expect(
-      (await verifyVerificationBenchmarkPublication(sealed, { verifier }))
-        .signatureStatus,
-    ).toBe("verified");
+    expect((await verifyVerificationBenchmarkPublication(sealed, { verifier })).signatureStatus).toBe("verified");
   });
 });

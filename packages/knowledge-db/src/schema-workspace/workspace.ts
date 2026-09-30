@@ -18,7 +18,11 @@ const ManifestSchema = z.looseObject({
 });
 export type WorkspaceManifest = z.infer<typeof ManifestSchema>;
 
-const optionalText = z.string().nullable().optional().transform((value) => value ?? undefined);
+const optionalText = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? undefined);
 
 /** Renderer output uses `null` for absent optional fields; the loader normalizes them to `undefined`. */
 export const SearchEntrySchema = z.looseObject({
@@ -27,16 +31,38 @@ export const SearchEntrySchema = z.looseObject({
   path: optionalText,
   qualified_name: optionalText,
   domain: optionalText,
-  aliases: z.array(z.string()).nullable().default([]).transform((value) => value ?? []),
-  tokens: z.array(z.string()).nullable().default([]).transform((value) => value ?? []),
+  aliases: z
+    .array(z.string())
+    .nullable()
+    .default([])
+    .transform((value) => value ?? []),
+  tokens: z
+    .array(z.string())
+    .nullable()
+    .default([])
+    .transform((value) => value ?? []),
   summary: optionalText,
-  stub: z.boolean().nullable().optional().transform((value) => value ?? undefined),
+  stub: z
+    .boolean()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? undefined),
 });
 export type SearchEntry = z.infer<typeof SearchEntrySchema>;
 
 const AliasIndexSchema = z.record(z.string(), z.array(z.string()));
 /** Terminology entries point at ids as `ids` (layout doc) or `refs` (renderer); both are read. */
-const TerminologySchema = z.record(z.string(), z.looseObject({ definition: z.string().optional(), aliases: z.array(z.string()).default([]), ids: z.array(z.string()).optional(), refs: z.array(z.string()).optional() }).transform((entry) => ({ ...entry, ids: entry.ids ?? entry.refs ?? [] })));
+const TerminologySchema = z.record(
+  z.string(),
+  z
+    .looseObject({
+      definition: z.string().optional(),
+      aliases: z.array(z.string()).default([]),
+      ids: z.array(z.string()).optional(),
+      refs: z.array(z.string()).optional(),
+    })
+    .transform((entry) => ({ ...entry, ids: entry.ids ?? entry.refs ?? [] })),
+);
 export type TerminologyEntry = z.infer<typeof TerminologySchema>[string];
 
 const JsonSchemaSchema = z.record(z.string(), z.unknown());
@@ -48,7 +74,12 @@ export const CatalogEntrySchema = z.looseObject({
   sql: z.string().min(1),
   params: JsonSchemaSchema.default({ type: "object", properties: {}, additionalProperties: false }),
   paramOrder: z.array(z.string()).default([]),
-  result: z.looseObject({ shape: z.enum(["rows", "single_row", "single_json"]).default("rows"), columns: z.array(z.string()).optional() }).default({ shape: "rows" }),
+  result: z
+    .looseObject({
+      shape: z.enum(["rows", "single_row", "single_json"]).default("rows"),
+      columns: z.array(z.string()).optional(),
+    })
+    .default({ shape: "rows" }),
   cost_class: z.enum(["cheap", "medium", "heavy"]).default("cheap"),
   volatile: z.boolean().default(false),
   kind: z.enum(["named_query", "retrieval"]).default("named_query"),
@@ -62,12 +93,21 @@ export const QueryCatalogSchema = z.looseObject({
   schemaVersion: z.literal("knowledge-query-catalog.v1"),
   catalogVersion: z.string().optional(),
   migrationHead: z.string().optional(),
-  defaults: z.looseObject({
-    role: z.enum(["app_reader", "pipeline_agent"]).default("app_reader"),
-    limit: z.number().int().positive().default(200),
-    maxLimit: z.number().int().positive().default(2000),
-    statementTimeoutMs: z.record(z.string(), z.number().int().positive()).default({ cheap: 15_000, medium: 15_000, heavy: 60_000 }),
-  }).default({ role: "app_reader", limit: 200, maxLimit: 2000, statementTimeoutMs: { cheap: 15_000, medium: 15_000, heavy: 60_000 } }),
+  defaults: z
+    .looseObject({
+      role: z.enum(["app_reader", "pipeline_agent"]).default("app_reader"),
+      limit: z.number().int().positive().default(200),
+      maxLimit: z.number().int().positive().default(2000),
+      statementTimeoutMs: z
+        .record(z.string(), z.number().int().positive())
+        .default({ cheap: 15_000, medium: 15_000, heavy: 60_000 }),
+    })
+    .default({
+      role: "app_reader",
+      limit: 200,
+      maxLimit: 2000,
+      statementTimeoutMs: { cheap: 15_000, medium: 15_000, heavy: 60_000 },
+    }),
   entries: z.array(CatalogEntrySchema),
 });
 export type QueryCatalog = z.infer<typeof QueryCatalogSchema>;
@@ -98,13 +138,20 @@ function readJsonIfPresent(dir: string, relative: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
   } catch (error) {
-    throw infrastructureError("WORKSPACE_CORRUPT", `cannot parse ${relative}`, { path, message: error instanceof Error ? error.message : String(error) });
+    throw infrastructureError("WORKSPACE_CORRUPT", `cannot parse ${relative}`, {
+      path,
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
 function parseOrCorrupt<T>(schema: z.ZodType<T>, value: unknown, relative: string): T {
   const parsed = schema.safeParse(value);
-  if (!parsed.success) throw infrastructureError("WORKSPACE_CORRUPT", `${relative} does not match its contract`, { issueCount: parsed.error.issues.length, issues: parsed.error.issues.slice(0, 8) });
+  if (!parsed.success)
+    throw infrastructureError("WORKSPACE_CORRUPT", `${relative} does not match its contract`, {
+      issueCount: parsed.error.issues.length,
+      issues: parsed.error.issues.slice(0, 8),
+    });
   return parsed.data;
 }
 
@@ -112,7 +159,8 @@ function parseOrCorrupt<T>(schema: z.ZodType<T>, value: unknown, relative: strin
 export function loadWorkspace(dir: string): Workspace {
   const root = resolve(dir);
   const manifestRaw = readJsonIfPresent(root, WORKSPACE_FILES.manifest);
-  if (manifestRaw === undefined) throw infrastructureError("WORKSPACE_MISSING", "manifest.json not found", { dir: root });
+  if (manifestRaw === undefined)
+    throw infrastructureError("WORKSPACE_MISSING", "manifest.json not found", { dir: root });
   const manifest = parseOrCorrupt(ManifestSchema, manifestRaw, WORKSPACE_FILES.manifest);
   const indexRaw = readJsonIfPresent(root, WORKSPACE_FILES.searchIndex);
   const aliasesRaw = readJsonIfPresent(root, WORKSPACE_FILES.aliases);
@@ -123,14 +171,22 @@ export function loadWorkspace(dir: string): Workspace {
     manifest,
     migrationHead: manifest.build.migration_head,
     fingerprint: manifest.build.workspace_fingerprint ?? manifest.build.fingerprint,
-    index: indexRaw === undefined ? [] : parseOrCorrupt(z.array(SearchEntrySchema), indexRaw, WORKSPACE_FILES.searchIndex),
+    index:
+      indexRaw === undefined ? [] : parseOrCorrupt(z.array(SearchEntrySchema), indexRaw, WORKSPACE_FILES.searchIndex),
     aliases: aliasesRaw === undefined ? {} : parseOrCorrupt(AliasIndexSchema, aliasesRaw, WORKSPACE_FILES.aliases),
-    terminology: terminologyRaw === undefined ? {} : parseOrCorrupt(TerminologySchema, terminologyRaw, WORKSPACE_FILES.terminology),
-    catalog: catalogRaw === undefined ? undefined : parseOrCorrupt(QueryCatalogSchema, catalogRaw, WORKSPACE_FILES.catalog),
+    terminology:
+      terminologyRaw === undefined
+        ? {}
+        : parseOrCorrupt(TerminologySchema, terminologyRaw, WORKSPACE_FILES.terminology),
+    catalog:
+      catalogRaw === undefined ? undefined : parseOrCorrupt(QueryCatalogSchema, catalogRaw, WORKSPACE_FILES.catalog),
   };
 }
 
 export function requireCatalog(workspace: Workspace): QueryCatalog {
-  if (!workspace.catalog) throw infrastructureError("CATALOG_MISSING", `${WORKSPACE_FILES.catalog} is absent from the workspace`, { dir: workspace.dir });
+  if (!workspace.catalog)
+    throw infrastructureError("CATALOG_MISSING", `${WORKSPACE_FILES.catalog} is absent from the workspace`, {
+      dir: workspace.dir,
+    });
   return workspace.catalog;
 }

@@ -6,7 +6,9 @@ describe("validateVector", () => {
   it("rejects wrong dimensions and non-finite values", () => {
     expect(() => validateVector([1, 2], 3)).toThrow("DIMENSION");
     expect(() => validateVector([1, Number.NaN, 3], 3)).toThrow("NON_FINITE");
-    expect(() => validateVector(Array(DEFAULT_EMBEDDING_DIMENSIONS - 1).fill(0), DEFAULT_EMBEDDING_DIMENSIONS)).toThrow();
+    expect(() =>
+      validateVector(Array(DEFAULT_EMBEDDING_DIMENSIONS - 1).fill(0), DEFAULT_EMBEDDING_DIMENSIONS),
+    ).toThrow();
   });
 });
 

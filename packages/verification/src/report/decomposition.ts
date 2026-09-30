@@ -44,38 +44,24 @@ export function acceptClaimDecomposition(
   report: string,
   proposal: ClaimDecompositionProposal,
 ): AcceptedClaimDecomposition {
-  if (report.length > MAX_REPORT_CHARS)
-    throw new Error("DECOMPOSITION_REPORT_TOO_LARGE");
+  if (report.length > MAX_REPORT_CHARS) throw new Error("DECOMPOSITION_REPORT_TOO_LARGE");
   if (proposal.schemaVersion !== CLAIM_DECOMPOSITION_SCHEMA_VERSION)
     throw new Error("DECOMPOSITION_VERSION_UNSUPPORTED");
-  if (proposal.offsetUnit !== "utf16_code_unit")
-    throw new Error("DECOMPOSITION_OFFSET_UNIT_INVALID");
-  if (
-    !proposal.annotationVersion.trim() ||
-    proposal.annotationVersion.length > 160
-  )
+  if (proposal.offsetUnit !== "utf16_code_unit") throw new Error("DECOMPOSITION_OFFSET_UNIT_INVALID");
+  if (!proposal.annotationVersion.trim() || proposal.annotationVersion.length > 160)
     throw new Error("DECOMPOSITION_ANNOTATION_VERSION_INVALID");
-  if (proposal.reportDigest !== sha256Digest(report))
-    throw new Error("DECOMPOSITION_REPORT_DIGEST_MISMATCH");
+  if (proposal.reportDigest !== sha256Digest(report)) throw new Error("DECOMPOSITION_REPORT_DIGEST_MISMATCH");
   if (proposal.segments.length === 0 || proposal.segments.length > MAX_SEGMENTS)
     throw new Error("DECOMPOSITION_SEGMENT_COUNT_INVALID");
   const ids = new Set<string>();
   let cursor = 0;
   let reconstructed = "";
   for (const segment of proposal.segments) {
-    if (
-      !segment.segmentId.trim() ||
-      segment.segmentId.length > 255 ||
-      ids.has(segment.segmentId)
-    )
+    if (!segment.segmentId.trim() || segment.segmentId.length > 255 || ids.has(segment.segmentId))
       throw new Error("DECOMPOSITION_SEGMENT_ID_INVALID");
     ids.add(segment.segmentId);
-    if (!claimClassifications.includes(segment.classification))
-      throw new Error("DECOMPOSITION_CLASSIFICATION_INVALID");
-    if (
-      (segment.classification === "citation_not_required") !==
-      (segment.atomizationBasis === "non_claim")
-    )
+    if (!claimClassifications.includes(segment.classification)) throw new Error("DECOMPOSITION_CLASSIFICATION_INVALID");
+    if ((segment.classification === "citation_not_required") !== (segment.atomizationBasis === "non_claim"))
       throw new Error("DECOMPOSITION_ATOMIZATION_BASIS_INVALID");
     if (
       !Number.isInteger(segment.start) ||
@@ -85,33 +71,21 @@ export function acceptClaimDecomposition(
       segment.end > report.length
     )
       throw new Error("DECOMPOSITION_OFFSETS_INVALID");
-    if (report.slice(segment.start, segment.end) !== segment.exactText)
-      throw new Error("DECOMPOSITION_TEXT_MISMATCH");
-    if (
-      segment.qualifiers.length > MAX_QUALIFIERS ||
-      new Set(segment.qualifiers).size !== segment.qualifiers.length
-    )
+    if (report.slice(segment.start, segment.end) !== segment.exactText) throw new Error("DECOMPOSITION_TEXT_MISMATCH");
+    if (segment.qualifiers.length > MAX_QUALIFIERS || new Set(segment.qualifiers).size !== segment.qualifiers.length)
       throw new Error("DECOMPOSITION_QUALIFIERS_INVALID");
     for (const qualifier of segment.qualifiers) {
-      if (
-        !qualifier.trim() ||
-        qualifier.length > 240 ||
-        !segment.exactText.includes(qualifier)
-      )
+      if (!qualifier.trim() || qualifier.length > 240 || !segment.exactText.includes(qualifier))
         throw new Error("DECOMPOSITION_QUALIFIER_NOT_PRESERVED");
     }
-    if (
-      segment.classification === "citation_not_required" &&
-      segment.qualifiers.length > 0
-    )
+    if (segment.classification === "citation_not_required" && segment.qualifiers.length > 0)
       throw new Error("DECOMPOSITION_NONCLAIM_QUALIFIER_INVALID");
     if (segment.classification !== "citation_not_required" && !segment.atomic)
       throw new Error("DECOMPOSITION_NON_ATOMIC_CLAIM");
     reconstructed += segment.exactText;
     cursor = segment.end;
   }
-  if (cursor !== report.length || reconstructed !== report)
-    throw new Error("DECOMPOSITION_RECONSTRUCTION_FAILED");
+  if (cursor !== report.length || reconstructed !== report) throw new Error("DECOMPOSITION_RECONSTRUCTION_FAILED");
   return Object.freeze({
     ...proposal,
     segments: Object.freeze(
@@ -149,26 +123,17 @@ export function evaluateDecompositionProposal(
   readonly exactRangePrecision?: number;
   readonly exactRangeRecall?: number;
 } {
-  if (annotation.reportDigest !== accepted.reportDigest)
-    throw new Error("DECOMPOSITION_ANNOTATION_REPORT_MISMATCH");
-  if (annotation.provenance !== "human_adjudicated")
-    return Object.freeze({ status: "pending_human_gold" });
+  if (annotation.reportDigest !== accepted.reportDigest) throw new Error("DECOMPOSITION_ANNOTATION_REPORT_MISMATCH");
+  if (annotation.provenance !== "human_adjudicated") return Object.freeze({ status: "pending_human_gold" });
   const proposed = accepted.segments
     .filter((segment) => segment.classification !== "citation_not_required")
     .map(({ start, end }) => `${start}:${end}`);
-  const expected = annotation.expectedClaimRanges.map(
-    ({ start, end }) => `${start}:${end}`,
-  );
+  const expected = annotation.expectedClaimRanges.map(({ start, end }) => `${start}:${end}`);
   const expectedSet = new Set(expected);
   const matches = proposed.filter((range) => expectedSet.has(range)).length;
   return Object.freeze({
     status: "measured",
-    exactRangePrecision:
-      proposed.length === 0
-        ? expected.length === 0
-          ? 1
-          : 0
-        : matches / proposed.length,
+    exactRangePrecision: proposed.length === 0 ? (expected.length === 0 ? 1 : 0) : matches / proposed.length,
     exactRangeRecall: expected.length === 0 ? 1 : matches / expected.length,
   });
 }

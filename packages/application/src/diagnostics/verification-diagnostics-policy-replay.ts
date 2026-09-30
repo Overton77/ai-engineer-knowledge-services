@@ -55,21 +55,50 @@ export interface DiagnosticsPolicyReplayResult {
   readonly evidenceClosure: { readonly bytes: Uint8Array; readonly digest: `sha256:${string}` };
   readonly decision: VerificationPolicyDecision;
   readonly replayDecision: VerificationPolicyDecision;
-  readonly sourceAssessmentStatus: readonly { readonly assertionId: string; readonly status: "sufficient" | "withheld" | "unknown"; readonly independentCorroboration: boolean; readonly reasonCodes: readonly string[] }[];
+  readonly sourceAssessmentStatus: readonly {
+    readonly assertionId: string;
+    readonly status: "sufficient" | "withheld" | "unknown";
+    readonly independentCorroboration: boolean;
+    readonly reasonCodes: readonly string[];
+  }[];
   readonly externalRequests: 0;
 }
 
 function ownershipVector(sourceClass: DiagnosticsSourceClass): VerificationSourceAssessment["vector"] {
   if (sourceClass === "first_party_marketing") {
-    return { authority: "promotional", independence: "self_reported", directness: "direct", freshness: "unknown", applicability: "unknown" };
+    return {
+      authority: "promotional",
+      independence: "self_reported",
+      directness: "direct",
+      freshness: "unknown",
+      applicability: "unknown",
+    };
   }
   if (sourceClass === "interested_party_comparison") {
-    return { authority: "promotional", independence: "interested_party", directness: "direct", freshness: "unknown", applicability: "unknown" };
+    return {
+      authority: "promotional",
+      independence: "interested_party",
+      directness: "direct",
+      freshness: "unknown",
+      applicability: "unknown",
+    };
   }
   if (sourceClass === "first_party") {
-    return { authority: "primary", independence: "same_organization", directness: "direct", freshness: "unknown", applicability: "unknown" };
+    return {
+      authority: "primary",
+      independence: "same_organization",
+      directness: "direct",
+      freshness: "unknown",
+      applicability: "unknown",
+    };
   }
-  return { authority: "unknown", independence: "unknown", directness: "direct", freshness: "unknown", applicability: "unknown" };
+  return {
+    authority: "unknown",
+    independence: "unknown",
+    directness: "direct",
+    freshness: "unknown",
+    applicability: "unknown",
+  };
 }
 
 function sourceAssessment(input: DiagnosticsPolicyReplayCase): VerificationSourceAssessment {
@@ -103,7 +132,8 @@ function policyBytes(policy: VerificationPolicyDefinition): Uint8Array {
 export function replayDiagnosticsPolicy(input: DiagnosticsPolicyReplayInput): DiagnosticsPolicyReplayResult {
   const policy = VerificationPolicyDefinitionSchema.parse(input.policy);
   const sourceAssessments = input.cases.map(sourceAssessment);
-  if (input.deterministicResult.metrics.length > 0) throw new Error("DIAGNOSTICS_POLICY_REPLAY_METRIC_METADATA_REQUIRED");
+  if (input.deterministicResult.metrics.length > 0)
+    throw new Error("DIAGNOSTICS_POLICY_REPLAY_METRIC_METADATA_REQUIRED");
   const byAssertion = new Map<string, DiagnosticsPolicyReplayCase>();
   for (const item of input.cases) {
     if (byAssertion.has(item.assertionId)) throw new Error("DIAGNOSTICS_POLICY_REPLAY_DUPLICATE_ASSERTION");
@@ -113,7 +143,10 @@ export function replayDiagnosticsPolicy(input: DiagnosticsPolicyReplayInput): Di
     const item = byAssertion.get(mechanical.assertionId);
     if (!item) throw new Error("DIAGNOSTICS_POLICY_REPLAY_ASSERTION_COVERAGE");
     if (item.semantic.assertionId !== item.assertionId) throw new Error("DIAGNOSTICS_POLICY_REPLAY_SEMANTIC_BINDING");
-    const authority = assessSourceAuthority(item.assertionId, sourceAssessments.filter((source) => source.assertionId === item.assertionId));
+    const authority = assessSourceAuthority(
+      item.assertionId,
+      sourceAssessments.filter((source) => source.assertionId === item.assertionId),
+    );
     return {
       assertionId: item.assertionId,
       riskClass: item.riskClass,
@@ -139,34 +172,70 @@ export function replayDiagnosticsPolicy(input: DiagnosticsPolicyReplayInput): Di
   });
   const inputsBytes = encoder.encode(canonicalizeJson(recorded));
   const definitionBytes = policyBytes(policy);
-  const evidenceClosureBytes = encoder.encode(canonicalizeJson(input.cases.map((item) => ({
-    caseId: item.caseId,
-    caseDigest: item.caseDigest,
-    assertionId: item.assertionId,
-    fragmentId: item.fragmentId,
-    captureId: item.captureId,
-    sourceFamilyId: item.sourceFamilyId,
-    sourceOrganizationId: item.sourceOrganizationId,
-    sourceClass: item.sourceClass,
-    claimScope: item.claimScope,
-    evidenceScope: item.evidenceScope,
-    publicationRelation: item.publicationRelation,
-  }))));
+  const evidenceClosureBytes = encoder.encode(
+    canonicalizeJson(
+      input.cases.map((item) => ({
+        caseId: item.caseId,
+        caseDigest: item.caseDigest,
+        assertionId: item.assertionId,
+        fragmentId: item.fragmentId,
+        captureId: item.captureId,
+        sourceFamilyId: item.sourceFamilyId,
+        sourceOrganizationId: item.sourceOrganizationId,
+        sourceClass: item.sourceClass,
+        claimScope: item.claimScope,
+        evidenceScope: item.evidenceScope,
+        publicationRelation: item.publicationRelation,
+      })),
+    ),
+  );
   const decision = evaluateVerificationPolicy(policy, recorded);
-  const replay = replayVerificationPolicy({ policyVersion: policy.policyVersion, policyBytes: definitionBytes, recordedPolicyInputsBytes: inputsBytes });
-  if (digestCanonicalJson(decision) !== digestCanonicalJson(replay.decision)) throw new Error("DIAGNOSTICS_POLICY_REPLAY_DRIFT");
+  const replay = replayVerificationPolicy({
+    policyVersion: policy.policyVersion,
+    policyBytes: definitionBytes,
+    recordedPolicyInputsBytes: inputsBytes,
+  });
+  if (digestCanonicalJson(decision) !== digestCanonicalJson(replay.decision))
+    throw new Error("DIAGNOSTICS_POLICY_REPLAY_DRIFT");
   return Object.freeze({
     schemaVersion: "verification-diagnostics-policy-replay.v1",
     runId: input.runId,
     policy: Object.freeze({ bytes: definitionBytes, digest: digestCanonicalJson(policy) }),
     recordedInputs: Object.freeze({ bytes: inputsBytes, digest: digestCanonicalJson(recorded) }),
-    evidenceClosure: Object.freeze({ bytes: evidenceClosureBytes, digest: digestCanonicalJson(input.cases.map((item) => ({ caseId: item.caseId, caseDigest: item.caseDigest, assertionId: item.assertionId, fragmentId: item.fragmentId, captureId: item.captureId, sourceFamilyId: item.sourceFamilyId, sourceOrganizationId: item.sourceOrganizationId, sourceClass: item.sourceClass, claimScope: item.claimScope, evidenceScope: item.evidenceScope, publicationRelation: item.publicationRelation }))) }),
+    evidenceClosure: Object.freeze({
+      bytes: evidenceClosureBytes,
+      digest: digestCanonicalJson(
+        input.cases.map((item) => ({
+          caseId: item.caseId,
+          caseDigest: item.caseDigest,
+          assertionId: item.assertionId,
+          fragmentId: item.fragmentId,
+          captureId: item.captureId,
+          sourceFamilyId: item.sourceFamilyId,
+          sourceOrganizationId: item.sourceOrganizationId,
+          sourceClass: item.sourceClass,
+          claimScope: item.claimScope,
+          evidenceScope: item.evidenceScope,
+          publicationRelation: item.publicationRelation,
+        })),
+      ),
+    }),
     decision,
     replayDecision: replay.decision,
-    sourceAssessmentStatus: Object.freeze(input.cases.map((item) => {
-      const authority = assessSourceAuthority(item.assertionId, sourceAssessments.filter((source) => source.assertionId === item.assertionId));
-      return Object.freeze({ assertionId: item.assertionId, status: authority.status, independentCorroboration: authority.independentCorroboration, reasonCodes: authority.reasonCodes });
-    })),
+    sourceAssessmentStatus: Object.freeze(
+      input.cases.map((item) => {
+        const authority = assessSourceAuthority(
+          item.assertionId,
+          sourceAssessments.filter((source) => source.assertionId === item.assertionId),
+        );
+        return Object.freeze({
+          assertionId: item.assertionId,
+          status: authority.status,
+          independentCorroboration: authority.independentCorroboration,
+          reasonCodes: authority.reasonCodes,
+        });
+      }),
+    ),
     externalRequests: 0,
   });
 }

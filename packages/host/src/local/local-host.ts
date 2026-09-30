@@ -101,11 +101,13 @@ const isCaptureFileDescriptor = (input: unknown): input is LocalCaptureFileDescr
   typeof input === "object" && input !== null && typeof (input as { filename?: unknown }).filename === "string";
 
 function localServiceConfig(options: LocalHostOptions<LocalVerificationServices>): LocalServiceConfig {
-  if (typeof options.storeDir !== "string" || options.storeDir.trim() === "") throw new Error("HOST_LOCAL_STORE_DIR_REQUIRED");
+  if (typeof options.storeDir !== "string" || options.storeDir.trim() === "")
+    throw new Error("HOST_LOCAL_STORE_DIR_REQUIRED");
   if (typeof options.verification?.create !== "function" || typeof options.verification.captureMediaKind !== "function")
     throw new Error("HOST_LOCAL_VERIFICATION_SERVICES_REQUIRED");
   const { capture, semantic } = options.providers ?? {};
-  if (capture?.firecrawlApiKey !== undefined && capture.firecrawlApiKey.trim() === "") throw new Error("HOST_LOCAL_CAPTURE_PROVIDER_KEY_INVALID");
+  if (capture?.firecrawlApiKey !== undefined && capture.firecrawlApiKey.trim() === "")
+    throw new Error("HOST_LOCAL_CAPTURE_PROVIDER_KEY_INVALID");
   if (semantic && (typeof semantic.aiGatewayApiKey !== "string" || semantic.aiGatewayApiKey.trim() === ""))
     throw new Error("HOST_LOCAL_SEMANTIC_PROVIDER_KEY_REQUIRED");
   return {
@@ -120,7 +122,9 @@ function localServiceConfig(options: LocalHostOptions<LocalVerificationServices>
  * resources they own are created on the first admitted operation call, so `--help` or a rejected
  * operation touches no store, network or database.
  */
-export async function createLocalHost<S extends LocalVerificationServices>(options: LocalHostOptions<S>): Promise<LocalHost<S>> {
+export async function createLocalHost<S extends LocalVerificationServices>(
+  options: LocalHostOptions<S>,
+): Promise<LocalHost<S>> {
   const config = localServiceConfig(options);
   const capabilities: LocalHostCapabilities = {
     onlineCapture: config.providers.capture !== undefined,
@@ -159,25 +163,34 @@ export async function createLocalHost<S extends LocalVerificationServices>(optio
   const admit = (operation: LocalOperation, input: unknown) => {
     const missing = requirement(operation);
     if (missing) throw new HostCapabilityNotAdmittedError("local", operation, missing);
-    if (operation === "verify_capture_file" && !capabilities.documentConversion && isCaptureFileDescriptor(input)
-      && options.verification.captureMediaKind(input) === "document")
+    if (
+      operation === "verify_capture_file" &&
+      !capabilities.documentConversion &&
+      isCaptureFileDescriptor(input) &&
+      options.verification.captureMediaKind(input) === "document"
+    )
       throw new HostCapabilityNotAdmittedError("local", operation, "document-conversion");
   };
 
-  const call = (operation: LocalOperation) => (...args: unknown[]) => {
-    const run = (async () => {
-      admit(operation, args[0]);
-      const target = await services();
-      const method = localVerificationOperations[operation].method;
-      return (target[method] as (...values: unknown[]) => unknown)(...args);
-    })();
-    running.add(run);
-    const settled = () => void running.delete(run);
-    run.then(settled, settled);
-    return run;
-  };
+  const call =
+    (operation: LocalOperation) =>
+    (...args: unknown[]) => {
+      const run = (async () => {
+        admit(operation, args[0]);
+        const target = await services();
+        const method = localVerificationOperations[operation].method;
+        return (target[method] as (...values: unknown[]) => unknown)(...args);
+      })();
+      running.add(run);
+      const settled = () => void running.delete(run);
+      run.then(settled, settled);
+      return run;
+    };
   const verify = Object.fromEntries(
-    (Object.keys(localVerificationOperations) as LocalOperation[]).map((operation) => [localVerificationOperations[operation].method, call(operation)]),
+    (Object.keys(localVerificationOperations) as LocalOperation[]).map((operation) => [
+      localVerificationOperations[operation].method,
+      call(operation),
+    ]),
   ) as unknown as LocalVerifyOperations<S>;
 
   return {

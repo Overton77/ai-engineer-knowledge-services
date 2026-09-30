@@ -5,18 +5,30 @@ import type { TenantSqlClient } from "@aiengineer/knowledge-persistence";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import { createPromotionSelectionPorts } from "./promotion-selection.js";
 
-const tenantId = randomUUID(), artifactId = randomUUID(), policyDigest = sha256Digest("pinned policy");
+const tenantId = randomUUID(),
+  artifactId = randomUUID(),
+  policyDigest = sha256Digest("pinned policy");
 const text = '{ "qualification": "Cafe\u0301 preview only" }';
 const artifact = { id: artifactId, digest: sha256Digest(text) };
 
 function fixture() {
-  const row = { sha256: artifact.digest.slice(7), storage_bucket: "candidate", size_bytes: Buffer.byteLength(text), storage_state: "available" };
+  const row = {
+    sha256: artifact.digest.slice(7),
+    storage_bucket: "candidate",
+    size_bytes: Buffer.byteLength(text),
+    storage_state: "available",
+  };
   const query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
   const client = { query } as unknown as TenantSqlClient;
   const get = vi.fn(async () => new TextEncoder().encode(text));
-  const ports = createPromotionSelectionPorts({ tenantId, policyDigest,
-    artifacts: {} as ArtifactLedger, evidence: { loadClaim: vi.fn(), close: vi.fn() },
-    artifactStores: { candidate: { get, put: vi.fn() } }, measure: vi.fn() });
+  const ports = createPromotionSelectionPorts({
+    tenantId,
+    policyDigest,
+    artifacts: {} as ArtifactLedger,
+    evidence: { loadClaim: vi.fn(), close: vi.fn() },
+    artifactStores: { candidate: { get, put: vi.fn() } },
+    measure: vi.fn(),
+  });
   return { row, query, client, get, ports, read: () => ports.readArtifact(client, { tenantId, artifact }) };
 }
 
@@ -30,14 +42,19 @@ describe("selected promotion host artifact custody", () => {
 
   it("rejects a foreign tenant before reading metadata or bytes", async () => {
     const f = fixture();
-    await expect(f.ports.readArtifact(f.client, { tenantId: randomUUID(), artifact })).rejects.toThrow("PROMOTION_SELECTION_HOST_TENANT_MISMATCH");
+    await expect(f.ports.readArtifact(f.client, { tenantId: randomUUID(), artifact })).rejects.toThrow(
+      "PROMOTION_SELECTION_HOST_TENANT_MISMATCH",
+    );
     expect(f.query).not.toHaveBeenCalled();
     expect(f.get).not.toHaveBeenCalled();
   });
 
   it.each([
-    { storage_state: "pending" }, { sha256: "b".repeat(64) }, { size_bytes: -1 }, { size_bytes: 8 * 1024 * 1024 + 1 },
-  ])("rejects unavailable or changed canonical artifact metadata: %j", async change => {
+    { storage_state: "pending" },
+    { sha256: "b".repeat(64) },
+    { size_bytes: -1 },
+    { size_bytes: 8 * 1024 * 1024 + 1 },
+  ])("rejects unavailable or changed canonical artifact metadata: %j", async (change) => {
     const f = fixture();
     Object.assign(f.row, change);
     await expect(f.read()).rejects.toThrow("PROMOTION_SELECTION_ARTIFACT_UNAVAILABLE");

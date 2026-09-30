@@ -40,8 +40,10 @@ export async function createStructuredExtractionOperationResult(input: {
   if (digestCanonicalJson(body) !== seal.payloadDigest) {
     throw new Error("STRUCTURED_EXTRACTION_RESULT_MANIFEST_DIGEST_INVALID");
   }
-  if (Buffer.from(seal.signature.signatureBase64, "base64").toString("base64") !== seal.signature.signatureBase64
-    || Buffer.from(seal.signature.signatureBase64, "base64").byteLength !== 64) {
+  if (
+    Buffer.from(seal.signature.signatureBase64, "base64").toString("base64") !== seal.signature.signatureBase64 ||
+    Buffer.from(seal.signature.signatureBase64, "base64").byteLength !== 64
+  ) {
     throw new Error("STRUCTURED_EXTRACTION_RESULT_SIGNATURE_INVALID");
   }
   if (structuredExtractionProviderCallDigest(manifest.providerCall) !== manifest.providerCallDigest) {
@@ -67,12 +69,14 @@ export async function createStructuredExtractionOperationResult(input: {
     completedAt: manifest.completedAt,
     parentArtifactIds,
   });
-  if (artifact.tenantId !== manifest.tenantId
-    || artifact.digest !== sha256Digest(manifestBytes)
-    || artifact.byteLength !== manifestBytes.byteLength
-    || artifact.createdAt !== manifest.completedAt
-    || !sameOrdered(artifact.parentArtifactIds, parentArtifactIds)
-    || artifact.transformationSignature !== transformationSignature) {
+  if (
+    artifact.tenantId !== manifest.tenantId ||
+    artifact.digest !== sha256Digest(manifestBytes) ||
+    artifact.byteLength !== manifestBytes.byteLength ||
+    artifact.createdAt !== manifest.completedAt ||
+    !sameOrdered(artifact.parentArtifactIds, parentArtifactIds) ||
+    artifact.transformationSignature !== transformationSignature
+  ) {
     throw new Error("STRUCTURED_EXTRACTION_RESULT_ARTIFACT_INVALID");
   }
 
@@ -88,26 +92,32 @@ export async function createStructuredExtractionOperationResult(input: {
   }
   if (!verified) throw new Error("STRUCTURED_EXTRACTION_RESULT_SIGNATURE_INVALID");
 
-  return deepFreeze(VerificationStructuredExtractionResultSchema.parse({
-    schemaVersion: "verification-operation-result.v1",
-    operationId: manifest.operationId,
-    useCase: "extractStructuredData",
-    requestDigest: manifest.requestDigest,
-    output: {
-      status: "unverified_candidate",
-      schemaValidation: "shape_only",
-      candidateArtifact: artifactReference(manifest.output.candidateArtifact),
-      provenanceArtifact: artifactReference(manifest.output.provenanceArtifact),
-      precontextArtifact: manifest.output.precontextArtifact === null ? null : artifactReference(manifest.output.precontextArtifact),
-      executionArtifact: artifactReference(manifest.execution.artifact),
-      manifestDigest: manifest.seal.payloadDigest,
-      providerCallDigest: manifest.providerCallDigest,
-    },
-    resultArtifact: artifact,
-  }));
+  return deepFreeze(
+    VerificationStructuredExtractionResultSchema.parse({
+      schemaVersion: "verification-operation-result.v1",
+      operationId: manifest.operationId,
+      useCase: "extractStructuredData",
+      requestDigest: manifest.requestDigest,
+      output: {
+        status: "unverified_candidate",
+        schemaValidation: "shape_only",
+        candidateArtifact: artifactReference(manifest.output.candidateArtifact),
+        provenanceArtifact: artifactReference(manifest.output.provenanceArtifact),
+        precontextArtifact:
+          manifest.output.precontextArtifact === null ? null : artifactReference(manifest.output.precontextArtifact),
+        executionArtifact: artifactReference(manifest.execution.artifact),
+        manifestDigest: manifest.seal.payloadDigest,
+        providerCallDigest: manifest.providerCallDigest,
+      },
+      resultArtifact: artifact,
+    }),
+  );
 }
 
-function artifactReference(artifact: VerificationArtifactHandle): { readonly artifactId: string; readonly digest: string } {
+function artifactReference(artifact: VerificationArtifactHandle): {
+  readonly artifactId: string;
+  readonly digest: string;
+} {
   return { artifactId: artifact.artifactId, digest: artifact.digest };
 }
 

@@ -19,6 +19,10 @@ export function createVerificationBenchmarkCaptureProfileResolver(
   rawOwnershipGrants: string,
 ) {
   const resolver = new ServerOwnedBenchmarkCaptureProfileResolver(database, rawProfiles, rawOwnershipGrants);
-  return (input: { readonly profileName: string; readonly identity: LocalApiIdentity; readonly correlationId: string; readonly idempotencyKey: string }) =>
-    resolver.resolve(input.profileName, input.identity, input.correlationId, input.idempotencyKey);
+  return (input: {
+    readonly profileName: string;
+    readonly identity: LocalApiIdentity;
+    readonly correlationId: string;
+    readonly idempotencyKey: string;
+  }) => resolver.resolve(input.profileName, input.identity, input.correlationId, input.idempotencyKey);
 }

@@ -11,7 +11,9 @@ export interface VerificationAdjudicationRuntimeDependencies extends SharedVerif
   readonly subjects: VerificationAdjudicationPendingSubjectCommitPort;
 }
 
-export function createVerificationAdjudicationRequestHandler(dependencies: VerificationAdjudicationRuntimeDependencies) {
+export function createVerificationAdjudicationRequestHandler(
+  dependencies: VerificationAdjudicationRuntimeDependencies,
+) {
   return verificationAdjudicationRequestActivityHandler({
     service: createVerificationAdjudicationRequestService(dependencies),
     subjects: dependencies.subjects,

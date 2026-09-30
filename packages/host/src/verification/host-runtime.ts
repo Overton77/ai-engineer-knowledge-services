@@ -42,26 +42,11 @@ import {
 } from "@aiengineer/knowledge-persistence";
 
 export interface VerificationHostAdmission {
-  readonly isParseArtifactRequestAdmitted?: (
-    tenantId: string,
-    request: ParseArtifactRequest,
-  ) => boolean;
-  readonly isStructuredExtractionRequestAdmitted?: (
-    tenantId: string,
-    request: unknown,
-  ) => boolean;
-  readonly isBenchmarkRequestAdmitted?: (
-    tenantId: string,
-    request: RunBenchmarkRequest,
-  ) => boolean;
-  readonly isBenchmarkComparisonRequestAdmitted?: (
-    tenantId: string,
-    request: CompareBenchmarkRunsRequest,
-  ) => boolean;
-  readonly isClaimsRequestAdmitted?: (
-    tenantId: string,
-    request: VerifyClaimsRequest | VerifyReportRequest,
-  ) => boolean;
+  readonly isParseArtifactRequestAdmitted?: (tenantId: string, request: ParseArtifactRequest) => boolean;
+  readonly isStructuredExtractionRequestAdmitted?: (tenantId: string, request: unknown) => boolean;
+  readonly isBenchmarkRequestAdmitted?: (tenantId: string, request: RunBenchmarkRequest) => boolean;
+  readonly isBenchmarkComparisonRequestAdmitted?: (tenantId: string, request: CompareBenchmarkRunsRequest) => boolean;
+  readonly isClaimsRequestAdmitted?: (tenantId: string, request: VerifyClaimsRequest | VerifyReportRequest) => boolean;
   readonly isAuditInspectionRequestAdmitted?: (
     tenantId: string,
     request: InspectAuditBundleRequest,
@@ -97,10 +82,7 @@ function readFeatureToggle(raw: string | undefined, invalidCode: string): Featur
   return value;
 }
 
-function requireOwnership(
-  context: ResolveVerificationContext | undefined,
-  code: string,
-): void {
+function requireOwnership(context: ResolveVerificationContext | undefined, code: string): void {
   if (!context) throw new Error(code);
 }
 
@@ -112,16 +94,10 @@ function parseJsonOrThrow(raw: string, invalidCode: string): unknown {
   }
 }
 
-function parseServiceCatalog(
-  raw: string | undefined,
-  requiredCode: string,
-  invalidCode: string,
-) {
+function parseServiceCatalog(raw: string | undefined, requiredCode: string, invalidCode: string) {
   if (!raw || raw.length > CONFIG_MAX_CHARS) throw new Error(requiredCode);
   return new VerificationServiceCatalog(
-    parseJsonOrThrow(raw, invalidCode) as ConstructorParameters<
-      typeof VerificationServiceCatalog
-    >[0],
+    parseJsonOrThrow(raw, invalidCode) as ConstructorParameters<typeof VerificationServiceCatalog>[0],
   );
 }
 
@@ -132,15 +108,9 @@ function runKindFromAuditGrant(
 ): SucceededRunKind | undefined {
   try {
     const grant = catalog.resolve(tenantId, request);
-    return grant.runKind === "claims"
-      ? "verification_claims"
-      : "verification_report";
+    return grant.runKind === "claims" ? "verification_claims" : "verification_report";
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "VERIFICATION_AUDIT_INSPECTION_GRANT_REQUIRED"
-    )
-      return undefined;
+    if (error instanceof Error && error.message === "VERIFICATION_AUDIT_INSPECTION_GRANT_REQUIRED") return undefined;
     throw error;
   }
 }
@@ -165,17 +135,14 @@ function resolveOwnershipContext(input: {
   readonly production: boolean;
 }): ResolveVerificationContext | undefined {
   const verificationAttemptId = input.environment.VERIFICATION_SERVICE_ATTEMPT_ID?.trim();
-  const ownershipGrants =
-    input.environment.VERIFICATION_SERVICE_OWNERSHIP_GRANTS_JSON?.trim();
-  const eveRuntimeAttestationKeysJson =
-    input.environment.VERIFICATION_EVE_RUNTIME_ATTESTATION_KEYS_JSON?.trim();
+  const ownershipGrants = input.environment.VERIFICATION_SERVICE_OWNERSHIP_GRANTS_JSON?.trim();
+  const eveRuntimeAttestationKeysJson = input.environment.VERIFICATION_EVE_RUNTIME_ATTESTATION_KEYS_JSON?.trim();
   if (input.production && verificationAttemptId && !ownershipGrants)
     throw new Error("VERIFICATION_OWNERSHIP_GRANTS_REQUIRED");
   return input.database && ownershipGrants
     ? createVerificationOwnershipResolver(input.database, ownershipGrants, {
         ...(eveRuntimeAttestationKeysJson ? { eveRuntimeAttestationKeysJson } : {}),
-        resolveEveBinding: (envelope) =>
-          resolveEveVerificationBinding(input.database!, envelope),
+        resolveEveBinding: (envelope) => resolveEveVerificationBinding(input.database!, envelope),
       })
     : undefined;
 }
@@ -185,35 +152,23 @@ function resolveBenchmarkConfigs(input: {
   readonly dynamicVerificationContext: ResolveVerificationContext | undefined;
 }) {
   const benchmarkRaw = input.environment.VERIFICATION_BENCHMARK_CONFIG_JSON?.trim();
-  const benchmarkConfig = benchmarkRaw
-    ? parseVerificationBenchmarkRuntimeConfig(benchmarkRaw)
-    : undefined;
+  const benchmarkConfig = benchmarkRaw ? parseVerificationBenchmarkRuntimeConfig(benchmarkRaw) : undefined;
   if (benchmarkConfig && !input.dynamicVerificationContext)
     throw new Error("BENCHMARK_RUNTIME_OWNERSHIP_GRANTS_REQUIRED");
-  const comparisonRaw =
-    input.environment.VERIFICATION_BENCHMARK_COMPARISON_CONFIG_JSON?.trim();
-  const comparisonConfig = comparisonRaw
-    ? parseVerificationBenchmarkComparisonRuntimeConfig(comparisonRaw)
-    : undefined;
+  const comparisonRaw = input.environment.VERIFICATION_BENCHMARK_COMPARISON_CONFIG_JSON?.trim();
+  const comparisonConfig = comparisonRaw ? parseVerificationBenchmarkComparisonRuntimeConfig(comparisonRaw) : undefined;
   if (comparisonConfig && !input.dynamicVerificationContext)
     throw new Error("BENCHMARK_COMPARISON_OWNERSHIP_GRANTS_REQUIRED");
-  const extractionRaw =
-    input.environment.VERIFICATION_STRUCTURED_EXTRACTION_CONFIG_JSON?.trim();
+  const extractionRaw = input.environment.VERIFICATION_STRUCTURED_EXTRACTION_CONFIG_JSON?.trim();
   const extractionConfig = extractionRaw
     ? parseVerificationStructuredExtractionRuntimeConfig(extractionRaw)
     : undefined;
-  if (
-    extractionConfig &&
-    (!input.dynamicVerificationContext ||
-      extractionConfig.executionMode !== "live_provider")
-  )
+  if (extractionConfig && (!input.dynamicVerificationContext || extractionConfig.executionMode !== "live_provider"))
     throw new Error("STRUCTURED_EXTRACTION_API_OWNERSHIP_AND_LIVE_RUNTIME_REQUIRED");
   if (extractionConfig)
     parseBenchmarkReadPublicKeys(
       JSON.stringify(
-        Object.entries(extractionConfig.trustedPublicKeys).map(
-          ([keyId, publicKeyPem]) => ({ keyId, publicKeyPem }),
-        ),
+        Object.entries(extractionConfig.trustedPublicKeys).map(([keyId, publicKeyPem]) => ({ keyId, publicKeyPem })),
       ),
     );
   return { benchmarkConfig, comparisonConfig, extractionConfig };
@@ -223,22 +178,16 @@ function resolveAuditInspectionAdmission(input: {
   readonly environment: Environment;
   readonly database: PostgresCanonicalRepository | undefined;
   readonly dynamicVerificationContext: ResolveVerificationContext | undefined;
-}):
-  | ((tenantId: string, request: InspectAuditBundleRequest) => Promise<boolean>)
-  | undefined {
+}): ((tenantId: string, request: InspectAuditBundleRequest) => Promise<boolean>) | undefined {
   const auditInspectionEnabled = readFeatureToggle(
     input.environment.VERIFICATION_AUDIT_INSPECTION_ENABLED,
     "INVALID_VERIFICATION_AUDIT_INSPECTION_ENABLED",
   );
   if (auditInspectionEnabled === "1")
-    requireOwnership(
-      input.dynamicVerificationContext,
-      "VERIFICATION_AUDIT_INSPECTION_OWNERSHIP_GRANTS_REQUIRED",
-    );
+    requireOwnership(input.dynamicVerificationContext, "VERIFICATION_AUDIT_INSPECTION_OWNERSHIP_GRANTS_REQUIRED");
   if (auditInspectionEnabled !== "1") return undefined;
   const raw = input.environment.VERIFICATION_AUDIT_INSPECTION_GRANTS_JSON?.trim();
-  if (!raw || raw.length > CONFIG_MAX_CHARS)
-    throw new Error("VERIFICATION_AUDIT_INSPECTION_RUNTIME_GRANTS_REQUIRED");
+  if (!raw || raw.length > CONFIG_MAX_CHARS) throw new Error("VERIFICATION_AUDIT_INSPECTION_RUNTIME_GRANTS_REQUIRED");
   const catalog = new VerificationAuditInspectionGrantCatalog(
     parseJsonOrThrow(raw, "VERIFICATION_AUDIT_INSPECTION_RUNTIME_GRANTS_INVALID"),
   );
@@ -251,31 +200,18 @@ function resolveAdjudicationAdmission(input: {
   readonly environment: Environment;
   readonly database: PostgresCanonicalRepository | undefined;
   readonly dynamicVerificationContext: ResolveVerificationContext | undefined;
-}):
-  | ((tenantId: string, request: RequestAdjudicationRequest) => Promise<boolean>)
-  | undefined {
-  const adjudicationGrantsRaw =
-    input.environment.VERIFICATION_ADJUDICATION_GRANTS_JSON?.trim();
-  const adjudicationRequirementsRaw =
-    input.environment.VERIFICATION_ADJUDICATION_REVIEW_REQUIREMENTS_JSON?.trim();
-  const adjudicationPublicKeysRaw =
-    input.environment.VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON?.trim();
-  const adjudicationConfigured = [
-    adjudicationGrantsRaw,
-    adjudicationRequirementsRaw,
-    adjudicationPublicKeysRaw,
-  ].filter((value) => value !== undefined).length;
+}): ((tenantId: string, request: RequestAdjudicationRequest) => Promise<boolean>) | undefined {
+  const adjudicationGrantsRaw = input.environment.VERIFICATION_ADJUDICATION_GRANTS_JSON?.trim();
+  const adjudicationRequirementsRaw = input.environment.VERIFICATION_ADJUDICATION_REVIEW_REQUIREMENTS_JSON?.trim();
+  const adjudicationPublicKeysRaw = input.environment.VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON?.trim();
+  const adjudicationConfigured = [adjudicationGrantsRaw, adjudicationRequirementsRaw, adjudicationPublicKeysRaw].filter(
+    (value) => value !== undefined,
+  ).length;
   if (adjudicationConfigured !== 0 && adjudicationConfigured !== 3)
     throw new Error("VERIFICATION_ADJUDICATION_RUNTIME_CONFIGURATION_REQUIRED");
   if (adjudicationConfigured !== 3) return undefined;
-  requireOwnership(
-    input.dynamicVerificationContext,
-    "VERIFICATION_ADJUDICATION_OWNERSHIP_GRANTS_REQUIRED",
-  );
-  if (
-    adjudicationGrantsRaw!.length > CONFIG_MAX_CHARS ||
-    adjudicationRequirementsRaw!.length > CONFIG_MAX_CHARS
-  )
+  requireOwnership(input.dynamicVerificationContext, "VERIFICATION_ADJUDICATION_OWNERSHIP_GRANTS_REQUIRED");
+  if (adjudicationGrantsRaw!.length > CONFIG_MAX_CHARS || adjudicationRequirementsRaw!.length > CONFIG_MAX_CHARS)
     throw new Error("VERIFICATION_ADJUDICATION_RUNTIME_CONFIGURATION_TOO_LARGE");
   let grants: unknown, requirements: unknown;
   try {
@@ -311,42 +247,32 @@ function resolveCaptureCatalog(input: {
     "INVALID_VERIFICATION_CAPTURE_ACQUIRE_ENABLED",
   );
   if (captureAcquireEnabled !== "1") return undefined;
-  requireOwnership(
-    input.dynamicVerificationContext,
-    "VERIFICATION_ACQUISITION_OWNERSHIP_GRANTS_REQUIRED",
-  );
+  requireOwnership(input.dynamicVerificationContext, "VERIFICATION_ACQUISITION_OWNERSHIP_GRANTS_REQUIRED");
   const catalog = parseServiceCatalog(
     input.environment.VERIFICATION_SERVICE_CATALOG_JSON?.trim(),
     "VERIFICATION_ACQUISITION_RUNTIME_GRANTS_REQUIRED",
     "VERIFICATION_ACQUISITION_RUNTIME_GRANTS_INVALID",
   );
-  if (!catalog.hasAcquisitionGrants())
-    throw new Error("VERIFICATION_ACQUISITION_RUNTIME_GRANTS_REQUIRED");
+  if (!catalog.hasAcquisitionGrants()) throw new Error("VERIFICATION_ACQUISITION_RUNTIME_GRANTS_REQUIRED");
   return catalog;
 }
 
 function resolveParseArtifactAdmission(input: {
   readonly environment: Environment;
   readonly dynamicVerificationContext: ResolveVerificationContext | undefined;
-}):
-  | ((tenantId: string, request: ParseArtifactRequest) => boolean)
-  | undefined {
+}): ((tenantId: string, request: ParseArtifactRequest) => boolean) | undefined {
   const parseArtifactEnabled = readFeatureToggle(
     input.environment.VERIFICATION_PARSE_ARTIFACT_ENABLED,
     "INVALID_VERIFICATION_PARSE_ARTIFACT_ENABLED",
   );
   if (parseArtifactEnabled !== "1") return undefined;
-  requireOwnership(
-    input.dynamicVerificationContext,
-    "VERIFICATION_PARSE_ARTIFACT_OWNERSHIP_GRANTS_REQUIRED",
-  );
+  requireOwnership(input.dynamicVerificationContext, "VERIFICATION_PARSE_ARTIFACT_OWNERSHIP_GRANTS_REQUIRED");
   const catalog = parseServiceCatalog(
     input.environment.VERIFICATION_SERVICE_CATALOG_JSON?.trim(),
     "VERIFICATION_PARSE_ARTIFACT_RUNTIME_GRANTS_REQUIRED",
     "VERIFICATION_PARSE_ARTIFACT_RUNTIME_GRANTS_INVALID",
   );
-  if (!catalog.hasParseArtifactGrants())
-    throw new Error("VERIFICATION_PARSE_ARTIFACT_RUNTIME_GRANTS_REQUIRED");
+  if (!catalog.hasParseArtifactGrants()) throw new Error("VERIFICATION_PARSE_ARTIFACT_RUNTIME_GRANTS_REQUIRED");
   return createParseArtifactRequestAdmission(catalog);
 }
 
@@ -370,18 +296,11 @@ function assertClaimsWorkerRuntime(environment: Environment): void {
 function resolveClaimsAdmission(input: {
   readonly environment: Environment;
   readonly claimsEnabled: FeatureToggle;
-}):
-  | ((
-      tenantId: string,
-      request: VerifyClaimsRequest | VerifyReportRequest,
-    ) => boolean)
-  | undefined {
+}): ((tenantId: string, request: VerifyClaimsRequest | VerifyReportRequest) => boolean) | undefined {
   if (input.claimsEnabled !== "1") return undefined;
-  const projectionRaw =
-      input.environment.VERIFICATION_CLAIMS_PROJECTION_GRANTS_JSON?.trim(),
+  const projectionRaw = input.environment.VERIFICATION_CLAIMS_PROJECTION_GRANTS_JSON?.trim(),
     sealRaw = input.environment.VERIFICATION_SEAL_POLICY_GRANTS_JSON?.trim();
-  if (!projectionRaw || !sealRaw)
-    throw new Error("VERIFICATION_CLAIMS_RUNTIME_GRANTS_REQUIRED");
+  if (!projectionRaw || !sealRaw) throw new Error("VERIFICATION_CLAIMS_RUNTIME_GRANTS_REQUIRED");
   if (projectionRaw.length > CONFIG_MAX_CHARS || sealRaw.length > CONFIG_MAX_CHARS)
     throw new Error("VERIFICATION_CLAIMS_RUNTIME_GRANTS_TOO_LARGE");
   let projections: unknown, policies: unknown;
@@ -401,28 +320,21 @@ function resolveClaimsAdmission(input: {
   )
     throw new Error("VERIFICATION_CLAIMS_RUNTIME_GRANTS_INVALID");
   const projectionCatalog = new VerificationClaimsProjectionGrantCatalog(
-    projections as ConstructorParameters<
-      typeof VerificationClaimsProjectionGrantCatalog
-    >[0],
+    projections as ConstructorParameters<typeof VerificationClaimsProjectionGrantCatalog>[0],
   );
-  void new VerificationSealPolicyCatalog(
-    policies as ConstructorParameters<typeof VerificationSealPolicyCatalog>[0],
-  );
+  void new VerificationSealPolicyCatalog(policies as ConstructorParameters<typeof VerificationSealPolicyCatalog>[0]);
   assertClaimsWorkerRuntime(input.environment);
   return createClaimsRequestAdmission(projectionCatalog);
 }
 
-function resolveStaticVerificationContext(
-  environment: Environment,
-): ResolveVerificationContext | undefined {
+function resolveStaticVerificationContext(environment: Environment): ResolveVerificationContext | undefined {
   const verificationAttemptId = environment.VERIFICATION_SERVICE_ATTEMPT_ID?.trim();
   if (verificationAttemptId) UuidSchema.parse(verificationAttemptId);
   const verificationWorkItemId = environment.VERIFICATION_SERVICE_WORK_ITEM_ID?.trim();
   if (verificationWorkItemId) UuidSchema.parse(verificationWorkItemId);
   const verificationMissionId = environment.VERIFICATION_SERVICE_MISSION_ID?.trim();
   if (verificationMissionId) UuidSchema.parse(verificationMissionId);
-  const verificationCausationId =
-    environment.VERIFICATION_SERVICE_CAUSATION_ID?.trim();
+  const verificationCausationId = environment.VERIFICATION_SERVICE_CAUSATION_ID?.trim();
   const externalRuntime = environment.VERIFICATION_SERVICE_EXTERNAL_RUNTIME?.trim(),
     externalRunId = environment.VERIFICATION_SERVICE_EXTERNAL_RUN_ID?.trim();
   if (Boolean(externalRuntime) !== Boolean(externalRunId))
@@ -443,8 +355,7 @@ function resolveStaticVerificationContext(
             : {}),
           ...(environment.VERIFICATION_SERVICE_EXTERNAL_TOOL_CALL_ID?.trim()
             ? {
-                toolCallId:
-                  environment.VERIFICATION_SERVICE_EXTERNAL_TOOL_CALL_ID.trim(),
+                toolCallId: environment.VERIFICATION_SERVICE_EXTERNAL_TOOL_CALL_ID.trim(),
               }
             : {}),
         })
@@ -455,12 +366,8 @@ function resolveStaticVerificationContext(
         ...(verificationWorkItemId ? { workItemId: verificationWorkItemId } : {}),
         ...(verificationMissionId ? { missionId: verificationMissionId } : {}),
         ...(verificationCausationId ? { causationId: verificationCausationId } : {}),
-        ...(verificationExternalExecution
-          ? { externalExecution: verificationExternalExecution }
-          : {}),
-        capabilityVersion:
-          environment.VERIFICATION_SERVICE_CAPABILITY_VERSION?.trim() ||
-          "verification-service.v1",
+        ...(verificationExternalExecution ? { externalExecution: verificationExternalExecution } : {}),
+        capabilityVersion: environment.VERIFICATION_SERVICE_CAPABILITY_VERSION?.trim() || "verification-service.v1",
       })
     : undefined;
 }
@@ -479,26 +386,14 @@ function collectAdmittedOperationKinds(input: {
   return [
     ...verificationServiceOperationKinds,
     ...(input.extraAdmittedKinds ?? []),
-    ...(input.parseArtifactEnabled
-      ? (["verification_parse_artifact"] as const)
-      : []),
+    ...(input.parseArtifactEnabled ? (["verification_parse_artifact"] as const) : []),
     ...(input.metricEnabled ? (["verification_metric"] as const) : []),
-    ...(input.claimsEnabled
-      ? (["verification_claims", "verification_report"] as const)
-      : []),
-    ...(input.auditInspectionEnabled
-      ? (["verification_audit_bundle"] as const)
-      : []),
-    ...(input.adjudicationEnabled
-      ? (["verification_adjudication"] as const)
-      : []),
+    ...(input.claimsEnabled ? (["verification_claims", "verification_report"] as const) : []),
+    ...(input.auditInspectionEnabled ? (["verification_audit_bundle"] as const) : []),
+    ...(input.adjudicationEnabled ? (["verification_adjudication"] as const) : []),
     ...(input.benchmarkEnabled ? (["verification_benchmark"] as const) : []),
-    ...(input.comparisonEnabled
-      ? (["verification_benchmark_compare"] as const)
-      : []),
-    ...(input.extractionEnabled
-      ? (["verification_structured_extraction"] as const)
-      : []),
+    ...(input.comparisonEnabled ? (["verification_benchmark_compare"] as const) : []),
+    ...(input.extractionEnabled ? (["verification_structured_extraction"] as const) : []),
   ];
 }
 
@@ -516,11 +411,11 @@ export function createVerificationHostRuntime(
     environment,
     production: options.production,
   });
-  const verificationConfigured = Boolean(
-    database && (dynamicVerificationContext || verificationAttemptId),
-  );
-  const { benchmarkConfig, comparisonConfig, extractionConfig } =
-    resolveBenchmarkConfigs({ environment, dynamicVerificationContext });
+  const verificationConfigured = Boolean(database && (dynamicVerificationContext || verificationAttemptId));
+  const { benchmarkConfig, comparisonConfig, extractionConfig } = resolveBenchmarkConfigs({
+    environment,
+    dynamicVerificationContext,
+  });
   const metricEnabled = readFeatureToggle(
     environment.VERIFICATION_METRIC_ENABLED,
     "INVALID_VERIFICATION_METRIC_ENABLED",
@@ -560,23 +455,18 @@ export function createVerificationHostRuntime(
     claimsEnabled,
   });
   const staticVerificationContext = resolveStaticVerificationContext(environment);
-  const resolveVerificationContext =
-    dynamicVerificationContext ?? staticVerificationContext;
-  if (!database || !verificationConfigured || !resolveVerificationContext)
-    return { verificationConfigured };
+  const resolveVerificationContext = dynamicVerificationContext ?? staticVerificationContext;
+  if (!database || !verificationConfigured || !resolveVerificationContext) return { verificationConfigured };
   return {
     verificationConfigured,
     resolveVerificationContext,
     verificationOperationService: new PostgresKnowledgeOperationService(database, {
       admittedOperationKinds: collectAdmittedOperationKinds({
-        ...(options.extraAdmittedKinds
-          ? { extraAdmittedKinds: options.extraAdmittedKinds }
-          : {}),
+        ...(options.extraAdmittedKinds ? { extraAdmittedKinds: options.extraAdmittedKinds } : {}),
         parseArtifactEnabled: parseArtifactEnabled === "1",
         metricEnabled: metricEnabled === "1",
         claimsEnabled: claimsEnabled === "1",
-        auditInspectionEnabled:
-          environment.VERIFICATION_AUDIT_INSPECTION_ENABLED?.trim() === "1",
+        auditInspectionEnabled: environment.VERIFICATION_AUDIT_INSPECTION_ENABLED?.trim() === "1",
         adjudicationEnabled: Boolean(isAdjudicationRequestAdmitted),
         benchmarkEnabled: Boolean(benchmarkConfig),
         comparisonEnabled: Boolean(comparisonConfig),
@@ -587,23 +477,17 @@ export function createVerificationHostRuntime(
     ...(isParseArtifactRequestAdmitted ? { isParseArtifactRequestAdmitted } : {}),
     ...(extractionConfig
       ? {
-          isStructuredExtractionRequestAdmitted:
-            createStructuredExtractionRequestAdmission(extractionConfig),
+          isStructuredExtractionRequestAdmitted: createStructuredExtractionRequestAdmission(extractionConfig),
         }
       : {}),
-    ...(benchmarkConfig
-      ? { isBenchmarkRequestAdmitted: createBenchmarkRequestAdmission(benchmarkConfig) }
-      : {}),
+    ...(benchmarkConfig ? { isBenchmarkRequestAdmitted: createBenchmarkRequestAdmission(benchmarkConfig) } : {}),
     ...(comparisonConfig
       ? {
-          isBenchmarkComparisonRequestAdmitted:
-            createBenchmarkComparisonRequestAdmission(comparisonConfig),
+          isBenchmarkComparisonRequestAdmitted: createBenchmarkComparisonRequestAdmission(comparisonConfig),
         }
       : {}),
     ...(isClaimsRequestAdmitted ? { isClaimsRequestAdmitted } : {}),
-    ...(isAuditInspectionRequestAdmitted
-      ? { isAuditInspectionRequestAdmitted }
-      : {}),
+    ...(isAuditInspectionRequestAdmitted ? { isAuditInspectionRequestAdmitted } : {}),
     ...(isAdjudicationRequestAdmitted ? { isAdjudicationRequestAdmitted } : {}),
   };
 }

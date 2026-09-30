@@ -48,32 +48,82 @@ export interface HttpServerOptions {
   readonly scopedAccess?: ScopedExecutorAccess;
 }
 
-const scopedInvocation = z.strictObject({ assignment: z.unknown(), operation: z.string().min(1), payload: z.unknown() });
+const scopedInvocation = z.strictObject({
+  assignment: z.unknown(),
+  operation: z.string().min(1),
+  payload: z.unknown(),
+});
 const scopedCatalog = z.strictObject({ assignment: z.unknown() });
 
-async function healthPayload(executor: VerificationExecutor, knowledge: KnowledgeServices | undefined): Promise<Record<string, unknown>> {
+async function healthPayload(
+  executor: VerificationExecutor,
+  knowledge: KnowledgeServices | undefined,
+): Promise<Record<string, unknown>> {
   const base = { status: "ok", store: executor.store.rootDir, tenantId: executor.store.tenantId };
   if (!knowledge) return base;
   const databaseHead = await knowledge.reads.databaseHead().catch(() => undefined);
-  return { ...base, knowledge: { workspaceDir: knowledge.workspace.dir, workspaceHead: knowledge.workspace.migrationHead, workspaceFingerprint: knowledge.workspace.fingerprint ?? null, databaseHead: databaseHead ?? null, headMatches: databaseHead === knowledge.workspace.migrationHead, defaultTenantId: knowledge.config.defaultTenantId, operations: knowledgeOperations.list().map((operation) => operation.name) } };
+  return {
+    ...base,
+    knowledge: {
+      workspaceDir: knowledge.workspace.dir,
+      workspaceHead: knowledge.workspace.migrationHead,
+      workspaceFingerprint: knowledge.workspace.fingerprint ?? null,
+      databaseHead: databaseHead ?? null,
+      headMatches: databaseHead === knowledge.workspace.migrationHead,
+      defaultTenantId: knowledge.config.defaultTenantId,
+      operations: knowledgeOperations.list().map((operation) => operation.name),
+    },
+  };
 }
 
-async function handleKnowledge(request: IncomingMessage, response: ServerResponse, url: URL, knowledge: KnowledgeServices | undefined): Promise<boolean> {
+async function handleKnowledge(
+  request: IncomingMessage,
+  response: ServerResponse,
+  url: URL,
+  knowledge: KnowledgeServices | undefined,
+): Promise<boolean> {
   if (!url.pathname.startsWith("/knowledge/")) return false;
-  if (!knowledge) { json(response, 503, { error: "KNOWLEDGE_UNAVAILABLE", code: "KNOWLEDGE_UNAVAILABLE", exit: 2, hint: "set POSTGRES_URL (or KNOWLEDGE_DB_URL) and SCHEMA_WORKSPACE_DIR" }); return true; }
+  if (!knowledge) {
+    json(response, 503, {
+      error: "KNOWLEDGE_UNAVAILABLE",
+      code: "KNOWLEDGE_UNAVAILABLE",
+      exit: 2,
+      hint: "set POSTGRES_URL (or KNOWLEDGE_DB_URL) and SCHEMA_WORKSPACE_DIR",
+    });
+    return true;
+  }
   if (request.method === "GET" && url.pathname === "/knowledge/operations") {
-    json(response, 200, knowledgeOperations.list().map((operation) => ({ name: operation.name, title: operation.title, description: operation.description, cli: operation.cli })));
+    json(
+      response,
+      200,
+      knowledgeOperations.list().map((operation) => ({
+        name: operation.name,
+        title: operation.title,
+        description: operation.description,
+        cli: operation.cli,
+      })),
+    );
     return true;
   }
   const name = url.pathname.slice("/knowledge/".length);
-  if (request.method !== "POST") { json(response, 405, { error: "METHOD_NOT_ALLOWED" }); return true; }
-  const body = Buffer.from(await readBody(request, name === "checkpoint_harness" ? 96_000_000 : 16_000_000)).toString("utf8");
+  if (request.method !== "POST") {
+    json(response, 405, { error: "METHOD_NOT_ALLOWED" });
+    return true;
+  }
+  const body = Buffer.from(await readBody(request, name === "checkpoint_harness" ? 96_000_000 : 16_000_000)).toString(
+    "utf8",
+  );
   try {
     const { operation, output } = await knowledgeOperations.invoke(name, body ? JSON.parse(body) : {}, knowledge);
     const gate = operation.gate?.(output);
-    json(response, 200, gate ? { ...(output as Record<string, unknown>), qualityGate: { passed: false, reason: gate } } : output);
+    json(
+      response,
+      200,
+      gate ? { ...(output as Record<string, unknown>), qualityGate: { passed: false, reason: gate } } : output,
+    );
   } catch (error) {
-    if (error instanceof UnknownOperationError) json(response, 404, { error: error.message, code: "OPERATION_UNKNOWN", known: error.known });
+    if (error instanceof UnknownOperationError)
+      json(response, 404, { error: error.message, code: "OPERATION_UNKNOWN", known: error.known });
     else json(response, isKnowledgeError(error) ? (error.exit === 1 ? 422 : 502) : 400, errorEnvelope(error));
   }
   return true;
@@ -83,10 +133,14 @@ export function createHttpServer(executor: VerificationExecutor, options: HttpSe
   if (options.scopedAccess && !options.token) throw new ScopedAccessError("SCOPED_HOST_AUTH_REQUIRED");
   return createServer(async (request, response) => {
     let url: URL;
-    try { url = new URL(request.url ?? "/", "http://localhost"); }
-    catch { return json(response, 400, { error: "INVALID_REQUEST_URL" }); }
     try {
-      if (request.method === "GET" && url.pathname === "/health") return json(response, 200, await healthPayload(executor, options.knowledge));
+      url = new URL(request.url ?? "/", "http://localhost");
+    } catch {
+      return json(response, 400, { error: "INVALID_REQUEST_URL" });
+    }
+    try {
+      if (request.method === "GET" && url.pathname === "/health")
+        return json(response, 200, await healthPayload(executor, options.knowledge));
       if (options.token) {
         const header = request.headers.authorization ?? "";
         if (header !== `Bearer ${options.token}`) return json(response, 401, { error: "UNAUTHORIZED" });
@@ -102,11 +156,20 @@ export function createHttpServer(executor: VerificationExecutor, options: HttpSe
         return json(response, 200, options.scopedAccess.catalog(input.assignment));
       }
       if (url.pathname === "/mcp") {
-        const body = request.method === "POST" ? JSON.parse(Buffer.from(await readBody(request)).toString("utf8") || "null") : undefined;
+        const body =
+          request.method === "POST"
+            ? JSON.parse(Buffer.from(await readBody(request)).toString("utf8") || "null")
+            : undefined;
         const server = createVerificationMcpServer(executor, options.knowledge);
-        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+          enableJsonResponse: true,
+        });
         await server.connect(transport);
-        response.on("close", () => { void transport.close(); void server.close(); });
+        response.on("close", () => {
+          void transport.close();
+          void server.close();
+        });
         await transport.handleRequest(request, response, body);
         return;
       }
@@ -114,16 +177,23 @@ export function createHttpServer(executor: VerificationExecutor, options: HttpSe
       if (request.method === "POST" && url.pathname === "/artifacts") {
         const bytes = await readBody(request);
         if (bytes.byteLength === 0) return json(response, 400, { error: "EMPTY_BODY" });
-        const label = typeof request.headers["x-artifact-label"] === "string" ? request.headers["x-artifact-label"] : undefined;
+        const label =
+          typeof request.headers["x-artifact-label"] === "string" ? request.headers["x-artifact-label"] : undefined;
         const run = typeof request.headers["x-run-id"] === "string" ? request.headers["x-run-id"] : undefined;
         const mediaType = request.headers["content-type"]?.toString() || "application/octet-stream";
-        const result = await executor.registerArtifact({ bytes, mediaType, ...(label ? { label } : {}), ...(run ? { runId: run } : {}) });
+        const result = await executor.registerArtifact({
+          bytes,
+          mediaType,
+          ...(label ? { label } : {}),
+          ...(run ? { runId: run } : {}),
+        });
         return json(response, 201, result);
       }
       if (request.method === "POST" && url.pathname === "/captures") {
         const bytes = await readBody(request, 60_000_000);
         if (bytes.byteLength === 0) return json(response, 400, { error: "EMPTY_BODY" });
-        const header = (name: string): string | undefined => (typeof request.headers[name] === "string" ? decodeURIComponent(request.headers[name] as string) : undefined);
+        const header = (name: string): string | undefined =>
+          typeof request.headers[name] === "string" ? decodeURIComponent(request.headers[name] as string) : undefined;
         const filename = header("x-filename");
         if (!filename) return json(response, 400, { error: "X_FILENAME_REQUIRED" });
         const declared = request.headers["content-type"]?.toString();
@@ -137,24 +207,41 @@ export function createHttpServer(executor: VerificationExecutor, options: HttpSe
         });
         return json(response, 201, result);
       }
-      if (request.method === "GET" && url.pathname === "/media-types") return json(response, 200, executor.supportedMediaTypes());
+      if (request.method === "GET" && url.pathname === "/media-types")
+        return json(response, 200, executor.supportedMediaTypes());
       const artifactMatch = /^\/artifacts\/([^/]+)$/.exec(url.pathname);
       if (request.method === "GET" && artifactMatch) {
         const id = decodeURIComponent(artifactMatch[1]!);
-        const handle = await executor.store.resolveHandle(id.startsWith("sha256:") ? { digest: id } : { artifactId: id });
+        const handle = await executor.store.resolveHandle(
+          id.startsWith("sha256:") ? { digest: id } : { artifactId: id },
+        );
         const bytes = await executor.store.bytes(handle);
-        response.writeHead(200, { "content-type": handle.mediaType, "x-artifact-id": handle.artifactId, "x-artifact-digest": handle.digest });
+        response.writeHead(200, {
+          "content-type": handle.mediaType,
+          "x-artifact-id": handle.artifactId,
+          "x-artifact-digest": handle.digest,
+        });
         response.end(Buffer.from(bytes));
         return;
       }
       const runMatch = /^\/runs\/([^/]+)$/.exec(url.pathname);
-      if (request.method === "GET" && runMatch) return json(response, 200, await executor.runStatus({ runId: decodeURIComponent(runMatch[1]!) }));
-      if (request.method === "GET" && url.pathname === "/captures") return json(response, 200, await executor.listCaptures());
+      if (request.method === "GET" && runMatch)
+        return json(response, 200, await executor.runStatus({ runId: decodeURIComponent(runMatch[1]!) }));
+      if (request.method === "GET" && url.pathname === "/captures")
+        return json(response, 200, await executor.listCaptures());
       return json(response, 404, { error: "NOT_FOUND" });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const status = error instanceof ScopedAccessError ? 403 : error instanceof z.ZodError || error instanceof SyntaxError ? 400
-        : message === "BODY_TOO_LARGE" ? 413 : message.includes("NOT_FOUND") ? 404 : 500;
+      const status =
+        error instanceof ScopedAccessError
+          ? 403
+          : error instanceof z.ZodError || error instanceof SyntaxError
+            ? 400
+            : message === "BODY_TOO_LARGE"
+              ? 413
+              : message.includes("NOT_FOUND")
+                ? 404
+                : 500;
       if (!response.headersSent) json(response, status, { error: message });
       else response.end();
     }

@@ -17,11 +17,7 @@ export function sealedArtifactFileName(digest: string, suffix: string): string {
   )}.${suffix}`;
 }
 
-export async function readBounded(
-  response: Response,
-  maximumBytes: number,
-  errorCode: string,
-): Promise<Uint8Array> {
+export async function readBounded(response: Response, maximumBytes: number, errorCode: string): Promise<Uint8Array> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) {
     throw new Error(errorCode);
@@ -71,8 +67,7 @@ export function denyUnsafeHttpUrl(value: string, errorCode: string): string {
   if (url.username || url.password || url.search || url.hash) {
     throw new Error(errorCode);
   }
-  const localHttp =
-    url.protocol === HTTP_PROTOCOL && LOCAL_HTTP_HOSTS.has(url.hostname);
+  const localHttp = url.protocol === HTTP_PROTOCOL && LOCAL_HTTP_HOSTS.has(url.hostname);
   if (url.protocol !== HTTPS_PROTOCOL && !localHttp) throw new Error(errorCode);
   return url.href.replace(/\/$/, "");
 }

@@ -40,7 +40,14 @@ export class OfflineBenchmarkInputCatalog {
       const grant = parseGrant(value);
       const key = grantKey(grant.tenantId, grant.dataset, grant.experiment);
       if (byKey.has(key)) throw new Error("BENCHMARK_INPUT_DUPLICATE_TRUSTED_GRANT");
-      byKey.set(key, Object.freeze({ ...grant, dataset: Object.freeze({ ...grant.dataset }), experiment: Object.freeze({ ...grant.experiment }) }));
+      byKey.set(
+        key,
+        Object.freeze({
+          ...grant,
+          dataset: Object.freeze({ ...grant.dataset }),
+          experiment: Object.freeze({ ...grant.experiment }),
+        }),
+      );
     }
     this.#grants = byKey;
     Object.freeze(this);
@@ -78,7 +85,11 @@ export class RegisteredBenchmarkInputAdmission {
     config: OfflineBenchmarkInputAdmissionConfig = {},
   ) {
     const maximumArtifactBytes = config.maximumArtifactBytes ?? 4 * 1024 * 1024;
-    if (!Number.isSafeInteger(maximumArtifactBytes) || maximumArtifactBytes < 1 || maximumArtifactBytes > 16 * 1024 * 1024) {
+    if (
+      !Number.isSafeInteger(maximumArtifactBytes) ||
+      maximumArtifactBytes < 1 ||
+      maximumArtifactBytes > 16 * 1024 * 1024
+    ) {
       throw new Error("BENCHMARK_INPUT_ARTIFACT_LIMIT_INVALID");
     }
     this.#maximumArtifactBytes = maximumArtifactBytes;
@@ -89,16 +100,26 @@ export class RegisteredBenchmarkInputAdmission {
     this.#maximumExecutions = maximumExecutions;
   }
 
-  async load(requestValue: unknown, contextValue: { readonly tenantId: unknown }): Promise<AdmittedOfflineBenchmarkInputs> {
+  async load(
+    requestValue: unknown,
+    contextValue: { readonly tenantId: unknown },
+  ): Promise<AdmittedOfflineBenchmarkInputs> {
     const request = RunBenchmarkRequestSchema.parse(requestValue);
     const tenantId = tenant(contextValue?.tenantId);
     const grant = this.catalog.resolve(tenantId, request);
     const datasetHydration = await this.#hydrateExact(tenantId, request.dataset);
-    const dataset = VerificationBenchmarkDatasetSchema.parse(decodeJson(datasetHydration.bytes, "BENCHMARK_INPUT_DATASET_JSON_INVALID"));
+    const dataset = VerificationBenchmarkDatasetSchema.parse(
+      decodeJson(datasetHydration.bytes, "BENCHMARK_INPUT_DATASET_JSON_INVALID"),
+    );
     assertFrozenVerificationBenchmarkDataset(dataset);
     const experimentHydration = await this.#hydrateExact(tenantId, request.experimentDefinition);
-    const experiment = VerificationBenchmarkExperimentDefinitionSchema.parse(decodeJson(experimentHydration.bytes, "BENCHMARK_INPUT_EXPERIMENT_JSON_INVALID"));
-    if (experiment.datasetManifestDigest !== dataset.manifestDigest || experiment.runnerVersion !== grant.runnerVersion) {
+    const experiment = VerificationBenchmarkExperimentDefinitionSchema.parse(
+      decodeJson(experimentHydration.bytes, "BENCHMARK_INPUT_EXPERIMENT_JSON_INVALID"),
+    );
+    if (
+      experiment.datasetManifestDigest !== dataset.manifestDigest ||
+      experiment.runnerVersion !== grant.runnerVersion
+    ) {
       throw new Error("BENCHMARK_INPUT_EXPERIMENT_BINDING_MISMATCH");
     }
     if (dataset.cases.length * experiment.arms.length * experiment.repetitions > this.#maximumExecutions) {
@@ -114,16 +135,28 @@ export class RegisteredBenchmarkInputAdmission {
     }) as AdmittedOfflineBenchmarkInputs;
   }
 
-  async #hydrateExact(tenantId: string, expected: ArtifactReference): Promise<{ readonly registration: VerificationArtifactHandle; readonly bytes: Uint8Array }> {
-    await this.artifactResolver.authorizeArtifact({ tenantId, artifactId: expected.artifactId, purpose: "verification_admission" });
-    const hydrated = await this.artifactResolver.hydrateRegisteredArtifact({ tenantId, artifactId: expected.artifactId });
+  async #hydrateExact(
+    tenantId: string,
+    expected: ArtifactReference,
+  ): Promise<{ readonly registration: VerificationArtifactHandle; readonly bytes: Uint8Array }> {
+    await this.artifactResolver.authorizeArtifact({
+      tenantId,
+      artifactId: expected.artifactId,
+      purpose: "verification_admission",
+    });
+    const hydrated = await this.artifactResolver.hydrateRegisteredArtifact({
+      tenantId,
+      artifactId: expected.artifactId,
+    });
     const registration = VerificationArtifactHandleSchema.parse(hydrated.registration);
-    if (hydrated.bytes.byteLength > this.#maximumArtifactBytes
-      || registration.tenantId !== tenantId
-      || registration.artifactId !== expected.artifactId
-      || registration.digest !== expected.digest
-      || registration.byteLength !== hydrated.bytes.byteLength
-      || sha256Digest(hydrated.bytes) !== registration.digest) {
+    if (
+      hydrated.bytes.byteLength > this.#maximumArtifactBytes ||
+      registration.tenantId !== tenantId ||
+      registration.artifactId !== expected.artifactId ||
+      registration.digest !== expected.digest ||
+      registration.byteLength !== hydrated.bytes.byteLength ||
+      sha256Digest(hydrated.bytes) !== registration.digest
+    ) {
       throw new Error("BENCHMARK_INPUT_ARTIFACT_REGISTRATION_MISMATCH");
     }
     return { registration, bytes: hydrated.bytes.slice() };
@@ -151,15 +184,21 @@ function parseGrant(value: OfflineBenchmarkInputGrant): OfflineBenchmarkInputGra
 }
 
 function artifactReference(value: unknown, field: string): ArtifactReference {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).length !== 2 || typeof record.artifactId !== "string" || typeof record.digest !== "string") throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
+  if (Object.keys(record).length !== 2 || typeof record.artifactId !== "string" || typeof record.digest !== "string")
+    throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
   const artifactId = UuidSchema.safeParse(record.artifactId);
-  if (!artifactId.success || !/^sha256:[a-f0-9]{64}$/u.test(record.digest)) throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
+  if (!artifactId.success || !/^sha256:[a-f0-9]{64}$/u.test(record.digest))
+    throw new Error(`BENCHMARK_INPUT_TRUSTED_GRANT_${field.toUpperCase()}_INVALID`);
   return { artifactId: artifactId.data, digest: record.digest };
 }
 
 function decodeJson(bytes: Uint8Array, code: string): unknown {
-  try { return JSON.parse(new TextDecoder("utf8", { fatal: true }).decode(bytes)); }
-  catch { throw new Error(code); }
+  try {
+    return JSON.parse(new TextDecoder("utf8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new Error(code);
+  }
 }

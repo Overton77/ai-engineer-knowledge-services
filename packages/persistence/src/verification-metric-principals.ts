@@ -36,7 +36,9 @@ function databaseUuid(value: string, code: string): string {
   return value;
 }
 
-function requireRuntimeContext(context: OperationContext): Required<Pick<OperationContext, "missionId" | "workItemId">> {
+function requireRuntimeContext(
+  context: OperationContext,
+): Required<Pick<OperationContext, "missionId" | "workItemId">> {
   if (!context.missionId || !context.workItemId) throw new Error("VERIFICATION_METRIC_CONTEXT_OWNERSHIP_REQUIRED");
   return { missionId: context.missionId, workItemId: context.workItemId };
 }
@@ -58,15 +60,24 @@ export class PostgresVerificationMetricRuntimePrincipals implements Verification
     const context = OperationContextSchema.parse(input.context);
     const observationsArtifact = VerificationArtifactHandleSchema.parse(input.observationsArtifact);
     const ownership = requireRuntimeContext(context);
-    if (observationsArtifact.tenantId !== context.tenantId) throw new Error("VERIFICATION_METRIC_OBSERVATIONS_ARTIFACT_TENANT_MISMATCH");
+    if (observationsArtifact.tenantId !== context.tenantId)
+      throw new Error("VERIFICATION_METRIC_OBSERVATIONS_ARTIFACT_TENANT_MISMATCH");
 
-    const row = await this.database.transaction(context.tenantId, async (client) => this.#readPrincipalRow(client, context, observationsArtifact));
+    const row = await this.database.transaction(context.tenantId, async (client) =>
+      this.#readPrincipalRow(client, context, observationsArtifact),
+    );
     if (!row) throw new Error("VERIFICATION_METRIC_RUNTIME_BINDING_NOT_FOUND");
     this.#assertRow(row, context, observationsArtifact, ownership);
 
     const producerAttemptId = databaseUuid(row.producer_attempt_id, "VERIFICATION_METRIC_PRODUCER_OWNERSHIP_MISMATCH");
-    const producerDeploymentId = nonEmptyDatabaseText(row.producer_deployment_id, "VERIFICATION_METRIC_PRODUCER_DEPLOYMENT_REQUIRED");
-    const verifierDeploymentId = nonEmptyDatabaseText(row.verifier_deployment_id, "VERIFICATION_METRIC_VERIFIER_DEPLOYMENT_REQUIRED");
+    const producerDeploymentId = nonEmptyDatabaseText(
+      row.producer_deployment_id,
+      "VERIFICATION_METRIC_PRODUCER_DEPLOYMENT_REQUIRED",
+    );
+    const verifierDeploymentId = nonEmptyDatabaseText(
+      row.verifier_deployment_id,
+      "VERIFICATION_METRIC_VERIFIER_DEPLOYMENT_REQUIRED",
+    );
     return Object.freeze({
       producerAttemptId,
       runtimePrincipals: {
@@ -96,8 +107,14 @@ export class PostgresVerificationMetricRuntimePrincipals implements Verification
     });
   }
 
-  async #readPrincipalRow(client: TenantSqlClient, context: OperationContext, artifact: VerificationArtifactHandle): Promise<PrincipalRow | undefined> {
-    return (await client.query<PrincipalRow>(`select
+  async #readPrincipalRow(
+    client: TenantSqlClient,
+    context: OperationContext,
+    artifact: VerificationArtifactHandle,
+  ): Promise<PrincipalRow | undefined> {
+    return (
+      await client.query<PrincipalRow>(
+        `select
         artifact.id as artifact_id, artifact.tenant_id as artifact_tenant_id,
         artifact.sha256 as artifact_sha256, artifact.mission_id as artifact_mission_id,
         producer.id as producer_attempt_id, producer_work_item.id as producer_work_item_id,
@@ -119,7 +136,9 @@ export class PostgresVerificationMetricRuntimePrincipals implements Verification
         on verifier_mission.tenant_id=verifier_work_item.tenant_id and verifier_mission.id=verifier_work_item.mission_id
       where artifact.tenant_id=$1 and artifact.id=$2 and artifact.storage_state='available'
         and artifact.verification_contract_version='verification.v1'`,
-    [context.tenantId, artifact.artifactId, context.attemptId])).rows[0];
+        [context.tenantId, artifact.artifactId, context.attemptId],
+      )
+    ).rows[0];
   }
 
   #assertRow(
@@ -128,12 +147,18 @@ export class PostgresVerificationMetricRuntimePrincipals implements Verification
     artifact: VerificationArtifactHandle,
     ownership: Required<Pick<OperationContext, "missionId" | "workItemId">>,
   ): void {
-    if (row.artifact_id !== artifact.artifactId || row.artifact_tenant_id !== context.tenantId || `sha256:${row.artifact_sha256}` !== artifact.digest) {
+    if (
+      row.artifact_id !== artifact.artifactId ||
+      row.artifact_tenant_id !== context.tenantId ||
+      `sha256:${row.artifact_sha256}` !== artifact.digest
+    ) {
       throw new Error("VERIFICATION_METRIC_OBSERVATIONS_ARTIFACT_IDENTITY_MISMATCH");
     }
-    if (row.artifact_mission_id !== ownership.missionId
-      || row.producer_mission_id !== ownership.missionId
-      || row.verifier_mission_id !== ownership.missionId) {
+    if (
+      row.artifact_mission_id !== ownership.missionId ||
+      row.producer_mission_id !== ownership.missionId ||
+      row.verifier_mission_id !== ownership.missionId
+    ) {
       throw new Error("VERIFICATION_METRIC_MISSION_OWNERSHIP_MISMATCH");
     }
     if (row.verifier_attempt_id !== context.attemptId || row.verifier_work_item_id !== ownership.workItemId) {

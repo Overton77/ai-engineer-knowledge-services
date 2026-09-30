@@ -15,6 +15,7 @@ function jsonSafeValue(value: unknown): unknown {
   if (value instanceof Uint8Array) return `sha256:${sha256Hex(value)}`;
   if (typeof value === "bigint") return value.toString();
   if (Array.isArray(value)) return value.map(jsonSafeValue);
-  if (value !== null && typeof value === "object") return Object.fromEntries(Object.entries(value as Row).map(([key, item]) => [key, jsonSafeValue(item)]));
+  if (value !== null && typeof value === "object")
+    return Object.fromEntries(Object.entries(value as Row).map(([key, item]) => [key, jsonSafeValue(item)]));
   return value;
 }

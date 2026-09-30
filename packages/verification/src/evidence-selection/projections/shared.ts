@@ -26,18 +26,15 @@ export function fail(code: string): never {
 }
 
 export const isRecord = isPlainRecord;
-export const string = (value: unknown): value is string =>
-  typeof value === "string";
+export const string = (value: unknown): value is string => typeof value === "string";
 export const integer = isSafeInteger;
 export const positive = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
 export const nonNegative = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
-export const positiveInteger = (value: unknown): value is number =>
-  integer(value) && value > 0;
+export const positiveInteger = (value: unknown): value is number => integer(value) && value > 0;
 export const digest = isSha256Digest;
-export const nonEmptyString = (value: unknown): value is string =>
-  string(value) && value.length > 0;
+export const nonEmptyString = (value: unknown): value is string => string(value) && value.length > 0;
 
 export function required<T>(value: T | undefined, field: string): T {
   return value === undefined ? fail(`MISSING_${field}`) : value;
@@ -61,13 +58,8 @@ export function unique(values: readonly string[], field: string): void {
 }
 
 /** Rejects any key outside `keys` with `<field>_EXTRA_KEY`. */
-export function only(
-  value: UnknownRecord,
-  keys: readonly string[],
-  field: string,
-): void {
-  if (Object.keys(value).some((key) => !keys.includes(key)))
-    fail(`${field}_EXTRA_KEY`);
+export function only(value: UnknownRecord, keys: readonly string[], field: string): void {
+  if (Object.keys(value).some((key) => !keys.includes(key))) fail(`${field}_EXTRA_KEY`);
 }
 
 export function json(value: unknown, field: string): unknown {

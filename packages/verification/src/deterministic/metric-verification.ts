@@ -11,10 +11,7 @@ import {
   withinTolerance,
 } from "../decimal/index.js";
 import { CHECK, Checks } from "./checks.js";
-import type {
-  EvidenceEdgeResult,
-  EvidenceEdgeVerifier,
-} from "./evidence-edge.js";
+import type { EvidenceEdgeResult, EvidenceEdgeVerifier } from "./evidence-edge.js";
 import type { RuntimeSeparation } from "./runtime-separation.js";
 
 export interface MetricGraphInput {
@@ -36,9 +33,7 @@ interface MetricContext {
   readonly cyclicObservationIds: ReadonlySet<string>;
   readonly separation: RuntimeSeparation;
   readonly verifyEvidence: EvidenceEdgeVerifier;
-  readonly resolveOperand: (
-    observationId: string,
-  ) => MetricMechanicalResult | undefined;
+  readonly resolveOperand: (observationId: string) => MetricMechanicalResult | undefined;
 }
 
 /**
@@ -47,15 +42,10 @@ interface MetricContext {
  * detected up front so a cyclic operand is never resolved recursively.
  */
 export function verifyMetricGraph(input: MetricGraphInput): MetricGraphResult {
-  const observations = new Map(
-    input.observations.map((metric) => [metric.observationId, metric]),
-  );
+  const observations = new Map(input.observations.map((metric) => [metric.observationId, metric]));
   const duplicateChecks = new Checks();
   if (observations.size !== input.observations.length)
-    duplicateChecks.fail(
-      CHECK.OBSERVATION_IDS_UNIQUE,
-      "Metric observation IDs must be unique.",
-    );
+    duplicateChecks.fail(CHECK.OBSERVATION_IDS_UNIQUE, "Metric observation IDs must be unique.");
   const memo = new Map<string, MetricMechanicalResult>();
   const context: MetricContext = {
     observations,
@@ -74,30 +64,24 @@ export function verifyMetricGraph(input: MetricGraphInput): MetricGraphResult {
   };
   return {
     duplicateChecks: duplicateChecks.items,
-    metrics: input.observations.map((metric) =>
-      context.resolveOperand(metric.observationId)!,
-    ),
+    metrics: input.observations.map((metric) => context.resolveOperand(metric.observationId)!),
   };
 }
 
 /** Ids of every observation that sits on a calculation-operand cycle. */
-function findCyclicObservations(
-  observations: ReadonlyMap<string, VerificationMetricObservation>,
-): ReadonlySet<string> {
+function findCyclicObservations(observations: ReadonlyMap<string, VerificationMetricObservation>): ReadonlySet<string> {
   const state = new Map<string, "visiting" | "visited">();
   const stack: string[] = [];
   const cyclic = new Set<string>();
   const visit = (observationId: string): void => {
     if (state.get(observationId) === "visited") return;
     if (state.get(observationId) === "visiting") {
-      for (const id of stack.slice(stack.indexOf(observationId)))
-        cyclic.add(id);
+      for (const id of stack.slice(stack.indexOf(observationId))) cyclic.add(id);
       return;
     }
     state.set(observationId, "visiting");
     stack.push(observationId);
-    for (const operand of observations.get(observationId)?.calculation
-      ?.operands ?? [])
+    for (const operand of observations.get(observationId)?.calculation?.operands ?? [])
       if (observations.has(operand.observationId)) visit(operand.observationId);
     stack.pop();
     state.set(observationId, "visited");
@@ -106,41 +90,19 @@ function findCyclicObservations(
   return cyclic;
 }
 
-function verifyMetric(
-  context: MetricContext,
-  metric: VerificationMetricObservation,
-): MetricMechanicalResult {
-  const evidence = new Map(
-    metric.evidence.map((edge) => [
-      edge.evidenceId,
-      context.verifyEvidence(edge),
-    ]),
-  );
+function verifyMetric(context: MetricContext, metric: VerificationMetricObservation): MetricMechanicalResult {
+  const evidence = new Map(metric.evidence.map((edge) => [edge.evidenceId, context.verifyEvidence(edge)]));
   const checks = new Checks(metric.observationId);
-  checks.require(
-    CHECK.PRODUCER_VERIFIER_INDEPENDENT,
-    context.separation.established,
-    {
-      pass: "Metric producer and verifier are separated.",
-      fail: "Metric deployment separation is not established.",
-    },
-  );
+  checks.require(CHECK.PRODUCER_VERIFIER_INDEPENDENT, context.separation.established, {
+    pass: "Metric producer and verifier are separated.",
+    fail: "Metric deployment separation is not established.",
+  });
   checkDeclaration(checks, metric);
   for (const binding of metric.evidenceBindings)
-    checkFacetBinding(
-      checks,
-      metric,
-      binding,
-      evidence.get(binding.evidenceId),
-    );
-  const replayedValue = metric.calculation
-    ? checkCalculation(checks, context, metric, metric.calculation)
-    : undefined;
+    checkFacetBinding(checks, metric, binding, evidence.get(binding.evidenceId));
+  const replayedValue = metric.calculation ? checkCalculation(checks, context, metric, metric.calculation) : undefined;
   if (!metric.calculation)
-    checks.pass(
-      CHECK.DIRECT_OBSERVATION_DECLARED,
-      "Metric is a source-bound direct observation.",
-    );
+    checks.pass(CHECK.DIRECT_OBSERVATION_DECLARED, "Metric is a source-bound direct observation.");
   const status = checks.status();
   return {
     observationId: metric.observationId,
@@ -152,14 +114,10 @@ function verifyMetric(
 }
 
 /** Entity, canonical value, unit, period and comparability group are all explicit and well formed. */
-function checkDeclaration(
-  checks: Checks,
-  metric: VerificationMetricObservation,
-): void {
+function checkDeclaration(checks: Checks, metric: VerificationMetricObservation): void {
   checks.require(
     CHECK.ENTITY_ID_EXPLICIT,
-    metric.entity.canonicalId.trim() !== "" &&
-      metric.entity.label.trim() !== "",
+    metric.entity.canonicalId.trim() !== "" && metric.entity.label.trim() !== "",
     `Entity is ${metric.entity.kind}:${metric.entity.canonicalId}.`,
   );
   checks.require(
@@ -196,9 +154,7 @@ function checkFacetBinding(
 ): void {
   checks.require(
     CHECK.METRIC_BINDING_DECLARATION_MATCH,
-    declaredFacetLiterals(metric, binding.facet).includes(
-      binding.expectedLiteral,
-    ),
+    declaredFacetLiterals(metric, binding.facet).includes(binding.expectedLiteral),
     `${binding.facet} binding must match the canonical observation.`,
   );
   const selected = evidence?.selection;
@@ -207,9 +163,7 @@ function checkFacetBinding(
     rawSelected !== undefined &&
     facetLiteralMatches(
       binding.comparison,
-      typeof rawSelected === "string"
-        ? rawSelected.trim()
-        : String(rawSelected),
+      typeof rawSelected === "string" ? rawSelected.trim() : String(rawSelected),
       binding.expectedLiteral,
     );
   checks.require(
@@ -242,19 +196,12 @@ function declaredFacetLiterals(
  * `compareValue`: extraction's `exact` compares canonical JSON (not raw strings)
  * and its `decimal` applies a stricter literal grammar plus declared ranges.
  */
-function facetLiteralMatches(
-  comparison: FacetBinding["comparison"],
-  selected: string,
-  expected: string,
-): boolean {
+function facetLiteralMatches(comparison: FacetBinding["comparison"], selected: string, expected: string): boolean {
   switch (comparison) {
     case "decimal":
       return decimalsEqual(selected, expected);
     case "iso_datetime":
-      return (
-        Number.isFinite(Date.parse(selected)) &&
-        Date.parse(selected) === Date.parse(expected)
-      );
+      return Number.isFinite(Date.parse(selected)) && Date.parse(selected) === Date.parse(expected);
     default:
       return selected === expected;
   }
@@ -272,8 +219,7 @@ function checkCalculation(
     pass: "Calculation dependency graph is acyclic.",
     fail: "Calculation dependency graph contains a cycle.",
   });
-  for (const operand of calculation.operands)
-    checkOperand(checks, context, operand, cyclic);
+  for (const operand of calculation.operands) checkOperand(checks, context, operand, cyclic);
   // The replayed value is retained even when a later parse fails, so it is
   // assigned before the expected/tolerance literals are parsed.
   let replayedValue: string | undefined;
@@ -288,16 +234,8 @@ function checkCalculation(
     );
     const expected = parseDecimal(calculation.expectedResult);
     const tolerance = parseDecimal(calculation.tolerance);
-    const replayMatches = withinTolerance(
-      parseDecimal(replayedValue),
-      expected,
-      tolerance,
-    );
-    const observationMatches = withinTolerance(
-      parseDecimal(metric.canonicalValue),
-      expected,
-      tolerance,
-    );
+    const replayMatches = withinTolerance(parseDecimal(replayedValue), expected, tolerance);
+    const observationMatches = withinTolerance(parseDecimal(metric.canonicalValue), expected, tolerance);
     checks.require(
       CHECK.CALCULATION_REPLAYS,
       replayMatches,
@@ -309,10 +247,7 @@ function checkCalculation(
       `Observed value is ${metric.canonicalValue}.`,
     );
   } catch (error) {
-    checks.fail(
-      CHECK.CALCULATION_REPLAYS,
-      error instanceof Error ? error.message : "Calculation replay failed.",
-    );
+    checks.fail(CHECK.CALCULATION_REPLAYS, error instanceof Error ? error.message : "Calculation replay failed.");
   }
   return replayedValue;
 }
@@ -325,29 +260,22 @@ function checkOperand(
   cyclic: boolean,
 ): void {
   const referenced = context.observations.get(operand.observationId);
-  const referencedResult = cyclic
-    ? undefined
-    : context.resolveOperand(operand.observationId);
+  const referencedResult = cyclic ? undefined : context.resolveOperand(operand.observationId);
   checks.require(CHECK.CALCULATION_OPERAND_PRESENT, referenced !== undefined, {
     pass: `Operand ${operand.observationId} exists.`,
     fail: `Operand ${operand.observationId} is missing.`,
   });
   checks.require(
     CHECK.CALCULATION_OPERAND_VALUE_BOUND,
-    referenced !== undefined &&
-      decimalsEqual(operand.value, referenced.canonicalValue),
+    referenced !== undefined && decimalsEqual(operand.value, referenced.canonicalValue),
     referenced
       ? `Operand ${operand.observationId} must equal its canonical observation value.`
       : "A missing operand cannot bind a value.",
   );
-  checks.require(
-    CHECK.CALCULATION_OPERAND_VERIFIED,
-    referencedResult?.status === "passed",
-    {
-      pass: `Operand ${operand.observationId} passed deterministic verification.`,
-      fail: `Operand ${operand.observationId} is not mechanically eligible.`,
-    },
-  );
+  checks.require(CHECK.CALCULATION_OPERAND_VERIFIED, referencedResult?.status === "passed", {
+    pass: `Operand ${operand.observationId} passed deterministic verification.`,
+    fail: `Operand ${operand.observationId} is not mechanically eligible.`,
+  });
 }
 
 function parsesAsDecimal(literal: string): boolean {

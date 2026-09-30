@@ -1,11 +1,7 @@
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import { deterministicUuid } from "@aiengineer/knowledge-core";
 import { isHtmlMediaType } from "../media-type.js";
-import type {
-  ConversionLocator,
-  ConversionNode,
-  ConversionNodeKind,
-} from "../types.js";
+import type { ConversionLocator, ConversionNode, ConversionNodeKind } from "../types.js";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
@@ -14,8 +10,7 @@ const WEBVTT_HEADER = "WEBVTT";
 const SPEAKER_LABEL_PATTERN = /^([^:\n]{1,80}):\s/;
 const TIMED_BLOCK =
   /^(?:\[)?(\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?)(?:\])?(?:\s*-->\s*(\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?))?\s*\n?([\s\S]*)$/;
-const TRANSCRIPT_START =
-  /^(?:\[)?\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:\])?\s/m;
+const TRANSCRIPT_START = /^(?:\[)?\d{1,2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:\])?\s/m;
 const HTML_FRAGMENT = "html";
 const VTT_FRAGMENT = "vtt";
 
@@ -36,10 +31,7 @@ interface ClassifiedBlock {
 }
 
 function decodeEntities(value: string): string {
-  return HTML_ENTITIES.reduce(
-    (decoded, [pattern, replacement]) => decoded.replace(pattern, replacement),
-    value,
-  );
+  return HTML_ENTITIES.reduce((decoded, [pattern, replacement]) => decoded.replace(pattern, replacement), value);
 }
 
 function normalize(value: string): string {
@@ -55,9 +47,7 @@ function timestampToMilliseconds(value: string): number {
   if (parts.some(Number.isNaN)) return 0;
   const seconds =
     parts.length === 3
-      ? parts[0]! * SECONDS_PER_HOUR +
-        parts[1]! * SECONDS_PER_MINUTE +
-        parts[2]!
+      ? parts[0]! * SECONDS_PER_HOUR + parts[1]! * SECONDS_PER_MINUTE + parts[2]!
       : parts[0]! * SECONDS_PER_MINUTE + parts[1]!;
   return Math.round(seconds * MILLISECONDS_PER_SECOND);
 }
@@ -73,10 +63,7 @@ function addNode(input: {
 }): ConversionNode {
   const ordinal = input.nodes.length;
   const contentDigest = sha256Digest(input.text);
-  const id = deterministicUuid(
-    "document-node",
-    `${input.representationKey}:${ordinal}:${input.kind}:${contentDigest}`,
-  );
+  const id = deterministicUuid("document-node", `${input.representationKey}:${ordinal}:${input.kind}:${contentDigest}`);
   const node: ConversionNode = {
     id,
     ordinal,
@@ -99,13 +86,11 @@ function stripHtml(source: string): string {
         .replace(/<style[\s\S]*?<\/style>/gi, "")
         .replace(
           /<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi,
-          (_match, level: string, text: string) =>
-            `\n${"#".repeat(Number(level))} ${text.replace(/<[^>]+>/g, " ")}\n`,
+          (_match, level: string, text: string) => `\n${"#".repeat(Number(level))} ${text.replace(/<[^>]+>/g, " ")}\n`,
         )
         .replace(
           /<pre[^>]*>([\s\S]*?)<\/pre>/gi,
-          (_match, code: string) =>
-            `\n\`\`\`\n${decodeEntities(code.replace(/<[^>]+>/g, ""))}\n\`\`\`\n`,
+          (_match, code: string) => `\n\`\`\`\n${decodeEntities(code.replace(/<[^>]+>/g, ""))}\n\`\`\`\n`,
         )
         .replace(/<li[^>]*>/gi, "\n- ")
         .replace(/<br\s*\/?>/gi, "\n")
@@ -129,9 +114,7 @@ function classifyTimedTranscript(text: string): ClassifiedBlock | undefined {
   const timed = text.match(TIMED_BLOCK);
   if (!timed) return undefined;
   const speaker = timed[3]?.match(SPEAKER_LABEL_PATTERN)?.[1];
-  return speaker
-    ? { kind: "transcript_segment", label: speaker, timed }
-    : { kind: "transcript_segment", timed };
+  return speaker ? { kind: "transcript_segment", label: speaker, timed } : { kind: "transcript_segment", timed };
 }
 
 function classifyProse(text: string): ClassifiedBlock {
@@ -158,19 +141,14 @@ function looksLikeTranscript(mediaType: string, source: string): boolean {
   return mediaType.includes(VTT_FRAGMENT) || TRANSCRIPT_START.test(source);
 }
 
-function withTranscriptTimes(
-  locator: ConversionLocator,
-  classified: ClassifiedBlock,
-): ConversionLocator {
+function withTranscriptTimes(locator: ConversionLocator, classified: ClassifiedBlock): ConversionLocator {
   if (classified.kind !== "transcript_segment" || !classified.timed) {
     return locator;
   }
   return {
     ...locator,
     startTimeMs: timestampToMilliseconds(classified.timed[1]!),
-    ...(classified.timed[2]
-      ? { endTimeMs: timestampToMilliseconds(classified.timed[2]) }
-      : {}),
+    ...(classified.timed[2] ? { endTimeMs: timestampToMilliseconds(classified.timed[2]) } : {}),
     ...(classified.label ? { speaker: classified.label } : {}),
   };
 }
@@ -207,9 +185,7 @@ export function convertTextToNodes(
     if (!text || text === WEBVTT_HEADER) continue;
     const startOffset = source.indexOf(text, cursor);
     cursor = startOffset + text.length;
-    const classified = transcript
-      ? classifyTranscriptBlock(text)
-      : classifyProseBlock(text);
+    const classified = transcript ? classifyTranscriptBlock(text) : classifyProseBlock(text);
     if (classified.kind === "heading" && classified.label && classified.headingLevel) {
       while (headings.at(-1) && headings.at(-1)!.level >= classified.headingLevel) {
         headings.pop();

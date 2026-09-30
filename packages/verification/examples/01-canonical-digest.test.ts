@@ -3,9 +3,7 @@ import { canonicalDigestExample } from "./01-canonical-digest.js";
 
 describe("example 01: canonical digest", () => {
   it("orders keys canonically", () => {
-    expect(canonicalDigestExample().canonicalForm).toBe(
-      '{"a":{"b":"two","d":[true,null]},"z":1}',
-    );
+    expect(canonicalDigestExample().canonicalForm).toBe('{"a":{"b":"two","d":[true,null]},"z":1}');
   });
 
   it("hashes key-reordered objects identically", () => {

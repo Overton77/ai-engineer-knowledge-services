@@ -1,13 +1,6 @@
-import type {
-  ResolvedSelector,
-  VerificationSelector,
-} from "@aiengineer/knowledge-contracts";
+import type { ResolvedSelector, VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { evaluateJsonPointer } from "./json-pointer.js";
-import {
-  evidenceSelectionReporter,
-  type EvidenceSelection,
-  type EvidenceSelectionRequest,
-} from "./selection.js";
+import { evidenceSelectionReporter, type EvidenceSelection, type EvidenceSelectionRequest } from "./selection.js";
 import { findQuoteOccurrences } from "./quote-search.js";
 import { normalizeText, type NormalizedText } from "./text-normalization.js";
 import { resolveTextOffsetRange } from "./text-offsets.js";
@@ -16,10 +9,7 @@ import { CORE_RESOLVER_VERSION } from "../versions.js";
 
 const report = evidenceSelectionReporter(CORE_RESOLVER_VERSION);
 
-type CoreSelector<Kind extends VerificationSelector["kind"]> = Extract<
-  VerificationSelector,
-  { kind: Kind }
->;
+type CoreSelector<Kind extends VerificationSelector["kind"]> = Extract<VerificationSelector, { kind: Kind }>;
 type ResolvedRanges = ResolvedSelector["resolvedRanges"];
 
 /** Core selections go straight to callers, so the selection object carries the text and value. */
@@ -29,9 +19,7 @@ const EXPOSURE = "text_and_value" as const;
  * Resolves the locator kinds this package owns directly: text quotes, character positions,
  * JSON pointers, and ordered multi-fragment text. `undefined` means the kind belongs to another resolver.
  */
-export function resolveCoreEvidenceSelector(
-  request: EvidenceSelectionRequest,
-): EvidenceSelection | undefined {
+export function resolveCoreEvidenceSelector(request: EvidenceSelectionRequest): EvidenceSelection | undefined {
   const { selector } = request;
   switch (selector.kind) {
     case "text_quote":
@@ -48,34 +36,16 @@ export function resolveCoreEvidenceSelector(
 }
 
 /** A quote identifies evidence only if it occurs exactly once after normalization and prefix/suffix filtering. */
-function resolveTextQuote(
-  request: EvidenceSelectionRequest,
-  selector: CoreSelector<"text_quote">,
-): EvidenceSelection {
+function resolveTextQuote(request: EvidenceSelectionRequest, selector: CoreSelector<"text_quote">): EvidenceSelection {
   const source = decodeSource(request);
   if (typeof source !== "string") return source;
   const normalizedSource = normalizeText(source, selector.normalization);
-  const normalizedQuote = normalizeText(
-    selector.quote,
-    selector.normalization,
-  ).text;
-  const occurrences = findQuoteOccurrences(
-    normalizedSource.text,
-    normalizedQuote,
-    selector,
-  );
+  const normalizedQuote = normalizeText(selector.quote, selector.normalization).text;
+  const occurrences = findQuoteOccurrences(normalizedSource.text, normalizedQuote, selector);
   if (occurrences.length !== 1) {
-    return report.unresolved(
-      request,
-      occurrences.length > 1 ? "ambiguous" : "not_found",
-      occurrences.length,
-    );
+    return report.unresolved(request, occurrences.length > 1 ? "ambiguous" : "not_found", occurrences.length);
   }
-  const range = sourceRangeOf(
-    normalizedSource,
-    occurrences[0]!,
-    normalizedQuote.length,
-  );
+  const range = sourceRangeOf(normalizedSource, occurrences[0]!, normalizedQuote.length);
   if (!range) return report.unresolved(request, "not_found");
   return report.resolvedText(request, source.slice(range.start, range.end), {
     resolvedRanges: [{ ...range, coordinateSpace: "utf16_code_units" }],
@@ -106,21 +76,17 @@ function resolveCharacterPosition(
   const range = resolveTextOffsetRange(normalized, selector);
   if (!range) return report.unresolved(request, "invalid");
   // The report keeps the caller's declared coordinates, not the converted UTF-16 slice, so replay sees the same numbers.
-  return report.resolvedText(
-    request,
-    normalized.slice(range.start, range.end),
-    {
-      resolvedRanges: [
-        {
-          start: selector.start,
-          end: selector.end,
-          coordinateSpace: selector.offsetBasis,
-        },
-      ],
-      normalization: selector.normalization,
-      exposure: EXPOSURE,
-    },
-  );
+  return report.resolvedText(request, normalized.slice(range.start, range.end), {
+    resolvedRanges: [
+      {
+        start: selector.start,
+        end: selector.end,
+        coordinateSpace: selector.offsetBasis,
+      },
+    ],
+    normalization: selector.normalization,
+    exposure: EXPOSURE,
+  });
 }
 
 /** The selection is the canonical JSON of the pointed node; a pointer is a path, so no character range is reported. */
@@ -160,18 +126,12 @@ function resolveMultiFragmentText(
     fragments.push(fragment);
   }
   if (fragments.some((fragment) => fragment.resolution.status !== "resolved")) {
-    const anyAmbiguous = fragments.some(
-      (fragment) => fragment.resolution.status === "ambiguous",
-    );
+    const anyAmbiguous = fragments.some((fragment) => fragment.resolution.status === "ambiguous");
     return report.unresolved(request, anyAmbiguous ? "ambiguous" : "not_found");
   }
-  const ranges = fragments.flatMap(
-    (fragment) => fragment.resolution.resolvedRanges,
-  );
+  const ranges = fragments.flatMap((fragment) => fragment.resolution.resolvedRanges);
   if (!rangesAreOrdered(ranges)) return report.unresolved(request, "invalid");
-  const joined = fragments
-    .map((fragment) => fragment.selectedText ?? "")
-    .join(selector.joiner);
+  const joined = fragments.map((fragment) => fragment.selectedText ?? "").join(selector.joiner);
   return report.resolvedText(request, joined, {
     resolvedRanges: ranges,
     normalization: selector.fragments[0]!.normalization,
@@ -184,19 +144,13 @@ function rangesAreOrdered(ranges: ResolvedRanges): boolean {
   for (let index = 1; index < ranges.length; index += 1) {
     const previous = ranges[index - 1]!;
     const current = ranges[index]!;
-    if (
-      previous.coordinateSpace !== current.coordinateSpace ||
-      current.start < previous.end
-    )
-      return false;
+    if (previous.coordinateSpace !== current.coordinateSpace || current.start < previous.end) return false;
   }
   return true;
 }
 
 /** Returns the decoded source, or a `parse_error` selection when the bytes are not UTF-8 text. */
-function decodeSource(
-  request: EvidenceSelectionRequest,
-): string | EvidenceSelection {
+function decodeSource(request: EvidenceSelectionRequest): string | EvidenceSelection {
   try {
     return decodeUtf8(request.content);
   } catch {

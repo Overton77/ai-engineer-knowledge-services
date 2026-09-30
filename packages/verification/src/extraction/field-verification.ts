@@ -1,17 +1,7 @@
 import { sha256Digest } from "../canonical/index.js";
-import {
-  resolveEvidenceSelector,
-  type EvidenceSelection,
-} from "../evidence-selection/index.js";
-import {
-  ExtractionChecks,
-  getAtBoundedPointer,
-  isBoundedJsonPointer,
-} from "./checks.js";
-import {
-  checkDuplicateRecords,
-  replayCrossFieldTotals,
-} from "./cross-field.js";
+import { resolveEvidenceSelector, type EvidenceSelection } from "../evidence-selection/index.js";
+import { ExtractionChecks, getAtBoundedPointer, isBoundedJsonPointer } from "./checks.js";
+import { checkDuplicateRecords, replayCrossFieldTotals } from "./cross-field.js";
 import { compareFieldValue, strictDecimal } from "./field-comparators.js";
 import type {
   ExtractionEvidence,
@@ -36,9 +26,7 @@ export interface ExtractionFieldVerification {
  * Re-resolves every evidence edge from verified bytes. It intentionally receives no provider result/status/confidence field.
  * Upstream persistence must authorize and hydrate the representations; this pure layer verifies their digest and content again.
  */
-export function verifyExtractionFields(
-  input: ExtractionFieldVerificationInput,
-): ExtractionFieldVerificationResult {
+export function verifyExtractionFields(input: ExtractionFieldVerificationInput): ExtractionFieldVerificationResult {
   return verifyExtractionFieldsWithAcceptedSelections(input).result;
 }
 
@@ -55,8 +43,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
   const checks = new ExtractionChecks();
   if (!checkWorkLimits(checks, input)) return candidateInvalid(checks);
   const candidate = validateExtractionCandidate(input.schema, input.candidate);
-  for (const item of candidate.checks)
-    checks.fail(item.code, item.path, item.detail);
+  for (const item of candidate.checks) checks.fail(item.code, item.path, item.detail);
   if (!candidate.valid) return candidateInvalid(checks);
 
   const indexes = indexRulesEvidenceRepresentations(checks, input);
@@ -67,18 +54,10 @@ export function verifyExtractionFieldsWithAcceptedSelections(
   }
   for (const [path] of indexes.ruleByPath)
     if (!candidate.leafPaths.includes(path))
-      checks.fail(
-        "FIELD_RULE_NOT_LEAF",
-        path,
-        "Field rule points to a missing or non-leaf candidate path.",
-      );
+      checks.fail("FIELD_RULE_NOT_LEAF", path, "Field rule points to a missing or non-leaf candidate path.");
   for (const [path] of indexes.evidenceByPath)
     if (!candidate.leafPaths.includes(path))
-      checks.fail(
-        "FIELD_EVIDENCE_NOT_LEAF",
-        path,
-        "Evidence points to a missing or non-leaf candidate path.",
-      );
+      checks.fail("FIELD_EVIDENCE_NOT_LEAF", path, "Evidence points to a missing or non-leaf candidate path.");
   checkDuplicateRecords(checks, input.candidate, input.duplicates ?? []);
   replayCrossFieldTotals(checks, input.candidate, input.totals ?? []);
 
@@ -90,9 +69,7 @@ export function verifyExtractionFieldsWithAcceptedSelections(
   return { result, selections: result.valid ? Object.freeze(selections) : [] };
 }
 
-const candidateInvalid = (
-  checks: ExtractionChecks,
-): ExtractionFieldVerification => ({
+const candidateInvalid = (checks: ExtractionChecks): ExtractionFieldVerification => ({
   result: { valid: false, candidateValid: false, checks: checks.items },
   selections: [],
 });
@@ -110,10 +87,7 @@ const MAX_TOTAL_REPRESENTATION_BYTES = 64 * 1_024 * 1_024;
 const MAX_EVIDENCE_SCAN_BYTES = 64 * 1_024 * 1_024;
 
 /** Hard input bounds, checked before any bytes are hashed or any selector runs. Returns false on the first violation. */
-function checkWorkLimits(
-  checks: ExtractionChecks,
-  input: ExtractionFieldVerificationInput,
-): boolean {
+function checkWorkLimits(checks: ExtractionChecks, input: ExtractionFieldVerificationInput): boolean {
   if (
     input.fields.length > MAX_FIELD_ITEMS ||
     input.evidence.length > MAX_FIELD_ITEMS ||
@@ -129,22 +103,11 @@ function checkWorkLimits(
     );
     return false;
   }
-  if (
-    input.representations.some(
-      (item) => item.content.byteLength > MAX_REPRESENTATION_BYTES,
-    )
-  ) {
-    checks.fail(
-      "REPRESENTATION_BYTES_EXCEEDED",
-      "",
-      "Representation bytes exceed the selector verification limit.",
-    );
+  if (input.representations.some((item) => item.content.byteLength > MAX_REPRESENTATION_BYTES)) {
+    checks.fail("REPRESENTATION_BYTES_EXCEEDED", "", "Representation bytes exceed the selector verification limit.");
     return false;
   }
-  const totalBytes = input.representations.reduce(
-    (total, item) => total + item.content.byteLength,
-    0,
-  );
+  const totalBytes = input.representations.reduce((total, item) => total + item.content.byteLength, 0);
   if (totalBytes > MAX_TOTAL_REPRESENTATION_BYTES) {
     checks.fail(
       "REPRESENTATION_AGGREGATE_BYTES_EXCEEDED",
@@ -153,12 +116,7 @@ function checkWorkLimits(
     );
     return false;
   }
-  const bytesByArtifact = new Map(
-    input.representations.map((item) => [
-      item.artifactId,
-      item.content.byteLength,
-    ]),
-  );
+  const bytesByArtifact = new Map(input.representations.map((item) => [item.artifactId, item.content.byteLength]));
   let scanBytes = 0;
   for (const edge of input.evidence) {
     scanBytes += bytesByArtifact.get(edge.representationArtifactId) ?? 0;
@@ -182,10 +140,7 @@ interface VerificationIndexes {
   readonly normalizations: ReadonlyMap<string, ExtractionNormalizationRule>;
   readonly ruleByPath: ReadonlyMap<string, ExtractionFieldRule>;
   readonly evidenceByPath: ReadonlyMap<string, ExtractionEvidence>;
-  readonly representationById: ReadonlyMap<
-    string,
-    ImmutableExtractionRepresentation
-  >;
+  readonly representationById: ReadonlyMap<string, ImmutableExtractionRepresentation>;
 }
 
 const MAX_NORMALIZATION_ID_LENGTH = 255;
@@ -205,9 +160,11 @@ const comparisonKinds = new Set<FieldComparison>([
   "identifier",
   "checksum",
 ]);
-const sourceComponents = new Set<
-  NonNullable<ExtractionFieldRule["sourceComponent"]>
->(["table_cell_value", "geometry_token_text", "transcript_text"]);
+const sourceComponents = new Set<NonNullable<ExtractionFieldRule["sourceComponent"]>>([
+  "table_cell_value",
+  "geometry_token_text",
+  "transcript_text",
+]);
 
 /** Invalid or duplicate entries are reported and dropped; valid ones are indexed by path/id. Representations are re-hashed here. */
 function indexRulesEvidenceRepresentations(
@@ -237,22 +194,12 @@ function indexRulesEvidenceRepresentations(
   const evidenceByPath = new Map<string, ExtractionEvidence>();
   for (const item of input.evidence) {
     if (!isBoundedJsonPointer(item.path) || evidenceByPath.has(item.path))
-      checks.fail(
-        "FIELD_EVIDENCE_INVALID",
-        item.path,
-        "Evidence path must be a unique RFC 6901 pointer.",
-      );
+      checks.fail("FIELD_EVIDENCE_INVALID", item.path, "Evidence path must be a unique RFC 6901 pointer.");
     else evidenceByPath.set(item.path, item);
   }
-  const representationById = new Map<
-    string,
-    ImmutableExtractionRepresentation
-  >();
+  const representationById = new Map<string, ImmutableExtractionRepresentation>();
   for (const item of input.representations) {
-    if (
-      representationById.has(item.artifactId) ||
-      sha256Digest(item.content) !== item.digest
-    )
+    if (representationById.has(item.artifactId) || sha256Digest(item.content) !== item.digest)
       checks.fail(
         "REPRESENTATION_IMMUTABILITY_FAILED",
         "",
@@ -268,8 +215,7 @@ function isNormalizationRuleValid(rule: ExtractionNormalizationRule): boolean {
     typeof rule.id === "string" &&
     rule.id.length > 0 &&
     rule.id.length <= MAX_NORMALIZATION_ID_LENGTH &&
-    (rule.operation === "trim_ascii" ||
-      rule.operation === "ascii_whitespace_collapsed")
+    (rule.operation === "trim_ascii" || rule.operation === "ascii_whitespace_collapsed")
   );
 }
 
@@ -277,10 +223,8 @@ function isNormalizationRuleValid(rule: ExtractionNormalizationRule): boolean {
 function isFieldRuleValid(rule: ExtractionFieldRule): boolean {
   const decimalBoundsValid =
     rule.comparison === "decimal"
-      ? (rule.minimum === undefined ||
-          strictDecimal(rule.minimum) !== undefined) &&
-        (rule.maximum === undefined ||
-          strictDecimal(rule.maximum) !== undefined)
+      ? (rule.minimum === undefined || strictDecimal(rule.minimum) !== undefined) &&
+        (rule.maximum === undefined || strictDecimal(rule.maximum) !== undefined)
       : rule.minimum === undefined && rule.maximum === undefined;
   const componentValid =
     rule.sourceComponent === undefined
@@ -295,8 +239,7 @@ function isFieldRuleValid(rule: ExtractionFieldRule): boolean {
       rule.comparison === "currency" ||
       rule.comparison === "unit") &&
     (rule.identifierKind === undefined || rule.comparison === "identifier") &&
-    (rule.normalizationId === undefined ||
-      rule.comparison === "normalized_text") &&
+    (rule.normalizationId === undefined || rule.comparison === "normalized_text") &&
     (rule.checksum === undefined || rule.comparison === "checksum");
   return (
     isBoundedJsonPointer(rule.path) &&
@@ -312,10 +255,7 @@ const boundedAllowedValues = (values: readonly string[] | undefined): boolean =>
   values === undefined ||
   (values.length <= MAX_ALLOWED_VALUES &&
     values.every(
-      (value) =>
-        typeof value === "string" &&
-        value.length > 0 &&
-        value.length <= MAX_ALLOWED_VALUE_LENGTH,
+      (value) => typeof value === "string" && value.length > 0 && value.length <= MAX_ALLOWED_VALUE_LENGTH,
     ) &&
     new Set(values).size === values.length);
 
@@ -334,20 +274,12 @@ function verifyLeaf(
 ): VerifiedExtractionScalarSelection | undefined {
   const rule = indexes.ruleByPath.get(path);
   if (!rule) {
-    checks.fail(
-      "FIELD_RULE_MISSING",
-      path,
-      "Every candidate leaf requires an explicit verification rule.",
-    );
+    checks.fail("FIELD_RULE_MISSING", path, "Every candidate leaf requires an explicit verification rule.");
     return undefined;
   }
   const evidence = indexes.evidenceByPath.get(path);
   if (!evidence) {
-    checks.fail(
-      "FIELD_EVIDENCE_MISSING",
-      path,
-      "Every candidate leaf requires evidence.",
-    );
+    checks.fail("FIELD_EVIDENCE_MISSING", path, "Every candidate leaf requires evidence.");
     return undefined;
   }
   const resolved = resolveLeafEvidence(checks, input, indexes, evidence);
@@ -357,11 +289,7 @@ function verifyLeaf(
   if (selected === undefined) return undefined;
   const actual = getAtBoundedPointer(input.candidate, path);
   if (!actual.found) {
-    checks.fail(
-      "FIELD_CANDIDATE_MISSING",
-      path,
-      "Validated leaf unexpectedly cannot be read.",
-    );
+    checks.fail("FIELD_CANDIDATE_MISSING", path, "Validated leaf unexpectedly cannot be read.");
     return undefined;
   }
   const outcome = compareFieldValue({
@@ -370,14 +298,8 @@ function verifyLeaf(
     evidence: selected,
     normalizations: indexes.normalizations,
   });
-  checks.record(
-    `FIELD_${rule.comparison.toUpperCase()}_MATCH`,
-    path,
-    outcome.passed,
-    outcome.detail,
-  );
-  if (!outcome.passed || !isScalar(actual.value) || !isScalar(selected))
-    return undefined;
+  checks.record(`FIELD_${rule.comparison.toUpperCase()}_MATCH`, path, outcome.passed, outcome.detail);
+  if (!outcome.passed || !isScalar(actual.value) || !isScalar(selected)) return undefined;
   return Object.freeze({
     path,
     value: actual.value,
@@ -404,9 +326,7 @@ function resolveLeafEvidence(
   indexes: VerificationIndexes,
   evidence: ExtractionEvidence,
 ): ResolvedLeafEvidence | undefined {
-  const representation = indexes.representationById.get(
-    evidence.representationArtifactId,
-  );
+  const representation = indexes.representationById.get(evidence.representationArtifactId);
   if (
     !representation ||
     representation.captureId !== evidence.captureId ||
@@ -429,17 +349,14 @@ function resolveLeafEvidence(
     },
     input.selectorResolvers ?? [],
   );
-  const replayedDigest = selection
-    ? sha256Digest(selection.selectedContent)
-    : undefined;
+  const replayedDigest = selection ? sha256Digest(selection.selectedContent) : undefined;
   if (
     !selection ||
     replayedDigest === undefined ||
     selection.resolution.status !== "resolved" ||
     selection.resolution.occurrenceCount !== 1 ||
     selection.resolution.selectedContentDigest !== replayedDigest ||
-    (evidence.expectedSelectedContentDigest !== undefined &&
-      evidence.expectedSelectedContentDigest !== replayedDigest)
+    (evidence.expectedSelectedContentDigest !== undefined && evidence.expectedSelectedContentDigest !== replayedDigest)
   ) {
     checks.fail(
       "EVIDENCE_RESOLUTION_FAILED",
@@ -463,17 +380,9 @@ function selectedScalar(
   selection: EvidenceSelection,
 ): unknown {
   const { selectedValue } = selection.resolution;
-  const component = sourceComponentValue(
-    rule,
-    evidence.selector,
-    selectedValue,
-  );
+  const component = sourceComponentValue(rule, evidence.selector, selectedValue);
   if (component.detail) {
-    checks.fail(
-      "EVIDENCE_SOURCE_COMPONENT_INVALID",
-      evidence.path,
-      component.detail,
-    );
+    checks.fail("EVIDENCE_SOURCE_COMPONENT_INVALID", evidence.path, component.detail);
     return undefined;
   }
   if (component.value !== undefined) return component.value;
@@ -495,11 +404,7 @@ function selectedScalar(
   try {
     return utf8.decode(selection.selectedContent);
   } catch {
-    checks.fail(
-      "EVIDENCE_VALUE_UNSUPPORTED",
-      evidence.path,
-      "Selected bytes are not a supported scalar source value.",
-    );
+    checks.fail("EVIDENCE_VALUE_UNSUPPORTED", evidence.path, "Selected bytes are not a supported scalar source value.");
     return undefined;
   }
 }

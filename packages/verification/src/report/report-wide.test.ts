@@ -1,17 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  verifyReportWide,
-  type ReportAssertionAssessment,
-  type ReportCitationAssessment,
-} from "./report-wide.js";
+import { verifyReportWide, type ReportAssertionAssessment, type ReportCitationAssessment } from "./report-wide.js";
 
 const report =
   "Generation Lab reports 19 systems. Another section reports 21 systems. Turnaround is 2–4 weeks for one context and 3–4 weeks for another.";
 
-function citation(
-  citationId: string,
-  overrides: Partial<ReportCitationAssessment> = {},
-): ReportCitationAssessment {
+function citation(citationId: string, overrides: Partial<ReportCitationAssessment> = {}): ReportCitationAssessment {
   return {
     citationId,
     fragmentId: `f-${citationId}`,
@@ -45,8 +38,7 @@ function assertion(
 
 const COUNT_19 = "Generation Lab reports 19 systems.";
 const COUNT_21 = "Another section reports 21 systems.";
-const TURNAROUND =
-  "Turnaround is 2–4 weeks for one context and 3–4 weeks for another.";
+const TURNAROUND = "Turnaround is 2–4 weeks for one context and 3–4 weeks for another.";
 
 /** Two conflicting counts, one misplaced citation, one uncited duplicate. */
 function mixedReport(): readonly ReportAssertionAssessment[] {
@@ -82,48 +74,37 @@ function mixedReport(): readonly ReportAssertionAssessment[] {
 
 describe("report-wide citation metrics", () => {
   it("weights citation completeness by claim weight", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).claimWeightedCitationCompleteness,
-    ).toBe(0.8);
+    expect(verifyReportWide(report, mixedReport()).claimWeightedCitationCompleteness).toBe(0.8);
   });
 
   it("counts citation correctness over every citation", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).citationCorrectness,
-    ).toBeCloseTo(1 / 3);
+    expect(verifyReportWide(report, mixedReport()).citationCorrectness).toBeCloseTo(1 / 3);
   });
 
   it("counts conditional correctness over valid pointers only", () => {
-    expect(
-      verifyReportWide(report, mixedReport())
-        .validPointerConditionalCitationCorrectness,
-    ).toBe(0.5);
+    expect(verifyReportWide(report, mixedReport()).validPointerConditionalCitationCorrectness).toBe(0.5);
   });
 
   it("lists misplaced citations", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).misplacedCitationIds,
-    ).toEqual(["c3"]);
+    expect(verifyReportWide(report, mixedReport()).misplacedCitationIds).toEqual(["c3"]);
   });
 });
 
 describe("report-wide consistency", () => {
   it("groups conflicting assertions under one consistency key", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).conflictAssertionGroups,
-    ).toEqual([["count-19", "count-21"]]);
+    expect(verifyReportWide(report, mixedReport()).conflictAssertionGroups).toEqual([["count-19", "count-21"]]);
   });
 
   it("reports cross-section mismatches by facet", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).crossSectionMismatches,
-    ).toEqual([{ facet: "number", assertionIds: ["count-19", "count-21"] }]);
+    expect(verifyReportWide(report, mixedReport()).crossSectionMismatches).toEqual([
+      { facet: "number", assertionIds: ["count-19", "count-21"] },
+    ]);
   });
 
   it("groups assertions that repeat the same text range", () => {
-    expect(
-      verifyReportWide(report, mixedReport()).duplicateAssertionGroups,
-    ).toEqual([["turnaround", "duplicate-turnaround"]]);
+    expect(verifyReportWide(report, mixedReport()).duplicateAssertionGroups).toEqual([
+      ["turnaround", "duplicate-turnaround"],
+    ]);
   });
 
   it("keeps values apart when they carry different context keys", () => {
@@ -157,8 +138,7 @@ describe("report-wide consistency", () => {
   });
 
   it("finds entity and date drift inside one context", () => {
-    const text =
-      "Section A: TruDiagnostic in 2025. Section B: Generation Lab in 2026.";
+    const text = "Section A: TruDiagnostic in 2025. Section B: Generation Lab in 2026.";
     const inComparison = (
       id: string,
       exactText: string,
@@ -201,10 +181,10 @@ describe("report-wide source and severity summaries", () => {
   });
 
   it("lists high-severity assertions without a supporting valid citation", () => {
-    expect(
-      verifyReportWide(report, mixedReport())
-        .unsupportedHighSeverityAssertionIds,
-    ).toEqual(["count-21", "turnaround"]);
+    expect(verifyReportWide(report, mixedReport()).unsupportedHighSeverityAssertionIds).toEqual([
+      "count-21",
+      "turnaround",
+    ]);
   });
 });
 

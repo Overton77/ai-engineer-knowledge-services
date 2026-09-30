@@ -74,10 +74,7 @@ function operation(
   input: ExtractionFieldVerificationInput,
 ): ExtractionNormalizationOperation {
   if (rule.comparison === "normalized_text")
-    return (
-      input.normalizations?.find((item) => item.id === rule.normalizationId)
-        ?.operation ?? "trim_ascii"
-    );
+    return input.normalizations?.find((item) => item.id === rule.normalizationId)?.operation ?? "trim_ascii";
   if (rule.comparison === "decimal") return "decimal_exact";
   if (rule.comparison === "percentage") return "percentage_exact";
   if (rule.comparison === "currency") return "currency_code_amount";
@@ -91,10 +88,7 @@ function operation(
 function copiedChecks(result: ExtractionFieldVerificationResult) {
   return result.checks.map((item) => deepFreeze({ ...item }));
 }
-function failed(
-  result: ExtractionFieldVerificationResult,
-  code: string,
-): ExtractionFieldEvidenceResult {
+function failed(result: ExtractionFieldVerificationResult, code: string): ExtractionFieldEvidenceResult {
   return deepFreeze({
     schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
     valid: false,
@@ -105,8 +99,7 @@ function failed(
         code,
         path: "",
         status: "failed" as const,
-        detail:
-          "Accepted field evidence could not be reconstructed from the verified deterministic inputs.",
+        detail: "Accepted field evidence could not be reconstructed from the verified deterministic inputs.",
       }),
     ],
     acceptedLeaves: [],
@@ -120,8 +113,7 @@ function failed(
 export function verifyExtractionFieldsWithEvidence(
   input: ExtractionFieldVerificationInput,
 ): ExtractionFieldEvidenceResult {
-  const { result, selections } =
-    verifyExtractionFieldsWithAcceptedSelections(input);
+  const { result, selections } = verifyExtractionFieldsWithAcceptedSelections(input);
   if (!result.valid)
     return deepFreeze({
       schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,
@@ -132,20 +124,17 @@ export function verifyExtractionFieldsWithEvidence(
     });
   const totals = new Map<string, CrossFieldTotalRule>();
   for (const total of input.totals ?? []) {
-    if (totals.has(total.resultPath))
-      return failed(result, "ACCEPTED_LEAF_TOTAL_DUPLICATE");
+    if (totals.has(total.resultPath)) return failed(result, "ACCEPTED_LEAF_TOTAL_DUPLICATE");
     totals.set(total.resultPath, total);
   }
   const selectedByPath = new Map(selections.map((item) => [item.path, item]));
   const leaves: AcceptedExtractionLeaf[] = [];
   for (const path of [...selectedByPath.keys()].sort()) {
     const selected = selectedByPath.get(path)!;
-    if (!scalar(selected.value) || !scalar(selected.rawValue))
-      return failed(result, "ACCEPTED_LEAF_SELECTION_INVALID");
+    if (!scalar(selected.value) || !scalar(selected.rawValue)) return failed(result, "ACCEPTED_LEAF_SELECTION_INVALID");
     const rule = selected.rule,
       edge = selected.evidence;
-    const same =
-      canonicalizeJson(selected.value) === canonicalizeJson(selected.rawValue);
+    const same = canonicalizeJson(selected.value) === canonicalizeJson(selected.rawValue);
     // Direct describes value preservation, not absence of typed validation; comparison records that rule.
     const derivation: ExtractionLeafDerivation =
       same && rule.comparison !== "normalized_text"
@@ -176,8 +165,7 @@ export function verifyExtractionFieldsWithEvidence(
           representationDigest: edge.representationDigest,
           selector: structuredClone(edge.selector),
           selectedContentDigest: selected.selectedContentDigest,
-          fragmentId:
-            `fragment:${fragmentDigest.slice("sha256:".length)}` as `fragment:${string}`,
+          fragmentId: `fragment:${fragmentDigest.slice("sha256:".length)}` as `fragment:${string}`,
         }),
         ...(total
           ? {
@@ -192,10 +180,7 @@ export function verifyExtractionFieldsWithEvidence(
       }),
     );
   }
-  if (
-    leaves.length !== input.fields.length ||
-    selectedByPath.size !== input.fields.length
-  )
+  if (leaves.length !== input.fields.length || selectedByPath.size !== input.fields.length)
     return failed(result, "ACCEPTED_LEAF_INPUT_MISSING");
   return deepFreeze({
     schemaVersion: EXTRACTION_FIELD_EVIDENCE_SCHEMA_VERSION,

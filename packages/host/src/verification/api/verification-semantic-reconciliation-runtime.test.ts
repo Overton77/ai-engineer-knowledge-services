@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync } from "node:crypto";
 import { createVerificationSemanticReconciliationService } from "./verification-semantic-reconciliation-runtime.js";
 
-const id = (value: number) =>
-  `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+const id = (value: number) => `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
 const tenantId = id(1),
   operationId = id(2),
   providerAttemptId = id(3),
@@ -29,9 +28,7 @@ const artifact = {
   parentArtifactIds: [],
   transformationSignature: digest,
 };
-const publicKeyPem = generateKeyPairSync("ed25519")
-  .publicKey.export({ type: "spki", format: "pem" })
-  .toString();
+const publicKeyPem = generateKeyPairSync("ed25519").publicKey.export({ type: "spki", format: "pem" }).toString();
 const environment = {
   VERIFICATION_SEMANTIC_PROVIDER_RECONCILIATION_GRANTS_JSON: JSON.stringify([
     {
@@ -45,9 +42,7 @@ const environment = {
       billingEvidenceArtifact: artifact,
     },
   ]),
-  VERIFICATION_PROVIDER_RECONCILIATION_PUBLIC_KEYS_JSON: JSON.stringify([
-    { keyId: "key.v1", publicKeyPem },
-  ]),
+  VERIFICATION_PROVIDER_RECONCILIATION_PUBLIC_KEYS_JSON: JSON.stringify([{ keyId: "key.v1", publicKeyPem }]),
   VERIFICATION_SERVICE_OWNERSHIP_GRANTS_JSON: JSON.stringify([
     {
       tenantId,
@@ -63,9 +58,7 @@ const environment = {
 
 describe("semantic reconciliation runtime configuration and scope", () => {
   it("is disabled without grants and fails closed for incomplete configured trust", () => {
-    expect(
-      createVerificationSemanticReconciliationService(undefined, {}),
-    ).toBeUndefined();
+    expect(createVerificationSemanticReconciliationService(undefined, {})).toBeUndefined();
     expect(() =>
       createVerificationSemanticReconciliationService(undefined, {
         VERIFICATION_SEMANTIC_PROVIDER_RECONCILIATION_GRANTS_JSON:
@@ -81,10 +74,7 @@ describe("semantic reconciliation runtime configuration and scope", () => {
     const database = {
       transaction: async (_tenant: string, work: any) => work({ query }),
     };
-    const service = createVerificationSemanticReconciliationService(
-      database as never,
-      environment,
-    )!;
+    const service = createVerificationSemanticReconciliationService(database as never, environment)!;
     for (const input of [
       {
         tenantId,

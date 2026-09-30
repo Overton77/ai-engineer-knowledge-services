@@ -1,9 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "../../canonical/index.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolveTextOffsetRange } from "../text-offsets.js";
 import { resolvedText, unresolved } from "./report.js";
 import {
@@ -51,17 +48,13 @@ export function parsePdf(input: UnknownRecord): PdfTextProjection {
   const pages = boundedArray(input.pages, "PDF_PAGES").map(parsePage);
   if (
     pages.length !== pageCount ||
-    new Set(pages.map((page) => page.physicalPageNumber)).size !==
-      pages.length ||
+    new Set(pages.map((page) => page.physicalPageNumber)).size !== pages.length ||
     pages.some((page) => page.physicalPageNumber > pageCount)
   )
     fail("PDF_PAGE_LINEAGE");
   const residuals =
-    input.residuals === undefined
-      ? undefined
-      : boundedArray(input.residuals, "PDF_RESIDUALS").map(parseResidual);
-  if (residuals?.some((item) => item.physicalPageNumber > pageCount))
-    fail("PDF_RESIDUAL_PAGE");
+    input.residuals === undefined ? undefined : boundedArray(input.residuals, "PDF_RESIDUALS").map(parseResidual);
+  if (residuals?.some((item) => item.physicalPageNumber > pageCount)) fail("PDF_RESIDUAL_PAGE");
   return {
     kind: "pdf_text",
     pageCount,
@@ -72,24 +65,8 @@ export function parsePdf(input: UnknownRecord): PdfTextProjection {
 
 function parsePage(item: unknown): PdfTextPage {
   if (!isRecord(item)) fail("PDF_PAGE");
-  only(
-    item,
-    [
-      "physicalPageNumber",
-      "text",
-      "textLayerDigest",
-      "widthPoints",
-      "heightPoints",
-    ],
-    "PDF_PAGE",
-  );
-  const {
-    physicalPageNumber,
-    text,
-    textLayerDigest,
-    widthPoints,
-    heightPoints,
-  } = item;
+  only(item, ["physicalPageNumber", "text", "textLayerDigest", "widthPoints", "heightPoints"], "PDF_PAGE");
+  const { physicalPageNumber, text, textLayerDigest, widthPoints, heightPoints } = item;
   if (
     !positiveInteger(physicalPageNumber) ||
     !boundedString(text) ||
@@ -108,8 +85,7 @@ function parsePage(item: unknown): PdfTextPage {
 }
 
 function parseResidual(item: unknown): PdfTextResidual {
-  if (isRecord(item))
-    only(item, ["kind", "physicalPageNumber", "detail"], "PDF_RESIDUAL");
+  if (isRecord(item)) only(item, ["kind", "physicalPageNumber", "detail"], "PDF_RESIDUAL");
   if (
     !isRecord(item) ||
     item.kind !== "unresolved_visual_content" ||
@@ -131,14 +107,9 @@ export function resolvePdf(
   projection: PdfTextProjection,
   selector: PdfTextSelector,
 ): EvidenceSelection {
-  const page = projection.pages.find(
-    (item) => item.physicalPageNumber === selector.page,
-  );
+  const page = projection.pages.find((item) => item.physicalPageNumber === selector.page);
   if (!page) return unresolved(request, "not_found");
-  if (
-    page.textLayerDigest !== selector.textLayerDigest ||
-    sha256Digest(page.text) !== page.textLayerDigest
-  )
+  if (page.textLayerDigest !== selector.textLayerDigest || sha256Digest(page.text) !== page.textLayerDigest)
     return unresolved(request, "invalid");
   const range = resolveTextOffsetRange(page.text, selector);
   if (!range) return unresolved(request, "invalid");

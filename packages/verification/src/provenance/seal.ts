@@ -24,8 +24,7 @@ import type {
 } from "./model.js";
 import { validateRecordedPolicyInputsArtifact } from "./policy-inputs.js";
 
-const normalizeFieldName = (value: string) =>
-  value.replace(/[^a-z0-9]/gi, "").toLowerCase();
+const normalizeFieldName = (value: string) => value.replace(/[^a-z0-9]/gi, "").toLowerCase();
 const privateFieldNames = new Set([
   "secret",
   "password",
@@ -71,22 +70,14 @@ function isPrivateFieldName(key: string): boolean {
   );
 }
 
-function assertPublicValue(
-  value: unknown,
-  path = "$",
-  seen = new Set<object>(),
-): void {
+function assertPublicValue(value: unknown, path = "$", seen = new Set<object>()): void {
   if (value === null || typeof value !== "object") return;
   if (seen.has(value)) throw new Error(`PUBLIC_MANIFEST_CYCLE:${path}`);
   seen.add(value);
-  if (Array.isArray(value))
-    value.forEach((item, index) =>
-      assertPublicValue(item, `${path}[${index}]`, seen),
-    );
+  if (Array.isArray(value)) value.forEach((item, index) => assertPublicValue(item, `${path}[${index}]`, seen));
   else
     for (const [key, item] of Object.entries(value)) {
-      if (isPrivateFieldName(key))
-        throw new Error(`PUBLIC_MANIFEST_PRIVATE_FIELD:${path}.${key}`);
+      if (isPrivateFieldName(key)) throw new Error(`PUBLIC_MANIFEST_PRIVATE_FIELD:${path}.${key}`);
       assertPublicValue(item, `${path}.${key}`, seen);
     }
   seen.delete(value);
@@ -96,22 +87,13 @@ function assertPublicValue(
  * The manifest digest and detached signature reference this projection. The
  * projection deliberately excludes both fields, preventing a circular digest.
  */
-export function verificationManifestSignablePayload(
-  manifest: VerificationRunManifest,
-): unknown {
-  const {
-    signatureArtifactId: _signatureArtifactId,
-    canonicalization,
-    ...body
-  } = manifest;
-  const { manifestDigest: _manifestDigest, ...canonicalizationDescriptor } =
-    canonicalization;
+export function verificationManifestSignablePayload(manifest: VerificationRunManifest): unknown {
+  const { signatureArtifactId: _signatureArtifactId, canonicalization, ...body } = manifest;
+  const { manifestDigest: _manifestDigest, ...canonicalizationDescriptor } = canonicalization;
   return { ...body, canonicalization: canonicalizationDescriptor };
 }
 
-export function verificationManifestDigest(
-  manifest: VerificationRunManifest,
-): `sha256:${string}` {
+export function verificationManifestDigest(manifest: VerificationRunManifest): `sha256:${string}` {
   return digestCanonicalJson(verificationManifestSignablePayload(manifest));
 }
 
@@ -126,11 +108,7 @@ type ArtifactHandle = VerificationRunManifest["inputArtifacts"][number];
 type LineageEdge = VerificationRunManifest["lineage"][number];
 
 /** Relations that assert a parent link, and therefore must agree with `parentArtifactIds`. */
-const DERIVATION_RELATIONS: readonly string[] = [
-  "derived_from",
-  "generated",
-  "quoted_from",
-];
+const DERIVATION_RELATIONS: readonly string[] = ["derived_from", "generated", "quoted_from"];
 
 function lineageHandles(bundle: VerificationAuditBundle): ArtifactHandle[] {
   return [
@@ -140,29 +118,20 @@ function lineageHandles(bundle: VerificationAuditBundle): ArtifactHandle[] {
     bundle.policyBinding.recordedPolicyInputsArtifact,
     ...bundle.verificationBundle.captures.flatMap((capture) => [
       capture.contentArtifact,
-      ...(capture.canonicalProjectionArtifact
-        ? [capture.canonicalProjectionArtifact]
-        : []),
+      ...(capture.canonicalProjectionArtifact ? [capture.canonicalProjectionArtifact] : []),
     ]),
   ];
 }
 
 /** Same id must mean the same handle everywhere, and every handle belongs to the bundle tenant. */
-function indexHandles(
-  handles: readonly ArtifactHandle[],
-  tenantId: string,
-): Map<string, ArtifactHandle> {
+function indexHandles(handles: readonly ArtifactHandle[], tenantId: string): Map<string, ArtifactHandle> {
   const byId = new Map<string, ArtifactHandle>();
   for (const handle of handles) {
     const existing = byId.get(handle.artifactId);
-    if (
-      existing &&
-      digestCanonicalJson(existing) !== digestCanonicalJson(handle)
-    )
+    if (existing && digestCanonicalJson(existing) !== digestCanonicalJson(handle))
       throw new Error("ARTIFACT_IDENTITY_COLLISION");
     byId.set(handle.artifactId, handle);
-    if (handle.tenantId !== tenantId)
-      throw new Error(`ARTIFACT_TENANT_MISMATCH:${handle.artifactId}`);
+    if (handle.tenantId !== tenantId) throw new Error(`ARTIFACT_TENANT_MISMATCH:${handle.artifactId}`);
   }
   return byId;
 }
@@ -175,40 +144,25 @@ function assertParentsDeclared(
 ): void {
   for (const handle of handles)
     for (const parentId of handle.parentArtifactIds) {
-      if (!byId.has(parentId))
-        throw new Error(
-          `LINEAGE_PARENT_MISSING:${handle.artifactId}:${parentId}`,
-        );
+      if (!byId.has(parentId)) throw new Error(`LINEAGE_PARENT_MISSING:${handle.artifactId}:${parentId}`);
       if (!handle.transformationSignature)
-        throw new Error(
-          `LINEAGE_TRANSFORMATION_SIGNATURE_MISSING:${handle.artifactId}`,
-        );
+        throw new Error(`LINEAGE_TRANSFORMATION_SIGNATURE_MISSING:${handle.artifactId}`);
       const backed = lineage.some(
         (edge) =>
           edge.fromArtifactId === handle.artifactId &&
           edge.toArtifactId === parentId &&
           DERIVATION_RELATIONS.includes(edge.relation),
       );
-      if (!backed)
-        throw new Error(
-          `LINEAGE_EDGE_MISSING:${handle.artifactId}:${parentId}`,
-        );
+      if (!backed) throw new Error(`LINEAGE_EDGE_MISSING:${handle.artifactId}:${parentId}`);
     }
 }
 
 /** Every edge joins known handles, and derivation edges are mirrored by a parent declaration. */
-function assertEdgesDeclared(
-  lineage: readonly LineageEdge[],
-  byId: ReadonlyMap<string, ArtifactHandle>,
-): void {
+function assertEdgesDeclared(lineage: readonly LineageEdge[], byId: ReadonlyMap<string, ArtifactHandle>): void {
   for (const edge of lineage) {
     const from = byId.get(edge.fromArtifactId);
-    if (!from || !byId.has(edge.toArtifactId))
-      throw new Error(`LINEAGE_ENDPOINT_MISSING:${edge.edgeId}`);
-    if (
-      DERIVATION_RELATIONS.includes(edge.relation) &&
-      !from.parentArtifactIds.includes(edge.toArtifactId)
-    )
+    if (!from || !byId.has(edge.toArtifactId)) throw new Error(`LINEAGE_ENDPOINT_MISSING:${edge.edgeId}`);
+    if (DERIVATION_RELATIONS.includes(edge.relation) && !from.parentArtifactIds.includes(edge.toArtifactId))
       throw new Error(`LINEAGE_PARENT_DECLARATION_MISSING:${edge.edgeId}`);
   }
 }
@@ -219,11 +173,8 @@ function assertAcyclic(
   byId: ReadonlyMap<string, ArtifactHandle>,
 ): void {
   const children = new Map<string, string[]>();
-  const link = (from: string, to: string) =>
-    children.set(from, [...(children.get(from) ?? []), to]);
-  for (const handle of handles)
-    for (const parentId of handle.parentArtifactIds)
-      link(handle.artifactId, parentId);
+  const link = (from: string, to: string) => children.set(from, [...(children.get(from) ?? []), to]);
+  for (const handle of handles) for (const parentId of handle.parentArtifactIds) link(handle.artifactId, parentId);
   for (const edge of lineage) link(edge.fromArtifactId, edge.toArtifactId);
   const visiting = new Set<string>();
   const visited = new Set<string>();
@@ -247,18 +198,10 @@ function assertLineage(bundle: VerificationAuditBundle): void {
   assertAcyclic(handles, lineage, byId);
 }
 
-function assertExactKeys(
-  value: object,
-  expected: readonly string[],
-  code: string,
-): void {
+function assertExactKeys(value: object, expected: readonly string[], code: string): void {
   const actual = Object.keys(value).sort();
   const wanted = [...expected].sort();
-  if (
-    actual.length !== wanted.length ||
-    actual.some((key, index) => key !== wanted[index])
-  )
-    throw new Error(code);
+  if (actual.length !== wanted.length || actual.some((key, index) => key !== wanted[index])) throw new Error(code);
 }
 
 function assertAuditEnvelope(bundle: VerificationAuditBundle): void {
@@ -283,9 +226,7 @@ function assertAuditEnvelope(bundle: VerificationAuditBundle): void {
   );
   const sealKeys = [
     "payloadDigest",
-    ...(bundle.seal.signatureAlgorithm === undefined
-      ? []
-      : ["signatureAlgorithm"]),
+    ...(bundle.seal.signatureAlgorithm === undefined ? [] : ["signatureAlgorithm"]),
     ...(bundle.seal.keyId === undefined ? [] : ["keyId"]),
     ...(bundle.seal.signatureBase64 === undefined ? [] : ["signatureBase64"]),
   ];
@@ -298,11 +239,7 @@ function assertAuditEnvelope(bundle: VerificationAuditBundle): void {
     !isSha256Digest(bundle.seal.payloadDigest)
   )
     throw new Error("AUDIT_BUNDLE_DIGEST_INVALID");
-  assertPolicyBindingConsistent(
-    bundle.verificationBundle,
-    bundle.manifest,
-    bundle.policyBinding,
-  );
+  assertPolicyBindingConsistent(bundle.verificationBundle, bundle.manifest, bundle.policyBinding);
 }
 
 /**
@@ -314,25 +251,14 @@ function assertPolicyBindingConsistent(
   manifest: VerificationRunManifest,
   binding: VerificationPolicyBinding,
 ): void {
-  if (
-    bundle.policyVersion !== binding.policyVersion ||
-    manifest.versions.policy !== binding.policyVersion
-  )
+  if (bundle.policyVersion !== binding.policyVersion || manifest.versions.policy !== binding.policyVersion)
     throw new Error("POLICY_VERSION_BINDING_MISMATCH");
   const declared = [...manifest.inputArtifacts, ...manifest.outputArtifacts];
   const declares = (handle: ArtifactHandle) =>
-    declared.some(
-      (artifact) =>
-        digestCanonicalJson(artifact) === digestCanonicalJson(handle),
-    );
-  if (!declares(binding.policyArtifact))
-    throw new Error("POLICY_ARTIFACT_NOT_IN_MANIFEST");
-  if (!declares(binding.recordedPolicyInputsArtifact))
-    throw new Error("POLICY_INPUTS_ARTIFACT_NOT_IN_MANIFEST");
-  if (
-    binding.policyArtifact.artifactId ===
-    binding.recordedPolicyInputsArtifact.artifactId
-  )
+    declared.some((artifact) => digestCanonicalJson(artifact) === digestCanonicalJson(handle));
+  if (!declares(binding.policyArtifact)) throw new Error("POLICY_ARTIFACT_NOT_IN_MANIFEST");
+  if (!declares(binding.recordedPolicyInputsArtifact)) throw new Error("POLICY_INPUTS_ARTIFACT_NOT_IN_MANIFEST");
+  if (binding.policyArtifact.artifactId === binding.recordedPolicyInputsArtifact.artifactId)
     throw new Error("POLICY_ARTIFACT_ROLES_NOT_DISTINCT");
 }
 
@@ -345,15 +271,11 @@ export async function sealAuditBundle(input: {
   readonly policyDecision: unknown;
   readonly signer?: AuditBundleSigner;
 }): Promise<VerificationAuditBundle> {
-  const verificationBundle = VerificationBundleSchema.parse(
-    input.verificationBundle,
-  );
+  const verificationBundle = VerificationBundleSchema.parse(input.verificationBundle);
   const manifest = VerificationRunManifestSchema.parse(input.manifest);
   const policyBinding = {
     policyVersion: String(input.policyBinding.policyVersion),
-    policyArtifact: VerificationArtifactHandleSchema.parse(
-      input.policyBinding.policyArtifact,
-    ),
+    policyArtifact: VerificationArtifactHandleSchema.parse(input.policyBinding.policyArtifact),
     recordedPolicyInputsArtifact: VerificationArtifactHandleSchema.parse(
       input.policyBinding.recordedPolicyInputsArtifact,
     ),
@@ -364,10 +286,7 @@ export async function sealAuditBundle(input: {
     "POLICY_BINDING_FIELDS_INVALID",
   );
   assertPolicyBindingConsistent(verificationBundle, manifest, policyBinding);
-  if (
-    verificationManifestDigest(manifest) !==
-    manifest.canonicalization.manifestDigest
-  )
+  if (verificationManifestDigest(manifest) !== manifest.canonicalization.manifestDigest)
     throw new Error("MANIFEST_DIGEST_MISMATCH");
   validateRecordedPolicyInputsArtifact({
     handle: policyBinding.recordedPolicyInputsArtifact,
@@ -377,9 +296,7 @@ export async function sealAuditBundle(input: {
     runId: manifest.runId,
     policyVersion: policyBinding.policyVersion,
   });
-  const deterministicResultDigest = digestCanonicalJson(
-    manifest.deterministicResult,
-  );
+  const deterministicResultDigest = digestCanonicalJson(manifest.deterministicResult);
   const policyDecisionDigest = digestCanonicalJson(input.policyDecision);
   const unsigned = {
     verificationContractVersion: VERIFICATION_CONTRACT_VERSION,
@@ -407,9 +324,7 @@ export async function sealAuditBundle(input: {
   };
   assertLineage(candidate);
   const payload = new TextEncoder().encode(
-    canonicalizeJson(
-      auditBundleSignablePayload(unsigned as VerificationAuditBundle),
-    ),
+    canonicalizeJson(auditBundleSignablePayload(unsigned as VerificationAuditBundle)),
   );
   const payloadDigest = sha256Digest(payload);
   const seal: DetachedAuditSeal = input.signer
@@ -437,23 +352,14 @@ export async function inspectAuditBundle(
     assertPublicValue(auditBundleSignablePayload(bundle));
     assertLineage(bundle);
     manifestDigest = verificationManifestDigest(bundle.manifest);
-    if (manifestDigest !== bundle.manifest.canonicalization.manifestDigest)
-      errors.push("MANIFEST_DIGEST_MISMATCH");
-    if (
-      digestCanonicalJson(bundle.manifest.deterministicResult) !==
-      bundle.deterministicResultDigest
-    )
+    if (manifestDigest !== bundle.manifest.canonicalization.manifestDigest) errors.push("MANIFEST_DIGEST_MISMATCH");
+    if (digestCanonicalJson(bundle.manifest.deterministicResult) !== bundle.deterministicResultDigest)
       errors.push("DETERMINISTIC_RESULT_DIGEST_MISMATCH");
-    const payload = new TextEncoder().encode(
-      canonicalizeJson(auditBundleSignablePayload(bundle)),
-    );
+    const payload = new TextEncoder().encode(canonicalizeJson(auditBundleSignablePayload(bundle)));
     payloadDigest = sha256Digest(payload);
-    if (payloadDigest !== bundle.seal.payloadDigest)
-      errors.push("AUDIT_BUNDLE_DIGEST_MISMATCH");
+    if (payloadDigest !== bundle.seal.payloadDigest) errors.push("AUDIT_BUNDLE_DIGEST_MISMATCH");
   } catch (error) {
-    errors.push(
-      error instanceof Error ? error.message : "INVALID_AUDIT_BUNDLE",
-    );
+    errors.push(error instanceof Error ? error.message : "INVALID_AUDIT_BUNDLE");
   }
   const seal = await inspectSeal(bundle, verifier);
   for (const code of seal.errors) if (!errors.includes(code)) errors.push(code);
@@ -471,13 +377,12 @@ interface SealInspection {
   readonly errors: readonly string[];
 }
 
-const sealInspection = (
-  signatureStatus: SealInspection["signatureStatus"],
-  ...errors: string[]
-): SealInspection => ({ signatureStatus, errors });
+const sealInspection = (signatureStatus: SealInspection["signatureStatus"], ...errors: string[]): SealInspection => ({
+  signatureStatus,
+  errors,
+});
 
-const BASE64 =
-  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const ED25519_SIGNATURE_BYTES = 64;
 
 interface SignedSeal extends DetachedAuditSeal {
@@ -486,16 +391,13 @@ interface SignedSeal extends DetachedAuditSeal {
 }
 
 const isSignedSeal = (seal: DetachedAuditSeal): seal is SignedSeal =>
-  seal.signatureAlgorithm === "Ed25519" &&
-  Boolean(seal.keyId) &&
-  Boolean(seal.signatureBase64);
+  seal.signatureAlgorithm === "Ed25519" && Boolean(seal.keyId) && Boolean(seal.signatureBase64);
 
 const isPartiallySigned = (seal: DetachedAuditSeal): boolean =>
   Boolean(seal.signatureAlgorithm || seal.keyId || seal.signatureBase64);
 
 const isWellFormedSignature = (signatureBase64: string): boolean =>
-  BASE64.test(signatureBase64) &&
-  Buffer.from(signatureBase64, "base64").byteLength === ED25519_SIGNATURE_BYTES;
+  BASE64.test(signatureBase64) && Buffer.from(signatureBase64, "base64").byteLength === ED25519_SIGNATURE_BYTES;
 
 /** A verifier that throws is treated as a failed verification, never as a crash. */
 async function verifySealSignature(
@@ -506,9 +408,7 @@ async function verifySealSignature(
   try {
     return await verifier.verify({
       keyId: seal.keyId,
-      payload: new TextEncoder().encode(
-        canonicalizeJson(auditBundleSignablePayload(bundle)),
-      ),
+      payload: new TextEncoder().encode(canonicalizeJson(auditBundleSignablePayload(bundle))),
       signatureBase64: seal.signatureBase64,
     });
   } catch {
@@ -523,10 +423,7 @@ async function inspectSeal(
 ): Promise<SealInspection> {
   try {
     const seal =
-      bundle !== null &&
-      typeof bundle === "object" &&
-      bundle.seal !== null &&
-      typeof bundle.seal === "object"
+      bundle !== null && typeof bundle === "object" && bundle.seal !== null && typeof bundle.seal === "object"
         ? bundle.seal
         : undefined;
     if (!seal) return sealInspection("invalid", "AUDIT_SEAL_FIELDS_INVALID");
@@ -545,13 +442,9 @@ async function inspectSeal(
   }
 }
 
-export function createEd25519Signer(
-  privateKeyPem: string,
-  keyId: string,
-): AuditBundleSigner {
+export function createEd25519Signer(privateKeyPem: string, keyId: string): AuditBundleSigner {
   const key = createPrivateKey(privateKeyPem);
-  if (key.asymmetricKeyType !== "ed25519")
-    throw new Error("ED25519_PRIVATE_KEY_REQUIRED");
+  if (key.asymmetricKeyType !== "ed25519") throw new Error("ED25519_PRIVATE_KEY_REQUIRED");
   return {
     algorithm: "Ed25519",
     keyId,
@@ -561,23 +454,14 @@ export function createEd25519Signer(
   };
 }
 
-export function createEd25519Verifier(
-  publicKeys: Readonly<Record<string, string>>,
-): AuditBundleSignatureVerifier {
-  const keys = new Map(
-    Object.entries(publicKeys).map(([id, pem]) => [id, createPublicKey(pem)]),
-  );
+export function createEd25519Verifier(publicKeys: Readonly<Record<string, string>>): AuditBundleSignatureVerifier {
+  const keys = new Map(Object.entries(publicKeys).map(([id, pem]) => [id, createPublicKey(pem)]));
   return {
     async verify(input) {
       const key = keys.get(input.keyId);
       return (
         key?.asymmetricKeyType === "ed25519" &&
-        verify(
-          null,
-          input.payload,
-          key,
-          Buffer.from(input.signatureBase64, "base64"),
-        )
+        verify(null, input.payload, key, Buffer.from(input.signatureBase64, "base64"))
       );
     },
   };

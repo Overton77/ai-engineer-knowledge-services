@@ -32,16 +32,13 @@ export interface SealedCaptureObservation {
   readonly findings: readonly InspectionFinding[];
 }
 
-const SECRET_CLASS_PATTERNS: readonly { className: string; pattern: RegExp }[] =
-  [
-    { className: "bearer_token", pattern: /bearer\s+[a-z0-9._~+/-]+=*/gi },
-    { className: "generic_assignment", pattern: /(?:api[_-]?key|secret|token)\s*[:=]\s*["'][^"']+["']/gi },
-  ];
+const SECRET_CLASS_PATTERNS: readonly { className: string; pattern: RegExp }[] = [
+  { className: "bearer_token", pattern: /bearer\s+[a-z0-9._~+/-]+=*/gi },
+  { className: "generic_assignment", pattern: /(?:api[_-]?key|secret|token)\s*[:=]\s*["'][^"']+["']/gi },
+];
 const MAXIMUM_SECRET_FINDINGS = 8;
 
-export function observeSealedCapture(
-  input: ObserveSealedCaptureInput,
-): SealedCaptureObservation {
+export function observeSealedCapture(input: ObserveSealedCaptureInput): SealedCaptureObservation {
   const observations = input.acquireObservations;
   return {
     digest: input.digest,
@@ -68,17 +65,12 @@ function mediaTypeEssence(value: string): string {
   return value.split(";")[0]?.trim().toLowerCase() ?? "";
 }
 
-function replayIntegrityFinding(
-  bytes: Uint8Array,
-  digest: string,
-): InspectionFinding {
+function replayIntegrityFinding(bytes: Uint8Array, digest: string): InspectionFinding {
   const matches = sealedCaptureDigestMatches(bytes, digest);
   return {
     dimension: "byte_replay_integrity",
     status: matches ? "observed" : "conflict",
-    note: matches
-      ? "stored digest matches sealed bytes"
-      : "stored digest does not match sealed bytes",
+    note: matches ? "stored digest matches sealed bytes" : "stored digest does not match sealed bytes",
   };
 }
 
@@ -86,10 +78,8 @@ function mediaTypeFinding(
   observations: readonly AcquisitionObservation[] | undefined,
   declaredMediaType: string | undefined,
 ): InspectionFinding {
-  const observedMedia =
-    observationValue(observations, "observed_media_type") ?? declaredMediaType;
-  const declaredMedia =
-    observationValue(observations, "declared_content_type") ?? declaredMediaType;
+  const observedMedia = observationValue(observations, "observed_media_type") ?? declaredMediaType;
+  const declaredMedia = observationValue(observations, "declared_content_type") ?? declaredMediaType;
   if (!declaredMedia || !observedMedia) {
     return {
       dimension: "declared_vs_observed_media_type",
@@ -109,9 +99,7 @@ function mediaTypeFinding(
   };
 }
 
-function redirectFinding(
-  observations: readonly AcquisitionObservation[] | undefined,
-): InspectionFinding {
+function redirectFinding(observations: readonly AcquisitionObservation[] | undefined): InspectionFinding {
   const redirectsRaw = observationValue(observations, "redirects");
   if (redirectsRaw === undefined) {
     return {
@@ -126,9 +114,7 @@ function redirectFinding(
     return {
       dimension: "redirects",
       status: isArray ? "observed" : "conflict",
-      note: isArray
-        ? `${redirects.length} redirect hop(s) recorded`
-        : "redirect observation was not a JSON array",
+      note: isArray ? `${redirects.length} redirect hop(s) recorded` : "redirect observation was not a JSON array",
     };
   } catch {
     return {
@@ -139,9 +125,7 @@ function redirectFinding(
   }
 }
 
-function identityFinding(
-  observations: readonly AcquisitionObservation[] | undefined,
-): InspectionFinding {
+function identityFinding(observations: readonly AcquisitionObservation[] | undefined): InspectionFinding {
   const canonical = observationValue(observations, "final_url");
   return canonical
     ? {
@@ -156,16 +140,12 @@ function identityFinding(
       };
 }
 
-function rightsFinding(
-  observations: readonly AcquisitionObservation[] | undefined,
-): InspectionFinding {
+function rightsFinding(observations: readonly AcquisitionObservation[] | undefined): InspectionFinding {
   const rights = observationValue(observations, "rights_context");
   return {
     dimension: "license_rights",
     status: rights ? "observed" : "unknown",
-    note: rights
-      ? "rights context observed; this is not acceptance"
-      : "no rights or license observation was recorded",
+    note: rights ? "rights context observed; this is not acceptance" : "no rights or license observation was recorded",
   };
 }
 

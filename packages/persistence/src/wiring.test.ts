@@ -18,8 +18,14 @@ describe("canonical persistence environment", () => {
   });
 
   it("fails closed for partial or non-canonical configuration", () => {
-    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, SUPABASE_SECRET_KEY: "" })).toThrow("SUPABASE_SECRET_KEY_REQUIRED");
-    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, SUPABASE_STORAGE_BUCKET: "public" })).toThrow("CANONICAL_STORAGE_BUCKET_REQUIRED");
-    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, MAXIMUM_ARTIFACT_BYTES: "0" })).toThrow("INVALID_MAXIMUM_ARTIFACT_BYTES");
+    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, SUPABASE_SECRET_KEY: "" })).toThrow(
+      "SUPABASE_SECRET_KEY_REQUIRED",
+    );
+    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, SUPABASE_STORAGE_BUCKET: "public" })).toThrow(
+      "CANONICAL_STORAGE_BUCKET_REQUIRED",
+    );
+    expect(() => canonicalPersistenceConfigFromEnvironment({ ...valid, MAXIMUM_ARTIFACT_BYTES: "0" })).toThrow(
+      "INVALID_MAXIMUM_ARTIFACT_BYTES",
+    );
   });
 });

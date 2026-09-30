@@ -1,7 +1,4 @@
-import {
-  verifyDeterministicBundle,
-  type DeterministicVerificationResult,
-} from "../src/index.js";
+import { verifyDeterministicBundle, type DeterministicVerificationResult } from "../src/index.js";
 import { corruptedInput, passingInput } from "./bundle-fixture.js";
 
 /**

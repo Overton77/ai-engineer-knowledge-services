@@ -155,8 +155,7 @@ describe("knowledge API", () => {
     };
     const api = buildServer({
       resolveIdentity: resolver(identity(["knowledge_reader"], tenant)),
-      getEvidencePacket: async (t, p) =>
-        t === tenant && p === packetId ? packet : undefined,
+      getEvidencePacket: async (t, p) => (t === tenant && p === packetId ? packet : undefined),
     });
     const response = await api.inject({
       method: "GET",
@@ -174,8 +173,7 @@ describe("knowledge API", () => {
   });
 });
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const context = {
   tenantId: id(1),
   operationId: id(2),
@@ -203,23 +201,17 @@ const context = {
   },
 };
 const TOKEN = "test-token-at-least-16-characters";
-const identity = (
-  roles: readonly ApiRole[],
-  tenantId = context.tenantId,
-): LocalApiIdentity => ({
+const identity = (roles: readonly ApiRole[], tenantId = context.tenantId): LocalApiIdentity => ({
   actor: context.actor,
   grants: [{ tenantId, roles, scopes: [] }],
 });
-const resolver = (value: LocalApiIdentity) => (token: string) =>
-  token === TOKEN ? value : undefined;
-const descriptors = ["kTnfJszFxCg", "bk0TmxoZlUY", "rmvDxxNubIg"].map(
-  (video_id) => ({
-    schema_version: "ai-engineer-embedding-bundle/0.1.0",
-    store_class: "internal_exploratory",
-    video_id,
-    evaluation_scope: "claims_retrieval",
-  }),
-);
+const resolver = (value: LocalApiIdentity) => (token: string) => (token === TOKEN ? value : undefined);
+const descriptors = ["kTnfJszFxCg", "bk0TmxoZlUY", "rmvDxxNubIg"].map((video_id) => ({
+  schema_version: "ai-engineer-embedding-bundle/0.1.0",
+  store_class: "internal_exploratory",
+  video_id,
+  evaluation_scope: "claims_retrieval",
+}));
 describe("Gate 6 operation API", () => {
   it("resolves bounded Eve descriptors server-side and deduplicates the evaluation", async () => {
     const service = new KnowledgeIntegrationService();
@@ -286,7 +278,10 @@ describe("Gate 6 operation API", () => {
       },
     });
     expect(response.statusCode).toBe(503);
-    expect(response.json()).toMatchObject({ code: "INTERNAL_ERROR", title: "Allow-listed exploratory fixture unavailable" });
+    expect(response.json()).toMatchObject({
+      code: "INTERNAL_ERROR",
+      title: "Allow-listed exploratory fixture unavailable",
+    });
     await api.close();
   });
   it("rejects descriptor sets outside the exact allow-list", async () => {
@@ -310,10 +305,7 @@ describe("Gate 6 operation API", () => {
         },
         input: {
           mode: "three_bundle_internal_exploratory",
-          bundles: [
-            ...descriptors.slice(0, 2),
-            { ...descriptors[2], video_id: "not-allowed" },
-          ],
+          bundles: [...descriptors.slice(0, 2), { ...descriptors[2], video_id: "not-allowed" }],
         },
         expectedVersions: { api: "v1" },
       },
@@ -400,9 +392,7 @@ describe("typed vector-store ingestion admission", () => {
       payload,
     });
     expect(accepted.statusCode).toBe(202);
-    expect(service.get(operationContext.operationId)?.kind).toBe(
-      "vector_store_ingestion",
-    );
+    expect(service.get(operationContext.operationId)?.kind).toBe("vector_store_ingestion");
     await api.close();
   });
   it("rejects path mismatch and incomplete lineage before admission", async () => {

@@ -5,23 +5,50 @@ import type { ExploratoryPublication, PublicationInspection, PublicationManifest
 
 const digest = (character: string) => `sha256:${character.repeat(64)}` as const;
 const manifests: PublicationManifests = {
-  source: digest("1"), representation: digest("2"), chunkSet: digest("3"), projection: digest("4"), vectorItem: digest("5"),
-  embedding: digest("6"), index: digest("7"), retrievalPolicy: digest("8"), evaluation: digest("9"),
+  source: digest("1"),
+  representation: digest("2"),
+  chunkSet: digest("3"),
+  projection: digest("4"),
+  vectorItem: digest("5"),
+  embedding: digest("6"),
+  index: digest("7"),
+  retrievalPolicy: digest("8"),
+  evaluation: digest("9"),
 };
 
 function inspection(overrides: Partial<PublicationInspection> = {}): PublicationInspection {
   return {
-    vectorSpaceVersionId: "v1", itemCount: 2, dimensions: CANONICAL_EMBEDDING_DIMENSIONS, precision: "halfvec", manifests,
-    indexReady: true, authorizationPassed: true, evaluationPassed: true, sampleSearchPassed: true, ...overrides,
+    vectorSpaceVersionId: "v1",
+    itemCount: 2,
+    dimensions: CANONICAL_EMBEDDING_DIMENSIONS,
+    precision: "halfvec",
+    manifests,
+    indexReady: true,
+    authorizationPassed: true,
+    evaluationPassed: true,
+    sampleSearchPassed: true,
+    ...overrides,
   };
 }
 
 function publication(overrides: Partial<ExploratoryPublication> = {}): ExploratoryPublication {
   return {
-    id: "publication-1", tenantId: "tenant-1", vectorStoreId: "store-1", vectorStoreSpaceId: "space-1", vectorSpaceVersionId: "v1",
-    storeClass: "internal_exploratory", expectedItemCount: 2, dimensions: CANONICAL_EMBEDDING_DIMENSIONS, manifests,
-    promotionDecisionId: "decision-1", evaluationGateResultId: "gate-1", state: "published",
-    verificationDigest: digest("a"), receiptId: "receipt-1", publishedAt: "2026-09-03T12:00:00Z", ...overrides,
+    id: "publication-1",
+    tenantId: "tenant-1",
+    vectorStoreId: "store-1",
+    vectorStoreSpaceId: "space-1",
+    vectorSpaceVersionId: "v1",
+    storeClass: "internal_exploratory",
+    expectedItemCount: 2,
+    dimensions: CANONICAL_EMBEDDING_DIMENSIONS,
+    manifests,
+    promotionDecisionId: "decision-1",
+    evaluationGateResultId: "gate-1",
+    state: "published",
+    verificationDigest: digest("a"),
+    receiptId: "receipt-1",
+    publishedAt: "2026-09-03T12:00:00Z",
+    ...overrides,
   };
 }
 
@@ -34,7 +61,16 @@ describe("verifyInspection", () => {
   });
 
   it("throws PUBLICATION_VERIFICATION_FAILED joining every mismatch in check order", () => {
-    const bad = inspection({ vectorSpaceVersionId: "v2", itemCount: 1, dimensions: 1, precision: "vector", indexReady: false, authorizationPassed: false, evaluationPassed: false, sampleSearchPassed: false });
+    const bad = inspection({
+      vectorSpaceVersionId: "v2",
+      itemCount: 1,
+      dimensions: 1,
+      precision: "vector",
+      indexReady: false,
+      authorizationPassed: false,
+      evaluationPassed: false,
+      sampleSearchPassed: false,
+    });
     let caught: VectorBackendError | undefined;
     try {
       verifyInspection("v1", 2, manifests, bad);
@@ -51,17 +87,24 @@ describe("verifyInspection", () => {
   it("checks candidateEvidenceDigest and requiredDependenciesEligible only when a candidate digest is requested", () => {
     expect(() => verifyInspection("v1", 2, manifests, inspection())).not.toThrow();
     const wrongDigest = inspection({ candidateEvidenceDigest: digest("z"), requiredDependenciesEligible: true });
-    expect(() => verifyInspection("v1", 2, manifests, wrongDigest, digest("expected")))
-      .toThrowError(/candidate evidence digest mismatch/);
-    const revokedDependency = inspection({ candidateEvidenceDigest: digest("expected"), requiredDependenciesEligible: false });
-    expect(() => verifyInspection("v1", 2, manifests, revokedDependency, digest("expected")))
-      .toThrowError(/required dependency revoked/);
+    expect(() => verifyInspection("v1", 2, manifests, wrongDigest, digest("expected"))).toThrowError(
+      /candidate evidence digest mismatch/,
+    );
+    const revokedDependency = inspection({
+      candidateEvidenceDigest: digest("expected"),
+      requiredDependenciesEligible: false,
+    });
+    expect(() => verifyInspection("v1", 2, manifests, revokedDependency, digest("expected"))).toThrowError(
+      /required dependency revoked/,
+    );
   });
 
   it("does not include candidateEvidenceDigest or requiredDependenciesEligible in the returned digest's input", () => {
     const withoutCandidate = verifyInspection("v1", 2, manifests, inspection());
     const withCandidate = verifyInspection(
-      "v1", 2, manifests,
+      "v1",
+      2,
+      manifests,
       inspection({ candidateEvidenceDigest: digest("expected"), requiredDependenciesEligible: true }),
       digest("expected"),
     );
@@ -79,7 +122,9 @@ describe("collectInspectionFindings", () => {
   it("classifies a version mismatch as security_critical", () => {
     const findings: Parameters<typeof collectInspectionFindings>[2] = [];
     collectInspectionFindings(publication(), inspection({ vectorSpaceVersionId: "v2" }), findings);
-    expect(findings).toEqual([{ code: "VERSION_MISMATCH", classification: "security_critical", detail: expect.any(String) }]);
+    expect(findings).toEqual([
+      { code: "VERSION_MISMATCH", classification: "security_critical", detail: expect.any(String) },
+    ]);
   });
 
   it("classifies a count mismatch as repairable", () => {
@@ -91,13 +136,21 @@ describe("collectInspectionFindings", () => {
   it("classifies a vector format change (dimensions or precision) as security_critical", () => {
     const findings: Parameters<typeof collectInspectionFindings>[2] = [];
     collectInspectionFindings(publication(), inspection({ precision: "vector" }), findings);
-    expect(findings).toEqual([{ code: "VECTOR_FORMAT_MISMATCH", classification: "security_critical", detail: expect.any(String) }]);
+    expect(findings).toEqual([
+      { code: "VECTOR_FORMAT_MISMATCH", classification: "security_critical", detail: expect.any(String) },
+    ]);
   });
 
   it("names the mismatched manifest key and classifies it security_critical", () => {
     const findings: Parameters<typeof collectInspectionFindings>[2] = [];
-    collectInspectionFindings(publication(), inspection({ manifests: { ...manifests, embedding: digest("z") } }), findings);
-    expect(findings).toEqual([{ code: "EMBEDDING_MANIFEST_MISMATCH", classification: "security_critical", detail: expect.any(String) }]);
+    collectInspectionFindings(
+      publication(),
+      inspection({ manifests: { ...manifests, embedding: digest("z") } }),
+      findings,
+    );
+    expect(findings).toEqual([
+      { code: "EMBEDDING_MANIFEST_MISMATCH", classification: "security_critical", detail: expect.any(String) },
+    ]);
   });
 
   it("classifies an unready index as repairable and a failed authorization check as security_critical", () => {
@@ -111,7 +164,11 @@ describe("collectInspectionFindings", () => {
 
   it("classifies an evaluation regression as review_required and a failed sample search as repairable", () => {
     const findings: Parameters<typeof collectInspectionFindings>[2] = [];
-    collectInspectionFindings(publication(), inspection({ evaluationPassed: false, sampleSearchPassed: false }), findings);
+    collectInspectionFindings(
+      publication(),
+      inspection({ evaluationPassed: false, sampleSearchPassed: false }),
+      findings,
+    );
     expect(findings.map(({ code, classification }) => [code, classification])).toEqual([
       ["EVALUATION_REGRESSION", "review_required"],
       ["SAMPLE_SEARCH_FAILED", "repairable"],
@@ -129,7 +186,9 @@ describe("collectInspectionFindings", () => {
       inspection({ candidateEvidenceDigest: digest("drifted"), requiredDependenciesEligible: true }),
       withDriftedDigest,
     );
-    expect(withDriftedDigest).toEqual([{ code: "CANDIDATE_EVIDENCE_MISMATCH", classification: "security_critical", detail: expect.any(String) }]);
+    expect(withDriftedDigest).toEqual([
+      { code: "CANDIDATE_EVIDENCE_MISMATCH", classification: "security_critical", detail: expect.any(String) },
+    ]);
 
     const withRevokedDependency: Parameters<typeof collectInspectionFindings>[2] = [];
     collectInspectionFindings(
@@ -137,6 +196,8 @@ describe("collectInspectionFindings", () => {
       inspection({ candidateEvidenceDigest: digest("expected"), requiredDependenciesEligible: false }),
       withRevokedDependency,
     );
-    expect(withRevokedDependency).toEqual([{ code: "REQUIRED_DEPENDENCY_REVOKED", classification: "review_required", detail: expect.any(String) }]);
+    expect(withRevokedDependency).toEqual([
+      { code: "REQUIRED_DEPENDENCY_REVOKED", classification: "review_required", detail: expect.any(String) },
+    ]);
   });
 });

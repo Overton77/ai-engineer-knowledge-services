@@ -30,26 +30,36 @@ export const CanonicalRecordReferenceSchema = z.strictObject({
 });
 export type CanonicalRecordReference = z.infer<typeof CanonicalRecordReferenceSchema>;
 
-export const SourceLocatorSchema = z.strictObject({
-  representationId: UuidSchema,
-  nodeId: UuidSchema.optional(),
-  page: z.int().positive().optional(),
-  sectionPath: z.array(NonEmptyStringSchema).optional(),
-  startOffset: z.int().nonnegative().optional(),
-  endOffset: z.int().positive().optional(),
-  startTimeMs: z.int().nonnegative().optional(),
-  endTimeMs: z.int().positive().optional(),
-  domPath: NonEmptyStringSchema.optional(),
-  symbol: NonEmptyStringSchema.optional(),
-  quoteDigest: Sha256DigestSchema.optional(),
-}).superRefine((locator, context) => {
-  if (locator.startOffset !== undefined && locator.endOffset !== undefined && locator.endOffset <= locator.startOffset) {
-    context.addIssue({ code: "custom", message: "endOffset must be greater than startOffset", path: ["endOffset"] });
-  }
-  if (locator.startTimeMs !== undefined && locator.endTimeMs !== undefined && locator.endTimeMs <= locator.startTimeMs) {
-    context.addIssue({ code: "custom", message: "endTimeMs must be greater than startTimeMs", path: ["endTimeMs"] });
-  }
-});
+export const SourceLocatorSchema = z
+  .strictObject({
+    representationId: UuidSchema,
+    nodeId: UuidSchema.optional(),
+    page: z.int().positive().optional(),
+    sectionPath: z.array(NonEmptyStringSchema).optional(),
+    startOffset: z.int().nonnegative().optional(),
+    endOffset: z.int().positive().optional(),
+    startTimeMs: z.int().nonnegative().optional(),
+    endTimeMs: z.int().positive().optional(),
+    domPath: NonEmptyStringSchema.optional(),
+    symbol: NonEmptyStringSchema.optional(),
+    quoteDigest: Sha256DigestSchema.optional(),
+  })
+  .superRefine((locator, context) => {
+    if (
+      locator.startOffset !== undefined &&
+      locator.endOffset !== undefined &&
+      locator.endOffset <= locator.startOffset
+    ) {
+      context.addIssue({ code: "custom", message: "endOffset must be greater than startOffset", path: ["endOffset"] });
+    }
+    if (
+      locator.startTimeMs !== undefined &&
+      locator.endTimeMs !== undefined &&
+      locator.endTimeMs <= locator.startTimeMs
+    ) {
+      context.addIssue({ code: "custom", message: "endTimeMs must be greater than startTimeMs", path: ["endTimeMs"] });
+    }
+  });
 export type SourceLocator = z.infer<typeof SourceLocatorSchema>;
 
 export const ImmutableResourceSchema = z.strictObject({
@@ -71,9 +81,17 @@ export const ProblemDetailsSchema = z.strictObject({
   detail: NonEmptyStringSchema.optional(),
   instance: NonEmptyStringSchema.optional(),
   code: z.enum([
-    "INVALID_CONTRACT", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "CONFLICT",
-    "IDEMPOTENCY_CONFLICT", "STALE_GUARDED_DIGEST", "INVALID_STATE_TRANSITION",
-    "CAPABILITY_NOT_ADMITTED", "LIMIT_EXCEEDED", "INTERNAL_ERROR",
+    "INVALID_CONTRACT",
+    "UNAUTHORIZED",
+    "FORBIDDEN",
+    "NOT_FOUND",
+    "CONFLICT",
+    "IDEMPOTENCY_CONFLICT",
+    "STALE_GUARDED_DIGEST",
+    "INVALID_STATE_TRANSITION",
+    "CAPABILITY_NOT_ADMITTED",
+    "LIMIT_EXCEEDED",
+    "INTERNAL_ERROR",
   ]),
   correlationId: NonEmptyStringSchema,
   issues: z.array(z.strictObject({ path: NonEmptyStringSchema, message: NonEmptyStringSchema })).optional(),

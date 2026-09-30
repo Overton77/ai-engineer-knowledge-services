@@ -8,7 +8,12 @@ export const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).pa
  * directly rather than through `@aiengineer/knowledge-preparation` — see the
  * README for why conversion stays out of these examples.
  */
-export function evidenceFor(locatorId: string, representationId: string, nodeId: string, text: string): EvidenceSupport {
+export function evidenceFor(
+  locatorId: string,
+  representationId: string,
+  nodeId: string,
+  text: string,
+): EvidenceSupport {
   return { locatorId, locator: createSourceLocator(representationId, nodeId, text), quotedText: text };
 }
 

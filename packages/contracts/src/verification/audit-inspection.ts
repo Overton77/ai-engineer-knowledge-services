@@ -39,7 +39,9 @@ export const VerificationAuditInspectionOperationResultSchema = z.strictObject({
   output: VerificationAuditInspectionResultSchema,
   resultArtifact: VerificationArtifactHandleSchema,
 });
-export type VerificationAuditInspectionOperationResult = z.infer<typeof VerificationAuditInspectionOperationResultSchema>;
+export type VerificationAuditInspectionOperationResult = z.infer<
+  typeof VerificationAuditInspectionOperationResultSchema
+>;
 
 /** Sanitized authenticated read projection; internal Storage coordinates never cross transports. */
 export const VerificationAuditInspectionResourceSchema = z.strictObject({

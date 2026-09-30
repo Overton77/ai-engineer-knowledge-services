@@ -5,7 +5,8 @@ import { sha256Digest } from "@aiengineer/knowledge-core";
 import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
 
 const TENANT_ID = "00000000-0000-7000-8000-000000000001";
-const DOCLING_IMAGE = "ghcr.io/docling-project/docling-serve@sha256:f8b324448e7c9e66083049727aaa90e3e65e88f0d7796624597a29d04183198b";
+const DOCLING_IMAGE =
+  "ghcr.io/docling-project/docling-serve@sha256:f8b324448e7c9e66083049727aaa90e3e65e88f0d7796624597a29d04183198b";
 const fixture = `# Durable agent state
 
 An activity records its result and immutable receipt before queue acknowledgement.
@@ -25,11 +26,7 @@ const sourceArtifact = await artifacts.put({
   mediaType: "text/markdown",
   bytes: new TextEncoder().encode(fixture),
 });
-const provider = new DoclingServeProvider(
-  DOCLING_IMAGE,
-  createDoclingServeClientFromEnvironment(),
-  artifacts,
-);
+const provider = new DoclingServeProvider(DOCLING_IMAGE, createDoclingServeClientFromEnvironment(), artifacts);
 const startedAt = new Date().toISOString();
 const output = await provider.convert({
   tenantId: TENANT_ID,

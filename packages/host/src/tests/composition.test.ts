@@ -63,9 +63,18 @@ describe("host import and profile admission", () => {
   it("composes the local profile lazily without reaching the network or a database", async () => {
     const { createHost } = await import("../index.js");
     const create = vi.fn();
-    const host = await createHost({ profile: "local", storeDir: "never-created-store", verification: { captureMediaKind: vi.fn(), create: create as never } });
+    const host = await createHost({
+      profile: "local",
+      storeDir: "never-created-store",
+      verification: { captureMediaKind: vi.fn(), create: create as never },
+    });
     expect(host.profile).toBe("local");
-    expect(host.capabilities).toEqual({ onlineCapture: false, documentConversion: false, semanticJudging: false, database: false });
+    expect(host.capabilities).toEqual({
+      onlineCapture: false,
+      documentConversion: false,
+      semanticJudging: false,
+      database: false,
+    });
     await host.close();
     expect(create).not.toHaveBeenCalled();
     expect(pools.created).toBe(0);
@@ -85,9 +94,18 @@ describe("host import and profile admission", () => {
 describe("API host composition", () => {
   it("exposes no persistence-backed capability when none is configured", async () => {
     const { createHost } = await import("../index.js");
-    const host = await createHost({ profile: "server", role: "api",
-        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test" } });
-    expect(host.capabilities).toEqual({ persistence: false, retrieval: false, citationReplay: false, verification: false });
+    const host = await createHost({
+      profile: "server",
+      role: "api",
+      resolvePublicOrigin: noPublicOrigin,
+      environment: { NODE_ENV: "test" },
+    });
+    expect(host.capabilities).toEqual({
+      persistence: false,
+      retrieval: false,
+      citationReplay: false,
+      verification: false,
+    });
     expect(host.operations).toBeUndefined();
     expect(host.knowledge).toEqual({});
     expect(Object.keys(host.verify)).toEqual(["runtime"]);
@@ -133,8 +151,12 @@ describe("API host composition", () => {
 
   it("composes durable ports with persistence and releases the pool exactly once", async () => {
     const { createHost } = await import("../index.js");
-    const host = await createHost({ profile: "server", role: "api",
-        resolvePublicOrigin: noPublicOrigin, environment: { NODE_ENV: "test", ...database } });
+    const host = await createHost({
+      profile: "server",
+      role: "api",
+      resolvePublicOrigin: noPublicOrigin,
+      environment: { NODE_ENV: "test", ...database },
+    });
     expect(host.capabilities).toMatchObject({ persistence: true, retrieval: false });
     expect(host.operations).toBeDefined();
     expect(host.knowledge.resources).toBeDefined();
@@ -149,9 +171,9 @@ describe("MCP host composition", () => {
   it("requires persistence and validates the API origin before opening the pool", async () => {
     const { createHost } = await import("../index.js");
     const resolveApiOrigin = () => "http://127.0.0.1:4100";
-    await expect(createHost({ profile: "server", role: "mcp", environment: { NODE_ENV: "test" }, resolveApiOrigin })).rejects.toThrow(
-      "POSTGRES_URL_REQUIRED",
-    );
+    await expect(
+      createHost({ profile: "server", role: "mcp", environment: { NODE_ENV: "test" }, resolveApiOrigin }),
+    ).rejects.toThrow("POSTGRES_URL_REQUIRED");
     await expect(
       createHost({
         profile: "server",
@@ -163,7 +185,12 @@ describe("MCP host composition", () => {
       }),
     ).rejects.toThrow("KNOWLEDGE_API_URL_REQUIRED");
     expect(pools.created).toBe(0);
-    const host = await createHost({ profile: "server", role: "mcp", environment: { NODE_ENV: "test", ...database }, resolveApiOrigin });
+    const host = await createHost({
+      profile: "server",
+      role: "mcp",
+      environment: { NODE_ENV: "test", ...database },
+      resolveApiOrigin,
+    });
     expect(host.config.PORT).toBe(4101);
     expect(host.verify.operations).toBeUndefined();
     await host.close();
@@ -174,7 +201,12 @@ describe("MCP host composition", () => {
     const { createHost } = await import("../index.js");
     const environment = { NODE_ENV: "test", ...database };
     const api = await createHost({ profile: "server", role: "api", resolvePublicOrigin: noPublicOrigin, environment });
-    const mcp = await createHost({ profile: "server", role: "mcp", environment, resolveApiOrigin: () => "http://127.0.0.1:4100" });
+    const mcp = await createHost({
+      profile: "server",
+      role: "mcp",
+      environment,
+      resolveApiOrigin: () => "http://127.0.0.1:4100",
+    });
     try {
       expect(Object.keys(mcp.knowledge).sort()).toEqual(Object.keys(api.knowledge).sort());
       expect(Object.keys(mcp.verify).sort()).toEqual(Object.keys(api.verify).sort());
@@ -190,7 +222,10 @@ describe("MCP host composition", () => {
   it("applies the API role's verification use-case configuration failures", async () => {
     const { createHost } = await import("../index.js");
     for (const [setting, failure] of [
-      [{ VERIFICATION_BENCHMARK_CAPTURE_PROFILES_JSON: "[]" }, "VERIFICATION_BENCHMARK_CAPTURE_PROFILE_CONFIGURATION_REQUIRED"],
+      [
+        { VERIFICATION_BENCHMARK_CAPTURE_PROFILES_JSON: "[]" },
+        "VERIFICATION_BENCHMARK_CAPTURE_PROFILE_CONFIGURATION_REQUIRED",
+      ],
       [{ VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "yes" }, "VERIFICATION_ADJUDICATION_DECISIONS_ENABLED_INVALID"],
     ] as const)
       await expect(
@@ -249,7 +284,12 @@ describe("worker host composition", () => {
     const { createHost } = await import("../index.js");
     const production = execution();
     await expect(
-      createHost({ profile: "server", role: "worker", environment: { KNOWLEDGE_PERSISTENCE_MODE: "memory", NODE_ENV: "production" }, execution: production.factory }),
+      createHost({
+        profile: "server",
+        role: "worker",
+        environment: { KNOWLEDGE_PERSISTENCE_MODE: "memory", NODE_ENV: "production" },
+        execution: production.factory,
+      }),
     ).rejects.toThrow("IN_MEMORY_PERSISTENCE_NOT_ADMITTED");
     expect(production.phases).toEqual([]);
     const memory = execution();
@@ -260,7 +300,12 @@ describe("worker host composition", () => {
       execution: memory.factory,
     });
     expect(memory.phases).toEqual(["prepare", "build:memory"]);
-    expect(host).toMatchObject({ mode: "memory", owner: "memory-worker", reconciled: 3, registeredActivities: ["test_activity"] });
+    expect(host).toMatchObject({
+      mode: "memory",
+      owner: "memory-worker",
+      reconciled: 3,
+      registeredActivities: ["test_activity"],
+    });
     await host.close();
     expect(pools.created).toBe(0);
   });
@@ -269,7 +314,12 @@ describe("worker host composition", () => {
     const { createHost } = await import("../index.js");
     const { factory } = execution();
     await expect(
-      createHost({ profile: "server", role: "worker", environment: { ...postgresWorker, WORKER_TENANT_ID: "" }, execution: factory }),
+      createHost({
+        profile: "server",
+        role: "worker",
+        environment: { ...postgresWorker, WORKER_TENANT_ID: "" },
+        execution: factory,
+      }),
     ).rejects.toThrow("WORKER_TENANT_ID_REQUIRED");
     expect(pools.created).toBe(0);
   });
@@ -277,7 +327,12 @@ describe("worker host composition", () => {
   it("releases persistence when adapter, execution or reconciliation construction fails", async () => {
     const { createHost } = await import("../index.js");
     await expect(
-      createHost({ profile: "server", role: "worker", environment: { ...postgresWorker, ACQUISITION_TIMEOUT_MS: "0" }, execution: execution().factory }),
+      createHost({
+        profile: "server",
+        role: "worker",
+        environment: { ...postgresWorker, ACQUISITION_TIMEOUT_MS: "0" },
+        execution: execution().factory,
+      }),
     ).rejects.toThrow("INVALID_ACQUISITION_TIMEOUT_MS");
     await expect(
       createHost({
@@ -305,7 +360,12 @@ describe("worker host composition", () => {
   it("reconciles before returning and releases persistence once", async () => {
     const { createHost } = await import("../index.js");
     const { factory, phases } = execution();
-    const host = await createHost({ profile: "server", role: "worker", environment: postgresWorker, execution: factory });
+    const host = await createHost({
+      profile: "server",
+      role: "worker",
+      environment: postgresWorker,
+      execution: factory,
+    });
     expect(phases).toEqual(["prepare", "build:postgres"]);
     expect(host.reconciled).toBe(3);
     await Promise.all([host.close(), host.close()]);

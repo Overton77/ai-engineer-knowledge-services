@@ -35,12 +35,16 @@ describe("validateVectorItemEntityLink", () => {
   });
 
   it("flags a chunk target whose canonicalId does not equal lineage.chunkId", () => {
-    const result = validateVectorItemEntityLink(link({ target: { projectionTargetId: "target-1", kind: "chunk", canonicalId: "different-chunk" } }));
+    const result = validateVectorItemEntityLink(
+      link({ target: { projectionTargetId: "target-1", kind: "chunk", canonicalId: "different-chunk" } }),
+    );
     expect(result.issues).toContain("chunk target canonicalId must equal lineage.chunkId");
   });
 
   it("does not require canonicalId to equal chunkId for a non-chunk target", () => {
-    const result = validateVectorItemEntityLink(link({ target: { projectionTargetId: "target-1", kind: "entity", canonicalId: "entity-1" } }));
+    const result = validateVectorItemEntityLink(
+      link({ target: { projectionTargetId: "target-1", kind: "entity", canonicalId: "entity-1" } }),
+    );
     expect(result.issues).not.toContain("chunk target canonicalId must equal lineage.chunkId");
   });
 
@@ -56,7 +60,9 @@ describe("validateVectorItemEntityLink", () => {
   });
 
   it("validates the admission digest when the link is admitted", () => {
-    const result = validateVectorItemEntityLink(link({ admission: { admissionDigest: "bad", admittedAt: "2026-09-19T00:00:00Z" } }));
+    const result = validateVectorItemEntityLink(
+      link({ admission: { admissionDigest: "bad", admittedAt: "2026-09-19T00:00:00Z" } }),
+    );
     expect(result.issues).toContain("admission.admissionDigest is not a sha256 digest");
   });
 });

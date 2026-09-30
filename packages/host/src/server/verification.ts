@@ -36,7 +36,9 @@ export interface VerificationServices {
   readonly adjudicationReads?: Defined<ReturnType<typeof createVerificationAdjudicationReads>>;
   /** Opt-in adjudication decision intake: submission admission, ownership-gated reads. */
   readonly decisions?: Defined<ReturnType<typeof createVerificationAdjudicationDecisionRuntime>>;
-  readonly resolveBenchmarkCaptureProfile?: Defined<ReturnType<typeof createVerificationBenchmarkCaptureProfileResolver>>;
+  readonly resolveBenchmarkCaptureProfile?: Defined<
+    ReturnType<typeof createVerificationBenchmarkCaptureProfileResolver>
+  >;
 }
 
 /**
@@ -51,7 +53,9 @@ export function composeVerificationServices(
   const runtime = createVerificationHostRuntime(database, environment, {
     production: options.production,
     extraAdmittedKinds:
-      environment.VERIFICATION_ADJUDICATION_DECISIONS_ENABLED?.trim() === "1" ? ["verification_adjudication_decision"] : [],
+      environment.VERIFICATION_ADJUDICATION_DECISIONS_ENABLED?.trim() === "1"
+        ? ["verification_adjudication_decision"]
+        : [],
   });
   const reads = createVerificationReads(database, environment);
   const benchmarkReads = createVerificationBenchmarkReads(database, environment);

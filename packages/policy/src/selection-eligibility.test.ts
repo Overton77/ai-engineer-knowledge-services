@@ -10,12 +10,19 @@ import {
 
 const admittedSpaces: readonly VectorSpace[] = ["source_native_sections", "engineering_claims", "entity_profiles"];
 const context = (overrides: Partial<SelectionEligibilityContext> = {}): SelectionEligibilityContext => ({
-  storeClass: "official_canonical", admittedSpaces, ...overrides,
+  storeClass: "official_canonical",
+  admittedSpaces,
+  ...overrides,
 });
 
 const lineage = (overrides: Partial<SelectionCandidateLineageEntry> = {}): SelectionCandidateLineageEntry => ({
-  chunkId: "chunk-1", chunkDigest: "sha256:chunk", representationId: "representation-1",
-  representationClass: "source_native", captureId: "capture-1", sourceFamilyId: "family-1", ...overrides,
+  chunkId: "chunk-1",
+  chunkDigest: "sha256:chunk",
+  representationId: "representation-1",
+  representationClass: "source_native",
+  captureId: "capture-1",
+  sourceFamilyId: "family-1",
+  ...overrides,
 });
 
 const base = (overrides: Partial<SelectionCandidate> = {}): SelectionCandidate => ({
@@ -24,19 +31,32 @@ const base = (overrides: Partial<SelectionCandidate> = {}): SelectionCandidate =
   lineage: [lineage()],
   admittedClaims: [],
   revoked: false,
-  estimatedBytes: 100, estimatedTokens: 20, estimatedCostMicros: 5,
+  estimatedBytes: 100,
+  estimatedTokens: 20,
+  estimatedCostMicros: 5,
   ...overrides,
 });
 
 /** No `ContentReference.kind` value reaches `raw_source_bytes` (see `classifyRepresentation`'s doc comment); this constructs the `default` branch directly by bypassing the type system, as a caller never legitimately could. */
 const unrepresentableCapture = (overrides: Partial<SelectionCandidate> = {}): SelectionCandidate =>
-  ({ ...base(overrides), content: { kind: "sealed_capture", id: "capture-1", digest: "sha256:capture" } }) as unknown as SelectionCandidate;
+  ({
+    ...base(overrides),
+    content: { kind: "sealed_capture", id: "capture-1", digest: "sha256:capture" },
+  }) as unknown as SelectionCandidate;
 
 const faithfulSection = (overrides: Partial<SelectionCandidate> = {}): SelectionCandidate =>
   base({
     content: { kind: "chunk", id: "chunk-1", digest: "sha256:chunk" },
     locators: { reconstructable: true },
-    admittedClaims: [{ runId: "run-1", claimId: "claim-1", claimDigest: "sha256:claim", admissionDigest: "sha256:admission", status: "directly_supported" }],
+    admittedClaims: [
+      {
+        runId: "run-1",
+        claimId: "claim-1",
+        claimDigest: "sha256:claim",
+        admissionDigest: "sha256:admission",
+        status: "directly_supported",
+      },
+    ],
     targetSpaces: ["source_native_sections"],
     ...overrides,
   });
@@ -44,8 +64,17 @@ const faithfulSection = (overrides: Partial<SelectionCandidate> = {}): Selection
 const atomicProjection = (overrides: Partial<SelectionCandidate> = {}): SelectionCandidate =>
   base({
     content: { kind: "claim", id: "claim-1", digest: "sha256:claim" },
-    admittedClaims: [{ runId: "run-1", claimId: "claim-1", claimDigest: "sha256:claim", admissionDigest: "sha256:admission", status: "directly_supported" }],
-    temporalLink: true, entityLink: true,
+    admittedClaims: [
+      {
+        runId: "run-1",
+        claimId: "claim-1",
+        claimDigest: "sha256:claim",
+        admissionDigest: "sha256:admission",
+        status: "directly_supported",
+      },
+    ],
+    temporalLink: true,
+    entityLink: true,
     targetSpaces: ["engineering_claims"],
     ...overrides,
   });
@@ -67,19 +96,38 @@ const exploratoryDraft = (overrides: Partial<SelectionCandidate> = {}): Selectio
 
 describe("evaluateSelectionEligibility: representation classification", () => {
   it("classifies each of the five representation kinds from the candidate shape", () => {
-    expect(evaluateSelectionEligibility(faithfulSection(), context()).representationKind).toBe("faithful_source_section");
-    expect(evaluateSelectionEligibility(exploratoryDraft(), context({ storeClass: "internal_exploratory" })).representationKind).toBe("exploratory_draft");
+    expect(evaluateSelectionEligibility(faithfulSection(), context()).representationKind).toBe(
+      "faithful_source_section",
+    );
+    expect(
+      evaluateSelectionEligibility(exploratoryDraft(), context({ storeClass: "internal_exploratory" }))
+        .representationKind,
+    ).toBe("exploratory_draft");
     expect(evaluateSelectionEligibility(atomicProjection(), context()).representationKind).toBe("atomic_projection");
-    expect(evaluateSelectionEligibility({ ...atomicProjection(), content: { kind: "entity", id: "entity-1", digest: "sha256:entity" } }, context()).representationKind).toBe("atomic_projection");
-    expect(evaluateSelectionEligibility({ ...atomicProjection(), content: { kind: "record", id: "record-1", digest: "sha256:record" } }, context()).representationKind).toBe("atomic_projection");
+    expect(
+      evaluateSelectionEligibility(
+        { ...atomicProjection(), content: { kind: "entity", id: "entity-1", digest: "sha256:entity" } },
+        context(),
+      ).representationKind,
+    ).toBe("atomic_projection");
+    expect(
+      evaluateSelectionEligibility(
+        { ...atomicProjection(), content: { kind: "record", id: "record-1", digest: "sha256:record" } },
+        context(),
+      ).representationKind,
+    ).toBe("atomic_projection");
     expect(evaluateSelectionEligibility(derivedSummary(), context()).representationKind).toBe("derived_summary");
-    expect(evaluateSelectionEligibility(unrepresentableCapture(), context()).representationKind).toBe("raw_source_bytes");
+    expect(evaluateSelectionEligibility(unrepresentableCapture(), context()).representationKind).toBe(
+      "raw_source_bytes",
+    );
   });
   it("classifies node content identically to chunk content, since PromotionSelectionSchema admits both as faithful source content", () => {
     const nodeSection = faithfulSection({ content: { kind: "node", id: "node-1", digest: "sha256:node" } });
     expect(evaluateSelectionEligibility(nodeSection, context()).representationKind).toBe("faithful_source_section");
     const nodeDraft = exploratoryDraft({ content: { kind: "node", id: "node-2", digest: "sha256:node-draft" } });
-    expect(evaluateSelectionEligibility(nodeDraft, context({ storeClass: "internal_exploratory" })).representationKind).toBe("exploratory_draft");
+    expect(
+      evaluateSelectionEligibility(nodeDraft, context({ storeClass: "internal_exploratory" })).representationKind,
+    ).toBe("exploratory_draft");
   });
 });
 
@@ -119,7 +167,10 @@ describe("evaluateSelectionEligibility: faithful source section", () => {
     const official = evaluateSelectionEligibility(faithfulSection({ targetSpaces: ["engineering_claims"] }), context());
     expect(official.eligible).toBe(false);
     expect(official.reasons).toContain("SECTION_NOT_ELIGIBLE_FOR_OFFICIAL_SPACE");
-    const native = evaluateSelectionEligibility(faithfulSection({ targetSpaces: ["source_native_sections"] }), context());
+    const native = evaluateSelectionEligibility(
+      faithfulSection({ targetSpaces: ["source_native_sections"] }),
+      context(),
+    );
     expect(native.eligible).toBe(true);
     expect(native.reasons).toEqual([]);
   });
@@ -133,7 +184,17 @@ describe("evaluateSelectionEligibility: atomic projection", () => {
   });
   it("does not promote on status verified alone (T2 settlement is an admission outcome, not a promotion input)", () => {
     const result = evaluateSelectionEligibility(
-      atomicProjection({ admittedClaims: [{ runId: "run-1", claimId: "claim-1", claimDigest: "sha256:claim", admissionDigest: "sha256:admission", status: "verified" }] }),
+      atomicProjection({
+        admittedClaims: [
+          {
+            runId: "run-1",
+            claimId: "claim-1",
+            claimDigest: "sha256:claim",
+            admissionDigest: "sha256:admission",
+            status: "verified",
+          },
+        ],
+      }),
       context(),
     );
     expect(result.eligible).toBe(false);
@@ -152,7 +213,17 @@ describe("evaluateSelectionEligibility: atomic projection", () => {
   });
   it.each(PROMOTABLE_CLAIM_STATUSES)("promotes a claim with status %s", (status) => {
     const result = evaluateSelectionEligibility(
-      atomicProjection({ admittedClaims: [{ runId: "run-1", claimId: "claim-1", claimDigest: "sha256:claim", admissionDigest: "sha256:admission", status }] }),
+      atomicProjection({
+        admittedClaims: [
+          {
+            runId: "run-1",
+            claimId: "claim-1",
+            claimDigest: "sha256:claim",
+            admissionDigest: "sha256:admission",
+            status,
+          },
+        ],
+      }),
       context(),
     );
     expect(result.eligible).toBe(true);
@@ -162,13 +233,24 @@ describe("evaluateSelectionEligibility: atomic projection", () => {
 
 describe("evaluateSelectionEligibility: derived summary", () => {
   it("requires the report to be admitted", () => {
-    const result = evaluateSelectionEligibility(derivedSummary({ reportAdmission: { admitted: false, dependencies: [] } }), context());
+    const result = evaluateSelectionEligibility(
+      derivedSummary({ reportAdmission: { admitted: false, dependencies: [] } }),
+      context(),
+    );
     expect(result.eligible).toBe(false);
     expect(result.reasons).toContain("SUMMARY_REPORT_NOT_ADMITTED");
   });
   it("requires every material dependency to be eligible", () => {
     const result = evaluateSelectionEligibility(
-      derivedSummary({ reportAdmission: { admitted: true, dependencies: [{ ref: "chunk-1", eligible: true }, { ref: "chunk-2", eligible: false }] } }),
+      derivedSummary({
+        reportAdmission: {
+          admitted: true,
+          dependencies: [
+            { ref: "chunk-1", eligible: true },
+            { ref: "chunk-2", eligible: false },
+          ],
+        },
+      }),
       context(),
     );
     expect(result.eligible).toBe(false);
@@ -188,7 +270,10 @@ describe("evaluateSelectionEligibility: exploratory draft", () => {
     const admitted = evaluateSelectionEligibility(exploratoryDraft(), context({ storeClass: "internal_exploratory" }));
     expect(admitted.eligible).toBe(true);
     expect(admitted.reasons).toEqual([]);
-    const denied = evaluateSelectionEligibility(exploratoryDraft(), context({ storeClass: "official_canonical" as StoreClass }));
+    const denied = evaluateSelectionEligibility(
+      exploratoryDraft(),
+      context({ storeClass: "official_canonical" as StoreClass }),
+    );
     expect(denied.eligible).toBe(false);
     expect(denied.reasons).toEqual(["DRAFT_OFFICIAL_SPACE_DENIED"]);
   });
@@ -221,10 +306,19 @@ describe("evaluateSelectionEligibility: cross-cutting rules", () => {
     expect(result.reasons).toEqual(expect.arrayContaining(["REVOKED", "LINEAGE_MISSING", "SPACE_NOT_ADMITTED"]));
   });
   it("honors a caller-supplied promotable-status override", () => {
-    const claim = { runId: "run-1", claimId: "claim-1", claimDigest: "sha256:claim", admissionDigest: "sha256:admission", status: "custom_status" };
+    const claim = {
+      runId: "run-1",
+      claimId: "claim-1",
+      claimDigest: "sha256:claim",
+      admissionDigest: "sha256:admission",
+      status: "custom_status",
+    };
     const rejected = evaluateSelectionEligibility(atomicProjection({ admittedClaims: [claim] }), context());
     expect(rejected.reasons).toContain("PROJECTION_CLAIM_STATUS_NOT_PROMOTABLE");
-    const accepted = evaluateSelectionEligibility(atomicProjection({ admittedClaims: [claim] }), context({ promotableClaimStatuses: ["custom_status"] }));
+    const accepted = evaluateSelectionEligibility(
+      atomicProjection({ admittedClaims: [claim] }),
+      context({ promotableClaimStatuses: ["custom_status"] }),
+    );
     expect(accepted.eligible).toBe(true);
   });
 });
@@ -232,7 +326,12 @@ describe("evaluateSelectionEligibility: cross-cutting rules", () => {
 describe("evaluateSelectionEligibility: space budget effect", () => {
   it("reports one entry per target space and never rejects for size", () => {
     const result = evaluateSelectionEligibility(
-      atomicProjection({ targetSpaces: ["engineering_claims", "entity_profiles"], estimatedBytes: 1, estimatedTokens: 2, estimatedCostMicros: 3 }),
+      atomicProjection({
+        targetSpaces: ["engineering_claims", "entity_profiles"],
+        estimatedBytes: 1,
+        estimatedTokens: 2,
+        estimatedCostMicros: 3,
+      }),
       context(),
     );
     expect(result.spaceBudgetEffect).toEqual([
@@ -241,7 +340,10 @@ describe("evaluateSelectionEligibility: space budget effect", () => {
     ]);
   });
   it("still returns eligible: true with an enormous cost when the rules pass, proving this function does not enforce budget", () => {
-    const result = evaluateSelectionEligibility(atomicProjection({ estimatedCostMicros: Number.MAX_SAFE_INTEGER }), context());
+    const result = evaluateSelectionEligibility(
+      atomicProjection({ estimatedCostMicros: Number.MAX_SAFE_INTEGER }),
+      context(),
+    );
     expect(result.eligible).toBe(true);
     expect(result.spaceBudgetEffect[0]!.costMicros).toBe(Number.MAX_SAFE_INTEGER);
   });

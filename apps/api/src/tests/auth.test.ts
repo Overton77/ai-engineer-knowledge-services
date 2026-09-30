@@ -36,13 +36,7 @@ describe("local API identities", () => {
     const resolver = createLocalIdentityResolver(config);
     const resolved = await resolver(token);
     expect(await resolver("not-the-configured-token")).toBeUndefined();
-    expect(
-      isAuthorized(
-        resolved!,
-        "00000000-0000-4000-8000-000000000099",
-        "knowledge.read",
-      ),
-    ).toBe(false);
+    expect(isAuthorized(resolved!, "00000000-0000-4000-8000-000000000099", "knowledge.read")).toBe(false);
     expect(isAuthorized(resolved!, tenant, "operation.submit")).toBe(false);
   });
   it("has no implicit identity when local configuration is absent", async () => {

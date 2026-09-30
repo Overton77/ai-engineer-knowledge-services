@@ -1,14 +1,6 @@
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import type {
-  ArtifactStore,
-  StoredArtifact,
-} from "@aiengineer/knowledge-core";
-import {
-  assertSafeHttpUrl,
-  type DnsResolver,
-  type HttpFetch,
-  type HttpPolicy,
-} from "../http/index.js";
+import type { ArtifactStore, StoredArtifact } from "@aiengineer/knowledge-core";
+import { assertSafeHttpUrl, type DnsResolver, type HttpFetch, type HttpPolicy } from "../http/index.js";
 import type {
   AcquisitionAdapter,
   AcquisitionPlan,
@@ -40,16 +32,12 @@ async function boundedProviderBody(
   maximumRatio: number,
 ): Promise<Uint8Array> {
   const declaredHeader = response.headers.get("content-length");
-  const declared =
-    declaredHeader === null ? Number.NaN : Number(declaredHeader);
+  const declared = declaredHeader === null ? Number.NaN : Number(declaredHeader);
   const encoded = Boolean(
-    response.headers.get("content-encoding") &&
-    response.headers.get("content-encoding") !== "identity",
+    response.headers.get("content-encoding") && response.headers.get("content-encoding") !== "identity",
   );
-  if (encoded && (!Number.isFinite(declared) || declared <= 0))
-    throw new Error("ENCODED_LENGTH_REQUIRED");
-  if (Number.isFinite(declared) && declared > maximumBytes)
-    throw new Error("BYTE_LIMIT_EXCEEDED");
+  if (encoded && (!Number.isFinite(declared) || declared <= 0)) throw new Error("ENCODED_LENGTH_REQUIRED");
+  if (Number.isFinite(declared) && declared > maximumBytes) throw new Error("BYTE_LIMIT_EXCEEDED");
   if (!response.body) return new Uint8Array();
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -64,8 +52,7 @@ async function boundedProviderBody(
     }
     chunks.push(item.value);
   }
-  if (encoded && size / declared > maximumRatio)
-    throw new Error("DECOMPRESSION_RATIO_EXCEEDED");
+  if (encoded && size / declared > maximumRatio) throw new Error("DECOMPRESSION_RATIO_EXCEEDED");
   const bytes = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) {
@@ -75,25 +62,20 @@ async function boundedProviderBody(
   return bytes;
 }
 function redact(value: unknown, secret: string): unknown {
-  if (typeof value === "string")
-    return secret ? value.replaceAll(secret, "[REDACTED]") : value;
+  if (typeof value === "string") return secret ? value.replaceAll(secret, "[REDACTED]") : value;
   if (Array.isArray(value)) return value.map((item) => redact(item, secret));
   if (value && typeof value === "object")
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [
         key,
-        /authorization|cookie|api[-_]?key|secret|token/i.test(key)
-          ? "[REDACTED]"
-          : redact(item, secret),
+        /authorization|cookie|api[-_]?key|secret|token/i.test(key) ? "[REDACTED]" : redact(item, secret),
       ]),
     );
   return value;
 }
 function dataRecord(value: JsonRecord): JsonRecord {
   const data = value.data;
-  return data && typeof data === "object" && !Array.isArray(data)
-    ? (data as JsonRecord)
-    : value;
+  return data && typeof data === "object" && !Array.isArray(data) ? (data as JsonRecord) : value;
 }
 
 // Library only; do not grow it. Agents use the Firecrawl skill and import the
@@ -128,16 +110,9 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
   }
   async plan(request: AcquisitionRequest): Promise<AcquisitionPlan> {
     if (request.target.kind !== "http") throw new Error("UNSUPPORTED_TARGET");
-    const target = await assertSafeHttpUrl(
-      request.target.url,
-      this.config.targetPolicy,
-      this.resolver,
-    );
+    const target = await assertSafeHttpUrl(request.target.url, this.config.targetPolicy, this.resolver);
     await this.endpoint();
-    if (
-      request.authenticationReference &&
-      request.authenticationReference !== this.config.authenticationReference
-    )
+    if (request.authenticationReference && request.authenticationReference !== this.config.authenticationReference)
       throw new Error("AUTHENTICATION_REFERENCE_MISMATCH");
     return {
       adapterKey: this.adapterKey,
@@ -155,17 +130,10 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
     };
   }
   async execute(plan: AdmittedAcquisitionPlan): Promise<AcquisitionResult> {
-    if (plan.request.target.kind !== "http")
-      throw new Error("UNSUPPORTED_TARGET");
-    await assertSafeHttpUrl(
-      plan.normalizedTarget,
-      this.config.targetPolicy,
-      this.resolver,
-    );
+    if (plan.request.target.kind !== "http") throw new Error("UNSUPPORTED_TARGET");
+    await assertSafeHttpUrl(plan.normalizedTarget, this.config.targetPolicy, this.resolver);
     const endpoint = await this.endpoint();
-    const secret = await this.secrets.resolve(
-      this.config.authenticationReference,
-    );
+    const secret = await this.secrets.resolve(this.config.authenticationReference);
     if (!secret) throw new Error("AUTHENTICATION_SECRET_UNAVAILABLE");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
@@ -190,8 +158,7 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
     } finally {
       clearTimeout(timeout);
     }
-    if ([301, 302, 303, 307, 308].includes(response.status))
-      throw new Error("PROVIDER_REDIRECT_DENIED");
+    if ([301, 302, 303, 307, 308].includes(response.status)) throw new Error("PROVIDER_REDIRECT_DENIED");
     const raw = await boundedProviderBody(
       response,
       this.config.maximumResponseBytes,
@@ -223,8 +190,7 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
       if (typeof content !== "string") continue;
       const bytes = new TextEncoder().encode(content);
       extractedBytes += bytes.byteLength;
-      if (extractedBytes > plan.request.maximumBytes)
-        throw new Error("BYTE_LIMIT_EXCEEDED");
+      if (extractedBytes > plan.request.maximumBytes) throw new Error("BYTE_LIMIT_EXCEEDED");
       artifacts.push(
         await this.artifacts.put({
           tenantId: plan.request.tenantId,
@@ -233,15 +199,9 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
         }),
       );
     }
-    const jobId =
-      typeof sanitized.id === "string"
-        ? sanitized.id
-        : typeof outputs.id === "string"
-          ? outputs.id
-          : "";
+    const jobId = typeof sanitized.id === "string" ? sanitized.id : typeof outputs.id === "string" ? outputs.id : "";
     const cost =
-      typeof sanitized.creditsUsed === "number" &&
-      Number.isFinite(sanitized.creditsUsed)
+      typeof sanitized.creditsUsed === "number" && Number.isFinite(sanitized.creditsUsed)
         ? Math.max(0, Math.round(sanitized.creditsUsed * 1000))
         : 0;
     return {
@@ -273,14 +233,11 @@ export class FirecrawlAcquisitionAdapter implements AcquisitionAdapter {
     const findings: string[] = [];
     if (
       result.artifacts.length === 0 ||
-      result.artifacts.some(
-        (item, index) => item.digest !== result.contentDigests[index],
-      )
+      result.artifacts.some((item, index) => item.digest !== result.contentDigests[index])
     )
       findings.push("artifact_digest_mismatch");
     const serialized = JSON.stringify(result);
-    if (/bearer\s+[a-z0-9._-]+/i.test(serialized))
-      findings.push("credential_exposure");
+    if (/bearer\s+[a-z0-9._-]+/i.test(serialized)) findings.push("credential_exposure");
     return {
       accepted: findings.length === 0 && result.errors.length === 0,
       checks: [

@@ -9,14 +9,7 @@ import {
   type MechanicallySelectedFragment,
   type SemanticJudgeAdapter,
 } from "../src/index.js";
-import {
-  ASSERTION_ID,
-  EVIDENCE_ID,
-  FRAGMENT_ID,
-  QUOTE,
-  corruptedInput,
-  passingInput,
-} from "./bundle-fixture.js";
+import { ASSERTION_ID, EVIDENCE_ID, FRAGMENT_ID, QUOTE, corruptedInput, passingInput } from "./bundle-fixture.js";
 
 /**
  * Stage 4 — semantic support, without a network. `verifyAssertionSemantics`
@@ -84,9 +77,7 @@ export async function semanticRecordedJudgeExample() {
     assertionId: ASSERTION_ID,
     selectedFragments,
   });
-  const blindedInputDigest = digestCanonicalJson(
-    semanticJudgeInput(authorized),
-  );
+  const blindedInputDigest = digestCanonicalJson(semanticJudgeInput(authorized));
   const recorded = new RecordedSemanticJudgeAdapter({
     identity,
     outputs: new Map([[blindedInputDigest, supportedOutput]]),

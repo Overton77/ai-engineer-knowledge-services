@@ -9,16 +9,12 @@ import {
   type DetachedSealBody,
   type DetachedSealErrorCodes,
 } from "./detached-seal.js";
-import type {
-  AuditBundleSigner,
-  AuditBundleSignatureVerifier,
-} from "./model.js";
+import type { AuditBundleSigner, AuditBundleSignatureVerifier } from "./model.js";
 
 const codes: DetachedSealErrorCodes = {
   digestMismatch: "BENCHMARK_COMPARISON_PUBLICATION_DIGEST_MISMATCH",
   signatureRequired: "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_REQUIRED",
-  verifierRequired:
-    "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_VERIFIER_REQUIRED",
+  verifierRequired: "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_VERIFIER_REQUIRED",
   signatureInvalid: "BENCHMARK_COMPARISON_PUBLICATION_SIGNATURE_INVALID",
 };
 
@@ -27,11 +23,7 @@ export function sealVerificationBenchmarkComparisonPublication(
   body: DetachedSealBody<VerificationBenchmarkComparisonPublication>,
   signer: AuditBundleSigner,
 ): Promise<VerificationBenchmarkComparisonPublication> {
-  return sealDetachedManifest(
-    VerificationBenchmarkComparisonPublicationSchema,
-    body,
-    signer,
-  );
+  return sealDetachedManifest(VerificationBenchmarkComparisonPublicationSchema, body, signer);
 }
 
 export async function verifyVerificationBenchmarkComparisonPublication(
@@ -41,10 +33,10 @@ export async function verifyVerificationBenchmarkComparisonPublication(
   readonly manifest: VerificationBenchmarkComparisonPublication;
   readonly signatureStatus: "verified";
 }> {
-  const { manifest } = await verifyDetachedManifest(
-    VerificationBenchmarkComparisonPublicationSchema,
-    value,
-    { verifier, requireSignature: true, codes },
-  );
+  const { manifest } = await verifyDetachedManifest(VerificationBenchmarkComparisonPublicationSchema, value, {
+    verifier,
+    requireSignature: true,
+    codes,
+  });
   return deepFreeze({ manifest, signatureStatus: "verified" as const });
 }

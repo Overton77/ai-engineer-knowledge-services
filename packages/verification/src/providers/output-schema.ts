@@ -34,16 +34,11 @@ export function admitOutputSchema(
     schema,
     limits: OUTPUT_SCHEMA_LIMITS,
   });
-  if (!admission.admitted)
-    throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
+  if (!admission.admitted) throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
   return admission.schema;
 }
 
-export function validateOutputAgainstSchema(
-  schema: AdmittedExtractionSchema,
-  value: unknown,
-): void {
+export function validateOutputAgainstSchema(schema: AdmittedExtractionSchema, value: unknown): void {
   const result = validateExtractionCandidate(schema, value);
-  if (!result.valid)
-    throw new ProviderFailure("PROVIDER_RESPONSE_SCHEMA_INVALID", false);
+  if (!result.valid) throw new ProviderFailure("PROVIDER_RESPONSE_SCHEMA_INVALID", false);
 }

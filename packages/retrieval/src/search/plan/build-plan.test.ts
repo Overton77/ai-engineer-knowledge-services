@@ -30,11 +30,7 @@ const policy: RetrievalPolicy = {
 describe("buildRetrievalPlan", () => {
   it("assigns the first subquery required and the rest supporting", () => {
     const plan = buildRetrievalPlan("first part; second part; third part", policy);
-    expect(plan.subqueries.map((q) => q.coverageRole)).toEqual([
-      "required",
-      "supporting",
-      "supporting",
-    ]);
+    expect(plan.subqueries.map((q) => q.coverageRole)).toEqual(["required", "supporting", "supporting"]);
     expect(plan.subqueries.map((q) => q.id)).toEqual(["q1", "q2", "q3"]);
   });
 

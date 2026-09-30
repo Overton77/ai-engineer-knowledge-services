@@ -28,8 +28,7 @@ export const CHECK = {
   SELECTOR_DEFINITION_BOUND: "SELECTOR_DEFINITION_BOUND",
   LOCATOR_UNIQUE: "LOCATOR_UNIQUE",
   SELECTED_CONTENT_DIGEST_REPLAYED: "SELECTED_CONTENT_DIGEST_REPLAYED",
-  EXPECTED_SELECTED_CONTENT_DIGEST_MATCH:
-    "EXPECTED_SELECTED_CONTENT_DIGEST_MATCH",
+  EXPECTED_SELECTED_CONTENT_DIGEST_MATCH: "EXPECTED_SELECTED_CONTENT_DIGEST_MATCH",
   LOSSY_TEXT_NORMALIZATION: "LOSSY_TEXT_NORMALIZATION",
   ASSERTION_PRODUCER_MATCH: "ASSERTION_PRODUCER_MATCH",
   ASSERTION_ATOMIC: "ASSERTION_ATOMIC",
@@ -55,8 +54,7 @@ export type CheckCode = (typeof CHECK)[keyof typeof CHECK];
 export type CheckStatus = VerificationCheck["status"];
 
 /** Detail text for a `require`: one string for both outcomes, or one per outcome. */
-export type RequireDetail =
-  string | { readonly pass: string; readonly fail: string };
+export type RequireDetail = string | { readonly pass: string; readonly fail: string };
 
 export function verificationCheck(
   code: CheckCode,
@@ -76,19 +74,9 @@ export function verificationCheck(
 }
 
 /** Hard failures dominate; any review or non-hard failure demands review; otherwise passed. */
-export function combineCheckStatus(
-  checks: readonly VerificationCheck[],
-): CheckStatus {
-  if (
-    checks.some((item) => item.status === "failed" && item.severity === "hard")
-  )
-    return "failed";
-  if (
-    checks.some(
-      (item) => item.status === "review_required" || item.status === "failed",
-    )
-  )
-    return "review_required";
+export function combineCheckStatus(checks: readonly VerificationCheck[]): CheckStatus {
+  if (checks.some((item) => item.status === "failed" && item.severity === "hard")) return "failed";
+  if (checks.some((item) => item.status === "review_required" || item.status === "failed")) return "review_required";
   return "passed";
 }
 
@@ -109,38 +97,20 @@ export class Checks {
   }
 
   pass(code: CheckCode, detail: string, targetId = this.#targetId): this {
-    return this.add(
-      verificationCheck(code, "passed", "hard", detail, targetId),
-    );
+    return this.add(verificationCheck(code, "passed", "hard", detail, targetId));
   }
 
   fail(code: CheckCode, detail: string, targetId = this.#targetId): this {
-    return this.add(
-      verificationCheck(code, "failed", "hard", detail, targetId),
-    );
+    return this.add(verificationCheck(code, "failed", "hard", detail, targetId));
   }
 
   review(code: CheckCode, detail: string, targetId = this.#targetId): this {
-    return this.add(
-      verificationCheck(code, "review_required", "review", detail, targetId),
-    );
+    return this.add(verificationCheck(code, "review_required", "review", detail, targetId));
   }
 
-  require(
-    code: CheckCode,
-    condition: boolean,
-    detail: RequireDetail,
-    targetId = this.#targetId,
-  ): this {
-    const text =
-      typeof detail === "string"
-        ? detail
-        : condition
-          ? detail.pass
-          : detail.fail;
-    return condition
-      ? this.pass(code, text, targetId)
-      : this.fail(code, text, targetId);
+  require(code: CheckCode, condition: boolean, detail: RequireDetail, targetId = this.#targetId): this {
+    const text = typeof detail === "string" ? detail : condition ? detail.pass : detail.fail;
+    return condition ? this.pass(code, text, targetId) : this.fail(code, text, targetId);
   }
 
   add(check: VerificationCheck): this {

@@ -35,7 +35,10 @@ export interface KnowledgeResourceReader {
 export interface KnowledgeResourceReadPorts {
   readonly resources?: KnowledgeResourceReader;
   readonly operations?: { get(operationId: string, tenantId?: string): unknown };
-  readonly getEvidencePacket?: (tenantId: string, packetId: string) => EvidencePacket | undefined | Promise<EvidencePacket | undefined>;
+  readonly getEvidencePacket?: (
+    tenantId: string,
+    packetId: string,
+  ) => EvidencePacket | undefined | Promise<EvidencePacket | undefined>;
   /** Replays retained citations from remote object custody, never producer files. */
   readonly replayEvidencePacketCitations?: (tenantId: string, packetId: string) => Promise<RetrievalCitationReplay>;
   readonly maximumResponseBytes?: number;
@@ -77,10 +80,15 @@ export function createKnowledgeResourceReads(ports: KnowledgeResourceReadPorts) 
     receipt: (tenantId: string, receiptId: string) =>
       stored((reader) => reader.getReceiptResource(tenantId, receiptId), DurableReceiptResourceSchema),
     /** The operation must belong to the tenant's vector store before its status is read. */
-    async vectorStoreOperation(tenantId: string, vectorStoreId: string, operationId: string): Promise<ResourceReadResult<OperationStatus>> {
+    async vectorStoreOperation(
+      tenantId: string,
+      vectorStoreId: string,
+      operationId: string,
+    ): Promise<ResourceReadResult<OperationStatus>> {
       const reader = ports.resources;
       if (!reader || !ports.operations) return resourceReadFailure("unavailable");
-      if (!(await reader.operationBelongsToVectorStore(tenantId, vectorStoreId, operationId))) return resourceReadFailure("not_found");
+      if (!(await reader.operationBelongsToVectorStore(tenantId, vectorStoreId, operationId)))
+        return resourceReadFailure("not_found");
       const operation = (await ports.operations.get(operationId, tenantId)) as OperationStatus | undefined;
       return operation ? { ok: true, value: operation } : resourceReadFailure("inconsistent");
     },
@@ -91,9 +99,13 @@ export function createKnowledgeResourceReads(ports: KnowledgeResourceReadPorts) 
     async citationReplay(tenantId: string, packetId: string): Promise<ResourceReadResult<RetrievalCitationReplay>> {
       if (!ports.replayEvidencePacketCitations) return resourceReadFailure("unavailable");
       try {
-        return { ok: true, value: RetrievalCitationReplaySchema.parse(await ports.replayEvidencePacketCitations(tenantId, packetId)) };
+        return {
+          ok: true,
+          value: RetrievalCitationReplaySchema.parse(await ports.replayEvidencePacketCitations(tenantId, packetId)),
+        };
       } catch (error) {
-        if (error instanceof Error && error.message === "EVIDENCE_PACKET_NOT_FOUND") return resourceReadFailure("not_found");
+        if (error instanceof Error && error.message === "EVIDENCE_PACKET_NOT_FOUND")
+          return resourceReadFailure("not_found");
         throw error;
       }
     },

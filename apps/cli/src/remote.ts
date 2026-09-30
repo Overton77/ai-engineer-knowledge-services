@@ -13,7 +13,8 @@ function options(argv: readonly string[]) {
   const values = new Map<string, string>();
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]!;
-    if (!REMOTE_FLAGS.has(token)) throw new KsUsageError(token.startsWith("--") ? `unknown option ${token}` : `unexpected argument ${token}`);
+    if (!REMOTE_FLAGS.has(token))
+      throw new KsUsageError(token.startsWith("--") ? `unknown option ${token}` : `unexpected argument ${token}`);
     if (!VALUE_FLAGS.has(token)) continue;
     const value = argv[index + 1];
     if (value === undefined || value.startsWith("--")) throw new KsUsageError(`${token} requires a value`);
@@ -27,7 +28,12 @@ function options(argv: readonly string[]) {
  * Runs a remote command through KnowledgeClient against the server profile. It never constructs host: an
  * authorization or network failure exits 2 and never falls back to local execution.
  */
-export async function runRemoteCommand(command: CliCommand, argv: readonly string[], io: KsIo, fetchImplementation: typeof fetch = fetch): Promise<number> {
+export async function runRemoteCommand(
+  command: CliCommand,
+  argv: readonly string[],
+  io: KsIo,
+  fetchImplementation: typeof fetch = fetch,
+): Promise<number> {
   if (command.mode === "unsupported") throw new Error(`CAPABILITY_NOT_ADMITTED:${command.reason}`);
   const values = options(argv);
   const baseUrl = values.get("--base-url") ?? io.env[REMOTE_ENVIRONMENT.url];
@@ -44,7 +50,8 @@ export async function runRemoteCommand(command: CliCommand, argv: readonly strin
   const context = OperationContextSchema.parse(json("--context", "null"));
   const input = JsonValueSchema.parse(json("--input", "{}"));
   const timeoutMs = Number(values.get("--timeout-ms") ?? "60000");
-  if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 300000) throw new KsUsageError("CLI_TIMEOUT_INVALID");
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 300000)
+    throw new KsUsageError("CLI_TIMEOUT_INVALID");
   const deadline = Date.now() + timeoutMs,
     signal = AbortSignal.timeout(timeoutMs);
   const client = new KnowledgeClient({

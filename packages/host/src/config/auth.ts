@@ -36,16 +36,13 @@ const configuredIdentitySchema = z.strictObject({
 });
 const configuredIdentitiesSchema = z.array(configuredIdentitySchema);
 
-const digestToken = (token: string) =>
-  createHash("sha256").update(token).digest("hex");
+const digestToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /**
  * Resolves static local bearer identities. Both HTTP and MCP must use this
  * resolver so an asserted operation actor is always bound to the bearer.
  */
-export function createLocalIdentityResolver(
-  raw = process.env.KNOWLEDGE_API_IDENTITIES,
-): ResolveApiIdentity {
+export function createLocalIdentityResolver(raw = process.env.KNOWLEDGE_API_IDENTITIES): ResolveApiIdentity {
   if (!raw?.trim()) return () => undefined;
   const parsed = configuredIdentitiesSchema.parse(JSON.parse(raw));
   const byDigest = new Map<string, LocalApiIdentity>();

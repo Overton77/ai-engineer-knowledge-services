@@ -6,11 +6,17 @@ import { CHUNK_PROFILE_TABLE } from "./definitions.js";
 // Bounds are checked at admission, so a chunk run can trust the profile it was
 // handed and a bad profile fails before any span is cut.
 export function validateProfile(profile: ChunkProfile): void {
-  if (profile.minimumTokens < 1 || profile.targetTokens < profile.minimumTokens || profile.maximumTokens < profile.targetTokens) {
+  if (
+    profile.minimumTokens < 1 ||
+    profile.targetTokens < profile.minimumTokens ||
+    profile.maximumTokens < profile.targetTokens
+  ) {
     throw new Error(`Invalid token bounds for ${profile.name}`);
   }
-  if (profile.overlapTokens >= profile.maximumTokens) throw new Error(`Overlap must be below maximum tokens for ${profile.name}`);
-  if (profile.maximumDuplicatedTokenRatio < 0 || profile.maximumDuplicatedTokenRatio > 1) throw new Error("Invalid duplicated-token ratio");
+  if (profile.overlapTokens >= profile.maximumTokens)
+    throw new Error(`Overlap must be below maximum tokens for ${profile.name}`);
+  if (profile.maximumDuplicatedTokenRatio < 0 || profile.maximumDuplicatedTokenRatio > 1)
+    throw new Error("Invalid duplicated-token ratio");
 }
 
 export class ChunkProfileRegistry {
@@ -45,9 +51,13 @@ export class ChunkProfileRegistry {
     return this.forSpace(space).filter(({ nodeKinds }) => nodeKinds.some((kind) => observed.has(kind)));
   }
 
-  list(): readonly ChunkProfile[] { return [...this.#profiles.values()]; }
+  list(): readonly ChunkProfile[] {
+    return [...this.#profiles.values()];
+  }
 }
 
 export const defaultChunkProfileRegistry = new ChunkProfileRegistry();
 
-function profileKey({ name, version }: ChunkProfile): string { return `${name}@${version}`; }
+function profileKey({ name, version }: ChunkProfile): string {
+  return `${name}@${version}`;
+}

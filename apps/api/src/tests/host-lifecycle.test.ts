@@ -8,7 +8,9 @@ vi.mock("@aiengineer/knowledge-host", async (importOriginal) => {
   return {
     ...original,
     createHost: async (options: Parameters<typeof original.createHost>[0]) => {
-      const host = await (original.createHost as (value: typeof options) => Promise<{ close(): Promise<void> }>)(options);
+      const host = await (original.createHost as (value: typeof options) => Promise<{ close(): Promise<void> }>)(
+        options,
+      );
       const release = host.close.bind(host);
       return Object.assign(host, {
         close: async () => {
@@ -38,9 +40,7 @@ describe("API runtime lifecycle", () => {
   });
 
   it("releases the host when transport construction fails after composition", async () => {
-    await expect(
-      createApiRuntime({ NODE_ENV: "test", KNOWLEDGE_CALLBACK_SIGNING_KEYS: "not-json" }),
-    ).rejects.toThrow();
+    await expect(createApiRuntime({ NODE_ENV: "test", KNOWLEDGE_CALLBACK_SIGNING_KEYS: "not-json" })).rejects.toThrow();
     expect(events).toEqual(["host.close"]);
   });
 });

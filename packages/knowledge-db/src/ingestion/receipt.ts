@@ -22,7 +22,11 @@ export interface ReceiptFailure {
   readonly touchedBy?: readonly string[];
 }
 
-export interface AffectedRef { readonly schema: string; readonly table: string; readonly id: string }
+export interface AffectedRef {
+  readonly schema: string;
+  readonly table: string;
+  readonly id: string;
+}
 
 export interface IngestionReceipt {
   readonly schemaVersion: "knowledge-ingestion-receipt.v1";
@@ -40,7 +44,13 @@ export interface IngestionReceipt {
   readonly duplicateOf: string | null;
   readonly priorReceiptsForIntentId: readonly string[];
   readonly failure: ReceiptFailure | null;
-  readonly storage: { readonly intentArtifactId?: string; readonly planArtifactId?: string; readonly receiptArtifactId?: string; readonly storageState: "stored" | "pending" | "none"; readonly lineage?: "written" | "denied" };
+  readonly storage: {
+    readonly intentArtifactId?: string;
+    readonly planArtifactId?: string;
+    readonly receiptArtifactId?: string;
+    readonly storageState: "stored" | "pending" | "none";
+    readonly lineage?: "written" | "denied";
+  };
   readonly verify: { readonly suggestedReadIntent: unknown } | null;
   readonly executedAt: string;
   readonly executorVersion: string;

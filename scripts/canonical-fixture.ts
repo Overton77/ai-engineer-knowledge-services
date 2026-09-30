@@ -1,10 +1,7 @@
 import { AgenticKnowledgeService } from "@aiengineer/knowledge-application";
 import { pathToFileURL } from "node:url";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
-import {
-  EvidencePacketSchema,
-  type EvidencePacket,
-} from "@aiengineer/knowledge-contracts";
+import { EvidencePacketSchema, type EvidencePacket } from "@aiengineer/knowledge-contracts";
 import { canonicalJson, sha256Digest } from "@aiengineer/knowledge-core";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 import {
@@ -14,11 +11,7 @@ import {
   type ExploratoryArtifactReference,
   type ExploratoryFixtureRecord,
 } from "@aiengineer/knowledge-persistence";
-import {
-  deterministicUuid,
-  digestBytes,
-  type ArtifactDigest,
-} from "@aiengineer/knowledge-core";
+import { deterministicUuid, digestBytes, type ArtifactDigest } from "@aiengineer/knowledge-core";
 import {
   EMBEDDING_BUNDLE_VIDEO_IDS,
   loadEmbeddingBundles,
@@ -27,43 +20,23 @@ import {
 import { buildServer } from "../apps/api/src/server.js";
 
 export const FIXTURE_NAMESPACE =
-  process.env.KNOWLEDGE_CANONICAL_PROOF_NAMESPACE?.trim() ||
-  "gate6-canonical-durability-v7";
+  process.env.KNOWLEDGE_CANONICAL_PROOF_NAMESPACE?.trim() || "gate6-canonical-durability-v7";
 export const FIXTURE_TENANT_ID = "00000000-0000-7000-8000-000000000001";
 export const MAINTAINED_DOD_QUERY =
   "Show engineering guidance about durable agent state; identify the engineers and exact evidence; find maintained TypeScript libraries that implement the relevant patterns; return verified implementation examples; connect supporting or conflicting papers and case studies; identify model versions suited to the workflow; and identify benchmarks that could evaluate it.";
 const FIXTURE_CREATED_AT = "2026-09-03T00:00:00.000Z";
-const operationId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:ingest-operation`,
-);
-const correlationId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:correlation`,
-);
-export const packetId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:evidence-packet`,
-);
-const retrievalPlanId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:retrieval-plan`,
-);
-const retrievalRunId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:retrieval-run`,
-);
-const policyId = deterministicUuid(
-  "canonical-proof",
-  `${FIXTURE_NAMESPACE}:retrieval-policy`,
-);
+const operationId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:ingest-operation`);
+const correlationId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:correlation`);
+export const packetId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:evidence-packet`);
+const retrievalPlanId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:retrieval-plan`);
+const retrievalRunId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:retrieval-run`);
+const policyId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:retrieval-policy`);
 
 function config() {
   const postgresUrl = process.env.POSTGRES_URL?.trim();
   const supabaseUrl = process.env.SUPABASE_URL?.trim();
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY?.trim();
-  if (!postgresUrl || !supabaseUrl || !supabaseSecretKey)
-    throw new Error("LOCAL_PERSISTENCE_CONFIGURATION_REQUIRED");
+  if (!postgresUrl || !supabaseUrl || !supabaseSecretKey) throw new Error("LOCAL_PERSISTENCE_CONFIGURATION_REQUIRED");
   const pg = new URL(postgresUrl);
   const sb = new URL(supabaseUrl);
   if (
@@ -78,18 +51,14 @@ function config() {
 const databaseOnly = () =>
   new PostgresCanonicalRepository({
     connectionString: config().postgresUrl,
-    connectionTimeoutMs: Number(
-      process.env.POSTGRES_CONNECTION_TIMEOUT_MS ?? 2_000,
-    ),
+    connectionTimeoutMs: Number(process.env.POSTGRES_CONNECTION_TIMEOUT_MS ?? 2_000),
     localOnly: true,
   });
 
-async function buildFixtureRecordsFromBundles(
-  bundles: readonly ReturnType<typeof validateEmbeddingBundle>[],
-) {
-  const index = await new AgenticKnowledgeService(
-    new DeterministicFakeEmbeddingAdapter(),
-  ).buildExploratoryIndex(bundles);
+async function buildFixtureRecordsFromBundles(bundles: readonly ReturnType<typeof validateEmbeddingBundle>[]) {
+  const index = await new AgenticKnowledgeService(new DeterministicFakeEmbeddingAdapter()).buildExploratoryIndex(
+    bundles,
+  );
   const claims = bundles.flatMap((bundle) =>
     bundle.engineering_claims.map((claim) => ({
       videoId: bundle.video_id,
@@ -97,8 +66,7 @@ async function buildFixtureRecordsFromBundles(
       freshnessAt: `${bundle.research_as_of}T00:00:00.000Z`,
     })),
   );
-  if (index.records.length !== claims.length)
-    throw new Error("FIXTURE_PROJECTION_ALIGNMENT_FAILED");
+  if (index.records.length !== claims.length) throw new Error("FIXTURE_PROJECTION_ALIGNMENT_FAILED");
   return {
     index,
     records: index.records.map(
@@ -126,36 +94,27 @@ async function sourceArtifacts() {
   try {
     const loaded = await loadEmbeddingBundles();
     const references: ExploratoryArtifactReference[] = [];
-    const verified: { videoId: string; digest: string; byteLength: number }[] =
-      [];
+    const verified: { videoId: string; digest: string; byteLength: number }[] = [];
     for (const item of loaded) {
-      const bytes = new TextEncoder().encode(
-        `${canonicalJson(JSON.parse(JSON.stringify(item.bundle)))}\n`,
-      );
+      const bytes = new TextEncoder().encode(`${canonicalJson(JSON.parse(JSON.stringify(item.bundle)))}\n`);
       const stored = await persistence.artifacts.put({
         tenantId: FIXTURE_TENANT_ID,
         mediaType: "application/json",
         bytes,
       });
-      const downloaded = await persistence.artifacts.get(
-        FIXTURE_TENANT_ID,
-        stored.digest,
-      );
+      const downloaded = await persistence.artifacts.get(FIXTURE_TENANT_ID, stored.digest);
       if (!downloaded || digestBytes(downloaded) !== stored.digest)
         throw new Error("STORAGE_DIGEST_VERIFICATION_FAILED");
-      const artifactId = await persistence.database.recordArtifact(
-        FIXTURE_TENANT_ID,
-        {
-          artifactId: stored.artifactId,
-          artifactType: "source_capture",
-          sha256: stored.digest.slice(7),
-          bucketClass: "source_captures",
-          storageBucket: "source-captures",
-          objectPath: stored.storageKey,
-          mediaType: stored.mediaType,
-          sizeBytes: stored.byteLength,
-        },
-      );
+      const artifactId = await persistence.database.recordArtifact(FIXTURE_TENANT_ID, {
+        artifactId: stored.artifactId,
+        artifactType: "source_capture",
+        sha256: stored.digest.slice(7),
+        bucketClass: "source_captures",
+        storageBucket: "source-captures",
+        objectPath: stored.storageKey,
+        mediaType: stored.mediaType,
+        sizeBytes: stored.byteLength,
+      });
       references.push({
         videoId: item.bundle.video_id,
         artifactId,
@@ -188,10 +147,12 @@ async function readBundlesFromStorage(database: PostgresCanonicalRepository) {
     // Scope this reconstruction to the immutable three-bundle manifest instead
     // of asserting a bucket-global artifact count.
     const admitted = await loadEmbeddingBundles();
-    const expectedByDigest = new Map(admitted.map((item) => {
-      const bytes = new TextEncoder().encode(`${canonicalJson(JSON.parse(JSON.stringify(item.bundle)))}\n`);
-      return [digestBytes(bytes).slice(7),item.bundle.video_id] as const;
-    }));
+    const expectedByDigest = new Map(
+      admitted.map((item) => {
+        const bytes = new TextEncoder().encode(`${canonicalJson(JSON.parse(JSON.stringify(item.bundle)))}\n`);
+        return [digestBytes(bytes).slice(7), item.bundle.video_id] as const;
+      }),
+    );
     if (expectedByDigest.size !== 3) throw new Error(`STORAGE_MANIFEST_CARDINALITY:${expectedByDigest.size}`);
     const rows = await database.transaction(
       FIXTURE_TENANT_ID,
@@ -205,27 +166,24 @@ async function readBundlesFromStorage(database: PostgresCanonicalRepository) {
             `select id,sha256,object_path from orchestration.artifact
              where tenant_id=$1 and storage_bucket='source-captures' and artifact_type='source_capture'
                and sha256=any($2::text[]) order by sha256,id`,
-            [FIXTURE_TENANT_ID,[...expectedByDigest.keys()]],
+            [FIXTURE_TENANT_ID, [...expectedByDigest.keys()]],
           )
         ).rows,
     );
-    if (rows.length !== 3)
-      throw new Error(`STORAGE_MANIFEST_ARTIFACT_CARDINALITY:${rows.length}`);
-    if (new Set(rows.map((row) => row.sha256)).size !== expectedByDigest.size
-      || rows.some((row) => !expectedByDigest.has(row.sha256)))
+    if (rows.length !== 3) throw new Error(`STORAGE_MANIFEST_ARTIFACT_CARDINALITY:${rows.length}`);
+    if (
+      new Set(rows.map((row) => row.sha256)).size !== expectedByDigest.size ||
+      rows.some((row) => !expectedByDigest.has(row.sha256))
+    )
       throw new Error("STORAGE_MANIFEST_SUBSTITUTION");
     const bundles: ReturnType<typeof validateEmbeddingBundle>[] = [];
     const references: ExploratoryArtifactReference[] = [];
     for (const row of rows) {
       const digest = `sha256:${row.sha256}` as ArtifactDigest;
       const bytes = await persistence.artifacts.get(FIXTURE_TENANT_ID, digest);
-      if (!bytes || digestBytes(bytes) !== digest)
-        throw new Error("STORAGE_DIGEST_VERIFICATION_FAILED");
-      const bundle = validateEmbeddingBundle(
-        JSON.parse(new TextDecoder().decode(bytes)),
-      );
-      if (expectedByDigest.get(row.sha256) !== bundle.video_id)
-        throw new Error("STORAGE_MANIFEST_VIDEO_MISMATCH");
+      if (!bytes || digestBytes(bytes) !== digest) throw new Error("STORAGE_DIGEST_VERIFICATION_FAILED");
+      const bundle = validateEmbeddingBundle(JSON.parse(new TextDecoder().decode(bytes)));
+      if (expectedByDigest.get(row.sha256) !== bundle.video_id) throw new Error("STORAGE_MANIFEST_VIDEO_MISMATCH");
       bundles.push(bundle);
       references.push({
         videoId: bundle.video_id,
@@ -237,12 +195,8 @@ async function readBundlesFromStorage(database: PostgresCanonicalRepository) {
     }
     bundles.sort(
       (a, b) =>
-        EMBEDDING_BUNDLE_VIDEO_IDS.indexOf(
-          a.video_id as (typeof EMBEDDING_BUNDLE_VIDEO_IDS)[number],
-        ) -
-        EMBEDDING_BUNDLE_VIDEO_IDS.indexOf(
-          b.video_id as (typeof EMBEDDING_BUNDLE_VIDEO_IDS)[number],
-        ),
+        EMBEDDING_BUNDLE_VIDEO_IDS.indexOf(a.video_id as (typeof EMBEDDING_BUNDLE_VIDEO_IDS)[number]) -
+        EMBEDDING_BUNDLE_VIDEO_IDS.indexOf(b.video_id as (typeof EMBEDDING_BUNDLE_VIDEO_IDS)[number]),
     );
     return { bundles, references };
   } finally {
@@ -255,9 +209,7 @@ async function ingest() {
   try {
     const loaded = await loadEmbeddingBundles();
     const artifacts = await sourceArtifacts();
-    const built = await buildFixtureRecordsFromBundles(
-      loaded.map((item) => item.bundle),
-    );
+    const built = await buildFixtureRecordsFromBundles(loaded.map((item) => item.bundle));
     const operation = await database.createOperation({
       id: operationId,
       tenantId: FIXTURE_TENANT_ID,
@@ -272,15 +224,8 @@ async function ingest() {
         fixtureVersion: "embedding-bundle-seed-2026-09-01",
         videoIds: EMBEDDING_BUNDLE_VIDEO_IDS,
       },
-      steps: [
-        "store-private-artifacts",
-        "stage-canonical-records",
-        "publish-exploratory",
-      ].map((key, index) => ({
-        id: deterministicUuid(
-          "canonical-proof-step",
-          `${operationId}:${index}`,
-        ),
+      steps: ["store-private-artifacts", "stage-canonical-records", "publish-exploratory"].map((key, index) => ({
+        id: deterministicUuid("canonical-proof-step", `${operationId}:${index}`),
         key,
         kind: key,
         input: { key },
@@ -296,16 +241,13 @@ async function ingest() {
       proposedBy: "eve:local-proof",
       reviewerIdentity: "local-review-fixture",
     });
-    const publicationReceiptId = await database.publishVectorSpace(
-      FIXTURE_TENANT_ID,
-      {
-        publicationId: staged.publicationId,
-        expectedGuardedSha256: staged.guardedSha256,
-        reason: "initial local exploratory publication",
-        actorIdentity: `apps-worker-process-a:${process.pid}`,
-        idempotencyKey: `${FIXTURE_NAMESPACE}:publish:v1`,
-      },
-    );
+    const publicationReceiptId = await database.publishVectorSpace(FIXTURE_TENANT_ID, {
+      publicationId: staged.publicationId,
+      expectedGuardedSha256: staged.guardedSha256,
+      reason: "initial local exploratory publication",
+      actorIdentity: `apps-worker-process-a:${process.pid}`,
+      idempotencyKey: `${FIXTURE_NAMESPACE}:publish:v1`,
+    });
 
     const completed = new Set(
       (await database.listSteps(FIXTURE_TENANT_ID, operation.id))
@@ -318,10 +260,7 @@ async function ingest() {
         operation.id,
         `apps-worker-process-a:${process.pid}`,
       );
-      if (!claim)
-        throw new Error(
-          `OPERATION_STEP_UNAVAILABLE:${operation.id}:${completed.size}`,
-        );
+      if (!claim) throw new Error(`OPERATION_STEP_UNAVAILABLE:${operation.id}:${completed.size}`);
       const output =
         claim.stepKey === "store-private-artifacts"
           ? { artifacts: artifacts.verified }
@@ -334,8 +273,7 @@ async function ingest() {
                   storeClass: "internal_exploratory",
                 }
               : undefined;
-      if (!output)
-        throw new Error(`UNEXPECTED_OPERATION_STEP:${claim.stepKey}`);
+      if (!output) throw new Error(`UNEXPECTED_OPERATION_STEP:${claim.stepKey}`);
       await database.completeStep(FIXTURE_TENANT_ID, claim, {
         id: deterministicUuid("canonical-proof-receipt", `${claim.id}:success`),
         idempotencyKey: `${FIXTURE_NAMESPACE}:${claim.stepKey}:success`,
@@ -351,8 +289,7 @@ async function ingest() {
       completed.add(claim.stepKey);
     }
     const final = await database.getOperation(FIXTURE_TENANT_ID, operation.id);
-    if (final?.status !== "succeeded")
-      throw new Error(`OPERATION_NOT_SUCCEEDED:${final?.status ?? "missing"}`);
+    if (final?.status !== "succeeded") throw new Error(`OPERATION_NOT_SUCCEEDED:${final?.status ?? "missing"}`);
     return {
       phase: "process_a_apps_worker_ingest_publish",
       pid: process.pid,
@@ -393,29 +330,13 @@ async function ensureSourceNativePacketMembers(
   await database.transaction(FIXTURE_TENANT_ID, async (client) => {
     for (const [index, hit] of hits.slice(0, 5).entries()) {
       const artifact = references[index % references.length]!;
-      const documentId = deterministicUuid(
-        "canonical-proof-document",
-        artifact.artifactId,
-      );
-      const versionId = deterministicUuid(
-        "canonical-proof-document-version",
-        artifact.artifactId,
-      );
-      const representationId = deterministicUuid(
-        "canonical-proof-representation",
-        artifact.artifactId,
-      );
-      const nodeId = deterministicUuid(
-        "canonical-proof-node",
-        hit.vectorItemId,
-      );
+      const documentId = deterministicUuid("canonical-proof-document", artifact.artifactId);
+      const versionId = deterministicUuid("canonical-proof-document-version", artifact.artifactId);
+      const representationId = deterministicUuid("canonical-proof-representation", artifact.artifactId);
+      const nodeId = deterministicUuid("canonical-proof-node", hit.vectorItemId);
       await client.query(
         `insert into content.document(id,tenant_id,document_kind,canonical_title) values($1,$2,'research_bundle',$3) on conflict(id) do nothing`,
-        [
-          documentId,
-          FIXTURE_TENANT_ID,
-          `Internal exploratory bundle ${index + 1}`,
-        ],
+        [documentId, FIXTURE_TENANT_ID, `Internal exploratory bundle ${index + 1}`],
       );
       await client.query(
         `insert into content.document_version(id,tenant_id,document_id,version_label,manifest_sha256) values($1,$2,$3,'fixture-v1',$4) on conflict(id) do nothing`,
@@ -423,13 +344,7 @@ async function ensureSourceNativePacketMembers(
       );
       await client.query(
         `insert into content.document_representation(id,tenant_id,document_version_id,artifact_id,representation_kind,representation_class,media_type,content_sha256,acceptance_state,source_native_byte_identical) values($1,$2,$3,$4,'json','source_native','application/json',$5,'accepted',true) on conflict(id) do nothing`,
-        [
-          representationId,
-          FIXTURE_TENANT_ID,
-          versionId,
-          artifact.artifactId,
-          artifact.digest.slice(7),
-        ],
+        [representationId, FIXTURE_TENANT_ID, versionId, artifact.artifactId, artifact.digest.slice(7)],
       );
       await client.query(
         `insert into content.document_node(id,tenant_id,representation_id,ordinal,stable_local_key,node_kind,inline_text,start_offset,end_offset,normalized_content_sha256) values($1,$2,$3,$4,$5,'section',$6,0,$7,$8) on conflict(id) do nothing`,
@@ -454,9 +369,7 @@ async function createPacket(
   references: ExploratoryArtifactReference[],
 ): Promise<EvidencePacket> {
   await ensureSourceNativePacketMembers(database, hybrid, references);
-  const receiptIds = (
-    await database.listReceipts(FIXTURE_TENANT_ID, operationId)
-  ).map((item) => item.id);
+  const receiptIds = (await database.listReceipts(FIXTURE_TENANT_ID, operationId)).map((item) => item.id);
   const rows = await database.transaction(
     FIXTURE_TENANT_ID,
     async (client) =>
@@ -511,10 +424,7 @@ async function createPacket(
     plan: {
       policyVersion: policyId,
       query: MAINTAINED_DOD_QUERY,
-      intents: [
-        "knowledge_evidence" as const,
-        "implementation_support" as const,
-      ],
+      intents: ["knowledge_evidence" as const, "implementation_support" as const],
       subqueries,
       spaces: [
         "engineering_claims" as const,
@@ -530,9 +440,7 @@ async function createPacket(
         concepts: [],
         useCases: ["durable agent state"],
       },
-      hardFilters: [
-        { field: "visibility", op: "eq" as const, value: "internal" },
-      ],
+      hardFilters: [{ field: "visibility", op: "eq" as const, value: "internal" }],
       softBoosts: [],
       temporalScope: { observedBefore: "2026-09-03T23:59:59.000Z" },
       candidateK: 100,
@@ -544,10 +452,7 @@ async function createPacket(
       abstention: { minimumCoverage: 1 },
     },
     authorization: {
-      decisionId: deterministicUuid(
-        "canonical-proof",
-        `${packetId}:authorization`,
-      ),
+      decisionId: deterministicUuid("canonical-proof", `${packetId}:authorization`),
       tenantId: FIXTURE_TENANT_ID,
       actorId: deterministicUuid("canonical-proof", `${packetId}:reader`),
       action: "read",
@@ -557,23 +462,14 @@ async function createPacket(
       reasonCodes: ["tenant_match", "internal_exploratory_reader"],
     },
     procedureVersionIds: [
-      deterministicUuid(
-        "canonical-exploratory-fixture",
-        `${FIXTURE_NAMESPACE}:projection-procedure`,
-      ),
+      deterministicUuid("canonical-exploratory-fixture", `${FIXTURE_NAMESPACE}:projection-procedure`),
     ],
     members: hybrid.slice(0, 5).map((hit, index) => {
       const row = byId.get(hit.vectorItemId)!;
       const artifact = references[index % references.length]!;
-      const representationId = deterministicUuid(
-        "canonical-proof-representation",
-        artifact.artifactId,
-      );
+      const representationId = deterministicUuid("canonical-proof-representation", artifact.artifactId);
       return {
-        memberId: deterministicUuid(
-          "canonical-proof-member",
-          `${packetId}:${hit.vectorItemId}`,
-        ),
+        memberId: deterministicUuid("canonical-proof-member", `${packetId}:${hit.vectorItemId}`),
         faithfulSectionRepresentationId: representationId,
         matchedProjectionId: row.search_projection_id,
         locators: [
@@ -586,21 +482,12 @@ async function createPacket(
           },
         ],
         scores: {
-          semantic: Number(
-            (hit.channelScores as { ann?: { score?: number } })?.ann?.score ??
-              0,
-          ),
+          semantic: Number((hit.channelScores as { ann?: { score?: number } })?.ann?.score ?? 0),
           fusion: hit.fusedScore,
           final: hit.fusedScore,
         },
-        channelExplanations: Object.entries(
-          hit.channelScores as Record<
-            string,
-            { score?: number; rank?: number }
-          >,
-        ).map(
-          ([channel, value]) =>
-            `${channel}: score=${value.score ?? 0}, rank=${value.rank ?? 0}`,
+        channelExplanations: Object.entries(hit.channelScores as Record<string, { score?: number; rank?: number }>).map(
+          ([channel, value]) => `${channel}: score=${value.score ?? 0}, rank=${value.rank ?? 0}`,
         ),
         graphPaths: [],
         authority: "exploratory" as const,
@@ -631,8 +518,7 @@ async function createPacket(
     })),
     abstention: {
       recommended: true,
-      reason:
-        "Only engineering guidance and source evidence are supported by this bounded exploratory fixture.",
+      reason: "Only engineering guidance and source evidence are supported by this bounded exploratory fixture.",
     },
     eventIds: [],
     artifactIds: references.map((item) => item.artifactId),
@@ -690,13 +576,11 @@ async function retrieve() {
       publicationId: active.publication_id,
       vectorSpaceVersionId: active.vector_space_version_id,
       query: MAINTAINED_DOD_QUERY,
-      hybridHits: hybrid
-        .slice(0, 5)
-        .map((item) => ({
-          id: item.vectorItemId,
-          score: item.fusedScore,
-          channels: Object.keys(item.channelScores as object),
-        })),
+      hybridHits: hybrid.slice(0, 5).map((item) => ({
+        id: item.vectorItemId,
+        score: item.fusedScore,
+        channels: Object.keys(item.channelScores as object),
+      })),
       annVsExact: {
         annTop: ann[0]?.vectorItemId,
         exactTop: exact[0]?.vectorItemId,
@@ -725,10 +609,7 @@ async function rebuild() {
     const built = await buildFixtureRecordsFromBundles(stored.bundles);
     const prior = await activePublication(database);
     if (!prior) throw new Error("NO_ACTIVE_EXPLORATORY_PUBLICATION");
-    const v1PublicationId = deterministicUuid(
-      "canonical-exploratory-fixture",
-      `${FIXTURE_NAMESPACE}:publication:1`,
-    );
+    const v1PublicationId = deterministicUuid("canonical-exploratory-fixture", `${FIXTURE_NAMESPACE}:publication:1`);
     const v1Guard = await database.transaction(
       FIXTURE_TENANT_ID,
       async (client) =>
@@ -756,15 +637,28 @@ async function rebuild() {
       actorIdentity: `recovery:${process.pid}`,
       idempotencyKey: `${FIXTURE_NAMESPACE}:publish:v2`,
     });
-    const rollbackOperationId=deterministicUuid("canonical-proof",`${FIXTURE_NAMESPACE}:rollback-operation:v1`);
-    await database.transaction(FIXTURE_TENANT_ID,async(client)=>{
-      const request={fixture:true,kind:"publication_rollback",currentPublicationId:v2.publicationId,targetPublicationId:v1PublicationId};
-      await client.query(`insert into knowledge_service.operation
+    const rollbackOperationId = deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:rollback-operation:v1`);
+    await database.transaction(FIXTURE_TENANT_ID, async (client) => {
+      const request = {
+        fixture: true,
+        kind: "publication_rollback",
+        currentPublicationId: v2.publicationId,
+        targetPublicationId: v1PublicationId,
+      };
+      await client.query(
+        `insert into knowledge_service.operation
         (id,tenant_id,operation_kind,idempotency_key,correlation_id,actor_identity,request,request_sha256,status)
-        values($1,$2,'publication_rollback',$3,$4,$5,$6::jsonb,$7,'running') on conflict(id) do nothing`,[
-          rollbackOperationId,FIXTURE_TENANT_ID,`${FIXTURE_NAMESPACE}:rollback-operation:v1`,correlationId,`control-plane:${FIXTURE_NAMESPACE}`,
-          JSON.stringify(request),sha256Digest(request).slice(7),
-        ]);
+        values($1,$2,'publication_rollback',$3,$4,$5,$6::jsonb,$7,'running') on conflict(id) do nothing`,
+        [
+          rollbackOperationId,
+          FIXTURE_TENANT_ID,
+          `${FIXTURE_NAMESPACE}:rollback-operation:v1`,
+          correlationId,
+          `control-plane:${FIXTURE_NAMESPACE}`,
+          JSON.stringify(request),
+          sha256Digest(request).slice(7),
+        ],
+      );
     });
     const rollback = await database.rollbackVectorSpace(FIXTURE_TENANT_ID, {
       currentPublicationId: v2.publicationId,
@@ -814,25 +708,16 @@ async function drill() {
   try {
     const makeOperation = async (name: string) =>
       database.createOperation({
-        id: deterministicUuid(
-          "canonical-proof",
-          `${FIXTURE_NAMESPACE}:drill:${name}`,
-        ),
+        id: deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:drill:${name}`),
         tenantId: FIXTURE_TENANT_ID,
         operationKind: "retrieval_run",
         idempotencyKey: `${FIXTURE_NAMESPACE}:drill:${name}`,
-        correlationId: deterministicUuid(
-          "canonical-proof",
-          `${FIXTURE_NAMESPACE}:drill-correlation:${name}`,
-        ),
+        correlationId: deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:drill-correlation:${name}`),
         actorIdentity: "worker:local-proof",
         request: { scenario: name },
         steps: [
           {
-            id: deterministicUuid(
-              "canonical-proof",
-              `${FIXTURE_NAMESPACE}:drill-step:${name}`,
-            ),
+            id: deterministicUuid("canonical-proof", `${FIXTURE_NAMESPACE}:drill-step:${name}`),
             key: name,
             kind: name,
             input: { scenario: name },
@@ -841,12 +726,7 @@ async function drill() {
         ],
       });
     const leaseOp = await makeOperation("expired-lease");
-    let first = await database.claimOperation(
-      FIXTURE_TENANT_ID,
-      leaseOp.id,
-      "dead-worker",
-      1,
-    );
+    let first = await database.claimOperation(FIXTURE_TENANT_ID, leaseOp.id, "dead-worker", 1);
     if (!first) {
       const steps = await database.listSteps(FIXTURE_TENANT_ID, leaseOp.id);
       if (steps[0]?.status === "succeeded") {
@@ -859,17 +739,8 @@ async function drill() {
       throw new Error("LEASE_DRILL_SELECTION_FAILED");
     }
     await new Promise((resolve) => setTimeout(resolve, 15));
-    const reclaimed = await database.claimOperation(
-      FIXTURE_TENANT_ID,
-      leaseOp.id,
-      "recovery-worker",
-      30_000,
-    );
-    if (
-      !reclaimed ||
-      reclaimed.id !== first.id ||
-      reclaimed.fencingToken <= first.fencingToken
-    )
+    const reclaimed = await database.claimOperation(FIXTURE_TENANT_ID, leaseOp.id, "recovery-worker", 30_000);
+    if (!reclaimed || reclaimed.id !== first.id || reclaimed.fencingToken <= first.fencingToken)
       throw new Error("LEASE_FENCING_RECOVERY_FAILED");
     let staleLeaseClass = "";
     try {
@@ -884,19 +755,10 @@ async function drill() {
       executorIdentity: "recovery-worker",
       output: { recovered: true },
     });
-    const outage = async (
-      kind: "provider" | "reranker",
-      failureClass: string,
-      fallback: string,
-    ) => {
+    const outage = async (kind: "provider" | "reranker", failureClass: string, fallback: string) => {
       const op = await makeOperation(`${kind}-outage`);
-      const lease = await database.claimOperation(
-        FIXTURE_TENANT_ID,
-        op.id,
-        `${kind}-worker`,
-      );
-      if (!lease || lease.operationId !== op.id)
-        throw new Error(`${kind.toUpperCase()}_DRILL_SELECTION_FAILED`);
+      const lease = await database.claimOperation(FIXTURE_TENANT_ID, op.id, `${kind}-worker`);
+      if (!lease || lease.operationId !== op.id) throw new Error(`${kind.toUpperCase()}_DRILL_SELECTION_FAILED`);
       await database.failStep(FIXTURE_TENANT_ID, lease, {
         id: deterministicUuid("canonical-proof", `${lease.id}:failed`),
         idempotencyKey: `${FIXTURE_NAMESPACE}:${kind}:failed`,
@@ -904,13 +766,8 @@ async function drill() {
         errorClass: failureClass,
         retryable: true,
       });
-      const recovered = await database.claimOperation(
-        FIXTURE_TENANT_ID,
-        op.id,
-        `${kind}-fallback-worker`,
-      );
-      if (!recovered || recovered.id !== lease.id)
-        throw new Error(`${kind.toUpperCase()}_RECOVERY_FAILED`);
+      const recovered = await database.claimOperation(FIXTURE_TENANT_ID, op.id, `${kind}-fallback-worker`);
+      if (!recovered || recovered.id !== lease.id) throw new Error(`${kind.toUpperCase()}_RECOVERY_FAILED`);
       await database.completeStep(FIXTURE_TENANT_ID, recovered, {
         id: deterministicUuid("canonical-proof", `${recovered.id}:fallback`),
         idempotencyKey: `${FIXTURE_NAMESPACE}:${kind}:fallback`,
@@ -920,43 +777,16 @@ async function drill() {
       });
       return { failureClass, fallback, recovered: true };
     };
-    const provider = await outage(
-      "provider",
-      "PROVIDER_UNAVAILABLE",
-      "deterministic-local-provider",
-    );
-    const reranker = await outage(
-      "reranker",
-      "RERANKER_UNAVAILABLE",
-      "deterministic_rrf",
-    );
+    const provider = await outage("provider", "PROVIDER_UNAVAILABLE", "deterministic-local-provider");
+    const reranker = await outage("reranker", "RERANKER_UNAVAILABLE", "deterministic_rrf");
     const outboxOwner = `outbox-drill:${process.pid}`;
-    const outbox = await database.claimOperationOutbox(
-      FIXTURE_TENANT_ID,
-      leaseOp.id,
-      outboxOwner,
-      1,
-    );
+    const outbox = await database.claimOperationOutbox(FIXTURE_TENANT_ID, leaseOp.id, outboxOwner, 1);
     if (!outbox[0]) throw new Error("OUTBOX_DRILL_NO_MESSAGE");
-    const extendedUntil = await database.extendOutboxClaim(
-      FIXTURE_TENANT_ID,
-      outbox[0],
-      30_000,
+    const extendedUntil = await database.extendOutboxClaim(FIXTURE_TENANT_ID, outbox[0], 30_000);
+    await database.markOutboxFailed(FIXTURE_TENANT_ID, outbox[0], "BROKER_UNAVAILABLE", 0);
+    const retried = (await database.claimOperationOutbox(FIXTURE_TENANT_ID, leaseOp.id, outboxOwner, 10)).find(
+      (item) => item.id === outbox[0]!.id,
     );
-    await database.markOutboxFailed(
-      FIXTURE_TENANT_ID,
-      outbox[0],
-      "BROKER_UNAVAILABLE",
-      0,
-    );
-    const retried = (
-      await database.claimOperationOutbox(
-        FIXTURE_TENANT_ID,
-        leaseOp.id,
-        outboxOwner,
-        10,
-      )
-    ).find((item) => item.id === outbox[0]!.id);
     if (!retried) throw new Error("OUTBOX_RECOVERY_FAILED");
     await database.markOutboxPublished(FIXTURE_TENANT_ID, retried);
     return {
@@ -984,9 +814,7 @@ async function drill() {
 async function health() {
   const database = databaseOnly();
   try {
-    await database.transaction(FIXTURE_TENANT_ID, async (client) =>
-      client.query("select 1"),
-    );
+    await database.transaction(FIXTURE_TENANT_ID, async (client) => client.query("select 1"));
     return { phase: "database_health", pid: process.pid, ok: true };
   } catch (error) {
     return {
@@ -1024,8 +852,7 @@ async function serveApi() {
             ],
           }
         : undefined,
-    getEvidencePacket: async (tenant, id) =>
-      EvidencePacketSchema.parse(await database.getEvidencePacket(tenant, id)),
+    getEvidencePacket: async (tenant, id) => EvidencePacketSchema.parse(await database.getEvidencePacket(tenant, id)),
   });
   const address = await server.listen({ host: "127.0.0.1", port });
   process.stdout.write(

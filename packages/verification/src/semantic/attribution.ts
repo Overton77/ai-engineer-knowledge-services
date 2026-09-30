@@ -6,9 +6,7 @@ export interface AttributionPerturbationObservation {
   readonly reorderedVerdict: string;
 }
 
-export function summarizeAttributionPerturbations(
-  observations: readonly AttributionPerturbationObservation[],
-): {
+export function summarizeAttributionPerturbations(observations: readonly AttributionPerturbationObservation[]): {
   readonly status: "audit_metric_only";
   readonly sampleSize: number;
   readonly claimSurvivalRate: number | null;
@@ -16,10 +14,7 @@ export function summarizeAttributionPerturbations(
   readonly evidenceSensitivityRate: number | null;
   readonly causalProof: false;
 } {
-  if (
-    new Set(observations.map((item) => item.assertionId)).size !==
-    observations.length
-  )
+  if (new Set(observations.map((item) => item.assertionId)).size !== observations.length)
     throw new Error("ATTRIBUTION_ASSERTION_DUPLICATE");
   if (observations.length === 0)
     return Object.freeze({
@@ -30,13 +25,9 @@ export function summarizeAttributionPerturbations(
       evidenceSensitivityRate: null,
       causalProof: false,
     });
-  const survives = observations.filter(
-    (item) => item.deletionVerdict === item.baselineVerdict,
-  ).length;
+  const survives = observations.filter((item) => item.deletionVerdict === item.baselineVerdict).length;
   const flips = observations.filter(
-    (item) =>
-      item.deletionVerdict !== item.baselineVerdict ||
-      item.replacementVerdict !== item.baselineVerdict,
+    (item) => item.deletionVerdict !== item.baselineVerdict || item.replacementVerdict !== item.baselineVerdict,
   ).length;
   const sensitive = observations.filter(
     (item) =>

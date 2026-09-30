@@ -57,7 +57,9 @@ export interface VerificationResourceReadServices {
     getClaims(input: OwnedOperationRead): Promise<unknown>;
     getReport(input: OwnedOperationRead): Promise<unknown>;
   };
-  readonly benchmarkComparisonReads?: { getComparison(input: { tenantId: string; comparisonId: string }): Promise<unknown> };
+  readonly benchmarkComparisonReads?: {
+    getComparison(input: { tenantId: string; comparisonId: string }): Promise<unknown>;
+  };
   readonly benchmarkReads?: {
     getRun(input: { tenantId: string; runId: string }): Promise<unknown>;
     getManifest(input: { tenantId: string; runId: string }): Promise<unknown>;
@@ -72,7 +74,9 @@ export interface VerificationResourceReadServices {
     getEvidence(input: { tenantId: string; evidenceId: string }): Promise<unknown>;
   };
   readonly providerReconciliation?: ProviderReconciliationService<ProviderAttemptScope>;
-  readonly semanticReconciliation?: ProviderReconciliationService<ProviderAttemptScope & { readonly host: "claims" | "report" }>;
+  readonly semanticReconciliation?: ProviderReconciliationService<
+    ProviderAttemptScope & { readonly host: "claims" | "report" }
+  >;
   readonly maximumResponseBytes?: number;
 }
 
@@ -104,7 +108,7 @@ export function createVerificationResourceReads(services: VerificationResourceRe
   };
   const owned = (input: OwnedOperationRead) => (resource: { tenantId: string; operationId: string }) =>
     resource.tenantId === input.tenantId && resource.operationId === input.operationId;
-  const bind = <S,>(service: S | undefined, call: (service: S) => Promise<unknown>) =>
+  const bind = <S>(service: S | undefined, call: (service: S) => Promise<unknown>) =>
     service ? () => call(service) : undefined;
   const reconciliation = <S extends ProviderAttemptScope>(
     service: ProviderReconciliationService<S> | undefined,
@@ -114,7 +118,10 @@ export function createVerificationResourceReads(services: VerificationResourceRe
     return read(
       "missing",
       bind(service, (candidate) =>
-        artifact ? candidate.applyDecision({ ...(scope as unknown as S), artifact }) : candidate.getDecision(scope as unknown as S)),
+        artifact
+          ? candidate.applyDecision({ ...(scope as unknown as S), artifact })
+          : candidate.getDecision(scope as unknown as S),
+      ),
       VerificationProviderReconciliationResourceSchema,
       (resource) =>
         resource.tenantId === input.tenantId &&
@@ -124,22 +131,36 @@ export function createVerificationResourceReads(services: VerificationResourceRe
   };
   return {
     structuredExtraction: (input: OwnedOperationRead) =>
-      read("missing", bind(services.structuredExtractionReads, (service) => service.getExtraction(input)),
-        VerificationStructuredExtractionResourceSchema, owned(input)),
+      read(
+        "missing",
+        bind(services.structuredExtractionReads, (service) => service.getExtraction(input)),
+        VerificationStructuredExtractionResourceSchema,
+        owned(input),
+      ),
     auditInspection: (input: OwnedOperationRead) =>
-      read("terminal", bind(services.auditInspectionReads, (service) => service.getInspection(input)),
-        VerificationAuditInspectionResourceSchema, owned(input)),
+      read(
+        "terminal",
+        bind(services.auditInspectionReads, (service) => service.getInspection(input)),
+        VerificationAuditInspectionResourceSchema,
+        owned(input),
+      ),
     adjudicationSubject: (input: OwnedOperationRead) =>
-      read("terminal", bind(services.adjudicationReads, (service) => service.getPendingSubject(input)),
-        VerificationAdjudicationTerminalResourceSchema, owned(input)),
+      read(
+        "terminal",
+        bind(services.adjudicationReads, (service) => service.getPendingSubject(input)),
+        VerificationAdjudicationTerminalResourceSchema,
+        owned(input),
+      ),
     /** Decision reads require the operation-ownership gate before the signed read. */
     adjudicationDecision: (input: OwnedOperationRead) => {
-      const service = services.adjudicationDecisionReads, admitted = services.isAdjudicationDecisionReadAdmitted;
+      const service = services.adjudicationDecisionReads,
+        admitted = services.isAdjudicationDecisionReadAdmitted;
       return read(
         "terminal",
         service && admitted
           ? async () => {
-              if (!(await admitted(input))) throw Object.assign(new Error("VERIFICATION_DECISION_NOT_FOUND"), { code: "NOT_FOUND" });
+              if (!(await admitted(input)))
+                throw Object.assign(new Error("VERIFICATION_DECISION_NOT_FOUND"), { code: "NOT_FOUND" });
               return service.getDecision(input);
             }
           : undefined,
@@ -148,56 +169,104 @@ export function createVerificationResourceReads(services: VerificationResourceRe
       );
     },
     capture: (input: OwnedOperationRead) =>
-      read("terminal", bind(services.captureReads, (service) => service.getCapture(input)),
-        VerificationCaptureTerminalResourceSchema, owned(input)),
+      read(
+        "terminal",
+        bind(services.captureReads, (service) => service.getCapture(input)),
+        VerificationCaptureTerminalResourceSchema,
+        owned(input),
+      ),
     claims: (input: OwnedOperationRead) =>
-      read("terminal", bind(services.claimsReportReads, (service) => service.getClaims(input)),
-        VerificationClaimsTerminalResourceSchema, owned(input)),
+      read(
+        "terminal",
+        bind(services.claimsReportReads, (service) => service.getClaims(input)),
+        VerificationClaimsTerminalResourceSchema,
+        owned(input),
+      ),
     report: (input: OwnedOperationRead) =>
-      read("terminal", bind(services.claimsReportReads, (service) => service.getReport(input)),
-        VerificationReportTerminalResourceSchema, owned(input)),
+      read(
+        "terminal",
+        bind(services.claimsReportReads, (service) => service.getReport(input)),
+        VerificationReportTerminalResourceSchema,
+        owned(input),
+      ),
     benchmarkComparison: (input: { tenantId: string; comparisonId: string }) =>
-      read("missing", bind(services.benchmarkComparisonReads, (service) => service.getComparison(input)),
+      read(
+        "missing",
+        bind(services.benchmarkComparisonReads, (service) => service.getComparison(input)),
         VerificationBenchmarkComparisonResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.comparisonId === input.comparisonId),
+        (resource) => resource.tenantId === input.tenantId && resource.comparisonId === input.comparisonId,
+      ),
     benchmarkRun: (input: { tenantId: string; runId: string }) =>
-      read("missing", bind(services.benchmarkReads, (service) => service.getRun(input)),
+      read(
+        "missing",
+        bind(services.benchmarkReads, (service) => service.getRun(input)),
         VerificationBenchmarkRunSummaryResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
+        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId,
+      ),
     benchmarkManifest: (input: { tenantId: string; runId: string }) =>
-      read("missing", bind(services.benchmarkReads, (service) => service.getManifest(input)),
+      read(
+        "missing",
+        bind(services.benchmarkReads, (service) => service.getManifest(input)),
         VerificationBenchmarkRunManifestResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
+        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId,
+      ),
     run: (input: { tenantId: string; runId: string }) =>
-      read("missing", bind(services.runReads, (service) => service.getRun(input)),
+      read(
+        "missing",
+        bind(services.runReads, (service) => service.getRun(input)),
         VerificationRunSummaryResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
+        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId,
+      ),
     runManifest: (input: { tenantId: string; runId: string }) =>
-      read("missing", bind(services.runReads, (service) => service.getRunManifest(input)),
+      read(
+        "missing",
+        bind(services.runReads, (service) => service.getRunManifest(input)),
         VerificationRunManifestResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
-    runCases: (input: { tenantId: string; runId: string; pageSize?: number | undefined; cursor?: string | undefined }) =>
-      read("missing",
-        bind(services.caseReads, (service) => service.listRunCases({
-          tenantId: input.tenantId,
-          runId: input.runId,
-          pageSize: input.pageSize ?? DEFAULT_CASE_PAGE_SIZE,
-          ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
-        })),
+        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId,
+      ),
+    runCases: (input: {
+      tenantId: string;
+      runId: string;
+      pageSize?: number | undefined;
+      cursor?: string | undefined;
+    }) =>
+      read(
+        "missing",
+        bind(services.caseReads, (service) =>
+          service.listRunCases({
+            tenantId: input.tenantId,
+            runId: input.runId,
+            pageSize: input.pageSize ?? DEFAULT_CASE_PAGE_SIZE,
+            ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
+          }),
+        ),
         VerificationRunCasesResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId),
+        (resource) => resource.tenantId === input.tenantId && resource.runId === input.runId,
+      ),
     case: (input: { tenantId: string; caseRunId: string }) =>
-      read("missing", bind(services.caseReads, (service) => service.getCase(input)),
+      read(
+        "missing",
+        bind(services.caseReads, (service) => service.getCase(input)),
         VerificationCaseResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && "caseRunId" in resource && resource.caseRunId === input.caseRunId),
+        (resource) =>
+          resource.tenantId === input.tenantId && "caseRunId" in resource && resource.caseRunId === input.caseRunId,
+      ),
     evidence: (input: { tenantId: string; evidenceId: string }) =>
-      read("missing", bind(services.caseReads, (service) => service.getEvidence(input)),
+      read(
+        "missing",
+        bind(services.caseReads, (service) => service.getEvidence(input)),
         VerificationEvidenceResourceSchema,
-        (resource) => resource.tenantId === input.tenantId && "evidenceId" in resource && resource.evidenceId === input.evidenceId),
+        (resource) =>
+          resource.tenantId === input.tenantId && "evidenceId" in resource && resource.evidenceId === input.evidenceId,
+      ),
     /** Reads, or with `artifact` applies, a signed extraction accounting decision; never redispatches. */
     providerReconciliation: (input: ProviderAttemptScope & { readonly artifact?: VerificationArtifactHandle }) =>
       reconciliation(services.providerReconciliation, input),
-    semanticReconciliation: (input: ProviderAttemptScope & { readonly host: "claims" | "report"; readonly artifact?: VerificationArtifactHandle }) =>
-      reconciliation(services.semanticReconciliation, input),
+    semanticReconciliation: (
+      input: ProviderAttemptScope & {
+        readonly host: "claims" | "report";
+        readonly artifact?: VerificationArtifactHandle;
+      },
+    ) => reconciliation(services.semanticReconciliation, input),
   };
 }

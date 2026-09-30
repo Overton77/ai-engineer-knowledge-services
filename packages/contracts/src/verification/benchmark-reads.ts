@@ -51,9 +51,13 @@ const BenchmarkReadCoreObjectSchema = z.strictObject({
 });
 
 function validateCore(value: z.infer<typeof BenchmarkReadCoreObjectSchema>, context: z.RefinementCtx) {
-  if (Date.parse(value.lifecycle.completedAt) < Date.parse(value.lifecycle.startedAt)) context.addIssue({ code: "custom", path: ["lifecycle"], message: "completion precedes start" });
-  if (value.arms.filter((arm) => arm.isControl).length !== 1) context.addIssue({ code: "custom", path: ["arms"], message: "exactly one control arm is required" });
-  for (const field of ["armId", "experimentArmId", "evalRunId"] as const) if (new Set(value.arms.map((arm) => arm[field])).size !== value.arms.length) context.addIssue({ code: "custom", path: ["arms"], message: `${field} must be unique` });
+  if (Date.parse(value.lifecycle.completedAt) < Date.parse(value.lifecycle.startedAt))
+    context.addIssue({ code: "custom", path: ["lifecycle"], message: "completion precedes start" });
+  if (value.arms.filter((arm) => arm.isControl).length !== 1)
+    context.addIssue({ code: "custom", path: ["arms"], message: "exactly one control arm is required" });
+  for (const field of ["armId", "experimentArmId", "evalRunId"] as const)
+    if (new Set(value.arms.map((arm) => arm[field])).size !== value.arms.length)
+      context.addIssue({ code: "custom", path: ["arms"], message: `${field} must be unique` });
 }
 
 /** Compact terminal benchmark state; no result/checkpoint/report bytes or seal material. */
@@ -73,9 +77,14 @@ export const VerificationBenchmarkRunManifestResourceSchema = BenchmarkReadCoreO
   execution: z.strictObject({ mode: z.literal("offline_recorded"), externalProviderRequests: z.literal(0) }),
   runnerManifestDigest: Sha256DigestSchema,
   checkpointPlanDigest: Sha256DigestSchema,
-  arms: z.array(BenchmarkArmSummarySchema.extend({
-    configurationArtifact: VerificationArtifactReferenceSchema,
-    policyArtifact: VerificationArtifactReferenceSchema,
-  })).min(2).max(16),
+  arms: z
+    .array(
+      BenchmarkArmSummarySchema.extend({
+        configurationArtifact: VerificationArtifactReferenceSchema,
+        policyArtifact: VerificationArtifactReferenceSchema,
+      }),
+    )
+    .min(2)
+    .max(16),
 }).superRefine(validateCore);
 export type VerificationBenchmarkRunManifestResource = z.infer<typeof VerificationBenchmarkRunManifestResourceSchema>;

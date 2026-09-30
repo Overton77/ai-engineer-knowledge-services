@@ -1,4 +1,8 @@
-import { apiOwnedOperationKinds, type CallbackReplayStore, type KnowledgeOperationPort } from "@aiengineer/knowledge-application";
+import {
+  apiOwnedOperationKinds,
+  type CallbackReplayStore,
+  type KnowledgeOperationPort,
+} from "@aiengineer/knowledge-application";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import {
   PostgresCallbackReplayStore,
@@ -71,7 +75,12 @@ function composeComponentDrift(
     serviceRoleKey = environment.SUPABASE_SECRET_KEY?.trim();
   if (!projectUrl || !serviceRoleKey) throw new Error("VERIFICATION_COMPONENT_DRIFT_STORAGE_REQUIRED");
   const storageBucket = environment.VERIFICATION_STORAGE_BUCKET?.trim() || "ai-engineer-cloud-bucket";
-  const store = new SupabaseArtifactStore({ projectUrl, serviceRoleKey, bucket: storageBucket, maximumBytes: 4_194_304 });
+  const store = new SupabaseArtifactStore({
+    projectUrl,
+    serviceRoleKey,
+    bucket: storageBucket,
+    maximumBytes: 4_194_304,
+  });
   return {
     forTenant(tenantId) {
       const repository = new PostgresVerificationRepository(database, store, {
@@ -92,9 +101,7 @@ function composeComponentDrift(
  * Server API composition. Construction order and configuration failures match the
  * previous API bootstrap; any failure releases the database pool before rethrowing.
  */
-export async function createApiHost(
-  options: ApiHostOptions,
-): Promise<ApiHost> {
+export async function createApiHost(options: ApiHostOptions): Promise<ApiHost> {
   const { environment } = options;
   const config = loadServerConfig(environment as NodeJS.ProcessEnv);
   const production = config.NODE_ENV === "production";

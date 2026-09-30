@@ -1,9 +1,4 @@
-import type {
-  RetrievalChannel,
-  RetrievalPolicy,
-  RetrievalRecord,
-  StageContribution,
-} from "../types.js";
+import type { RetrievalChannel, RetrievalPolicy, RetrievalRecord, StageContribution } from "../types.js";
 
 export function sum(items: readonly StageContribution[]): number {
   return items.reduce((n, x) => n + x.rrfContribution, 0);

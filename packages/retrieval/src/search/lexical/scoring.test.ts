@@ -48,9 +48,7 @@ describe("ftsScore", () => {
 
 describe("trigramScore", () => {
   it("is symmetric", () => {
-    expect(trigramScore("agent loop", "agentic loops")).toBe(
-      trigramScore("agentic loops", "agent loop"),
-    );
+    expect(trigramScore("agent loop", "agentic loops")).toBe(trigramScore("agentic loops", "agent loop"));
   });
 
   it("is 0 when one side is empty and shares no trigram with the other", () => {
@@ -65,11 +63,7 @@ describe("trigramScore", () => {
 describe("score", () => {
   it("keeps only positive scores and sorts by score desc, then id asc", () => {
     const records = [record({ id: "b" }), record({ id: "a" }), record({ id: "c" })];
-    const ranked = score(
-      records,
-      (r) => (r.id === "c" ? 0 : 1),
-      "fixture scorer",
-    );
+    const ranked = score(records, (r) => (r.id === "c" ? 0 : 1), "fixture scorer");
     expect(ranked.map((x) => x.record.id)).toEqual(["a", "b"]);
   });
 });

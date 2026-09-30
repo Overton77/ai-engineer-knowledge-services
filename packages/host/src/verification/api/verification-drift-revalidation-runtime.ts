@@ -3,7 +3,10 @@ import {
   createVerificationDriftRevalidationQueue,
   type ComponentDriftDependencies,
 } from "@aiengineer/knowledge-application";
-import { PostgresVerificationDriftRevalidationOutbox, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
+import {
+  PostgresVerificationDriftRevalidationOutbox,
+  type PostgresCanonicalRepository,
+} from "@aiengineer/knowledge-persistence";
 
 /** Binds the application drift queue to the canonical Postgres outbox. */
 export function createVerificationDriftRevalidationRuntime(

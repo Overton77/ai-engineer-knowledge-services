@@ -1,13 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
-import {
-  dispatchCliCommand,
-  resolveCommand,
-  type CliKnowledgeClient,
-} from "../commands.js";
+import { dispatchCliCommand, resolveCommand, type CliKnowledgeClient } from "../commands.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const context: OperationContext = {
   tenantId: id(1),
   operationId: id(2),
@@ -37,12 +32,7 @@ describe("adjudication CLI", () => {
       state: "queued",
     }));
     const client = { requestAdjudication } as unknown as CliKnowledgeClient;
-    await dispatchCliCommand(
-      client,
-      resolveCommand("adjudication", "request")!,
-      request,
-      context,
-    );
+    await dispatchCliCommand(client, resolveCommand("adjudication", "request")!, request, context);
     expect(requestAdjudication).toHaveBeenCalledWith(request, context);
     await expect(
       dispatchCliCommand(
@@ -68,12 +58,7 @@ describe("adjudication CLI", () => {
       decision: "affirm",
       rationale: "Synthetic engineering review record.",
     };
-    await dispatchCliCommand(
-      client,
-      resolveCommand("adjudication", "decision")!,
-      decision,
-      context,
-    );
+    await dispatchCliCommand(client, resolveCommand("adjudication", "decision")!, decision, context);
     expect(recordAdjudicationDecision).toHaveBeenCalledWith(decision, context);
     await expect(
       dispatchCliCommand(
@@ -91,12 +76,7 @@ describe("adjudication CLI", () => {
     }));
     const client = { getAdjudicationDecision } as unknown as CliKnowledgeClient;
     await expect(
-      dispatchCliCommand(
-        client,
-        resolveCommand("adjudication", "get-decision")!,
-        { operationId: id(5) },
-        context,
-      ),
+      dispatchCliCommand(client, resolveCommand("adjudication", "get-decision")!, { operationId: id(5) }, context),
     ).resolves.toMatchObject({ output: { decision: "affirm" } });
     expect(getAdjudicationDecision).toHaveBeenCalledWith(id(5), context);
     await expect(

@@ -41,7 +41,11 @@ const ArtifactOperation = z.strictObject({
   artifactId: UuidSchema,
   include: z.enum(["digest_only", "inline"]).default("digest_only"),
 });
-export const ReadOperationSchema = z.discriminatedUnion("kind", [NamedQueryOperation, RetrievalOperation, ArtifactOperation]);
+export const ReadOperationSchema = z.discriminatedUnion("kind", [
+  NamedQueryOperation,
+  RetrievalOperation,
+  ArtifactOperation,
+]);
 export type ReadOperation = z.infer<typeof ReadOperationSchema>;
 
 export const MAX_OPERATIONS = 32;
@@ -51,10 +55,17 @@ export const ReadIntentSchema = z.strictObject({
   schemaVersion: z.literal("knowledge-read-intent.v1"),
   intentId: SlugSchema,
   context: ReadContextSchema,
-  contract: z.strictObject({ migrationHead: z.string().optional(), workspaceFingerprint: z.string().optional() }).optional(),
+  contract: z
+    .strictObject({ migrationHead: z.string().optional(), workspaceFingerprint: z.string().optional() })
+    .optional(),
   atKnowledgeSeq: z.number().int().nonnegative().nullable().default(null),
   operations: z.array(ReadOperationSchema).min(1).max(MAX_OPERATIONS),
-  limits: z.strictObject({ maxRowsPerOp: z.number().int().positive().max(2000).optional(), statementTimeoutMs: z.number().int().positive().max(MAX_STATEMENT_TIMEOUT_MS).optional() }).optional(),
+  limits: z
+    .strictObject({
+      maxRowsPerOp: z.number().int().positive().max(2000).optional(),
+      statementTimeoutMs: z.number().int().positive().max(MAX_STATEMENT_TIMEOUT_MS).optional(),
+    })
+    .optional(),
 });
 export type ReadIntent = z.infer<typeof ReadIntentSchema>;
 export type ReadIntentInput = z.input<typeof ReadIntentSchema>;
@@ -82,14 +93,21 @@ export interface OperationResult {
   readonly durationMs: number;
 }
 
-export interface KnowledgeHead { readonly knowledgeSeq: number; readonly updatedAt: string }
+export interface KnowledgeHead {
+  readonly knowledgeSeq: number;
+  readonly updatedAt: string;
+}
 
 export interface ReadSnapshot {
   readonly schemaVersion: "knowledge-read-snapshot.v1";
   readonly snapshotId: string;
   readonly intentRef: { readonly intentId: string; readonly intentDigest: Digest; readonly artifactId?: string };
   readonly context: ReadIntent["context"] & { readonly executorVersion: string };
-  readonly contract: { readonly migrationHead: string; readonly workspaceFingerprint?: string; readonly catalogVersion?: string };
+  readonly contract: {
+    readonly migrationHead: string;
+    readonly workspaceFingerprint?: string;
+    readonly catalogVersion?: string;
+  };
   readonly knowledgeHead: KnowledgeHead;
   readonly knowledgeHeadAfter: KnowledgeHead;
   readonly headChanged: boolean;
@@ -97,5 +115,11 @@ export interface ReadSnapshot {
   readonly executedAt: string;
   readonly operations: readonly OperationResult[];
   readonly snapshotDigest: Digest;
-  readonly storage?: { readonly artifactId: string; readonly bucket: string; readonly objectPath: string; readonly storageState: string; readonly lineage: readonly { relation: string; to: string; state: "written" | "denied" }[] };
+  readonly storage?: {
+    readonly artifactId: string;
+    readonly bucket: string;
+    readonly objectPath: string;
+    readonly storageState: string;
+    readonly lineage: readonly { relation: string; to: string; state: "written" | "denied" }[];
+  };
 }

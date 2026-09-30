@@ -10,19 +10,13 @@ import {
   VerificationStructuredExtractionResourceSchema,
   type ExtractStructuredDataRequest,
 } from "@aiengineer/knowledge-contracts";
-import {
-  ParseArtifactRequestSchema,
-  type ParseArtifactRequest,
-} from "@aiengineer/knowledge-contracts";
+import { ParseArtifactRequestSchema, type ParseArtifactRequest } from "@aiengineer/knowledge-contracts";
 import {
   InspectAuditBundleRequestSchema,
   VerificationAuditInspectionResourceSchema,
   type InspectAuditBundleRequest,
 } from "@aiengineer/knowledge-contracts";
-import {
-  RequestAdjudicationRequestSchema,
-  type RequestAdjudicationRequest,
-} from "@aiengineer/knowledge-contracts";
+import { RequestAdjudicationRequestSchema, type RequestAdjudicationRequest } from "@aiengineer/knowledge-contracts";
 import {
   VerificationClaimsTerminalResourceSchema,
   VerificationReportTerminalResourceSchema,
@@ -114,18 +108,8 @@ export interface KnowledgeClientOptions {
   expectedVersions?: Readonly<Record<string, string>>;
 }
 export interface VerificationClientContext
-  extends
-    Pick<OperationContext, "tenantId" | "correlationId">,
-    Partial<
-      Pick<
-        OperationContext,
-        | "attemptId"
-        | "workItemId"
-        | "missionId"
-        | "causationId"
-        | "externalExecution"
-      >
-    > {
+  extends Pick<OperationContext, "tenantId" | "correlationId">,
+    Partial<Pick<OperationContext, "attemptId" | "workItemId" | "missionId" | "causationId" | "externalExecution">> {
   readonly idempotencyKey: string;
 }
 const EventPageSchema = z.object({
@@ -152,9 +136,7 @@ export class KnowledgeClient {
   readonly #expectedVersions: Readonly<Record<string, string>>;
   constructor(options: KnowledgeClientOptions) {
     this.jev = new KnowledgeJevClient(options);
-    this.#baseUrl = new URL(
-      options.baseUrl.endsWith("/") ? options.baseUrl : `${options.baseUrl}/`,
-    );
+    this.#baseUrl = new URL(options.baseUrl.endsWith("/") ? options.baseUrl : `${options.baseUrl}/`);
     this.#fetch = options.fetch ?? globalThis.fetch;
     this.#getAccessToken = options.getAccessToken ?? (() => "");
     this.#expectedVersions = options.expectedVersions ?? { api: "v1" };
@@ -162,10 +144,7 @@ export class KnowledgeClient {
   scoped(context: OperationContext) {
     return new ScopedKnowledgeClient(this, context);
   }
-  getBenchmarkRun(
-    runId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getBenchmarkRun(runId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/benchmarks/${encodeURIComponent(UuidSchema.parse(runId))}`,
       undefined,
@@ -174,10 +153,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getBenchmarkRunManifest(
-    runId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getBenchmarkRunManifest(runId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/benchmarks/${encodeURIComponent(UuidSchema.parse(runId))}/manifest`,
       undefined,
@@ -228,13 +204,8 @@ export class KnowledgeClient {
       context,
     );
   }
-  #semanticReconciliationPath(
-    host: "claims" | "report",
-    operationId: string,
-    providerAttemptId: string,
-  ) {
-    if (host !== "claims" && host !== "report")
-      throw new Error("INVALID_SEMANTIC_RECONCILIATION_HOST");
+  #semanticReconciliationPath(host: "claims" | "report", operationId: string, providerAttemptId: string) {
+    if (host !== "claims" && host !== "report") throw new Error("INVALID_SEMANTIC_RECONCILIATION_HOST");
     return `v1/verification/${host === "claims" ? "claims" : "reports"}/${encodeURIComponent(UuidSchema.parse(operationId))}/provider-attempts/${encodeURIComponent(UuidSchema.parse(providerAttemptId))}/reconciliation`;
   }
   applyProviderReconciliation(
@@ -251,10 +222,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getStructuredExtraction(
-    operationId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getStructuredExtraction(operationId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/extractions/${encodeURIComponent(UuidSchema.parse(operationId))}`,
       undefined,
@@ -263,10 +231,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  extractStructuredData(
-    request: ExtractStructuredDataRequest,
-    context: VerificationClientContext,
-  ) {
+  extractStructuredData(request: ExtractStructuredDataRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/extractions",
       ExtractStructuredDataRequestSchema.parse(request),
@@ -276,10 +241,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  getBenchmarkComparison(
-    comparisonId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getBenchmarkComparison(comparisonId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/benchmarks/comparisons/${encodeURIComponent(UuidSchema.parse(comparisonId))}`,
       undefined,
@@ -290,13 +252,7 @@ export class KnowledgeClient {
   }
   submitA2ATask(taskValue: A2ATask) {
     const task = A2ATaskSchema.parse(taskValue);
-    return this.#request(
-      "v1/a2a/tasks",
-      task,
-      A2AStatusSchema,
-      "POST",
-      task.context,
-    );
+    return this.#request("v1/a2a/tasks", task, A2AStatusSchema, "POST", task.context);
   }
   submitA2ACallback(
     envelopeValue: CallbackEnvelope,
@@ -304,19 +260,11 @@ export class KnowledgeClient {
     context: Pick<OperationContext, "tenantId" | "correlationId">,
   ) {
     const envelope = CallbackEnvelopeSchema.parse(envelopeValue);
-    return this.#request(
-      "v1/a2a/callbacks",
-      envelope,
-      CallbackAcknowledgementSchema,
-      "POST",
-      context,
-      { "x-knowledge-callback-signing-key-reference": signingKeyReference },
-    );
+    return this.#request("v1/a2a/callbacks", envelope, CallbackAcknowledgementSchema, "POST", context, {
+      "x-knowledge-callback-signing-key-reference": signingKeyReference,
+    });
   }
-  async validateRetrievalPlan(
-    plan: RetrievalPlan,
-    context: OperationContext,
-  ): Promise<RetrievalPlan> {
+  async validateRetrievalPlan(plan: RetrievalPlan, context: OperationContext): Promise<RetrievalPlan> {
     return this.#request(
       "v1/retrieval-plans:validate",
       { plan: RetrievalPlanSchema.parse(plan) },
@@ -355,14 +303,9 @@ export class KnowledgeClient {
       "v1/vector-stores",
     );
   }
-  attachVectorStoreDocuments(
-    vectorStoreId: string,
-    input: VectorStoreDocumentsInput,
-    context: OperationContext,
-  ) {
+  attachVectorStoreDocuments(vectorStoreId: string, input: VectorStoreDocumentsInput, context: OperationContext) {
     const parsed = VectorStoreDocumentsInputSchema.parse(input);
-    if (parsed.vectorStoreId !== vectorStoreId)
-      throw new Error("VECTOR_STORE_PATH_INPUT_MISMATCH");
+    if (parsed.vectorStoreId !== vectorStoreId) throw new Error("VECTOR_STORE_PATH_INPUT_MISMATCH");
     return this.submitOperation(
       "vector_store_documents",
       parsed as unknown as JsonValue,
@@ -370,14 +313,9 @@ export class KnowledgeClient {
       `v1/vector-stores/${encodeURIComponent(vectorStoreId)}/documents`,
     );
   }
-  startVectorStoreIngestion(
-    vectorStoreId: string,
-    input: VectorStoreIngestionInput,
-    context: OperationContext,
-  ) {
+  startVectorStoreIngestion(vectorStoreId: string, input: VectorStoreIngestionInput, context: OperationContext) {
     const parsed = VectorStoreIngestionInputSchema.parse(input);
-    if (parsed.vectorStoreId !== vectorStoreId)
-      throw new Error("VECTOR_STORE_PATH_INPUT_MISMATCH");
+    if (parsed.vectorStoreId !== vectorStoreId) throw new Error("VECTOR_STORE_PATH_INPUT_MISMATCH");
     return this.submitOperation(
       "vector_store_ingestion",
       parsed as unknown as JsonValue,
@@ -386,85 +324,36 @@ export class KnowledgeClient {
     );
   }
   discoverSources(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "source_discovery",
-      input,
-      context,
-      "v1/sources:discover",
-    );
+    return this.submitOperation("source_discovery", input, context, "v1/sources:discover");
   }
   resolveSource(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "source_resolution",
-      input,
-      context,
-      "v1/sources:resolve",
-    );
+    return this.submitOperation("source_resolution", input, context, "v1/sources:resolve");
   }
   inspectCapture(id: string, input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "capture_inspection",
-      input,
-      context,
-      `v1/captures/${encodeURIComponent(id)}:inspect`,
-    );
+    return this.submitOperation("capture_inspection", input, context, `v1/captures/${encodeURIComponent(id)}:inspect`);
   }
   vetCapture(id: string, input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "source_vetting",
-      input,
-      context,
-      `v1/captures/${encodeURIComponent(id)}:vet`,
-    );
+    return this.submitOperation("source_vetting", input, context, `v1/captures/${encodeURIComponent(id)}:vet`);
   }
   createTransformation(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "transformation",
-      input,
-      context,
-      "v1/transformations",
-    );
+    return this.submitOperation("transformation", input, context, "v1/transformations");
   }
   previewChunks(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "chunk_preview",
-      input,
-      context,
-      "v1/chunk-previews",
-    );
+    return this.submitOperation("chunk_preview", input, context, "v1/chunk-previews");
   }
   createChunkSet(input: JsonValue, context: OperationContext) {
     return this.submitOperation("chunk_set", input, context, "v1/chunk-sets");
   }
   submitPromotionProposal(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "promotion_proposal",
-      input,
-      context,
-      "v1/promotion-proposals",
-    );
+    return this.submitOperation("promotion_proposal", input, context, "v1/promotion-proposals");
   }
   startEmbeddingRun(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "embedding_run",
-      input,
-      context,
-      "v1/embedding-runs",
-    );
+    return this.submitOperation("embedding_run", input, context, "v1/embedding-runs");
   }
   startSpacePublication(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "space_publication",
-      input,
-      context,
-      "v1/space-publications",
-    );
+    return this.submitOperation("space_publication", input, context, "v1/space-publications");
   }
-  verifySpacePublication(
-    id: string,
-    input: JsonValue,
-    context: OperationContext,
-  ) {
+  verifySpacePublication(id: string, input: JsonValue, context: OperationContext) {
     return this.submitOperation(
       "publication_verification",
       input,
@@ -472,11 +361,7 @@ export class KnowledgeClient {
       `v1/space-publications/${encodeURIComponent(id)}:verify`,
     );
   }
-  rollbackSpacePublication(
-    id: string,
-    input: JsonValue,
-    context: OperationContext,
-  ) {
+  rollbackSpacePublication(id: string, input: JsonValue, context: OperationContext) {
     return this.submitOperation(
       "publication_rollback",
       input,
@@ -501,17 +386,9 @@ export class KnowledgeClient {
     );
   }
   startEvaluationRun(input: JsonValue, context: OperationContext) {
-    return this.submitOperation(
-      "evaluation_run",
-      input,
-      context,
-      "v1/eval-runs",
-    );
+    return this.submitOperation("evaluation_run", input, context, "v1/eval-runs");
   }
-  startExploratoryBundleEvaluation(
-    bundles: readonly ExploratoryBundleDescriptor[],
-    context: OperationContext,
-  ) {
+  startExploratoryBundleEvaluation(bundles: readonly ExploratoryBundleDescriptor[], context: OperationContext) {
     return this.submitOperation(
       "evaluation_run",
       {
@@ -522,10 +399,7 @@ export class KnowledgeClient {
       "v1/demo/evaluations",
     );
   }
-  captureVerificationSource(
-    request: CaptureSourceRequest,
-    context: VerificationClientContext,
-  ) {
+  captureVerificationSource(request: CaptureSourceRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/captures",
       CaptureSourceRequestSchema.parse(request),
@@ -551,23 +425,12 @@ export class KnowledgeClient {
       "POST",
       undefined,
       {
-        "x-correlation-id": z
-          .string()
-          .min(1)
-          .max(255)
-          .parse(context.correlationId),
-        "idempotency-key": z
-          .string()
-          .min(8)
-          .max(255)
-          .parse(context.idempotencyKey),
+        "x-correlation-id": z.string().min(1).max(255).parse(context.correlationId),
+        "idempotency-key": z.string().min(8).max(255).parse(context.idempotencyKey),
       },
     );
   }
-  parseArtifact(
-    request: ParseArtifactRequest,
-    context: VerificationClientContext,
-  ) {
+  parseArtifact(request: ParseArtifactRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/artifacts:parse",
       ParseArtifactRequestSchema.parse(request),
@@ -577,10 +440,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  verifyMetricObservation(
-    request: VerifyMetricObservationRequest,
-    context: VerificationClientContext,
-  ) {
+  verifyMetricObservation(request: VerifyMetricObservationRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/metrics:verify",
       VerifyMetricObservationRequestSchema.parse(request),
@@ -590,10 +450,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  verifyClaims(
-    request: VerifyClaimsRequest,
-    context: VerificationClientContext,
-  ) {
+  verifyClaims(request: VerifyClaimsRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/claims:verify",
       VerifyClaimsRequestSchema.parse(request),
@@ -603,10 +460,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  verifyReport(
-    request: VerifyReportRequest,
-    context: VerificationClientContext,
-  ) {
+  verifyReport(request: VerifyReportRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/reports:verify",
       VerifyReportRequestSchema.parse(request),
@@ -616,10 +470,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  inspectAuditBundle(
-    request: InspectAuditBundleRequest,
-    context: VerificationClientContext,
-  ) {
+  inspectAuditBundle(request: InspectAuditBundleRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/audit-bundles:inspect",
       InspectAuditBundleRequestSchema.parse(request),
@@ -629,10 +480,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  requestAdjudication(
-    request: RequestAdjudicationRequest,
-    context: VerificationClientContext,
-  ) {
+  requestAdjudication(request: RequestAdjudicationRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/adjudications:request",
       RequestAdjudicationRequestSchema.parse(request),
@@ -642,10 +490,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  recordAdjudicationDecision(
-    request: VerificationAdjudicationDecisionRequest,
-    context: VerificationClientContext,
-  ) {
+  recordAdjudicationDecision(request: VerificationAdjudicationDecisionRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/adjudications:record-decision",
       VerificationAdjudicationDecisionRequestSchema.parse(request),
@@ -655,10 +500,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  getAuditInspection(
-    operationId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getAuditInspection(operationId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/audit-inspections/${UuidSchema.parse(operationId)}`,
       undefined,
@@ -667,10 +509,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getAdjudicationSubject(
-    operationId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getAdjudicationSubject(operationId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/adjudications/${UuidSchema.parse(operationId)}`,
       undefined,
@@ -679,10 +518,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getAdjudicationDecision(
-    operationId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getAdjudicationDecision(operationId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/adjudication-decisions/${UuidSchema.parse(operationId)}`,
       undefined,
@@ -727,10 +563,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  runBenchmark(
-    request: RunBenchmarkRequest,
-    context: VerificationClientContext,
-  ) {
+  runBenchmark(request: RunBenchmarkRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/benchmarks:run",
       RunBenchmarkRequestSchema.parse(request),
@@ -740,10 +573,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  compareBenchmarkRuns(
-    request: CompareBenchmarkRunsRequest,
-    context: VerificationClientContext,
-  ) {
+  compareBenchmarkRuns(request: CompareBenchmarkRunsRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/benchmarks:compare",
       CompareBenchmarkRunsRequestSchema.parse(request),
@@ -753,10 +583,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  verifyExtraction(
-    request: VerifyExtractionRequest,
-    context: VerificationClientContext,
-  ) {
+  verifyExtraction(request: VerifyExtractionRequest, context: VerificationClientContext) {
     return this.#request(
       "v1/verification/extractions:verify",
       VerifyExtractionRequestSchema.parse(request),
@@ -766,10 +593,7 @@ export class KnowledgeClient {
       this.#verificationHeaders(context),
     );
   }
-  replayVerificationRun(
-    request: ReplayRunRequest,
-    context: VerificationClientContext,
-  ) {
+  replayVerificationRun(request: ReplayRunRequest, context: VerificationClientContext) {
     const parsed = ReplayRunRequestSchema.parse(request);
     return this.#request(
       `v1/verification/runs/${encodeURIComponent(parsed.runId)}:replay`,
@@ -792,10 +616,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getVerificationRun(
-    runId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getVerificationRun(runId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/runs/${UuidSchema.parse(runId)}`,
       undefined,
@@ -804,10 +625,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getVerificationRunManifest(
-    runId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getVerificationRunManifest(runId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/runs/${UuidSchema.parse(runId)}/manifest`,
       undefined,
@@ -823,16 +641,11 @@ export class KnowledgeClient {
   ) {
     const query = new URLSearchParams();
     if (page.pageSize !== undefined) {
-      if (
-        !Number.isInteger(page.pageSize) ||
-        page.pageSize < 1 ||
-        page.pageSize > 100
-      )
+      if (!Number.isInteger(page.pageSize) || page.pageSize < 1 || page.pageSize > 100)
         throw new Error("VERIFICATION_CASE_PAGE_INVALID");
       query.set("pageSize", String(page.pageSize));
     }
-    if (page.cursor !== undefined)
-      query.set("cursor", UuidSchema.parse(page.cursor));
+    if (page.cursor !== undefined) query.set("cursor", UuidSchema.parse(page.cursor));
     return this.#request(
       `v1/verification/runs/${UuidSchema.parse(runId)}/cases?${query}`,
       undefined,
@@ -841,10 +654,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getVerificationCase(
-    caseRunId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getVerificationCase(caseRunId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/cases/${UuidSchema.parse(caseRunId)}`,
       undefined,
@@ -853,10 +663,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getVerificationEvidence(
-    evidenceId: string,
-    context: Pick<VerificationClientContext, "tenantId" | "correlationId">,
-  ) {
+  getVerificationEvidence(evidenceId: string, context: Pick<VerificationClientContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/verification/evidence/${UuidSchema.parse(evidenceId)}`,
       undefined,
@@ -877,10 +684,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getVectorStore(
-    vectorStoreId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getVectorStore(vectorStoreId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/vector-stores/${encodeURIComponent(vectorStoreId)}`,
       undefined,
@@ -902,11 +706,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getOperationEvents(
-    operationId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-    after = 0,
-  ) {
+  getOperationEvents(operationId: string, context: Pick<OperationContext, "tenantId" | "correlationId">, after = 0) {
     return this.#request(
       `v1/operations/${encodeURIComponent(operationId)}/events?after=${after}`,
       undefined,
@@ -966,10 +766,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  replayEvidencePacketCitations(
-    packetId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  replayEvidencePacketCitations(packetId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/evidence-packets/${encodeURIComponent(packetId)}/citations`,
       undefined,
@@ -978,10 +775,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getArtifact(
-    artifactId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getArtifact(artifactId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/artifacts/${encodeURIComponent(artifactId)}`,
       undefined,
@@ -990,10 +784,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getReceipt(
-    receiptId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getReceipt(receiptId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/receipts/${encodeURIComponent(receiptId)}`,
       undefined,
@@ -1002,10 +793,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getRetrievalRun(
-    runId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getRetrievalRun(runId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/retrieval-runs/${encodeURIComponent(runId)}`,
       undefined,
@@ -1014,10 +802,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getRetrievalExplanation(
-    runId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getRetrievalExplanation(runId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/retrieval-runs/${encodeURIComponent(runId)}/explanation`,
       undefined,
@@ -1028,10 +813,7 @@ export class KnowledgeClient {
   }
   getEvaluationReport(
     runId: string,
-    context: Pick<
-      OperationContext,
-      "tenantId" | "correlationId" | "externalExecution"
-    >,
+    context: Pick<OperationContext, "tenantId" | "correlationId" | "externalExecution">,
   ) {
     return this.#request(
       `v1/eval-runs/${encodeURIComponent(runId)}/report`,
@@ -1041,10 +823,7 @@ export class KnowledgeClient {
       context,
     );
   }
-  getEvaluationFailures(
-    runId: string,
-    context: Pick<OperationContext, "tenantId" | "correlationId">,
-  ) {
+  getEvaluationFailures(runId: string, context: Pick<OperationContext, "tenantId" | "correlationId">) {
     return this.#request(
       `v1/eval-runs/${encodeURIComponent(runId)}/failures`,
       undefined,
@@ -1053,38 +832,22 @@ export class KnowledgeClient {
       context,
     );
   }
-  #verificationHeaders(
-    context: VerificationClientContext,
-  ): Readonly<Record<string, string>> {
+  #verificationHeaders(context: VerificationClientContext): Readonly<Record<string, string>> {
     const external = context.externalExecution;
     return {
       "idempotency-key": context.idempotencyKey,
-      ...(context.attemptId
-        ? { "x-verification-attempt-id": context.attemptId }
-        : {}),
-      ...(context.workItemId
-        ? { "x-verification-work-item-id": context.workItemId }
-        : {}),
-      ...(context.missionId
-        ? { "x-verification-mission-id": context.missionId }
-        : {}),
+      ...(context.attemptId ? { "x-verification-attempt-id": context.attemptId } : {}),
+      ...(context.workItemId ? { "x-verification-work-item-id": context.workItemId } : {}),
+      ...(context.missionId ? { "x-verification-mission-id": context.missionId } : {}),
       ...(context.causationId ? { "x-causation-id": context.causationId } : {}),
       ...(external
         ? {
             "x-external-runtime": external.runtime,
             "x-external-run-id": external.runId,
-            ...(external.rootRunId
-              ? { "x-external-root-run-id": external.rootRunId }
-              : {}),
-            ...(external.sessionId
-              ? { "x-external-session-id": external.sessionId }
-              : {}),
-            ...(external.turnId
-              ? { "x-external-turn-id": external.turnId }
-              : {}),
-            ...(external.toolCallId
-              ? { "x-external-tool-call-id": external.toolCallId }
-              : {}),
+            ...(external.rootRunId ? { "x-external-root-run-id": external.rootRunId } : {}),
+            ...(external.sessionId ? { "x-external-session-id": external.sessionId } : {}),
+            ...(external.turnId ? { "x-external-turn-id": external.turnId } : {}),
+            ...(external.toolCallId ? { "x-external-tool-call-id": external.toolCallId } : {}),
           }
         : {}),
     };
@@ -1116,16 +879,10 @@ export class KnowledgeClient {
           ? {
               "x-external-runtime": external.runtime,
               "x-external-run-id": external.runId,
-              ...(external.rootRunId
-                ? { "x-external-root-run-id": external.rootRunId }
-                : {}),
-              ...(external.sessionId
-                ? { "x-eve-session-id": external.sessionId }
-                : {}),
+              ...(external.rootRunId ? { "x-external-root-run-id": external.rootRunId } : {}),
+              ...(external.sessionId ? { "x-eve-session-id": external.sessionId } : {}),
               ...(external.turnId ? { "x-eve-turn-id": external.turnId } : {}),
-              ...(external.toolCallId
-                ? { "x-eve-tool-call-id": external.toolCallId }
-                : {}),
+              ...(external.toolCallId ? { "x-eve-tool-call-id": external.toolCallId } : {}),
             }
           : {}),
         ...additionalHeaders,
@@ -1133,8 +890,7 @@ export class KnowledgeClient {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const payload: unknown = await response.json();
-    if (!response.ok)
-      throw new KnowledgeClientError(ProblemDetailsSchema.parse(payload));
+    if (!response.ok) throw new KnowledgeClientError(ProblemDetailsSchema.parse(payload));
     return schema.parse(payload);
   }
 }
@@ -1157,11 +913,7 @@ export class ScopedKnowledgeClient {
     return this.client.getVectorStore(id, this.context);
   }
   vectorStoreOperation(storeId: string, operationId: string) {
-    return this.client.getVectorStoreOperation(
-      storeId,
-      operationId,
-      this.context,
-    );
+    return this.client.getVectorStoreOperation(storeId, operationId, this.context);
   }
   events(id: string, after = 0) {
     return this.client.getOperationEvents(id, this.context, after);
@@ -1202,9 +954,7 @@ export class ScopedKnowledgeClient {
   vetCapture(id: string, input: JsonValue) {
     return this.client.vetCapture(id, input, this.context);
   }
-  startExploratoryBundleEvaluation(
-    bundles: readonly ExploratoryBundleDescriptor[],
-  ) {
+  startExploratoryBundleEvaluation(bundles: readonly ExploratoryBundleDescriptor[]) {
     return this.client.startExploratoryBundleEvaluation(bundles, this.context);
   }
 }

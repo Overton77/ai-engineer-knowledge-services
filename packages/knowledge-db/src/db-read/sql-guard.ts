@@ -7,7 +7,8 @@ import { domainError } from "../schema-workspace/index.js";
  * tenant context inside an otherwise read-only statement (`set_config`).
  */
 const MAX_SQL_CHARS = 20_000;
-const WRITE_KEYWORDS = /\b(insert|update|delete|merge|truncate|alter|create|drop|grant|revoke|copy|vacuum|reindex|cluster|lock)\b/i;
+const WRITE_KEYWORDS =
+  /\b(insert|update|delete|merge|truncate|alter|create|drop|grant|revoke|copy|vacuum|reindex|cluster|lock)\b/i;
 const CONTEXT_MUTATORS = /\b(set_config|pg_advisory_lock|pg_terminate_backend|pg_cancel_backend)\s*\(/i;
 
 function stripCommentsAndLiterals(sql: string): string {
@@ -25,7 +26,8 @@ export function assertSingleReadStatement(sql: string): string {
   if (statement.length > MAX_SQL_CHARS) throw domainError("SQL_TOO_LONG", `sql exceeds ${MAX_SQL_CHARS} characters`);
   const stripped = stripCommentsAndLiterals(statement);
   if (stripped.includes(";")) throw domainError("SQL_MULTI_STATEMENT", "exactly one statement is allowed");
-  if (!/^\s*(select|with)\b/i.test(stripped)) throw domainError("SQL_NOT_SELECT", "only a single SELECT or WITH … SELECT statement is allowed");
+  if (!/^\s*(select|with)\b/i.test(stripped))
+    throw domainError("SQL_NOT_SELECT", "only a single SELECT or WITH … SELECT statement is allowed");
   const write = WRITE_KEYWORDS.exec(stripped);
   if (write) throw domainError("SQL_FORBIDDEN_KEYWORD", `keyword not allowed on the read surface: ${write[1]}`);
   const mutator = CONTEXT_MUTATORS.exec(stripped);

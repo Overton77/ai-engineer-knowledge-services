@@ -65,14 +65,22 @@ export type SpaceManifestBudget =
   | { readonly reserved: number; readonly remaining: number; readonly basis: string }
   | { readonly status: "unavailable"; readonly reason: string };
 
-const BUDGET_UNAVAILABLE: SpaceManifestBudget = { status: "unavailable", reason: "no per-space reservation exists in contract 0.4.16" };
+const BUDGET_UNAVAILABLE: SpaceManifestBudget = {
+  status: "unavailable",
+  reason: "no per-space reservation exists in contract 0.4.16",
+};
 
 export interface SpaceManifestEntry<Space extends string> {
   readonly space: Space;
   readonly storeClass?: string;
   readonly authorityClass?: SpaceManifestAuthorityClass;
   readonly admittedNodeKinds: readonly string[];
-  readonly profileBindings: readonly { readonly name: string; readonly version: string; readonly strategy: string; readonly nodeKinds: readonly string[] }[];
+  readonly profileBindings: readonly {
+    readonly name: string;
+    readonly version: string;
+    readonly strategy: string;
+    readonly nodeKinds: readonly string[];
+  }[];
   readonly activePublication?: SpaceManifestActivePublication;
   readonly budget: SpaceManifestBudget;
 }
@@ -120,7 +128,12 @@ export function buildSpaceManifest<Space extends string>(input: BuildSpaceManife
       ...(facts?.storeClass !== undefined ? { storeClass: facts.storeClass } : {}),
       ...(facts?.authorityClass !== undefined ? { authorityClass: facts.authorityClass } : {}),
       admittedNodeKinds,
-      profileBindings: bindings.map((profile) => ({ name: profile.name, version: profile.version, strategy: profile.strategy, nodeKinds: profile.nodeKinds })),
+      profileBindings: bindings.map((profile) => ({
+        name: profile.name,
+        version: profile.version,
+        strategy: profile.strategy,
+        nodeKinds: profile.nodeKinds,
+      })),
       ...(facts?.activePublication !== undefined ? { activePublication: facts.activePublication } : {}),
       budget: BUDGET_UNAVAILABLE,
     };
@@ -152,7 +165,13 @@ export interface SpaceManifestReads {
   readonly workspace: { readonly migrationHead: string; readonly fingerprint: string | undefined };
   catalog(): { readonly entries: readonly { readonly name: string }[] };
   head(tenantId: string): Promise<{ readonly knowledgeSeq: number }>;
-  runIntent(raw: unknown): Promise<{ readonly operations: readonly { readonly opId: string; readonly status: string; readonly rows?: readonly Record<string, unknown>[] }[] }>;
+  runIntent(raw: unknown): Promise<{
+    readonly operations: readonly {
+      readonly opId: string;
+      readonly status: string;
+      readonly rows?: readonly Record<string, unknown>[];
+    }[];
+  }>;
 }
 
 export interface ReadSpaceManifestInput<Space extends string> {
@@ -161,7 +180,10 @@ export interface ReadSpaceManifestInput<Space extends string> {
   readonly profileTable: SpaceManifestProfileTable<Space>;
 }
 
-interface CatalogRequirement { readonly query: string; readonly field: string }
+interface CatalogRequirement {
+  readonly query: string;
+  readonly field: string;
+}
 
 /**
  * The five catalog queries `space_manifest` would need to read its live half (memo §6.5a).
@@ -177,7 +199,11 @@ const CATALOG_REQUIREMENTS: readonly CatalogRequirement[] = [
   { query: "retrieval.store_quota_usage", field: "budget.reserved, budget.remaining" },
 ];
 
-type OperationLike = { readonly opId: string; readonly status: string; readonly rows?: readonly Record<string, unknown>[] };
+type OperationLike = {
+  readonly opId: string;
+  readonly status: string;
+  readonly rows?: readonly Record<string, unknown>[];
+};
 
 /**
  * Catalog-aware. Inspects `reads.catalog().entries` for the five names above; with today's
@@ -187,17 +213,26 @@ type OperationLike = { readonly opId: string; readonly status: string; readonly 
  * containing only those, runs it once, and merges the returned rows into the matching spaces;
  * the rest are recorded in `unavailable[]`.
  */
-export async function readSpaceManifest<Space extends string>(reads: SpaceManifestReads, input: ReadSpaceManifestInput<Space>): Promise<SpaceManifest<Space>> {
+export async function readSpaceManifest<Space extends string>(
+  reads: SpaceManifestReads,
+  input: ReadSpaceManifestInput<Space>,
+): Promise<SpaceManifest<Space>> {
   const known = new Set(reads.catalog().entries.map((entry) => entry.name));
   const present = CATALOG_REQUIREMENTS.filter((requirement) => known.has(requirement.query));
   const missing = CATALOG_REQUIREMENTS.filter((requirement) => !known.has(requirement.query));
-  const unavailable = missing.map((requirement) => ({ field: requirement.field, reason: `catalog does not include ${requirement.query}`, requires: requirement.query }));
+  const unavailable = missing.map((requirement) => ({
+    field: requirement.field,
+    reason: `catalog does not include ${requirement.query}`,
+    requires: requirement.query,
+  }));
 
   let atKnowledgeSeq: number | null = null;
   let liveFacts: Partial<Record<Space, SpaceManifestLiveFacts>> = {};
   if (present.length > 0) {
     atKnowledgeSeq = (await reads.head(input.tenantId)).knowledgeSeq;
-    const snapshot = await reads.runIntent(buildReadIntent(input.tenantId, reads.workspace.migrationHead, atKnowledgeSeq, present));
+    const snapshot = await reads.runIntent(
+      buildReadIntent(input.tenantId, reads.workspace.migrationHead, atKnowledgeSeq, present),
+    );
     liveFacts = mergeLiveFacts(snapshot.operations, input.spaces);
   }
 
@@ -205,21 +240,33 @@ export async function readSpaceManifest<Space extends string>(reads: SpaceManife
     tenantId: input.tenantId,
     spaces: input.spaces,
     profileTable: input.profileTable,
-    contract: { migrationHead: reads.workspace.migrationHead, ...(reads.workspace.fingerprint !== undefined ? { workspaceFingerprint: reads.workspace.fingerprint } : {}) },
+    contract: {
+      migrationHead: reads.workspace.migrationHead,
+      ...(reads.workspace.fingerprint !== undefined ? { workspaceFingerprint: reads.workspace.fingerprint } : {}),
+    },
     atKnowledgeSeq,
     liveFacts,
     unavailable,
   });
 }
 
-function buildReadIntent(tenantId: string, migrationHead: string, atKnowledgeSeq: number, present: readonly CatalogRequirement[]): unknown {
+function buildReadIntent(
+  tenantId: string,
+  migrationHead: string,
+  atKnowledgeSeq: number,
+  present: readonly CatalogRequirement[],
+): unknown {
   return {
     schemaVersion: "knowledge-read-intent.v1",
     intentId: "space-manifest",
     context: { tenantId },
     contract: { migrationHead },
     atKnowledgeSeq,
-    operations: present.map((requirement) => ({ opId: requirement.query, kind: "named_query", query: requirement.query })),
+    operations: present.map((requirement) => ({
+      opId: requirement.query,
+      kind: "named_query",
+      query: requirement.query,
+    })),
   };
 }
 
@@ -232,7 +279,10 @@ function buildReadIntent(tenantId: string, migrationHead: string, atKnowledgeSeq
  * fields this manifest does not model (or, for the budget query, must never use — see
  * {@link SpaceManifestBudget}), so their rows are not merged even when the query is present.
  */
-function mergeLiveFacts<Space extends string>(operations: readonly OperationLike[], spaces: readonly Space[]): Partial<Record<Space, SpaceManifestLiveFacts>> {
+function mergeLiveFacts<Space extends string>(
+  operations: readonly OperationLike[],
+  spaces: readonly Space[],
+): Partial<Record<Space, SpaceManifestLiveFacts>> {
   const known = new Set<string>(spaces);
   const byOpId = new Map(operations.map((operation) => [operation.opId, operation]));
   const facts: Partial<Record<Space, SpaceManifestLiveFacts>> = {};
@@ -247,7 +297,9 @@ function mergeLiveFacts<Space extends string>(operations: readonly OperationLike
       if (typeof row.space !== "string") continue;
       set(row.space, {
         ...(typeof row.storeClass === "string" ? { storeClass: row.storeClass } : {}),
-        ...(typeof row.authorityClass === "string" ? { authorityClass: row.authorityClass as SpaceManifestAuthorityClass } : {}),
+        ...(typeof row.authorityClass === "string"
+          ? { authorityClass: row.authorityClass as SpaceManifestAuthorityClass }
+          : {}),
       });
     }
   }
@@ -255,7 +307,8 @@ function mergeLiveFacts<Space extends string>(operations: readonly OperationLike
   const activePublication = byOpId.get("retrieval.active_space_publication");
   if (activePublication?.status === "ok") {
     for (const row of activePublication.rows ?? []) {
-      if (typeof row.space !== "string" || row.activePublication === null || typeof row.activePublication !== "object") continue;
+      if (typeof row.space !== "string" || row.activePublication === null || typeof row.activePublication !== "object")
+        continue;
       set(row.space, { activePublication: row.activePublication as SpaceManifestActivePublication });
     }
   }

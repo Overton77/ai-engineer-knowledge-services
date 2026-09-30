@@ -36,12 +36,7 @@ export const VERIFICATION_PARSER_LIMITS = Object.freeze({
 const PARSER_VERSION = "verification-native-parser.v1" as const;
 const IMAGE_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const ALLOWED_KINDS = ["html", "pdf"] as const;
-const ALLOWED_OUTPUT_KEYS = new Set([
-  "parserVersion",
-  "parentDigest",
-  "projections",
-  "residuals",
-]);
+const ALLOWED_OUTPUT_KEYS = new Set(["parserVersion", "parentDigest", "projections", "residuals"]);
 const MINIMUM_PROJECTIONS = 1;
 const MAXIMUM_PROJECTIONS = 2;
 const MAXIMUM_RESIDUALS = 1000;
@@ -55,12 +50,8 @@ const byteDigest = (bytes: Uint8Array): `sha256:${string}` =>
   `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 
 function assertAdmittedParseRequest(request: VerificationParserRequest): void {
-  const admittedKind = (ALLOWED_KINDS as readonly string[]).includes(
-    request.kind,
-  );
-  const withinLimit =
-    request.bytes.byteLength > 0 &&
-    request.bytes.byteLength <= VERIFICATION_PARSER_LIMITS.inputBytes;
+  const admittedKind = (ALLOWED_KINDS as readonly string[]).includes(request.kind);
+  const withinLimit = request.bytes.byteLength > 0 && request.bytes.byteLength <= VERIFICATION_PARSER_LIMITS.inputBytes;
   if (!admittedKind || !withinLimit) {
     throw new Error("PARSER_INPUT_LIMIT_OR_TYPE");
   }
@@ -82,9 +73,7 @@ function readParserPayload(
 } {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(nativeOutput),
-    );
+    parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(nativeOutput));
   } catch {
     throw new Error("PARSER_INVALID_OUTPUT");
   }
@@ -111,10 +100,7 @@ function readParserPayload(
   };
 }
 
-function sandboxCreateArgs(
-  name: string,
-  imageDigest: `sha256:${string}`,
-): readonly string[] {
+function sandboxCreateArgs(name: string, imageDigest: `sha256:${string}`): readonly string[] {
   return [
     "create",
     "--name",
@@ -154,9 +140,7 @@ export class SandboxedVerificationParser {
     }
   }
 
-  async parse(
-    request: VerificationParserRequest,
-  ): Promise<VerificationParserOutput> {
+  async parse(request: VerificationParserRequest): Promise<VerificationParserOutput> {
     assertAdmittedParseRequest(request);
     const name = `verification-parser-${randomUUID()}`;
     const deadline = Date.now() + VERIFICATION_PARSER_LIMITS.timeoutMs;
@@ -265,10 +249,7 @@ export class SandboxedVerificationParser {
         }
       };
       const abort = () => finish(new Error("PARSER_CANCELLED"));
-      const timer = setTimeout(
-        () => finish(new Error("PARSER_TIMEOUT")),
-        options.timeoutMs,
-      );
+      const timer = setTimeout(() => finish(new Error("PARSER_TIMEOUT")), options.timeoutMs);
       options.signal?.addEventListener("abort", abort, { once: true });
       child.on("error", () => finish(new Error("PARSER_RUNTIME_UNAVAILABLE")));
       child.stdout.on("data", (chunk: Buffer) => {

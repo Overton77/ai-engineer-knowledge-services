@@ -1,7 +1,4 @@
-import {
-  replayPrototypeArithmetic,
-  type PrototypeArithmeticExpression,
-} from "./arithmetic.js";
+import { replayPrototypeArithmetic, type PrototypeArithmeticExpression } from "./arithmetic.js";
 import { prototypeSha256 } from "./digest.js";
 import { resolvePrototypeJsonPointer } from "./json-pointer.js";
 import { resolvePrototypeTextLocator } from "./text-locator.js";
@@ -19,8 +16,7 @@ type Locator =
       readonly quote: string;
       readonly claimedStart?: number;
       readonly claimedEnd?: number;
-      readonly offsetBasis:
-        "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
+      readonly offsetBasis: "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
     }
   | {
       readonly kind: "json_pointer";
@@ -101,13 +97,7 @@ function resolveEvidence(capture: Capture | undefined, evidence: Evidence) {
         selectedContentSha256: null,
         occurrenceCount: 0,
       },
-      checks: [
-        check(
-          "CAPTURE_PRESENT",
-          false,
-          `Capture ${evidence.captureId} is missing.`,
-        ),
-      ],
+      checks: [check("CAPTURE_PRESENT", false, `Capture ${evidence.captureId} is missing.`)],
     };
   const resolved =
     evidence.locator.kind === "text_quote"
@@ -116,26 +106,21 @@ function resolveEvidence(capture: Capture | undefined, evidence: Evidence) {
           value: evidence.locator.quote,
         }
       : resolvePrototypeJsonPointer(capture.content, evidence.locator.pointer);
-  const captureHashMatches =
-    prototypeSha256(capture.content) === capture.contentSha256;
+  const captureHashMatches = prototypeSha256(capture.content) === capture.contentSha256;
   const uniquelyResolved =
-    resolved.matchMode === "exact" ||
-    resolved.matchMode === "normalized" ||
-    resolved.matchMode === "json_pointer";
+    resolved.matchMode === "exact" || resolved.matchMode === "normalized" || resolved.matchMode === "json_pointer";
   const claimedOffsetsMatch =
     evidence.locator.kind !== "text_quote" ||
     evidence.locator.claimedStart === undefined ||
     evidence.locator.claimedEnd === undefined ||
-    (evidence.locator.claimedStart === resolved.start &&
-      evidence.locator.claimedEnd === resolved.end);
+    (evidence.locator.claimedStart === resolved.start && evidence.locator.claimedEnd === resolved.end);
   const selectedHashMatches =
     evidence.expectedSelectedContentSha256 === undefined ||
     evidence.expectedSelectedContentSha256 === resolved.selectedContentSha256;
   const expectedValueMatches =
     evidence.locator.kind !== "json_pointer" ||
     evidence.locator.expectedValue === undefined ||
-    JSON.stringify(evidence.locator.expectedValue) ===
-      JSON.stringify(resolved.value);
+    JSON.stringify(evidence.locator.expectedValue) === JSON.stringify(resolved.value);
   const checks = [
     check(
       "CAPTURE_HASH_MATCH",
@@ -161,9 +146,7 @@ function resolveEvidence(capture: Capture | undefined, evidence: Evidence) {
     check(
       "SELECTED_CONTENT_HASH_MATCH",
       selectedHashMatches,
-      selectedHashMatches
-        ? "Selected content hash matches or was not predeclared."
-        : "Selected content hash differs.",
+      selectedHashMatches ? "Selected content hash matches or was not predeclared." : "Selected content hash differs.",
     ),
     check(
       "EXPECTED_VALUE_MATCH",
@@ -194,25 +177,16 @@ function resolveEvidence(capture: Capture | undefined, evidence: Evidence) {
 
 /** Returns the exact legacy result shape; callers must validate their legacy schema. */
 export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
-  const captures = new Map(
-    input.captures.map((capture) => [capture.captureId, capture]),
-  );
-  const independent =
-    input.producer.deploymentId !== input.verifier.deploymentId;
-  const reviewReasons: string[] = independent
-    ? []
-    : ["Producer and verifier deployment IDs are identical."];
+  const captures = new Map(input.captures.map((capture) => [capture.captureId, capture]));
+  const independent = input.producer.deploymentId !== input.verifier.deploymentId;
+  const reviewReasons: string[] = independent ? [] : ["Producer and verifier deployment IDs are identical."];
   const claims = input.claims.map((claim) => {
-    const evidence = claim.evidence.map((reference) =>
-      resolveEvidence(captures.get(reference.captureId), reference),
-    );
+    const evidence = claim.evidence.map((reference) => resolveEvidence(captures.get(reference.captureId), reference));
     const checks = [
       check(
         "PRODUCER_VERIFIER_INDEPENDENT",
         independent,
-        independent
-          ? "Deployments are independent."
-          : "The same deployment produced and verified the claim.",
+        independent ? "Deployments are independent." : "The same deployment produced and verified the claim.",
       ),
       check(
         "CLAIM_ATOMIC",
@@ -221,23 +195,16 @@ export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
           ? "Claim is declared atomic."
           : "Composite claim requires decomposition before semantic verification.",
       ),
-      check(
-        "EVIDENCE_PRESENT",
-        evidence.length > 0,
-        `${evidence.length} evidence reference(s) supplied.`,
-      ),
+      check("EVIDENCE_PRESENT", evidence.length > 0, `${evidence.length} evidence reference(s) supplied.`),
     ];
     const mechanicalStatus: Status =
-      checks.some((item) => !item.passed) ||
-      evidence.some((item) => item.mechanicalStatus === "failed")
+      checks.some((item) => !item.passed) || evidence.some((item) => item.mechanicalStatus === "failed")
         ? "failed"
         : evidence.some((item) => item.mechanicalStatus === "review_required")
           ? "review_required"
           : "passed";
     if (mechanicalStatus !== "passed")
-      reviewReasons.push(
-        `Claim ${claim.claimId} failed or requires mechanical review.`,
-      );
+      reviewReasons.push(`Claim ${claim.claimId} failed or requires mechanical review.`);
     return {
       claimId: claim.claimId,
       mechanicalStatus,
@@ -247,32 +214,20 @@ export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
     };
   });
   const metrics = input.metrics.map((metric) => {
-    const evidence = resolveEvidence(
-      captures.get(metric.captureId),
-      metric.evidence,
-    );
+    const evidence = resolveEvidence(captures.get(metric.captureId), metric.evidence);
     const proof = metric.arithmeticProof;
-    const calculated = proof
-      ? replayPrototypeArithmetic(proof.expression, proof.operands)
-      : metric.value;
+    const calculated = proof ? replayPrototypeArithmetic(proof.expression, proof.operands) : metric.value;
     const arithmeticMatches = proof
-      ? Number.isFinite(calculated) &&
-        Math.abs(calculated - proof.expectedResult) <= proof.tolerance
+      ? Number.isFinite(calculated) && Math.abs(calculated - proof.expectedResult) <= proof.tolerance
       : true;
-    const valueMatchesProof = proof
-      ? Math.abs(metric.value - proof.expectedResult) <= proof.tolerance
-      : true;
+    const valueMatchesProof = proof ? Math.abs(metric.value - proof.expectedResult) <= proof.tolerance : true;
     const periodValid =
-      !metric.periodStart ||
-      !metric.periodEnd ||
-      Date.parse(metric.periodStart) <= Date.parse(metric.periodEnd);
+      !metric.periodStart || !metric.periodEnd || Date.parse(metric.periodStart) <= Date.parse(metric.periodEnd);
     const checks = [
       check(
         "PRODUCER_VERIFIER_INDEPENDENT",
         independent,
-        independent
-          ? "Deployments are independent."
-          : "Metric was self-verified.",
+        independent ? "Deployments are independent." : "Metric was self-verified.",
       ),
       check(
         "ENTITY_ID_EXPLICIT",
@@ -287,9 +242,7 @@ export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
       check(
         "OBSERVATION_PERIOD_VALID",
         periodValid,
-        periodValid
-          ? "Observation period is ordered."
-          : "Observation period ends before it starts.",
+        periodValid ? "Observation period is ordered." : "Observation period ends before it starts.",
       ),
       check(
         "EVIDENCE_MECHANICALLY_VALID",
@@ -316,10 +269,7 @@ export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
       : evidence.mechanicalStatus === "review_required"
         ? "review_required"
         : "passed";
-    if (status !== "passed")
-      reviewReasons.push(
-        `Metric ${metric.observationId} failed or requires review.`,
-      );
+    if (status !== "passed") reviewReasons.push(`Metric ${metric.observationId} failed or requires review.`);
     return {
       observationId: metric.observationId,
       status,
@@ -355,12 +305,9 @@ export function verifyPrototypeBundle(input: PrototypeBundle): unknown {
     metrics,
     summary: {
       claimsTotal: claims.length,
-      claimsMechanicallyPassed: claims.filter(
-        (claim) => claim.mechanicalStatus === "passed",
-      ).length,
+      claimsMechanicallyPassed: claims.filter((claim) => claim.mechanicalStatus === "passed").length,
       metricsTotal: metrics.length,
-      metricsPassed: metrics.filter((metric) => metric.status === "passed")
-        .length,
+      metricsPassed: metrics.filter((metric) => metric.status === "passed").length,
       falseAcceptanceRiskCount:
         claims.filter((claim) => claim.mechanicalStatus !== "passed").length +
         metrics.filter((metric) => metric.status !== "passed").length,

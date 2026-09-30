@@ -1,12 +1,5 @@
-import type {
-  ResolvedSelector,
-  VerificationSelector,
-} from "@aiengineer/knowledge-contracts";
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-  sha256Digest,
-} from "../canonical/index.js";
+import type { ResolvedSelector, VerificationSelector } from "@aiengineer/knowledge-contracts";
+import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "../canonical/index.js";
 import { encodeUtf8 } from "./utf8.js";
 
 /**
@@ -42,10 +35,7 @@ export interface EvidenceSelectorResolver {
   resolve(request: EvidenceSelectionRequest): EvidenceSelection;
 }
 
-export type EvidenceSelectionFailure = Exclude<
-  ResolvedSelector["status"],
-  "resolved"
->;
+export type EvidenceSelectionFailure = Exclude<ResolvedSelector["status"], "resolved">;
 
 type CustodyField =
   | "captureId"
@@ -74,16 +64,9 @@ export interface ResolvedSelectionOutcome {
 }
 
 export interface EvidenceSelectionReporter {
-  report(
-    request: EvidenceSelectionRequest,
-    outcome: EvidenceSelectionOutcome,
-  ): ResolvedSelector;
+  report(request: EvidenceSelectionRequest, outcome: EvidenceSelectionOutcome): ResolvedSelector;
   /** A text selection: the bytes are the UTF-8 encoding of `text`. */
-  resolvedText(
-    request: EvidenceSelectionRequest,
-    text: string,
-    outcome: ResolvedSelectionOutcome,
-  ): EvidenceSelection;
+  resolvedText(request: EvidenceSelectionRequest, text: string, outcome: ResolvedSelectionOutcome): EvidenceSelection;
   /** A structured selection: the bytes are the canonical JSON of `value`, so `selectedValue` replays to the content digest. */
   resolvedValue(
     request: EvidenceSelectionRequest,
@@ -98,18 +81,12 @@ export interface EvidenceSelectionReporter {
 }
 
 /** Report builders for one resolver version. Every report copies custody from the request. */
-export function evidenceSelectionReporter(
-  resolverVersion: string,
-): EvidenceSelectionReporter {
-  function report(
-    request: EvidenceSelectionRequest,
-    outcome: EvidenceSelectionOutcome,
-  ): ResolvedSelector {
+export function evidenceSelectionReporter(resolverVersion: string): EvidenceSelectionReporter {
+  function report(request: EvidenceSelectionRequest, outcome: EvidenceSelectionOutcome): ResolvedSelector {
     return {
       captureId: request.captureId,
       representationArtifactId: request.representationArtifactId,
-      representationDigest:
-        request.representationDigest as ResolvedSelector["representationDigest"],
+      representationDigest: request.representationDigest as ResolvedSelector["representationDigest"],
       selectorDigest: digestCanonicalJson(request.selector),
       selectorKind: request.selector.kind,
       resolverVersion,
@@ -155,9 +132,7 @@ export function evidenceSelectionReporter(
         normalization: outcome.normalization ?? "none",
       }),
       selectedContent,
-      ...(outcome.exposure === "text_and_value"
-        ? { selectedText, selectedValue: value }
-        : {}),
+      ...(outcome.exposure === "text_and_value" ? { selectedText, selectedValue: value } : {}),
     };
   }
 

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { MemoryEmbeddingCache } from "./cache.js";
-import { createGatewayEmbeddingAdapterFromEnvironment, retryDelay, VercelAiGatewayEmbeddingAdapter } from "./gateway.js";
+import {
+  createGatewayEmbeddingAdapterFromEnvironment,
+  retryDelay,
+  VercelAiGatewayEmbeddingAdapter,
+} from "./gateway.js";
 
 const request = {
   vectorSpaceVersionId: "version-1",
@@ -71,7 +75,10 @@ describe("VercelAiGatewayEmbeddingAdapter", () => {
         { index: 1, embedding: [0, Number.POSITIVE_INFINITY, 0] },
       ],
     ]) {
-      const adapter = new VercelAiGatewayEmbeddingAdapter({ apiKey: "secret", fetch: async () => Response.json({ data }) });
+      const adapter = new VercelAiGatewayEmbeddingAdapter({
+        apiKey: "secret",
+        fetch: async () => Response.json({ data }),
+      });
       await expect(adapter.embedMany(request)).rejects.toThrow();
     }
   });

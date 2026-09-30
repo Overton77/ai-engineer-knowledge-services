@@ -1,7 +1,4 @@
-import {
-  evaluateJsonPointer,
-  isJsonPointerSyntax,
-} from "../evidence-selection/json-pointer.js";
+import { evaluateJsonPointer, isJsonPointerSyntax } from "../evidence-selection/json-pointer.js";
 import type { ExtractionVerificationCheck } from "./field-rules.js";
 
 /** Ordered collector of extraction checks; a result is valid only when every check passed. */
@@ -37,9 +34,7 @@ const pointerDepth = (path: string): number => path.split("/").length - 1;
 
 /** RFC 6901 syntax plus this verifier's work bounds on pointer length and depth. */
 export const isBoundedJsonPointer = (path: string): boolean =>
-  path.length <= MAX_POINTER_LENGTH &&
-  pointerDepth(path) <= MAX_POINTER_DEPTH &&
-  isJsonPointerSyntax(path);
+  path.length <= MAX_POINTER_LENGTH && pointerDepth(path) <= MAX_POINTER_DEPTH && isJsonPointerSyntax(path);
 
 export interface PointerLookup {
   readonly found: boolean;
@@ -47,10 +42,5 @@ export interface PointerLookup {
 }
 
 /** Pointer evaluation that treats an out-of-bounds pointer as not found rather than traversing it. */
-export const getAtBoundedPointer = (
-  value: unknown,
-  path: string,
-): PointerLookup =>
-  isBoundedJsonPointer(path)
-    ? evaluateJsonPointer(path, value)
-    : { found: false };
+export const getAtBoundedPointer = (value: unknown, path: string): PointerLookup =>
+  isBoundedJsonPointer(path) ? evaluateJsonPointer(path, value) : { found: false };

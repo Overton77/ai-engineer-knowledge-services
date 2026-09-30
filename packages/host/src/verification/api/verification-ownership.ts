@@ -6,10 +6,7 @@ import {
   type VerificationOwnershipResolverOptions,
   type VerificationOwnershipStore,
 } from "@aiengineer/knowledge-application";
-import {
-  resolveEveVerificationBinding,
-  type PostgresCanonicalRepository,
-} from "@aiengineer/knowledge-persistence";
+import { resolveEveVerificationBinding, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 
 export { createVerificationOperationReadAuthorizer, isVerifiedEveRuntimeRetry };
 
@@ -21,10 +18,6 @@ export function createVerificationOwnershipResolver(
 ): ResolveVerificationContext {
   return createOwnedResolver(database, rawGrants, {
     ...options,
-    resolveEveBinding: (envelope) =>
-      resolveEveVerificationBinding(
-        database as PostgresCanonicalRepository,
-        envelope,
-      ),
+    resolveEveBinding: (envelope) => resolveEveVerificationBinding(database as PostgresCanonicalRepository, envelope),
   });
 }

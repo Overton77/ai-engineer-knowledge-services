@@ -15,6 +15,8 @@ describe("example 02: reject a cycle and an invalid span", () => {
   });
 
   it("reports a node whose text was edited after sealing", () => {
-    expect(rejectCycleAndInvalidSpanExample().editedNodeIssues).toEqual([expect.stringMatching(/quote digest mismatch$/)]);
+    expect(rejectCycleAndInvalidSpanExample().editedNodeIssues).toEqual([
+      expect.stringMatching(/quote digest mismatch$/),
+    ]);
   });
 });

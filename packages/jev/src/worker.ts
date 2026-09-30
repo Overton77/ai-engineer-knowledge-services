@@ -11,6 +11,11 @@ process.on("message", async (message: { id: string; call: ProviderCall }) => {
     process.send?.({ id: message.id, result });
   } catch (error) {
     const failure = error instanceof ProviderFailure ? error : new ProviderFailure("WORKER_FAILURE", false);
-    process.send?.({ id: message.id, error: { code: failure.code, retryable: failure.retryable, retryAfterMs: failure.retryAfterMs } });
-  } finally { busy = false; }
+    process.send?.({
+      id: message.id,
+      error: { code: failure.code, retryable: failure.retryable, retryAfterMs: failure.retryAfterMs },
+    });
+  } finally {
+    busy = false;
+  }
 });

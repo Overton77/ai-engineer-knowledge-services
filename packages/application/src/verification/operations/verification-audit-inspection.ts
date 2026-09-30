@@ -46,12 +46,16 @@ export interface VerificationAuditInspectionReplayTrustPort {
 }
 
 export interface VerificationAuditInspectionArtifactResolver {
-  authorizeArtifact(input: Parameters<TrustedArtifactResolver["authorizeArtifact"]>[0] & {
-    readonly signal: AbortSignal;
-  }): Promise<void>;
-  hydrateRegisteredArtifact(input: Parameters<TrustedArtifactResolver["hydrateRegisteredArtifact"]>[0] & {
-    readonly signal: AbortSignal;
-  }): Promise<Awaited<ReturnType<TrustedArtifactResolver["hydrateRegisteredArtifact"]>>>;
+  authorizeArtifact(
+    input: Parameters<TrustedArtifactResolver["authorizeArtifact"]>[0] & {
+      readonly signal: AbortSignal;
+    },
+  ): Promise<void>;
+  hydrateRegisteredArtifact(
+    input: Parameters<TrustedArtifactResolver["hydrateRegisteredArtifact"]>[0] & {
+      readonly signal: AbortSignal;
+    },
+  ): Promise<Awaited<ReturnType<TrustedArtifactResolver["hydrateRegisteredArtifact"]>>>;
 }
 
 export interface VerificationAuditInspectionDependencies {
@@ -89,17 +93,18 @@ function fail(code: VerificationAuditInspectionErrorCode): never {
 }
 
 function hasUnsupportedVersion(value: unknown): boolean {
-  return value !== null && typeof value === "object"
-    && typeof (value as { verificationContractVersion?: unknown }).verificationContractVersion === "string"
-    && (value as { verificationContractVersion: string }).verificationContractVersion !== expectedVersion;
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as { verificationContractVersion?: unknown }).verificationContractVersion === "string" &&
+    (value as { verificationContractVersion: string }).verificationContractVersion !== expectedVersion
+  );
 }
 
 function inspectionFailure(inspection: AuditBundleInspection): VerificationAuditInspectionErrorCode {
-  if (inspection.errors.includes("AUDIT_BUNDLE_VERSION_INVALID")) return "VERIFICATION_AUDIT_INSPECTION_UNSUPPORTED_VERSION";
-  const signatureErrors = new Set([
-    "AUDIT_BUNDLE_SIGNATURE_INVALID",
-    "AUDIT_BUNDLE_SIGNATURE_INCOMPLETE",
-  ]);
+  if (inspection.errors.includes("AUDIT_BUNDLE_VERSION_INVALID"))
+    return "VERIFICATION_AUDIT_INSPECTION_UNSUPPORTED_VERSION";
+  const signatureErrors = new Set(["AUDIT_BUNDLE_SIGNATURE_INVALID", "AUDIT_BUNDLE_SIGNATURE_INCOMPLETE"]);
   if (inspection.errors.length > 0 && inspection.errors.every((code) => signatureErrors.has(code))) {
     return "VERIFICATION_AUDIT_INSPECTION_SIGNATURE_UNTRUSTED";
   }
@@ -157,13 +162,14 @@ class InspectionExecution {
         cleanup();
         action();
       };
-      const onAbort = () => finish(() => {
-        try {
-          this.assertActive();
-        } catch (error) {
-          reject(error);
-        }
-      });
+      const onAbort = () =>
+        finish(() => {
+          try {
+            this.assertActive();
+          } catch (error) {
+            reject(error);
+          }
+        });
       this.#controller.signal.addEventListener("abort", onAbort, { once: true });
       if (this.#controller.signal.aborted) onAbort();
       work.then(
@@ -208,7 +214,8 @@ export class VerificationAuditInspectionApplicationService {
 
   constructor(private readonly dependencies: VerificationAuditInspectionDependencies) {
     const maximum = dependencies.maximumAuditBytes ?? 16_000_000;
-    if (!Number.isSafeInteger(maximum) || maximum < 1 || maximum > 64_000_000) throw new Error("VERIFICATION_AUDIT_INSPECTION_LIMIT_INVALID");
+    if (!Number.isSafeInteger(maximum) || maximum < 1 || maximum > 64_000_000)
+      throw new Error("VERIFICATION_AUDIT_INSPECTION_LIMIT_INVALID");
     const maximumInspectionMs = dependencies.maximumInspectionMs ?? 30_000;
     if (!Number.isSafeInteger(maximumInspectionMs) || maximumInspectionMs < 1 || maximumInspectionMs > 120_000) {
       throw new Error("VERIFICATION_AUDIT_INSPECTION_DEADLINE_INVALID");
@@ -217,7 +224,11 @@ export class VerificationAuditInspectionApplicationService {
     this.#maximumInspectionMs = maximumInspectionMs;
   }
 
-  async inspect(requestValue: unknown, contextValue: unknown, signal?: AbortSignal): Promise<VerificationAuditInspectionResult> {
+  async inspect(
+    requestValue: unknown,
+    contextValue: unknown,
+    signal?: AbortSignal,
+  ): Promise<VerificationAuditInspectionResult> {
     const execution = new InspectionExecution(this.#maximumInspectionMs, signal);
     try {
       execution.assertActive();
@@ -234,20 +245,27 @@ export class VerificationAuditInspectionApplicationService {
           artifactId: request.auditBundle.artifactId,
           purpose: "verification_replay",
           signal: execution.signal,
-        }));
+        }),
+      );
       const hydrated = await safely(execution, "VERIFICATION_AUDIT_INSPECTION_ARTIFACT_INTEGRITY_FAILURE", () =>
         this.dependencies.artifactResolver.hydrateRegisteredArtifact({
           tenantId: context.tenantId,
           artifactId: request.auditBundle.artifactId,
           signal: execution.signal,
-        }));
+        }),
+      );
       const artifactResult = VerificationArtifactHandleSchema.safeParse(hydrated.registration);
       if (!artifactResult.success) fail("VERIFICATION_AUDIT_INSPECTION_ARTIFACT_INTEGRITY_FAILURE");
       const artifact = artifactResult.data;
-      if (artifact.tenantId !== context.tenantId || artifact.artifactId !== request.auditBundle.artifactId
-        || artifact.digest !== request.auditBundle.digest || artifact.byteLength !== hydrated.bytes.byteLength
-        || artifact.byteLength > this.#maximumAuditBytes || sha256Digest(hydrated.bytes) !== artifact.digest
-        || artifact.mediaType !== "application/vnd.aiengineer.verification-run-manifest+json") {
+      if (
+        artifact.tenantId !== context.tenantId ||
+        artifact.artifactId !== request.auditBundle.artifactId ||
+        artifact.digest !== request.auditBundle.digest ||
+        artifact.byteLength !== hydrated.bytes.byteLength ||
+        artifact.byteLength > this.#maximumAuditBytes ||
+        sha256Digest(hydrated.bytes) !== artifact.digest ||
+        artifact.mediaType !== "application/vnd.aiengineer.verification-run-manifest+json"
+      ) {
         fail("VERIFICATION_AUDIT_INSPECTION_ARTIFACT_INTEGRITY_FAILURE");
       }
 
@@ -263,21 +281,32 @@ export class VerificationAuditInspectionApplicationService {
       if (hasUnsupportedVersion(parsed)) fail("VERIFICATION_AUDIT_INSPECTION_UNSUPPORTED_VERSION");
       const audit = parsed as VerificationAuditBundle;
       const inspection = await safely(execution, "VERIFICATION_AUDIT_INSPECTION_BUNDLE_CORRUPT", () =>
-        inspectAuditBundle(audit, this.dependencies.signatureVerifier));
+        inspectAuditBundle(audit, this.dependencies.signatureVerifier),
+      );
       if (!inspection.valid) fail(inspectionFailure(inspection));
       if (inspection.signatureStatus !== "verified") fail("VERIFICATION_AUDIT_INSPECTION_SIGNATURE_UNTRUSTED");
       if (audit.tenantId !== context.tenantId) fail("VERIFICATION_AUDIT_INSPECTION_BUNDLE_CORRUPT");
-      const expectedParents = [...new Set([
-        ...audit.manifest.inputArtifacts,
-        ...audit.manifest.outputArtifacts,
-      ].map((item) => item.artifactId))].sort();
-      if (!artifact.transformationSignature || artifact.createdAt !== audit.manifest.completedAt
-        || digestCanonicalJson([...artifact.parentArtifactIds].sort()) !== digestCanonicalJson(expectedParents)) {
+      const expectedParents = [
+        ...new Set(
+          [...audit.manifest.inputArtifacts, ...audit.manifest.outputArtifacts].map((item) => item.artifactId),
+        ),
+      ].sort();
+      if (
+        !artifact.transformationSignature ||
+        artifact.createdAt !== audit.manifest.completedAt ||
+        digestCanonicalJson([...artifact.parentArtifactIds].sort()) !== digestCanonicalJson(expectedParents)
+      ) {
         fail("VERIFICATION_AUDIT_INSPECTION_ARTIFACT_INTEGRITY_FAILURE");
       }
 
       const trust = await safely(execution, "VERIFICATION_AUDIT_INSPECTION_REPLAY_FAILURE", () =>
-        this.dependencies.replayTrust.resolve({ context, auditArtifact: artifact, auditBundle: audit, signal: execution.signal }));
+        this.dependencies.replayTrust.resolve({
+          context,
+          auditArtifact: artifact,
+          auditBundle: audit,
+          signal: execution.signal,
+        }),
+      );
       const replay = await safely(execution, "VERIFICATION_AUDIT_INSPECTION_REPLAY_FAILURE", () =>
         replayVerificationAudit(audit, {
           artifactResolver: execution.guardedResolver(this.dependencies.artifactResolver),
@@ -285,12 +314,18 @@ export class VerificationAuditInspectionApplicationService {
           ...(trust.semanticReplay ? { semanticReplay: trust.semanticReplay } : {}),
           signatureVerifier: this.dependencies.signatureVerifier,
           ...(trust.selectorResolvers ? { selectorResolvers: trust.selectorResolvers } : {}),
-          ...(trust.isProjectionLineageAdmitted ? { isProjectionLineageAdmitted: trust.isProjectionLineageAdmitted } : {}),
-        }));
-      if (!replay.inspection.valid || replay.inspection.signatureStatus !== "verified"
-        || replay.deterministicResultDigest !== audit.deterministicResultDigest
-        || replay.policyDecisionDigest !== audit.policyDecisionDigest
-        || replay.policyOutcome !== audit.manifest.policyOutcome) {
+          ...(trust.isProjectionLineageAdmitted
+            ? { isProjectionLineageAdmitted: trust.isProjectionLineageAdmitted }
+            : {}),
+        }),
+      );
+      if (
+        !replay.inspection.valid ||
+        replay.inspection.signatureStatus !== "verified" ||
+        replay.deterministicResultDigest !== audit.deterministicResultDigest ||
+        replay.policyDecisionDigest !== audit.policyDecisionDigest ||
+        replay.policyOutcome !== audit.manifest.policyOutcome
+      ) {
         fail("VERIFICATION_AUDIT_INSPECTION_REPLAY_FAILURE");
       }
 
@@ -300,30 +335,32 @@ export class VerificationAuditInspectionApplicationService {
         mediaType: artifact.mediaType,
         sizeBytes: artifact.byteLength,
       };
-      return deepFreeze(VerificationAuditInspectionResultSchema.parse({
-        schemaVersion: "verification-audit-inspection.v1",
-        verificationContractVersion: "verification.v1",
-        auditArtifact: reference,
-        run: {
-          runId: audit.manifest.runId,
-          manifestId: audit.manifest.manifestId,
-          manifestDigest: replay.inspection.manifestDigest,
-          deterministicResultDigest: replay.deterministicResultDigest,
-          policyDecisionDigest: replay.policyDecisionDigest,
-          policyOutcome: replay.policyOutcome,
-          startedAt: audit.manifest.startedAt,
-          completedAt: audit.manifest.completedAt,
-        },
-        proof: {
-          payloadDigest: replay.inspection.payloadDigest,
-          signatureStatus: "verified",
-          deterministicReplay: "exact",
-          policyReplay: "exact",
-          replayedArtifactCount: replay.replayedArtifactIds.length,
-          inputArtifactCount: audit.manifest.inputArtifacts.length,
-          outputArtifactCount: audit.manifest.outputArtifacts.length,
-        },
-      }));
+      return deepFreeze(
+        VerificationAuditInspectionResultSchema.parse({
+          schemaVersion: "verification-audit-inspection.v1",
+          verificationContractVersion: "verification.v1",
+          auditArtifact: reference,
+          run: {
+            runId: audit.manifest.runId,
+            manifestId: audit.manifest.manifestId,
+            manifestDigest: replay.inspection.manifestDigest,
+            deterministicResultDigest: replay.deterministicResultDigest,
+            policyDecisionDigest: replay.policyDecisionDigest,
+            policyOutcome: replay.policyOutcome,
+            startedAt: audit.manifest.startedAt,
+            completedAt: audit.manifest.completedAt,
+          },
+          proof: {
+            payloadDigest: replay.inspection.payloadDigest,
+            signatureStatus: "verified",
+            deterministicReplay: "exact",
+            policyReplay: "exact",
+            replayedArtifactCount: replay.replayedArtifactIds.length,
+            inputArtifactCount: audit.manifest.inputArtifacts.length,
+            outputArtifactCount: audit.manifest.outputArtifacts.length,
+          },
+        }),
+      );
     } finally {
       execution.close();
     }

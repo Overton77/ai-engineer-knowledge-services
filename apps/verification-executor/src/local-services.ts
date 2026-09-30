@@ -2,10 +2,16 @@ import type { LocalServiceConfig, LocalVerificationSeam, LocalVerificationServic
 import { captureFileMediaKind, type CaptureFileInput, type CaptureInput } from "./capture.js";
 import { loadExecutorConfig, VerificationExecutor } from "./executor.js";
 
-type Input<M extends keyof VerificationExecutor> = VerificationExecutor[M] extends (input: infer I) => unknown ? I : never;
+type Input<M extends keyof VerificationExecutor> = VerificationExecutor[M] extends (input: infer I) => unknown
+  ? I
+  : never;
 
 /** Executor configuration from the host's local config only; ambient provider credentials never reach it. */
-function executorEnvironment({ storeDir, identity, providers }: LocalServiceConfig): Readonly<Record<string, string | undefined>> {
+function executorEnvironment({
+  storeDir,
+  identity,
+  providers,
+}: LocalServiceConfig): Readonly<Record<string, string | undefined>> {
   return {
     VERIFY_STORE_DIR: storeDir,
     VERIFY_TENANT_ID: identity.tenantId,

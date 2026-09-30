@@ -6,7 +6,11 @@ export function createConfiguredVerificationAuditSigner(environment: Readonly<Re
   const privateKey = environment.VERIFICATION_AUDIT_SIGNING_PRIVATE_KEY_PEM?.trim();
   if (!keyId && !privateKey) return undefined;
   if (!keyId || !privateKey) throw new Error("VERIFICATION_AUDIT_SIGNING_CONFIGURATION_INCOMPLETE");
-  if (keyId.length > 160 || privateKey.length > 16_384) throw new Error("VERIFICATION_AUDIT_SIGNING_CONFIGURATION_TOO_LARGE");
-  try { return createEd25519Signer(privateKey, keyId); }
-  catch { throw new Error("VERIFICATION_AUDIT_SIGNING_KEY_INVALID"); }
+  if (keyId.length > 160 || privateKey.length > 16_384)
+    throw new Error("VERIFICATION_AUDIT_SIGNING_CONFIGURATION_TOO_LARGE");
+  try {
+    return createEd25519Signer(privateKey, keyId);
+  } catch {
+    throw new Error("VERIFICATION_AUDIT_SIGNING_KEY_INVALID");
+  }
 }

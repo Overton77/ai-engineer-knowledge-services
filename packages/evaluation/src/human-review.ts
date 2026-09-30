@@ -1,5 +1,10 @@
 import { deepFreeze, sha256Digest } from "@aiengineer/knowledge-core";
-import { evaluateRetrieval, type EvaluationCaseOutput, type FrozenEvaluationCase, type FrozenEvaluationDataset } from "./index.js";
+import {
+  evaluateRetrieval,
+  type EvaluationCaseOutput,
+  type FrozenEvaluationCase,
+  type FrozenEvaluationDataset,
+} from "./index.js";
 
 /**
  * Gate 5 has an intentionally small, blinded-to-the-reference-label human
@@ -8,7 +13,11 @@ import { evaluateRetrieval, type EvaluationCaseOutput, type FrozenEvaluationCase
  */
 export const HUMAN_REVIEW_SCHEMA_VERSION = "gate5-human-review/v1" as const;
 export const MAX_HUMAN_REVIEW_EVIDENCE_CHARS = 1200;
-export const GATE5_HUMAN_REVIEW_SAMPLE = deepFreeze({ sampleId: "gate5-broad-v3-human-sample-24", sampleSeed: "gate5-human-review-sample/v1", sampleSize: 24 });
+export const GATE5_HUMAN_REVIEW_SAMPLE = deepFreeze({
+  sampleId: "gate5-broad-v3-human-sample-24",
+  sampleSeed: "gate5-human-review-sample/v1",
+  sampleSize: 24,
+});
 export const HUMAN_REVIEW_RUBRIC = {
   version: "gate5-human-rubric/v1",
   instructions: [
@@ -194,12 +203,15 @@ const nonEmpty = (value: string, label: string): string => {
   return cleaned;
 };
 const asRecord = (value: unknown, label: string): Record<string, unknown> => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`HUMAN_REVIEW_${label}_OBJECT_REQUIRED`);
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`HUMAN_REVIEW_${label}_OBJECT_REQUIRED`);
   return value as Record<string, unknown>;
 };
 const exactKeys = (value: Record<string, unknown>, keys: readonly string[], label: string): void => {
-  const actual = Object.keys(value).sort(); const expected = [...keys].sort();
-  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) throw new Error(`HUMAN_REVIEW_${label}_SCHEMA_INVALID`);
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index]))
+    throw new Error(`HUMAN_REVIEW_${label}_SCHEMA_INVALID`);
 };
 const asString = (value: unknown, label: string): string => {
   if (typeof value !== "string") throw new Error(`HUMAN_REVIEW_${label}_STRING_REQUIRED`);
@@ -214,63 +226,153 @@ const parseTimestamp = (value: string): string => {
   if (!Number.isFinite(time) || !/^\d{4}-\d{2}-\d{2}T/.test(value)) throw new Error("HUMAN_REVIEW_REVIEWED_AT_INVALID");
   return value;
 };
-const rate = (values: readonly boolean[]): number => values.length === 0 ? 0 : Number((values.filter(Boolean).length / values.length).toFixed(12));
-export const humanReviewCaseId = (sampleId: string, sampleSeed: string, sourceCaseId: string): string => `case-${digest({ sampleId, sampleSeed, sourceCaseId }).slice(7, 23)}`;
-const humanReviewRecordId = (caseId: string, sourceRecordId: string): string => `result-${digest({ caseId, sourceRecordId }).slice(7, 23)}`;
-export function bindHumanReviewReferences(sampleId: string, sampleSeed: string, references: ReadonlyMap<string, HumanReviewReferenceCase>): ReadonlyMap<string, HumanReviewReferenceCase> {
-  return new Map([...references].map(([sourceCaseId, reference]) => [humanReviewCaseId(sampleId, sampleSeed, sourceCaseId), reference]));
+const rate = (values: readonly boolean[]): number =>
+  values.length === 0 ? 0 : Number((values.filter(Boolean).length / values.length).toFixed(12));
+export const humanReviewCaseId = (sampleId: string, sampleSeed: string, sourceCaseId: string): string =>
+  `case-${digest({ sampleId, sampleSeed, sourceCaseId }).slice(7, 23)}`;
+const humanReviewRecordId = (caseId: string, sourceRecordId: string): string =>
+  `result-${digest({ caseId, sourceRecordId }).slice(7, 23)}`;
+export function bindHumanReviewReferences(
+  sampleId: string,
+  sampleSeed: string,
+  references: ReadonlyMap<string, HumanReviewReferenceCase>,
+): ReadonlyMap<string, HumanReviewReferenceCase> {
+  return new Map(
+    [...references].map(([sourceCaseId, reference]) => [
+      humanReviewCaseId(sampleId, sampleSeed, sourceCaseId),
+      reference,
+    ]),
+  );
 }
 export function assertCanonicalGate5HumanReviewPacket(packet: HumanReviewSamplePacket): void {
-  if (packet.sampleId !== GATE5_HUMAN_REVIEW_SAMPLE.sampleId || packet.sampleSeed !== GATE5_HUMAN_REVIEW_SAMPLE.sampleSeed || packet.cases.length !== GATE5_HUMAN_REVIEW_SAMPLE.sampleSize) throw new Error("HUMAN_REVIEW_CANONICAL_SAMPLE_REQUIRED");
+  if (
+    packet.sampleId !== GATE5_HUMAN_REVIEW_SAMPLE.sampleId ||
+    packet.sampleSeed !== GATE5_HUMAN_REVIEW_SAMPLE.sampleSeed ||
+    packet.cases.length !== GATE5_HUMAN_REVIEW_SAMPLE.sampleSize
+  )
+    throw new Error("HUMAN_REVIEW_CANONICAL_SAMPLE_REQUIRED");
 }
 
 function boundedExcerpt(text: string): { readonly excerpt: string; readonly truncated: boolean } {
   if (text.length <= MAX_HUMAN_REVIEW_EVIDENCE_CHARS) return { excerpt: text, truncated: false };
   const marker = "\n\n[… excerpt truncated; full text is bound by digest …]\n\n";
   const remaining = MAX_HUMAN_REVIEW_EVIDENCE_CHARS - marker.length;
-  const prefixLength = Math.ceil(remaining / 2); const suffixLength = Math.floor(remaining / 2);
+  const prefixLength = Math.ceil(remaining / 2);
+  const suffixLength = Math.floor(remaining / 2);
   return { excerpt: `${text.slice(0, prefixLength)}${marker}${text.slice(-suffixLength)}`, truncated: true };
 }
 
-function packetSelection(dataset: FrozenEvaluationDataset, sampleSeed: string, sampleSize: number): readonly FrozenEvaluationCase[] {
+function packetSelection(
+  dataset: FrozenEvaluationDataset,
+  sampleSeed: string,
+  sampleSize: number,
+): readonly FrozenEvaluationCase[] {
   if (!Number.isInteger(sampleSize) || sampleSize < 1) throw new Error("HUMAN_REVIEW_SAMPLE_SIZE_INVALID");
   if (sampleSize > dataset.cases.length) throw new Error("HUMAN_REVIEW_SAMPLE_SIZE_EXCEEDS_DATASET");
-  const ordered = [...dataset.cases].sort((left, right) => digest(`${sampleSeed}:${left.id}`).localeCompare(digest(`${sampleSeed}:${right.id}`)) || left.id.localeCompare(right.id));
+  const ordered = [...dataset.cases].sort(
+    (left, right) =>
+      digest(`${sampleSeed}:${left.id}`).localeCompare(digest(`${sampleSeed}:${right.id}`)) ||
+      left.id.localeCompare(right.id),
+  );
   const selected: FrozenEvaluationCase[] = [];
   const selectedIds = new Set<string>();
-  const seenDomains = new Set<string>(); const seenClasses = new Set<string>(); const seenPartitions = new Set<string>(); const seenFixtureKinds = new Set<string>(); const seenAbstentionExpectations = new Set<string>();
+  const seenDomains = new Set<string>();
+  const seenClasses = new Set<string>();
+  const seenPartitions = new Set<string>();
+  const seenFixtureKinds = new Set<string>();
+  const seenAbstentionExpectations = new Set<string>();
   while (selected.length < sampleSize) {
-    const candidate = ordered.filter((item) => !selectedIds.has(item.id)).sort((left, right) => {
-      const gain = (item: FrozenEvaluationCase) => Number(!seenDomains.has(item.domain)) + Number(!seenClasses.has(item.queryClass)) + Number(!seenPartitions.has(item.partition)) + Number(!seenFixtureKinds.has(item.fixtureKind)) + Number(!seenAbstentionExpectations.has(String(item.expectedAbstain)));
-      return gain(right) - gain(left) || digest(`${sampleSeed}:${left.id}`).localeCompare(digest(`${sampleSeed}:${right.id}`)) || left.id.localeCompare(right.id);
-    })[0];
+    const candidate = ordered
+      .filter((item) => !selectedIds.has(item.id))
+      .sort((left, right) => {
+        const gain = (item: FrozenEvaluationCase) =>
+          Number(!seenDomains.has(item.domain)) +
+          Number(!seenClasses.has(item.queryClass)) +
+          Number(!seenPartitions.has(item.partition)) +
+          Number(!seenFixtureKinds.has(item.fixtureKind)) +
+          Number(!seenAbstentionExpectations.has(String(item.expectedAbstain)));
+        return (
+          gain(right) - gain(left) ||
+          digest(`${sampleSeed}:${left.id}`).localeCompare(digest(`${sampleSeed}:${right.id}`)) ||
+          left.id.localeCompare(right.id)
+        );
+      })[0];
     if (!candidate) break;
-    selected.push(candidate); selectedIds.add(candidate.id); seenDomains.add(candidate.domain); seenClasses.add(candidate.queryClass); seenPartitions.add(candidate.partition); seenFixtureKinds.add(candidate.fixtureKind); seenAbstentionExpectations.add(String(candidate.expectedAbstain));
+    selected.push(candidate);
+    selectedIds.add(candidate.id);
+    seenDomains.add(candidate.domain);
+    seenClasses.add(candidate.queryClass);
+    seenPartitions.add(candidate.partition);
+    seenFixtureKinds.add(candidate.fixtureKind);
+    seenAbstentionExpectations.add(String(candidate.expectedAbstain));
   }
   const expectedDomains = new Set(dataset.cases.map((item) => item.domain));
   const expectedClasses = new Set(dataset.cases.map((item) => item.queryClass));
   const expectedPartitions = new Set(dataset.cases.map((item) => item.partition));
   const expectedFixtureKinds = new Set(dataset.cases.map((item) => item.fixtureKind));
   const expectedAbstentionExpectations = new Set(dataset.cases.map((item) => String(item.expectedAbstain)));
-  const missingCoverage = (required: ReadonlySet<string>, actual: ReadonlySet<string>) => required.size <= sampleSize && [...required].some((value) => !actual.has(value));
-  if (missingCoverage(expectedDomains, seenDomains) || missingCoverage(expectedClasses, seenClasses) || missingCoverage(expectedPartitions, seenPartitions) || missingCoverage(expectedFixtureKinds, seenFixtureKinds) || missingCoverage(expectedAbstentionExpectations, seenAbstentionExpectations)) throw new Error("HUMAN_REVIEW_SAMPLE_NOT_REPRESENTATIVE");
+  const missingCoverage = (required: ReadonlySet<string>, actual: ReadonlySet<string>) =>
+    required.size <= sampleSize && [...required].some((value) => !actual.has(value));
+  if (
+    missingCoverage(expectedDomains, seenDomains) ||
+    missingCoverage(expectedClasses, seenClasses) ||
+    missingCoverage(expectedPartitions, seenPartitions) ||
+    missingCoverage(expectedFixtureKinds, seenFixtureKinds) ||
+    missingCoverage(expectedAbstentionExpectations, seenAbstentionExpectations)
+  )
+    throw new Error("HUMAN_REVIEW_SAMPLE_NOT_REPRESENTATIVE");
   return selected.sort((left, right) => left.id.localeCompare(right.id));
 }
 
-export function createHumanReviewReferenceCases(dataset: FrozenEvaluationDataset, outputs: readonly EvaluationCaseOutput[]): ReadonlyMap<string, HumanReviewReferenceCase> {
+export function createHumanReviewReferenceCases(
+  dataset: FrozenEvaluationDataset,
+  outputs: readonly EvaluationCaseOutput[],
+): ReadonlyMap<string, HumanReviewReferenceCase> {
   const report = evaluateRetrieval(dataset, outputs);
   const outputById = new Map(outputs.map((output) => [output.caseId, output]));
-  return new Map(report.cases.map((metrics) => {
-    const testCase = dataset.cases.find(({ id }) => id === metrics.caseId)!;
-    const output = outputById.get(metrics.caseId)!;
-    const retrievalRelevanceCorrect = metrics.recallAtK === 1 && metrics.precisionAtK === 1 && (!testCase.expectedAbstain || (output.abstained && output.items.length === 0));
-    const citationCorrect = metrics.citationCorrectness === 1;
-    const abstentionCorrect = metrics.abstentionCorrectness === 1;
-    const policyCorrect = metrics.filterSatisfaction === 1 && !metrics.falseAcceptance && metrics.forbiddenResultViolations === 0 && metrics.forbiddenFilterViolations === 0;
-    const expectedDecision = retrievalRelevanceCorrect && citationCorrect && abstentionCorrect && policyCorrect ? "accept" as const : "reject" as const;
-    const referenceDecisionDigest = digest({ caseDigest: testCase.digest, qrels: testCase.relevanceJudgments, expectedAbstain: testCase.expectedAbstain, expectedFilters: testCase.expectedFilters, forbiddenResultIds: testCase.forbiddenResultIds, forbiddenFilters: testCase.forbiddenFilters, output: { caseId: output.caseId, abstained: output.abstained, items: output.items }, outcomes: { retrievalRelevanceCorrect, citationCorrect, abstentionCorrect, policyCorrect, expectedDecision } });
-    return [metrics.caseId, deepFreeze({ caseId: metrics.caseId, retrievalRelevanceCorrect, citationCorrect, abstentionCorrect, policyCorrect, expectedDecision, referenceDecisionDigest })] as const;
-  }));
+  return new Map(
+    report.cases.map((metrics) => {
+      const testCase = dataset.cases.find(({ id }) => id === metrics.caseId)!;
+      const output = outputById.get(metrics.caseId)!;
+      const retrievalRelevanceCorrect =
+        metrics.recallAtK === 1 &&
+        metrics.precisionAtK === 1 &&
+        (!testCase.expectedAbstain || (output.abstained && output.items.length === 0));
+      const citationCorrect = metrics.citationCorrectness === 1;
+      const abstentionCorrect = metrics.abstentionCorrectness === 1;
+      const policyCorrect =
+        metrics.filterSatisfaction === 1 &&
+        !metrics.falseAcceptance &&
+        metrics.forbiddenResultViolations === 0 &&
+        metrics.forbiddenFilterViolations === 0;
+      const expectedDecision =
+        retrievalRelevanceCorrect && citationCorrect && abstentionCorrect && policyCorrect
+          ? ("accept" as const)
+          : ("reject" as const);
+      const referenceDecisionDigest = digest({
+        caseDigest: testCase.digest,
+        qrels: testCase.relevanceJudgments,
+        expectedAbstain: testCase.expectedAbstain,
+        expectedFilters: testCase.expectedFilters,
+        forbiddenResultIds: testCase.forbiddenResultIds,
+        forbiddenFilters: testCase.forbiddenFilters,
+        output: { caseId: output.caseId, abstained: output.abstained, items: output.items },
+        outcomes: { retrievalRelevanceCorrect, citationCorrect, abstentionCorrect, policyCorrect, expectedDecision },
+      });
+      return [
+        metrics.caseId,
+        deepFreeze({
+          caseId: metrics.caseId,
+          retrievalRelevanceCorrect,
+          citationCorrect,
+          abstentionCorrect,
+          policyCorrect,
+          expectedDecision,
+          referenceDecisionDigest,
+        }),
+      ] as const;
+    }),
+  );
 }
 
 export function createHumanReviewSamplePacket(input: {
@@ -283,73 +385,297 @@ export function createHumanReviewSamplePacket(input: {
   readonly sampleSeed: string;
   readonly sampleSize: number;
 }): HumanReviewSamplePacket {
-  const sampleId = nonEmpty(input.sampleId, "sample_id"); const sampleSeed = nonEmpty(input.sampleSeed, "sample_seed");
+  const sampleId = nonEmpty(input.sampleId, "sample_id");
+  const sampleSeed = nonEmpty(input.sampleSeed, "sample_seed");
   const selected = packetSelection(input.dataset, sampleSeed, input.sampleSize);
   const cases = selected.map((testCase): HumanReviewPacketCase => {
-    const systemOutput = input.systemOutputsByCaseId.get(testCase.id); const reference = input.referenceByCaseId.get(testCase.id);
-    if (!systemOutput || !reference || systemOutput.caseId !== testCase.id || reference.caseId !== testCase.id) throw new Error(`HUMAN_REVIEW_SYSTEM_OUTPUT_OR_REFERENCE_MISSING:${testCase.id}`);
-    if (!systemOutput.systemOutputDigest.startsWith("sha256:")) throw new Error(`HUMAN_REVIEW_SYSTEM_OUTPUT_DIGEST_INVALID:${testCase.id}`);
+    const systemOutput = input.systemOutputsByCaseId.get(testCase.id);
+    const reference = input.referenceByCaseId.get(testCase.id);
+    if (!systemOutput || !reference || systemOutput.caseId !== testCase.id || reference.caseId !== testCase.id)
+      throw new Error(`HUMAN_REVIEW_SYSTEM_OUTPUT_OR_REFERENCE_MISSING:${testCase.id}`);
+    if (!systemOutput.systemOutputDigest.startsWith("sha256:"))
+      throw new Error(`HUMAN_REVIEW_SYSTEM_OUTPUT_DIGEST_INVALID:${testCase.id}`);
     const reviewCaseId = humanReviewCaseId(sampleId, sampleSeed, testCase.id);
     const results = systemOutput.results.map((result, index): HumanReviewSystemResult => {
-      if (result.rank !== index + 1 || !Number.isFinite(result.score)) throw new Error(`HUMAN_REVIEW_SYSTEM_RESULT_INVALID:${testCase.id}`);
+      if (result.rank !== index + 1 || !Number.isFinite(result.score))
+        throw new Error(`HUMAN_REVIEW_SYSTEM_RESULT_INVALID:${testCase.id}`);
       const item = input.evidenceByRecordId.get(result.recordId);
       if (!item) throw new Error(`HUMAN_REVIEW_EVIDENCE_MISSING:${result.recordId}`);
-      if (!item.locatorDigests.every((locator) => locator.startsWith("sha256:"))) throw new Error(`HUMAN_REVIEW_EVIDENCE_LOCATOR_INVALID:${item.recordId}`);
+      if (!item.locatorDigests.every((locator) => locator.startsWith("sha256:")))
+        throw new Error(`HUMAN_REVIEW_EVIDENCE_LOCATOR_INVALID:${item.recordId}`);
       if (!item.text.trim()) throw new Error("HUMAN_REVIEW_EVIDENCE_TEXT_REQUIRED");
-      const text = item.text; const bounded = boundedExcerpt(text);
+      const text = item.text;
+      const bounded = boundedExcerpt(text);
       const recordId = humanReviewRecordId(reviewCaseId, nonEmpty(item.recordId, "evidence_record_id"));
-      const evidence = deepFreeze({ recordId, fullTextDigest: digest(text), fullTextLength: text.length, excerpt: bounded.excerpt, excerptDigest: digest(bounded.excerpt), truncated: bounded.truncated, locatorDigests: [...item.locatorDigests].sort() });
-      return deepFreeze({ recordId, rank: result.rank, score: result.score, resultType: result.resultType, locatorDigests: [...result.locatorDigests].sort(), graphPaths: result.graphPaths.map((path) => path.map((node) => humanReviewRecordId(reviewCaseId, node))), evidence });
+      const evidence = deepFreeze({
+        recordId,
+        fullTextDigest: digest(text),
+        fullTextLength: text.length,
+        excerpt: bounded.excerpt,
+        excerptDigest: digest(bounded.excerpt),
+        truncated: bounded.truncated,
+        locatorDigests: [...item.locatorDigests].sort(),
+      });
+      return deepFreeze({
+        recordId,
+        rank: result.rank,
+        score: result.score,
+        resultType: result.resultType,
+        locatorDigests: [...result.locatorDigests].sort(),
+        graphPaths: result.graphPaths.map((path) => path.map((node) => humanReviewRecordId(reviewCaseId, node))),
+        evidence,
+      });
     });
-    if (new Set(results.map(({ recordId }) => recordId)).size !== results.length) throw new Error(`HUMAN_REVIEW_SYSTEM_RESULT_DUPLICATE:${testCase.id}`);
-    const systemBehavior = deepFreeze({ abstained: systemOutput.abstained, requestedSpaces: [...systemOutput.requestedSpaces].sort(), appliedFilters: [...systemOutput.appliedFilters].sort((left, right) => left.field.localeCompare(right.field) || left.operator.localeCompare(right.operator)), results });
-    return deepFreeze({ caseId: reviewCaseId, query: testCase.query, domain: testCase.domain, policySlice: testCase.policySlice, systemOutputDigest: systemOutput.systemOutputDigest, systemBehavior, referenceDecisionDigest: reference.referenceDecisionDigest });
+    if (new Set(results.map(({ recordId }) => recordId)).size !== results.length)
+      throw new Error(`HUMAN_REVIEW_SYSTEM_RESULT_DUPLICATE:${testCase.id}`);
+    const systemBehavior = deepFreeze({
+      abstained: systemOutput.abstained,
+      requestedSpaces: [...systemOutput.requestedSpaces].sort(),
+      appliedFilters: [...systemOutput.appliedFilters].sort(
+        (left, right) => left.field.localeCompare(right.field) || left.operator.localeCompare(right.operator),
+      ),
+      results,
+    });
+    return deepFreeze({
+      caseId: reviewCaseId,
+      query: testCase.query,
+      domain: testCase.domain,
+      policySlice: testCase.policySlice,
+      systemOutputDigest: systemOutput.systemOutputDigest,
+      systemBehavior,
+      referenceDecisionDigest: reference.referenceDecisionDigest,
+    });
   });
   const rubricDigest = digest(HUMAN_REVIEW_RUBRIC);
-  const sampleDigest = digest({ sampleId, sampleSeed, datasetManifestDigest: input.dataset.manifestDigest, executionInputManifestDigest: input.executionInputManifestDigest, cases: cases.map(({ caseId, referenceDecisionDigest }) => ({ caseId, referenceDecisionDigest })) });
-  const material = { schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION, sampleId, sampleSeed, datasetId: input.dataset.id, datasetVersion: input.dataset.version, datasetManifestDigest: input.dataset.manifestDigest, executionInputManifestDigest: input.executionInputManifestDigest, rubric: HUMAN_REVIEW_RUBRIC, rubricDigest, cases, sampleDigest };
+  const sampleDigest = digest({
+    sampleId,
+    sampleSeed,
+    datasetManifestDigest: input.dataset.manifestDigest,
+    executionInputManifestDigest: input.executionInputManifestDigest,
+    cases: cases.map(({ caseId, referenceDecisionDigest }) => ({ caseId, referenceDecisionDigest })),
+  });
+  const material = {
+    schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION,
+    sampleId,
+    sampleSeed,
+    datasetId: input.dataset.id,
+    datasetVersion: input.dataset.version,
+    datasetManifestDigest: input.dataset.manifestDigest,
+    executionInputManifestDigest: input.executionInputManifestDigest,
+    rubric: HUMAN_REVIEW_RUBRIC,
+    rubricDigest,
+    cases,
+    sampleDigest,
+  };
   return deepFreeze({ ...material, packetDigest: digest(material) });
 }
 
 export function createHumanReviewSubmissionTemplate(packet: HumanReviewSamplePacket): HumanReviewSubmissionTemplate {
-  return deepFreeze({ schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION, sampleId: packet.sampleId, packetDigest: packet.packetDigest, sampleDigest: packet.sampleDigest, datasetManifestDigest: packet.datasetManifestDigest, reviewerIdentity: "", humanAttestation: attestation, reviewedAt: "", assessments: packet.cases.map(({ caseId }) => ({ caseId, retrievalRelevance: "" as const, citationCorrectness: "" as const, abstentionCorrectness: "" as const, policyCorrectness: "" as const, decision: "" as const, rationale: "" })) });
+  return deepFreeze({
+    schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION,
+    sampleId: packet.sampleId,
+    packetDigest: packet.packetDigest,
+    sampleDigest: packet.sampleDigest,
+    datasetManifestDigest: packet.datasetManifestDigest,
+    reviewerIdentity: "",
+    humanAttestation: attestation,
+    reviewedAt: "",
+    assessments: packet.cases.map(({ caseId }) => ({
+      caseId,
+      retrievalRelevance: "" as const,
+      citationCorrectness: "" as const,
+      abstentionCorrectness: "" as const,
+      policyCorrectness: "" as const,
+      decision: "" as const,
+      rationale: "",
+    })),
+  });
 }
 
 function parseSubmission(value: unknown): HumanReviewSubmission {
   const submission = asRecord(value, "SUBMISSION");
-  exactKeys(submission, ["schemaVersion", "sampleId", "packetDigest", "sampleDigest", "datasetManifestDigest", "reviewerIdentity", "humanAttestation", "reviewedAt", "assessments"], "SUBMISSION");
+  exactKeys(
+    submission,
+    [
+      "schemaVersion",
+      "sampleId",
+      "packetDigest",
+      "sampleDigest",
+      "datasetManifestDigest",
+      "reviewerIdentity",
+      "humanAttestation",
+      "reviewedAt",
+      "assessments",
+    ],
+    "SUBMISSION",
+  );
   if (submission.schemaVersion !== HUMAN_REVIEW_SCHEMA_VERSION) throw new Error("HUMAN_REVIEW_SCHEMA_VERSION_INVALID");
   if (submission.humanAttestation !== attestation) throw new Error("HUMAN_REVIEW_ATTESTATION_INVALID");
   const assessments = asArray(submission.assessments, "ASSESSMENTS").map((raw): HumanReviewAssessment => {
     const assessment = asRecord(raw, "ASSESSMENT");
-    exactKeys(assessment, ["caseId", "retrievalRelevance", "citationCorrectness", "abstentionCorrectness", "policyCorrectness", "decision", "rationale"], "ASSESSMENT");
-    const grades = [assessment.retrievalRelevance, assessment.citationCorrectness, assessment.abstentionCorrectness, assessment.policyCorrectness];
-    if (grades.some((grade) => typeof grade !== "string" || !gradeValues.has(grade))) throw new Error("HUMAN_REVIEW_ASSESSMENT_GRADE_INVALID");
-    if (typeof assessment.decision !== "string" || !decisionValues.has(assessment.decision)) throw new Error("HUMAN_REVIEW_ASSESSMENT_DECISION_INVALID");
-    return { caseId: asString(assessment.caseId, "assessment_case_id"), retrievalRelevance: assessment.retrievalRelevance as HumanReviewGrade, citationCorrectness: assessment.citationCorrectness as HumanReviewGrade, abstentionCorrectness: assessment.abstentionCorrectness as HumanReviewGrade, policyCorrectness: assessment.policyCorrectness as HumanReviewGrade, decision: assessment.decision as HumanReviewDecision, rationale: asString(assessment.rationale, "assessment_rationale") };
+    exactKeys(
+      assessment,
+      [
+        "caseId",
+        "retrievalRelevance",
+        "citationCorrectness",
+        "abstentionCorrectness",
+        "policyCorrectness",
+        "decision",
+        "rationale",
+      ],
+      "ASSESSMENT",
+    );
+    const grades = [
+      assessment.retrievalRelevance,
+      assessment.citationCorrectness,
+      assessment.abstentionCorrectness,
+      assessment.policyCorrectness,
+    ];
+    if (grades.some((grade) => typeof grade !== "string" || !gradeValues.has(grade)))
+      throw new Error("HUMAN_REVIEW_ASSESSMENT_GRADE_INVALID");
+    if (typeof assessment.decision !== "string" || !decisionValues.has(assessment.decision))
+      throw new Error("HUMAN_REVIEW_ASSESSMENT_DECISION_INVALID");
+    return {
+      caseId: asString(assessment.caseId, "assessment_case_id"),
+      retrievalRelevance: assessment.retrievalRelevance as HumanReviewGrade,
+      citationCorrectness: assessment.citationCorrectness as HumanReviewGrade,
+      abstentionCorrectness: assessment.abstentionCorrectness as HumanReviewGrade,
+      policyCorrectness: assessment.policyCorrectness as HumanReviewGrade,
+      decision: assessment.decision as HumanReviewDecision,
+      rationale: asString(assessment.rationale, "assessment_rationale"),
+    };
   });
-  return { schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION, sampleId: asString(submission.sampleId, "sample_id"), packetDigest: asString(submission.packetDigest, "packet_digest") as `sha256:${string}`, sampleDigest: asString(submission.sampleDigest, "sample_digest") as `sha256:${string}`, datasetManifestDigest: asString(submission.datasetManifestDigest, "dataset_manifest_digest") as `sha256:${string}`, reviewerIdentity: asString(submission.reviewerIdentity, "reviewer_identity"), humanAttestation: attestation, reviewedAt: parseTimestamp(asString(submission.reviewedAt, "reviewed_at")), assessments };
+  return {
+    schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION,
+    sampleId: asString(submission.sampleId, "sample_id"),
+    packetDigest: asString(submission.packetDigest, "packet_digest") as `sha256:${string}`,
+    sampleDigest: asString(submission.sampleDigest, "sample_digest") as `sha256:${string}`,
+    datasetManifestDigest: asString(submission.datasetManifestDigest, "dataset_manifest_digest") as `sha256:${string}`,
+    reviewerIdentity: asString(submission.reviewerIdentity, "reviewer_identity"),
+    humanAttestation: attestation,
+    reviewedAt: parseTimestamp(asString(submission.reviewedAt, "reviewed_at")),
+    assessments,
+  };
 }
 
-export function validateHumanReviewSubmission(packet: HumanReviewSamplePacket, rawSubmission: unknown, options: HumanReviewValidationOptions): HumanReviewReceipt {
+export function validateHumanReviewSubmission(
+  packet: HumanReviewSamplePacket,
+  rawSubmission: unknown,
+  options: HumanReviewValidationOptions,
+): HumanReviewReceipt {
   const { packetDigest, ...packetMaterial } = packet;
-  if (digest(packetMaterial) !== packetDigest || digest(packet.rubric) !== packet.rubricDigest) throw new Error("HUMAN_REVIEW_PACKET_INTEGRITY_INVALID");
-  const expectedSampleDigest = digest({ sampleId: packet.sampleId, sampleSeed: packet.sampleSeed, datasetManifestDigest: packet.datasetManifestDigest, executionInputManifestDigest: packet.executionInputManifestDigest, cases: packet.cases.map(({ caseId, referenceDecisionDigest }) => ({ caseId, referenceDecisionDigest })) });
+  if (digest(packetMaterial) !== packetDigest || digest(packet.rubric) !== packet.rubricDigest)
+    throw new Error("HUMAN_REVIEW_PACKET_INTEGRITY_INVALID");
+  const expectedSampleDigest = digest({
+    sampleId: packet.sampleId,
+    sampleSeed: packet.sampleSeed,
+    datasetManifestDigest: packet.datasetManifestDigest,
+    executionInputManifestDigest: packet.executionInputManifestDigest,
+    cases: packet.cases.map(({ caseId, referenceDecisionDigest }) => ({ caseId, referenceDecisionDigest })),
+  });
   if (expectedSampleDigest !== packet.sampleDigest) throw new Error("HUMAN_REVIEW_SAMPLE_INTEGRITY_INVALID");
   const submission = parseSubmission(rawSubmission);
-  if (submission.sampleId !== packet.sampleId || submission.packetDigest !== packet.packetDigest || submission.sampleDigest !== packet.sampleDigest || submission.datasetManifestDigest !== packet.datasetManifestDigest) throw new Error("HUMAN_REVIEW_PACKET_BINDING_INVALID");
-  const expectedIds = packet.cases.map(({ caseId }) => caseId).sort(); const actualIds = submission.assessments.map(({ caseId }) => caseId).sort();
-  if (new Set(actualIds).size !== actualIds.length || actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) throw new Error("HUMAN_REVIEW_ASSESSMENT_COVERAGE_INVALID");
-  for (const testCase of packet.cases) { const reference = options.referenceByCaseId.get(testCase.caseId); if (!reference || reference.referenceDecisionDigest !== testCase.referenceDecisionDigest) throw new Error(`HUMAN_REVIEW_REFERENCE_BINDING_INVALID:${testCase.caseId}`); }
-  const reviewerIdentityVerified = options.verifiedReviewerIdentities.map((identity) => identity.trim()).filter(Boolean).includes(submission.reviewerIdentity);
-  const matches = (grade: HumanReviewGrade, expected: boolean) => grade !== "uncertain" && (grade === "pass") === expected;
-  const allGrades = submission.assessments.flatMap((item) => [item.retrievalRelevance, item.citationCorrectness, item.abstentionCorrectness, item.policyCorrectness]);
+  if (
+    submission.sampleId !== packet.sampleId ||
+    submission.packetDigest !== packet.packetDigest ||
+    submission.sampleDigest !== packet.sampleDigest ||
+    submission.datasetManifestDigest !== packet.datasetManifestDigest
+  )
+    throw new Error("HUMAN_REVIEW_PACKET_BINDING_INVALID");
+  const expectedIds = packet.cases.map(({ caseId }) => caseId).sort();
+  const actualIds = submission.assessments.map(({ caseId }) => caseId).sort();
+  if (
+    new Set(actualIds).size !== actualIds.length ||
+    actualIds.length !== expectedIds.length ||
+    actualIds.some((id, index) => id !== expectedIds[index])
+  )
+    throw new Error("HUMAN_REVIEW_ASSESSMENT_COVERAGE_INVALID");
+  for (const testCase of packet.cases) {
+    const reference = options.referenceByCaseId.get(testCase.caseId);
+    if (!reference || reference.referenceDecisionDigest !== testCase.referenceDecisionDigest)
+      throw new Error(`HUMAN_REVIEW_REFERENCE_BINDING_INVALID:${testCase.caseId}`);
+  }
+  const reviewerIdentityVerified = options.verifiedReviewerIdentities
+    .map((identity) => identity.trim())
+    .filter(Boolean)
+    .includes(submission.reviewerIdentity);
+  const matches = (grade: HumanReviewGrade, expected: boolean) =>
+    grade !== "uncertain" && (grade === "pass") === expected;
+  const allGrades = submission.assessments.flatMap((item) => [
+    item.retrievalRelevance,
+    item.citationCorrectness,
+    item.abstentionCorrectness,
+    item.policyCorrectness,
+  ]);
   const assessmentReference = (item: HumanReviewAssessment) => options.referenceByCaseId.get(item.caseId)!;
-  const disagreementCaseIds = submission.assessments.filter((item) => { const reference = assessmentReference(item); return !matches(item.retrievalRelevance, reference.retrievalRelevanceCorrect) || !matches(item.citationCorrectness, reference.citationCorrect) || !matches(item.abstentionCorrectness, reference.abstentionCorrect) || !matches(item.policyCorrectness, reference.policyCorrect) || item.decision !== reference.expectedDecision; }).map(({ caseId }) => caseId);
-  const followUpCaseIds = submission.assessments.filter((item) => item.decision === "needs_follow_up" || [item.retrievalRelevance, item.citationCorrectness, item.abstentionCorrectness, item.policyCorrectness].some((grade) => grade === "uncertain")).map(({ caseId }) => caseId);
-  const metrics: HumanReviewMetrics = deepFreeze({ assessedCaseCount: submission.assessments.length, retrievalRelevanceAgreementRate: rate(submission.assessments.map((item) => matches(item.retrievalRelevance, assessmentReference(item).retrievalRelevanceCorrect))), citationCorrectnessAgreementRate: rate(submission.assessments.map((item) => matches(item.citationCorrectness, assessmentReference(item).citationCorrect))), abstentionAgreementRate: rate(submission.assessments.map((item) => matches(item.abstentionCorrectness, assessmentReference(item).abstentionCorrect))), policyAgreementRate: rate(submission.assessments.map((item) => matches(item.policyCorrectness, assessmentReference(item).policyCorrect))), acceptedCaseRate: rate(submission.assessments.map((item) => item.decision === "accept")), rejectedCaseRate: rate(submission.assessments.map((item) => item.decision === "reject")), needsFollowUpRate: rate(submission.assessments.map((item) => item.decision === "needs_follow_up")), uncertaintyRate: rate(allGrades.map((grade) => grade === "uncertain")), disagreementCaseIds: [...disagreementCaseIds].sort(), followUpCaseIds: [...followUpCaseIds].sort() });
-  const status = !reviewerIdentityVerified ? "identity_unverified" as const : followUpCaseIds.length > 0 || disagreementCaseIds.length > 0 ? "requires_follow_up" as const : "recorded" as const;
+  const disagreementCaseIds = submission.assessments
+    .filter((item) => {
+      const reference = assessmentReference(item);
+      return (
+        !matches(item.retrievalRelevance, reference.retrievalRelevanceCorrect) ||
+        !matches(item.citationCorrectness, reference.citationCorrect) ||
+        !matches(item.abstentionCorrectness, reference.abstentionCorrect) ||
+        !matches(item.policyCorrectness, reference.policyCorrect) ||
+        item.decision !== reference.expectedDecision
+      );
+    })
+    .map(({ caseId }) => caseId);
+  const followUpCaseIds = submission.assessments
+    .filter(
+      (item) =>
+        item.decision === "needs_follow_up" ||
+        [item.retrievalRelevance, item.citationCorrectness, item.abstentionCorrectness, item.policyCorrectness].some(
+          (grade) => grade === "uncertain",
+        ),
+    )
+    .map(({ caseId }) => caseId);
+  const metrics: HumanReviewMetrics = deepFreeze({
+    assessedCaseCount: submission.assessments.length,
+    retrievalRelevanceAgreementRate: rate(
+      submission.assessments.map((item) =>
+        matches(item.retrievalRelevance, assessmentReference(item).retrievalRelevanceCorrect),
+      ),
+    ),
+    citationCorrectnessAgreementRate: rate(
+      submission.assessments.map((item) =>
+        matches(item.citationCorrectness, assessmentReference(item).citationCorrect),
+      ),
+    ),
+    abstentionAgreementRate: rate(
+      submission.assessments.map((item) =>
+        matches(item.abstentionCorrectness, assessmentReference(item).abstentionCorrect),
+      ),
+    ),
+    policyAgreementRate: rate(
+      submission.assessments.map((item) => matches(item.policyCorrectness, assessmentReference(item).policyCorrect)),
+    ),
+    acceptedCaseRate: rate(submission.assessments.map((item) => item.decision === "accept")),
+    rejectedCaseRate: rate(submission.assessments.map((item) => item.decision === "reject")),
+    needsFollowUpRate: rate(submission.assessments.map((item) => item.decision === "needs_follow_up")),
+    uncertaintyRate: rate(allGrades.map((grade) => grade === "uncertain")),
+    disagreementCaseIds: [...disagreementCaseIds].sort(),
+    followUpCaseIds: [...followUpCaseIds].sort(),
+  });
+  const status = !reviewerIdentityVerified
+    ? ("identity_unverified" as const)
+    : followUpCaseIds.length > 0 || disagreementCaseIds.length > 0
+      ? ("requires_follow_up" as const)
+      : ("recorded" as const);
   const submissionDigest = digest(submission);
-  const material = { schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION, kind: "sampled_human_review_receipt" as const, status, publicationAuthorityGranted: false as const, packetDigest: packet.packetDigest, sampleDigest: packet.sampleDigest, datasetManifestDigest: packet.datasetManifestDigest, reviewerIdentity: submission.reviewerIdentity, reviewerIdentityVerified, reviewedAt: submission.reviewedAt, submissionDigest, metrics };
+  const material = {
+    schemaVersion: HUMAN_REVIEW_SCHEMA_VERSION,
+    kind: "sampled_human_review_receipt" as const,
+    status,
+    publicationAuthorityGranted: false as const,
+    packetDigest: packet.packetDigest,
+    sampleDigest: packet.sampleDigest,
+    datasetManifestDigest: packet.datasetManifestDigest,
+    reviewerIdentity: submission.reviewerIdentity,
+    reviewerIdentityVerified,
+    reviewedAt: submission.reviewedAt,
+    submissionDigest,
+    metrics,
+  };
   return deepFreeze({ ...material, receiptDigest: digest(material) });
 }

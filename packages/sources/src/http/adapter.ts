@@ -19,11 +19,7 @@ import {
   type HttpPolicy,
   type SafeHttpTarget,
 } from "./policy.js";
-import {
-  nodePinnedHttpTransport,
-  type HttpFetch,
-  type PinnedHttpTransport,
-} from "./transport.js";
+import { nodePinnedHttpTransport, type HttpFetch, type PinnedHttpTransport } from "./transport.js";
 
 const REDACTED_HEADER = /authorization|cookie|api[-_]?key|secret|token/i;
 const USER_AGENT = "ai-engineer-knowledge-services/1";
@@ -47,11 +43,7 @@ export class ExactHttpAcquisitionAdapter implements AcquisitionAdapter {
   }
   async plan(request: AcquisitionRequest): Promise<AcquisitionPlan> {
     if (request.target.kind !== "http") throw new Error("UNSUPPORTED_TARGET");
-    const url = await assertSafeHttpUrl(
-      request.target.url,
-      this.policy,
-      this.resolver,
-    );
+    const url = await assertSafeHttpUrl(request.target.url, this.policy, this.resolver);
     return {
       adapterKey: this.adapterKey,
       adapterVersion: this.version,
@@ -61,25 +53,19 @@ export class ExactHttpAcquisitionAdapter implements AcquisitionAdapter {
     };
   }
   async execute(plan: AdmittedAcquisitionPlan): Promise<AcquisitionResult> {
-    return withDeadline(this.policy.timeoutMs, (signal) =>
-      this.capture(plan, signal),
-    );
+    return withDeadline(this.policy.timeoutMs, (signal) => this.capture(plan, signal));
   }
   async verify(result: AcquisitionResult): Promise<AcquisitionVerification> {
     const findings: string[] = [];
     if (!hasSingleSealedArtifact(result)) findings.push("artifact_digest_mismatch");
-    if (REDACTED_HEADER.test(observationValue(result, "headers")))
-      findings.push("headers_not_redacted");
+    if (REDACTED_HEADER.test(observationValue(result, "headers"))) findings.push("headers_not_redacted");
     return {
       accepted: findings.length === 0 && result.errors.length === 0,
       checks: ["artifact_sealed", "response_body_hashed", "headers_redacted"],
       findings,
     };
   }
-  private async capture(
-    plan: AdmittedAcquisitionPlan,
-    signal: AbortSignal,
-  ): Promise<AcquisitionResult> {
+  private async capture(plan: AdmittedAcquisitionPlan, signal: AbortSignal): Promise<AcquisitionResult> {
     const arrived = await this.followRedirects(plan, signal);
     const bytes = await boundedBody({
       response: arrived.response,
@@ -103,15 +89,10 @@ export class ExactHttpAcquisitionAdapter implements AcquisitionAdapter {
       captureMethod: `${this.adapterKey}@${this.version}`,
       retryAdvice: arrived.response.status >= 500 ? "retry" : "none",
       costMicros: 0,
-      errors: arrived.response.ok
-        ? []
-        : [{ code: "HTTP_STATUS", message: String(arrived.response.status) }],
+      errors: arrived.response.ok ? [] : [{ code: "HTTP_STATUS", message: String(arrived.response.status) }],
     };
   }
-  private async followRedirects(
-    plan: AdmittedAcquisitionPlan,
-    signal: AbortSignal,
-  ): Promise<ArrivedResponse> {
+  private async followRedirects(plan: AdmittedAcquisitionPlan, signal: AbortSignal): Promise<ArrivedResponse> {
     let url = plan.normalizedTarget;
     const redirects: string[] = [];
     let response: Response | undefined;
@@ -121,24 +102,15 @@ export class ExactHttpAcquisitionAdapter implements AcquisitionAdapter {
       const location = response.headers.get("location");
       await response.body?.cancel();
       if (!location) throw new Error("REDIRECT_WITHOUT_LOCATION");
-      if (count === this.policy.maximumRedirects)
-        throw new Error("REDIRECT_LIMIT_EXCEEDED");
+      if (count === this.policy.maximumRedirects) throw new Error("REDIRECT_LIMIT_EXCEEDED");
       url = new URL(location, url).href;
       redirects.push(url);
     }
     if (!response) throw new Error("HTTP_NO_RESPONSE");
     return { response, url, redirects };
   }
-  private async fetchHop(
-    url: string,
-    preferredMediaTypes: readonly string[],
-    signal: AbortSignal,
-  ): Promise<Response> {
-    const target = await resolveSafeHttpTarget(
-      url,
-      this.policy,
-      this.resolver,
-    );
+  private async fetchHop(url: string, preferredMediaTypes: readonly string[], signal: AbortSignal): Promise<Response> {
+    const target = await resolveSafeHttpTarget(url, this.policy, this.resolver);
     signal.throwIfAborted();
     const response = await this.dispatchFetch(target, {
       redirect: "manual",
@@ -151,20 +123,14 @@ export class ExactHttpAcquisitionAdapter implements AcquisitionAdapter {
     }
     return response;
   }
-  private dispatchFetch(
-    target: SafeHttpTarget,
-    init: RequestInit,
-  ): Promise<Response> {
+  private dispatchFetch(target: SafeHttpTarget, init: RequestInit): Promise<Response> {
     return this.fetcher
       ? this.fetcher(target.url.href, init)
       : this.pinnedTransport.fetch(target.url, init, target.addresses);
   }
 }
 
-async function withDeadline<T>(
-  timeoutMs: number,
-  run: (signal: AbortSignal) => Promise<T>,
-): Promise<T> {
+async function withDeadline<T>(timeoutMs: number, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_resolve, reject) => {
@@ -187,9 +153,7 @@ interface ArrivedResponse {
   redirects: readonly string[];
 }
 
-function captureRequestHeaders(
-  preferredMediaTypes: readonly string[],
-): Record<string, string> {
+function captureRequestHeaders(preferredMediaTypes: readonly string[]): Record<string, string> {
   return {
     accept: preferredMediaTypes.join(", ") || "*/*",
     "accept-encoding": "identity",
@@ -198,10 +162,7 @@ function captureRequestHeaders(
 }
 
 function observedMediaType(response: Response): string {
-  return (
-    response.headers.get("content-type")?.split(";")[0]?.trim() ||
-    FALLBACK_MEDIA_TYPE
-  );
+  return response.headers.get("content-type")?.split(";")[0]?.trim() || FALLBACK_MEDIA_TYPE;
 }
 
 function redactedHeaders(response: Response): readonly [string, string][] {
@@ -210,10 +171,7 @@ function redactedHeaders(response: Response): readonly [string, string][] {
     .sort(([left], [right]) => left.localeCompare(right));
 }
 
-function captureObservations(
-  arrived: ArrivedResponse,
-  mediaType: string,
-): AcquisitionObservation[] {
+function captureObservations(arrived: ArrivedResponse, mediaType: string): AcquisitionObservation[] {
   return [
     { key: "status", value: String(arrived.response.status) },
     { key: "final_url", value: arrived.url },
@@ -232,10 +190,7 @@ function observationValue(result: AcquisitionResult, key: string): string {
 }
 
 function hasSingleSealedArtifact(result: AcquisitionResult): boolean {
-  return (
-    result.artifacts.length === 1 &&
-    result.artifacts[0]?.digest === result.contentDigests[0]
-  );
+  return result.artifacts.length === 1 && result.artifacts[0]?.digest === result.contentDigests[0];
 }
 
 type HttpPolicySnapshot = {
@@ -257,11 +212,7 @@ function httpPolicySnapshot(policy: HttpPolicy): HttpPolicySnapshot {
     timeoutMs: policy.timeoutMs,
     maximumBytes: policy.maximumBytes,
     maximumDecompressionRatio: policy.maximumDecompressionRatio,
-    ...(policy.allowedHosts === undefined
-      ? {}
-      : { allowedHosts: [...policy.allowedHosts] }),
-    ...(policy.deniedHosts === undefined
-      ? {}
-      : { deniedHosts: [...policy.deniedHosts] }),
+    ...(policy.allowedHosts === undefined ? {} : { allowedHosts: [...policy.allowedHosts] }),
+    ...(policy.deniedHosts === undefined ? {} : { deniedHosts: [...policy.deniedHosts] }),
   };
 }

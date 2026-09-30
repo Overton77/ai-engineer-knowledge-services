@@ -13,12 +13,49 @@ export async function exactSearchExample() {
   const version = id(3);
   const otherVersion = id(4);
   const backend = new InMemoryExactCosineBackend([
-    { tenantId: tenant, vectorSpaceVersionId: version, vectorSpaceKey: "claims", vectorItemId: "match-a", embedding: vector({ 0: 1 }) },
-    { tenantId: tenant, vectorSpaceVersionId: version, vectorSpaceKey: "claims", vectorItemId: "match-b", embedding: vector({ 0: 1 }) },
-    { tenantId: tenant, vectorSpaceVersionId: version, vectorSpaceKey: "claims", vectorItemId: "orthogonal", embedding: vector({ 1: 1 }) },
-    { tenantId: tenant, vectorSpaceVersionId: version, vectorSpaceKey: "claims", vectorItemId: "withdrawn", embedding: vector({ 0: 1 }), lifecycle: "withdrawn" },
-    { tenantId: otherTenant, vectorSpaceVersionId: version, vectorSpaceKey: "claims", vectorItemId: "hidden-tenant", embedding: vector({ 0: 1 }) },
-    { tenantId: tenant, vectorSpaceVersionId: otherVersion, vectorSpaceKey: "claims", vectorItemId: "hidden-version", embedding: vector({ 0: 1 }) },
+    {
+      tenantId: tenant,
+      vectorSpaceVersionId: version,
+      vectorSpaceKey: "claims",
+      vectorItemId: "match-a",
+      embedding: vector({ 0: 1 }),
+    },
+    {
+      tenantId: tenant,
+      vectorSpaceVersionId: version,
+      vectorSpaceKey: "claims",
+      vectorItemId: "match-b",
+      embedding: vector({ 0: 1 }),
+    },
+    {
+      tenantId: tenant,
+      vectorSpaceVersionId: version,
+      vectorSpaceKey: "claims",
+      vectorItemId: "orthogonal",
+      embedding: vector({ 1: 1 }),
+    },
+    {
+      tenantId: tenant,
+      vectorSpaceVersionId: version,
+      vectorSpaceKey: "claims",
+      vectorItemId: "withdrawn",
+      embedding: vector({ 0: 1 }),
+      lifecycle: "withdrawn",
+    },
+    {
+      tenantId: otherTenant,
+      vectorSpaceVersionId: version,
+      vectorSpaceKey: "claims",
+      vectorItemId: "hidden-tenant",
+      embedding: vector({ 0: 1 }),
+    },
+    {
+      tenantId: tenant,
+      vectorSpaceVersionId: otherVersion,
+      vectorSpaceKey: "claims",
+      vectorItemId: "hidden-version",
+      embedding: vector({ 0: 1 }),
+    },
   ]);
   const query = { tenantId: tenant, vectorSpaceVersionId: version, embedding: vector({ 0: 1 }), limit: 5 };
   const first = await backend.search(query);

@@ -3,20 +3,31 @@ import { VerificationArtifactHandleSchema, type VerificationArtifactHandle } fro
 import { deepFreeze } from "@aiengineer/knowledge-core";
 import { canonicalizeJson, sha256Digest, validateExtractionCandidate } from "@aiengineer/knowledge-verification";
 import type { PreparedStructuredExtraction } from "./verification-structured-extraction-profile.js";
-import { StructuredExtractionCapturedReplayService, type StructuredExtractionReplayResult } from "./verification-structured-extraction-replay.js";
+import {
+  StructuredExtractionCapturedReplayService,
+  type StructuredExtractionReplayResult,
+} from "./verification-structured-extraction-replay.js";
 
 const encoder = new TextEncoder();
 const digestSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
-const canonicalUuidSchema = z.uuid().refine((value) => value === value.toLowerCase(), "UUID must use canonical lower-case form");
+const canonicalUuidSchema = z
+  .uuid()
+  .refine((value) => value === value.toLowerCase(), "UUID must use canonical lower-case form");
 const canonicalInstantSchema = z.iso.datetime().refine((value) => {
-  try { return new Date(value).toISOString() === value; } catch { return false; }
+  try {
+    return new Date(value).toISOString() === value;
+  } catch {
+    return false;
+  }
 }, "Timestamp must use canonical UTC millisecond form");
 const MAX_PROVENANCE_BYTES = 256_000;
 const MAX_PRECONTEXT_BYTES = 160_000;
 
 export const VERIFICATION_EXTRACTION_CANDIDATE_ARTIFACT_TYPE = "verification_extraction_candidate" as const;
-export const VERIFICATION_EXTRACTION_PRECONTEXT_ARTIFACT_TYPE = "verification_structured_extraction_precontext" as const;
-export const VERIFICATION_EXTRACTION_PROVENANCE_ARTIFACT_TYPE = "verification_structured_extraction_provenance" as const;
+export const VERIFICATION_EXTRACTION_PRECONTEXT_ARTIFACT_TYPE =
+  "verification_structured_extraction_precontext" as const;
+export const VERIFICATION_EXTRACTION_PROVENANCE_ARTIFACT_TYPE =
+  "verification_structured_extraction_provenance" as const;
 export type StructuredExtractionCandidateArtifactType =
   | typeof VERIFICATION_EXTRACTION_CANDIDATE_ARTIFACT_TYPE
   | typeof VERIFICATION_EXTRACTION_PRECONTEXT_ARTIFACT_TYPE
@@ -55,7 +66,9 @@ export interface StructuredExtractionArtifactSignatureInput {
 }
 
 /** SQL can reproduce this digest with digest(concat_ws('|', ...), 'sha256'). */
-export function structuredExtractionArtifactTransformationSignature(input: StructuredExtractionArtifactSignatureInput): `sha256:${string}` {
+export function structuredExtractionArtifactTransformationSignature(
+  input: StructuredExtractionArtifactSignatureInput,
+): `sha256:${string}` {
   const value = signatureInputSchema.parse(input);
   const fields = [
     "verification-structured-extraction-artifact.v1",
@@ -71,7 +84,8 @@ export function structuredExtractionArtifactTransformationSignature(input: Struc
     value.schemaDigest,
     ...value.parentArtifactIds,
   ];
-  if (fields.some((field) => field.includes("|"))) throw new Error("STRUCTURED_EXTRACTION_ARTIFACT_SIGNATURE_FIELD_INVALID");
+  if (fields.some((field) => field.includes("|")))
+    throw new Error("STRUCTURED_EXTRACTION_ARTIFACT_SIGNATURE_FIELD_INVALID");
   return sha256Digest(encoder.encode(fields.join("|")));
 }
 
@@ -168,25 +182,46 @@ export class StructuredExtractionCandidateBuilder {
     readonly replay: StructuredExtractionReplayResult;
     readonly signal?: AbortSignal;
   }): Promise<RetainedStructuredExtractionCandidate> {
-    const lifecycle = z.strictObject({
-      tenantId: canonicalUuidSchema,
-      operationId: canonicalUuidSchema,
-      providerAttemptId: canonicalUuidSchema,
-      producerAttemptId: canonicalUuidSchema,
-      createdAt: canonicalInstantSchema,
-    }).parse({ tenantId: input.tenantId, operationId: input.operationId, providerAttemptId: input.providerAttemptId, producerAttemptId: input.producerAttemptId, createdAt: input.createdAt });
-    const active = (): void => { if (input.signal?.aborted) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_CANCELLED"); };
+    const lifecycle = z
+      .strictObject({
+        tenantId: canonicalUuidSchema,
+        operationId: canonicalUuidSchema,
+        providerAttemptId: canonicalUuidSchema,
+        producerAttemptId: canonicalUuidSchema,
+        createdAt: canonicalInstantSchema,
+      })
+      .parse({
+        tenantId: input.tenantId,
+        operationId: input.operationId,
+        providerAttemptId: input.providerAttemptId,
+        producerAttemptId: input.producerAttemptId,
+        createdAt: input.createdAt,
+      });
+    const active = (): void => {
+      if (input.signal?.aborted) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_CANCELLED");
+    };
     active();
-    this.replayService.assertReplayResult({ tenantId: lifecycle.tenantId, operationId: lifecycle.operationId, providerAttemptId: lifecycle.providerAttemptId, preparation: input.preparation, result: input.replay });
+    this.replayService.assertReplayResult({
+      tenantId: lifecycle.tenantId,
+      operationId: lifecycle.operationId,
+      providerAttemptId: lifecycle.providerAttemptId,
+      preparation: input.preparation,
+      result: input.replay,
+    });
     if (input.replay.kind !== "accepted") throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_REPLAY_FAILED");
     const replay = structuredClone(input.replay);
     const preparation = structuredClone(input.preparation);
-    if (Date.parse(lifecycle.createdAt) < Date.parse(replay.capture.capturedAt)) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_TIMING_INVALID");
+    if (Date.parse(lifecycle.createdAt) < Date.parse(replay.capture.capturedAt))
+      throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_TIMING_INVALID");
     const validation = validateExtractionCandidate(input.preparation.schema, replay.output);
     if (!validation.valid) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_OUTPUT_INVALID");
     const canonicalOutput = canonicalizeJson(replay.output);
     const canonicalOutputBytes = encoder.encode(canonicalOutput);
-    if (canonicalOutputBytes.byteLength === 0 || canonicalOutputBytes.byteLength > preparation.schema.limits.maxCandidateBytes) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_OUTPUT_LIMIT");
+    if (
+      canonicalOutputBytes.byteLength === 0 ||
+      canonicalOutputBytes.byteLength > preparation.schema.limits.maxCandidateBytes
+    )
+      throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_OUTPUT_LIMIT");
     const outputDigest = sha256Digest(canonicalOutputBytes);
     const output = deepFreeze(JSON.parse(canonicalOutput) as unknown);
     const baseParents = [
@@ -200,7 +235,8 @@ export class StructuredExtractionCandidateBuilder {
       replay.requestArtifact.artifactId,
       replay.rawResponseArtifact.artifactId,
     ] as const;
-    if (new Set(baseParents).size !== baseParents.length) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_ANCESTRY_INVALID");
+    if (new Set(baseParents).size !== baseParents.length)
+      throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_ANCESTRY_INVALID");
     const handles = [
       preparation.artifacts.producerProfile,
       preparation.artifacts.extractionSchema,
@@ -212,7 +248,8 @@ export class StructuredExtractionCandidateBuilder {
       replay.requestArtifact,
       replay.rawResponseArtifact,
     ];
-    if (handles.some((handle) => handle.tenantId !== lifecycle.tenantId)) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_TENANT_MISMATCH");
+    if (handles.some((handle) => handle.tenantId !== lifecycle.tenantId))
+      throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_TENANT_MISMATCH");
 
     const binding = {
       tenantId: lifecycle.tenantId,
@@ -224,14 +261,42 @@ export class StructuredExtractionCandidateBuilder {
       promptDigest: preparation.promptDigest,
       schemaDigest: preparation.schema.schemaDigest,
     } as const;
-    const retain = async (artifactType: StructuredExtractionCandidateArtifactType, bytes: Uint8Array, parentArtifactIds: readonly string[]): Promise<VerificationArtifactHandle> => {
+    const retain = async (
+      artifactType: StructuredExtractionCandidateArtifactType,
+      bytes: Uint8Array,
+      parentArtifactIds: readonly string[],
+    ): Promise<VerificationArtifactHandle> => {
       active();
       const payloadDigest = sha256Digest(bytes);
-      const transformationSignature = structuredExtractionArtifactTransformationSignature({ artifactType, payloadDigest, ...binding, parentArtifactIds });
+      const transformationSignature = structuredExtractionArtifactTransformationSignature({
+        artifactType,
+        payloadDigest,
+        ...binding,
+        parentArtifactIds,
+      });
       const submittedBytes = bytes.slice();
-      const handle = VerificationArtifactHandleSchema.parse(await this.artifacts.register({ tenantId: lifecycle.tenantId, producerAttemptId: lifecycle.producerAttemptId, artifactType, bytes: submittedBytes, createdAt: lifecycle.createdAt, parentArtifactIds: [...parentArtifactIds], transformationSignature }));
+      const handle = VerificationArtifactHandleSchema.parse(
+        await this.artifacts.register({
+          tenantId: lifecycle.tenantId,
+          producerAttemptId: lifecycle.producerAttemptId,
+          artifactType,
+          bytes: submittedBytes,
+          createdAt: lifecycle.createdAt,
+          parentArtifactIds: [...parentArtifactIds],
+          transformationSignature,
+        }),
+      );
       active();
-      if (sha256Digest(submittedBytes) !== payloadDigest || handle.tenantId !== lifecycle.tenantId || handle.createdAt !== lifecycle.createdAt || handle.digest !== payloadDigest || handle.byteLength !== bytes.byteLength || canonicalizeJson(handle.parentArtifactIds) !== canonicalizeJson(parentArtifactIds) || handle.transformationSignature !== transformationSignature) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_REGISTERED_ARTIFACT_MISMATCH");
+      if (
+        sha256Digest(submittedBytes) !== payloadDigest ||
+        handle.tenantId !== lifecycle.tenantId ||
+        handle.createdAt !== lifecycle.createdAt ||
+        handle.digest !== payloadDigest ||
+        handle.byteLength !== bytes.byteLength ||
+        canonicalizeJson(handle.parentArtifactIds) !== canonicalizeJson(parentArtifactIds) ||
+        handle.transformationSignature !== transformationSignature
+      )
+        throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_REGISTERED_ARTIFACT_MISMATCH");
       return deepFreeze(structuredClone(handle));
     };
 
@@ -250,11 +315,17 @@ export class StructuredExtractionCandidateBuilder {
       output,
     };
     const candidateBytes = encoder.encode(canonicalizeJson(candidateEnvelope));
-    if (candidateBytes.byteLength > preparation.schema.limits.maxCandidateBytes + 2_048) throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_ENVELOPE_LIMIT");
-    const candidateArtifact = await retain(VERIFICATION_EXTRACTION_CANDIDATE_ARTIFACT_TYPE, candidateBytes, baseParents);
+    if (candidateBytes.byteLength > preparation.schema.limits.maxCandidateBytes + 2_048)
+      throw new Error("STRUCTURED_EXTRACTION_CANDIDATE_ENVELOPE_LIMIT");
+    const candidateArtifact = await retain(
+      VERIFICATION_EXTRACTION_CANDIDATE_ARTIFACT_TYPE,
+      candidateBytes,
+      baseParents,
+    );
     let precontextArtifact: VerificationArtifactHandle | null = null;
     if (replay.precontextBytes !== null) {
-      if (replay.precontextBytes.byteLength > MAX_PRECONTEXT_BYTES) throw new Error("STRUCTURED_EXTRACTION_PRECONTEXT_LIMIT");
+      if (replay.precontextBytes.byteLength > MAX_PRECONTEXT_BYTES)
+        throw new Error("STRUCTURED_EXTRACTION_PRECONTEXT_LIMIT");
       const precontextEnvelope = {
         schemaVersion: "verification-structured-extraction-precontext.v1",
         tenantId: lifecycle.tenantId,
@@ -268,13 +339,17 @@ export class StructuredExtractionCandidateBuilder {
         precontextDigest: sha256Digest(replay.precontextBytes),
         precontextBase64: bytesToBase64(replay.precontextBytes),
       };
-      precontextArtifact = await retain(VERIFICATION_EXTRACTION_PRECONTEXT_ARTIFACT_TYPE, encoder.encode(canonicalizeJson(precontextEnvelope)), [
-        replay.transportArtifact.artifactId,
-        replay.responseEnvelopeArtifact.artifactId,
-        replay.requestArtifact.artifactId,
-        replay.rawResponseArtifact.artifactId,
-        preparation.artifacts.producerProfile.artifactId,
-      ]);
+      precontextArtifact = await retain(
+        VERIFICATION_EXTRACTION_PRECONTEXT_ARTIFACT_TYPE,
+        encoder.encode(canonicalizeJson(precontextEnvelope)),
+        [
+          replay.transportArtifact.artifactId,
+          replay.responseEnvelopeArtifact.artifactId,
+          replay.requestArtifact.artifactId,
+          replay.rawResponseArtifact.artifactId,
+          preparation.artifacts.producerProfile.artifactId,
+        ],
+      );
     }
     const provenance: StructuredExtractionCandidateProvenance = deepFreeze({
       schemaVersion: "verification-structured-extraction-provenance.v1",
@@ -317,15 +392,43 @@ export class StructuredExtractionCandidateBuilder {
         externalRequests: replay.externalRequests,
         memoryFetches: replay.memoryFetches,
       },
-      candidate: { artifact: candidateArtifact, digest: candidateArtifact.digest as `sha256:${string}`, outputDigest, byteLength: candidateArtifact.byteLength, status: "unverified_candidate" },
-      precontext: precontextArtifact === null ? null : { artifact: precontextArtifact, digest: precontextArtifact.digest as `sha256:${string}`, byteLength: precontextArtifact.byteLength },
+      candidate: {
+        artifact: candidateArtifact,
+        digest: candidateArtifact.digest as `sha256:${string}`,
+        outputDigest,
+        byteLength: candidateArtifact.byteLength,
+        status: "unverified_candidate",
+      },
+      precontext:
+        precontextArtifact === null
+          ? null
+          : {
+              artifact: precontextArtifact,
+              digest: precontextArtifact.digest as `sha256:${string}`,
+              byteLength: precontextArtifact.byteLength,
+            },
     });
     const provenanceBytes = encoder.encode(canonicalizeJson(provenance));
     if (provenanceBytes.byteLength > MAX_PROVENANCE_BYTES) throw new Error("STRUCTURED_EXTRACTION_PROVENANCE_LIMIT");
-    const provenanceParents = [candidateArtifact.artifactId, ...(precontextArtifact ? [precontextArtifact.artifactId] : []), ...baseParents];
-    const provenanceArtifact = await retain(VERIFICATION_EXTRACTION_PROVENANCE_ARTIFACT_TYPE, provenanceBytes, provenanceParents);
+    const provenanceParents = [
+      candidateArtifact.artifactId,
+      ...(precontextArtifact ? [precontextArtifact.artifactId] : []),
+      ...baseParents,
+    ];
+    const provenanceArtifact = await retain(
+      VERIFICATION_EXTRACTION_PROVENANCE_ARTIFACT_TYPE,
+      provenanceBytes,
+      provenanceParents,
+    );
     active();
-    return deepFreeze<RetainedStructuredExtractionCandidate>({ status: "unverified_candidate", output, candidateArtifact, precontextArtifact, provenance, provenanceArtifact });
+    return deepFreeze<RetainedStructuredExtractionCandidate>({
+      status: "unverified_candidate",
+      output,
+      candidateArtifact,
+      precontextArtifact,
+      provenance,
+      provenanceArtifact,
+    });
   }
 }
 

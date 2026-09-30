@@ -12,10 +12,7 @@ import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { ProjectionSelectorResolver } from "../evidence-selection/index.js";
 
 const encoder = new TextEncoder();
-const schema = (
-  properties: Record<string, unknown>,
-  required = Object.keys(properties),
-): AdmittedExtractionSchema => {
+const schema = (properties: Record<string, unknown>, required = Object.keys(properties)): AdmittedExtractionSchema => {
   const admitted = admitExtractionSchema({
     schemaId: "invoice",
     schemaVersion: "1",
@@ -43,22 +40,14 @@ const digest = (bytes: Uint8Array): `sha256:${string}` => sha256Digest(bytes);
 const verify = async (
   candidate: unknown,
   fields: readonly ExtractionFieldRule[],
-  evidence: readonly Omit<
-    ExtractionEvidence,
-    "captureId" | "representationArtifactId" | "representationDigest"
-  >[],
+  evidence: readonly Omit<ExtractionEvidence, "captureId" | "representationArtifactId" | "representationDigest">[],
   source: unknown = candidate,
 ) => {
   const item = representation(source);
   const contentDigest = digest(item.content);
   return verifyExtractionFields({
     schema: schema(
-      Object.fromEntries(
-        Object.keys(candidate as Record<string, unknown>).map((key) => [
-          key,
-          string(),
-        ]),
-      ),
+      Object.fromEntries(Object.keys(candidate as Record<string, unknown>).map((key) => [key, string()])),
       Object.keys(candidate as Record<string, unknown>),
     ),
     candidate,
@@ -158,11 +147,9 @@ describe("bounded structured extraction", () => {
       },
       ["requiredValue", "nullableValue"],
     );
-    expect(
-      validateExtractionCandidate(admitted, { nullableValue: null }).checks.map(
-        (item) => item.code,
-      ),
-    ).toContain("CANDIDATE_REQUIRED_MISSING");
+    expect(validateExtractionCandidate(admitted, { nullableValue: null }).checks.map((item) => item.code)).toContain(
+      "CANDIDATE_REQUIRED_MISSING",
+    );
     expect(
       validateExtractionCandidate(admitted, {
         requiredValue: null,
@@ -193,10 +180,9 @@ describe("bounded structured extraction", () => {
         additionalProperties: true,
       },
     }).schema!;
-    expect(
-      validateExtractionCandidate(open, { undeclared: { nested: "leaf" } })
-        .leafPaths,
-    ).toEqual(["/undeclared/nested"]);
+    expect(validateExtractionCandidate(open, { undeclared: { nested: "leaf" } }).leafPaths).toEqual([
+      "/undeclared/nested",
+    ]);
   });
 
   it("retains an immutable admitted snapshot and rejects inapplicable keywords, property bounds, and malformed candidates", () => {
@@ -223,12 +209,8 @@ describe("bounded structured extraction", () => {
     }).schema!;
     mutable.properties.value.maxLength = 128;
     mutable.properties.value.enum[0] = "ab";
-    expect(validateExtractionCandidate(admitted, { value: "😀" }).valid).toBe(
-      true,
-    ); // JSON Schema length is Unicode code points.
-    expect(validateExtractionCandidate(admitted, { value: "ab" }).valid).toBe(
-      false,
-    );
+    expect(validateExtractionCandidate(admitted, { value: "😀" }).valid).toBe(true); // JSON Schema length is Unicode code points.
+    expect(validateExtractionCandidate(admitted, { value: "ab" }).valid).toBe(false);
     expect(
       admitExtractionSchema({
         schemaId: "bad",
@@ -252,9 +234,7 @@ describe("bounded structured extraction", () => {
     ).toBe(false);
     const cyclic: Record<string, unknown> = {};
     cyclic.self = cyclic;
-    expect(validateExtractionCandidate(admitted, cyclic).checks[0]?.code).toBe(
-      "CANDIDATE_NOT_JSON",
-    );
+    expect(validateExtractionCandidate(admitted, cyclic).checks[0]?.code).toBe("CANDIDATE_NOT_JSON");
     const deep: Record<string, unknown> = {};
     let current = deep;
     for (let index = 0; index < 66; index += 1) {
@@ -262,11 +242,9 @@ describe("bounded structured extraction", () => {
       current = current.child as Record<string, unknown>;
     }
     current.value = "x";
-    expect(
-      validateExtractionCandidate(openSchema(), deep).checks.map(
-        (item) => item.code,
-      ),
-    ).toContain("CANDIDATE_PREFLIGHT_EXCEEDED");
+    expect(validateExtractionCandidate(openSchema(), deep).checks.map((item) => item.code)).toContain(
+      "CANDIDATE_PREFLIGHT_EXCEEDED",
+    );
     expect(
       admitExtractionSchema({
         schemaId: "loose",
@@ -287,20 +265,12 @@ describe("bounded structured extraction", () => {
           path: "/amount",
           selector: { kind: "json_pointer", pointer: "/rows/1/amount" },
           status: "resolved",
-        } as unknown as Omit<
-          ExtractionEvidence,
-          "captureId" | "representationArtifactId" | "representationDigest"
-        >,
+        } as unknown as Omit<ExtractionEvidence, "captureId" | "representationArtifactId" | "representationDigest">,
       ],
       source,
     );
     expect(result.valid).toBe(false);
-    expect(
-      result.checks.some(
-        (item) =>
-          item.code === "FIELD_DECIMAL_MATCH" && item.status === "failed",
-      ),
-    ).toBe(true);
+    expect(result.checks.some((item) => item.code === "FIELD_DECIMAL_MATCH" && item.status === "failed")).toBe(true);
   });
 
   it("uses exact decimal core for precision, totals, and duplicates", async () => {
@@ -362,12 +332,9 @@ describe("bounded structured extraction", () => {
       ],
     });
     expect(totalRule.valid).toBe(false);
-    expect(
-      totalRule.checks.some(
-        (item) =>
-          item.code === "CROSS_FIELD_TOTAL_REPLAY" && item.status === "failed",
-      ),
-    ).toBe(true);
+    expect(totalRule.checks.some((item) => item.code === "CROSS_FIELD_TOTAL_REPLAY" && item.status === "failed")).toBe(
+      true,
+    );
     const malformedOperation = verifyExtractionFields({
       ...{
         schema: schema({ partA: string(), partB: string(), total: string() }),
@@ -400,11 +367,7 @@ describe("bounded structured extraction", () => {
         },
       ],
     });
-    expect(
-      malformedOperation.checks.some(
-        (item) => item.code === "CROSS_FIELD_TOTAL_INPUT_INVALID",
-      ),
-    ).toBe(true);
+    expect(malformedOperation.checks.some((item) => item.code === "CROSS_FIELD_TOTAL_INPUT_INVALID")).toBe(true);
   });
 
   it("fails closed for ambiguous or unsupported evidence and invalid dates", async () => {
@@ -437,8 +400,7 @@ describe("bounded structured extraction", () => {
       currency: "USD 12.50",
       unit: "kg",
       at: "2026-01-01T00:00:00Z",
-      identifier:
-        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      identifier: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       card: "79927398713",
       ratio: "0.5",
     };
@@ -535,9 +497,7 @@ describe("bounded structured extraction", () => {
           content,
         },
       ],
-      normalizations: [
-        { id: "collapsed", operation: "ascii_whitespace_collapsed" as const },
-      ],
+      normalizations: [{ id: "collapsed", operation: "ascii_whitespace_collapsed" as const }],
     };
     expect(verifyExtractionFields(input).valid).toBe(true);
     expect(
@@ -611,9 +571,7 @@ describe("bounded structured extraction", () => {
       );
       expect(result.valid, item.key).toBe(false);
       expect(
-        result.checks.some(
-          (check) => check.code === item.code && check.status === "failed",
-        ),
+        result.checks.some((check) => check.code === item.code && check.status === "failed"),
         item.key,
       ).toBe(true);
     }
@@ -707,11 +665,7 @@ describe("bounded structured extraction", () => {
       });
       expect(changed.valid, `${item.operation}:changed`).toBe(false);
       expect(
-        changed.checks.some(
-          (check) =>
-            check.code === "CROSS_FIELD_TOTAL_REPLAY" &&
-            check.status === "failed",
-        ),
+        changed.checks.some((check) => check.code === "CROSS_FIELD_TOTAL_REPLAY" && check.status === "failed"),
         `${item.operation}:arithmetic`,
       ).toBe(true);
     }
@@ -743,21 +697,11 @@ describe("bounded structured extraction", () => {
     const result = verifyExtractionFields({
       schema: admitted,
       candidate,
-      fields: [
-        "/records/0/id",
-        "/records/0/amount",
-        "/records/1/id",
-        "/records/1/amount",
-      ].map((path) => ({
+      fields: ["/records/0/id", "/records/0/amount", "/records/1/id", "/records/1/amount"].map((path) => ({
         path,
         comparison: path.endsWith("amount") ? "decimal" : "exact",
       })),
-      evidence: [
-        "/records/0/id",
-        "/records/0/amount",
-        "/records/1/id",
-        "/records/1/amount",
-      ].map((path) => ({
+      evidence: ["/records/0/id", "/records/0/amount", "/records/1/id", "/records/1/amount"].map((path) => ({
         path,
         captureId: "capture-1",
         representationArtifactId: "artifact-1",
@@ -775,12 +719,7 @@ describe("bounded structured extraction", () => {
       duplicates: [{ arrayPath: "/records", keyPaths: ["/id"] }],
     });
     expect(result.valid).toBe(false);
-    expect(
-      result.checks.some(
-        (item) =>
-          item.code === "RECORD_KEYS_UNIQUE" && item.status === "failed",
-      ),
-    ).toBe(true);
+    expect(result.checks.some((item) => item.code === "RECORD_KEYS_UNIQUE" && item.status === "failed")).toBe(true);
   });
 
   it("bounds aggregate repeated evidence scans before hashing or selector resolution", () => {
@@ -793,23 +732,19 @@ describe("bounded structured extraction", () => {
         path: "/value",
         captureId: "capture-1",
         representationArtifactId: "artifact-1",
-        representationDigest:
-          "sha256:0000000000000000000000000000000000000000000000000000000000000000" as const,
+        representationDigest: "sha256:0000000000000000000000000000000000000000000000000000000000000000" as const,
         selector: { kind: "json_pointer" as const, pointer: "/value" },
       })),
       representations: [
         {
           captureId: "capture-1",
           artifactId: "artifact-1",
-          digest:
-            "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
           content,
         },
       ],
     });
-    expect(result.checks.map((item) => item.code)).toContain(
-      "EVIDENCE_SCAN_BYTES_EXCEEDED",
-    );
+    expect(result.checks.map((item) => item.code)).toContain("EVIDENCE_SCAN_BYTES_EXCEEDED");
   });
 
   it("rejects inapplicable field options and unbounded pointer, duplicate, and total work before replay", () => {
@@ -840,17 +775,13 @@ describe("bounded structured extraction", () => {
       ...base,
       fields: [{ path: "/value", comparison: "exact", checksum: "isbn13" }],
     });
-    expect(invalidOption.checks.map((item) => item.code)).toContain(
-      "FIELD_RULE_INVALID",
-    );
+    expect(invalidOption.checks.map((item) => item.code)).toContain("FIELD_RULE_INVALID");
     const deepPointer = `/${"x/".repeat(64)}x`;
     const invalidPointer = verifyExtractionFields({
       ...base,
       fields: [{ path: deepPointer, comparison: "exact" }],
     });
-    expect(invalidPointer.checks.map((item) => item.code)).toContain(
-      "FIELD_RULE_INVALID",
-    );
+    expect(invalidPointer.checks.map((item) => item.code)).toContain("FIELD_RULE_INVALID");
     const duplicatePaths = verifyExtractionFields({
       ...base,
       fields: [{ path: "/value", comparison: "exact" }],
@@ -861,9 +792,7 @@ describe("bounded structured extraction", () => {
         },
       ],
     });
-    expect(duplicatePaths.checks.map((item) => item.code)).toContain(
-      "DUPLICATE_RULE_INVALID",
-    );
+    expect(duplicatePaths.checks.map((item) => item.code)).toContain("DUPLICATE_RULE_INVALID");
     const totalOperands = verifyExtractionFields({
       ...base,
       fields: [{ path: "/value", comparison: "decimal" }],
@@ -875,9 +804,7 @@ describe("bounded structured extraction", () => {
         },
       ],
     });
-    expect(totalOperands.checks.map((item) => item.code)).toContain(
-      "TOTAL_RULE_RESOURCE_INVALID",
-    );
+    expect(totalOperands.checks.map((item) => item.code)).toContain("TOTAL_RULE_RESOURCE_INVALID");
   });
 
   it("uses declared scalar source components for tables, geometry, and transcripts without accepting locator metadata", () => {
@@ -969,13 +896,8 @@ describe("bounded structured extraction", () => {
       ).valid,
     ).toBe(true);
     expect(
-      structured(
-        "0",
-        transcript,
-        { kind: "media_timecode", startMs: 0, endMs: 2_000 },
-        "transcript_text",
-        "space",
-      ).valid,
+      structured("0", transcript, { kind: "media_timecode", startMs: 0, endMs: 2_000 }, "transcript_text", "space")
+        .valid,
     ).toBe(false);
   });
 
@@ -1027,13 +949,7 @@ describe("bounded structured extraction", () => {
         { path: "/partB", comparison: "decimal" as const },
         { path: "/total", comparison: "decimal" as const },
       ],
-      evidence: [
-        "/nested/name",
-        "/nested/nullable",
-        "/partA",
-        "/partB",
-        "/total",
-      ].map((path) => ({
+      evidence: ["/nested/name", "/nested/nullable", "/partA", "/partB", "/total"].map((path) => ({
         path,
         captureId: "capture-1",
         representationArtifactId: "artifact-1",
@@ -1060,11 +976,7 @@ describe("bounded structured extraction", () => {
     };
     const legacy = verifyExtractionFields(input),
       evidence = verifyExtractionFieldsWithEvidence(input);
-    expect(Object.keys(legacy).sort()).toEqual([
-      "candidateValid",
-      "checks",
-      "valid",
-    ]);
+    expect(Object.keys(legacy).sort()).toEqual(["candidateValid", "checks", "valid"]);
     expect(evidence).toMatchObject({
       schemaVersion: "verification-extraction-field-evidence.v1",
       valid: true,
@@ -1113,9 +1025,7 @@ describe("bounded structured extraction", () => {
     });
     expect(duplicateTotal.valid).toBe(false);
     expect(duplicateTotal.acceptedLeaves).toEqual([]);
-    expect(duplicateTotal.checks.map((item) => item.code)).toContain(
-      "ACCEPTED_LEAF_TOTAL_DUPLICATE",
-    );
+    expect(duplicateTotal.checks.map((item) => item.code)).toContain("ACCEPTED_LEAF_TOTAL_DUPLICATE");
     source.nested.name = "tampered";
     candidate.nested.name = "changed";
     expect(name.value).toBe(" alpha ");

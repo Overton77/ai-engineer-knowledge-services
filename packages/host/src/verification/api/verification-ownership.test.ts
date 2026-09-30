@@ -1,26 +1,17 @@
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createVerificationOwnershipResolver,
-  isVerifiedEveRuntimeRetry,
-} from "./verification-ownership.js";
+import { createVerificationOwnershipResolver, isVerifiedEveRuntimeRetry } from "./verification-ownership.js";
 import type { PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
-import {
-  createEveRuntimeAttestation,
-  deterministicUuid,
-} from "@aiengineer/knowledge-core";
+import { createEveRuntimeAttestation, deterministicUuid } from "@aiengineer/knowledge-core";
 import { sha256Digest } from "@aiengineer/knowledge-core";
 
 const resolveEveBinding = vi.hoisted(() => vi.fn());
 vi.mock("@aiengineer/knowledge-persistence", async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import("@aiengineer/knowledge-persistence")
-  >()),
+  ...(await importOriginal<typeof import("@aiengineer/knowledge-persistence")>()),
   resolveEveVerificationBinding: resolveEveBinding,
 }));
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const actor = {
   kind: "service" as const,
   id: id(1),
@@ -42,10 +33,7 @@ const body = {
   },
 };
 const idempotencyKey = "eve-host-key-001",
-  operationId = deterministicUuid(
-    "verification-http-operation",
-    `${grant.tenantId}:verifyClaims:${idempotencyKey}`,
-  );
+  operationId = deterministicUuid("verification-http-operation", `${grant.tenantId}:verifyClaims:${idempotencyKey}`);
 const externalA = {
   runtime: "eve" as const,
   runId: "session-a:turn-a",
@@ -65,28 +53,20 @@ const externalB = {
 const authority = { grantId: "eve-grant", issuer: "eve.host", keyIds: ["k1"] };
 const keyA = generateKeyPairSync("ed25519"),
   keyB = generateKeyPairSync("ed25519");
-const privateA = keyA.privateKey
-    .export({ type: "pkcs8", format: "pem" })
-    .toString(),
+const privateA = keyA.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
   publicA = keyA.publicKey.export({ type: "spki", format: "pem" }).toString(),
-  privateB = keyB.privateKey
-    .export({ type: "pkcs8", format: "pem" })
-    .toString(),
+  privateB = keyB.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
   publicB = keyB.publicKey.export({ type: "spki", format: "pem" }).toString();
 const eveGrant = { ...grant, eveRuntimeAuthority: authority };
 const database = () => {
   const transaction = vi.fn(
-    async (
-      _tenant: string,
-      callback: (client: { query: ReturnType<typeof vi.fn> }) => unknown,
-    ) => callback({ query: vi.fn(async () => ({ rows: [{ id: id(5) }] })) }),
+    async (_tenant: string, callback: (client: { query: ReturnType<typeof vi.fn> }) => unknown) =>
+      callback({ query: vi.fn(async () => ({ rows: [{ id: id(5) }] })) }),
   );
   return { transaction } as unknown as PostgresCanonicalRepository;
 };
 const keyCatalog = (publicKeyPem: string) => ({
-  eveRuntimeAttestationKeysJson: JSON.stringify([
-    { issuer: "eve.host", keyId: "k1", publicKeyPem },
-  ]),
+  eveRuntimeAttestationKeysJson: JSON.stringify([{ issuer: "eve.host", keyId: "k1", publicKeyPem }]),
 });
 async function signedRequest(
   options: Partial<{
@@ -123,10 +103,7 @@ async function signedRequest(
     externalExecution: external,
     ...options.payload,
   };
-  const header = await createEveRuntimeAttestation(
-    unsigned as never,
-    options.privateKey ?? privateA,
-  );
+  const header = await createEveRuntimeAttestation(unsigned as never, options.privateKey ?? privateA);
   const headers = {
     "x-eve-runtime-attestation": header,
     "x-external-runtime": external.runtime,
@@ -157,17 +134,11 @@ describe("verification ownership grant admission", () => {
   beforeEach(() => resolveEveBinding.mockReset());
   it("rejects ambiguous or caller-extended server configuration", () => {
     const database = {} as PostgresCanonicalRepository;
+    expect(() => createVerificationOwnershipResolver(database, JSON.stringify([grant, grant]))).toThrow(
+      "DUPLICATE_VERIFICATION_OWNERSHIP_GRANT",
+    );
     expect(() =>
-      createVerificationOwnershipResolver(
-        database,
-        JSON.stringify([grant, grant]),
-      ),
-    ).toThrow("DUPLICATE_VERIFICATION_OWNERSHIP_GRANT");
-    expect(() =>
-      createVerificationOwnershipResolver(
-        database,
-        JSON.stringify([{ ...grant, allowAnyAttempt: true }]),
-      ),
+      createVerificationOwnershipResolver(database, JSON.stringify([{ ...grant, allowAnyAttempt: true }])),
     ).toThrow();
     expect(() => createVerificationOwnershipResolver(database, "[]")).toThrow();
   });
@@ -234,9 +205,7 @@ describe("verification ownership grant admission", () => {
       ),
     ).toThrow();
     const rsa = generateKeyPairSync("rsa", { modulusLength: 2048 }),
-      rsaPublic = rsa.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString();
+      rsaPublic = rsa.publicKey.export({ type: "spki", format: "pem" }).toString();
     expect(() =>
       createVerificationOwnershipResolver(
         database,
@@ -251,9 +220,7 @@ describe("verification ownership grant admission", () => {
           },
         ]),
         {
-          eveRuntimeAttestationKeysJson: JSON.stringify([
-            { issuer: "eve.host", keyId: "k1", publicKeyPem: rsaPublic },
-          ]),
+          eveRuntimeAttestationKeysJson: JSON.stringify([{ issuer: "eve.host", keyId: "k1", publicKeyPem: rsaPublic }]),
         },
       ),
     ).toThrow("KEY_ALGORITHM");
@@ -261,15 +228,9 @@ describe("verification ownership grant admission", () => {
   it("rejects an attestation signed by a different resolver key catalog before database access", async () => {
     const keyA = generateKeyPairSync("ed25519"),
       keyB = generateKeyPairSync("ed25519");
-    const privateA = keyA.privateKey
-        .export({ type: "pkcs8", format: "pem" })
-        .toString(),
-      publicA = keyA.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
-      publicB = keyB.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString();
+    const privateA = keyA.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+      publicA = keyA.publicKey.export({ type: "spki", format: "pem" }).toString(),
+      publicB = keyB.publicKey.export({ type: "spki", format: "pem" }).toString();
     const authority = {
       grantId: "eve-grant",
       issuer: "eve.host",
@@ -327,9 +288,7 @@ describe("verification ownership grant admission", () => {
       { transaction } as unknown as PostgresCanonicalRepository,
       JSON.stringify([eveGrant]),
       {
-        eveRuntimeAttestationKeysJson: JSON.stringify([
-          { issuer: "eve.host", keyId: "k1", publicKeyPem: publicB },
-        ]),
+        eveRuntimeAttestationKeysJson: JSON.stringify([{ issuer: "eve.host", keyId: "k1", publicKeyPem: publicB }]),
       },
     );
     const result = await resolver({
@@ -364,9 +323,7 @@ describe("verification ownership grant admission", () => {
       keyCatalog(publicB),
     );
     resolveEveBinding.mockResolvedValue(externalA);
-    await expect(
-      resolverA(await signedRequest({ privateKey: privateB })),
-    ).resolves.toBeUndefined();
+    await expect(resolverA(await signedRequest({ privateKey: privateB }))).resolves.toBeUndefined();
     expect(firstDatabase.transaction).not.toHaveBeenCalled();
     await expect(resolverA(await signedRequest())).resolves.toMatchObject({
       operationId,
@@ -376,15 +333,8 @@ describe("verification ownership grant admission", () => {
     expect(resolverB).toBeTypeOf("function");
   });
   it("rejects every mutated signed ownership binding before persistence", async () => {
-    const resolver = createVerificationOwnershipResolver(
-      database(),
-      JSON.stringify([eveGrant]),
-      keyCatalog(publicA),
-    );
-    const cases: readonly [
-      string,
-      Partial<Parameters<typeof signedRequest>[0]>,
-    ][] = [
+    const resolver = createVerificationOwnershipResolver(database(), JSON.stringify([eveGrant]), keyCatalog(publicA));
+    const cases: readonly [string, Partial<Parameters<typeof signedRequest>[0]>][] = [
       ["actor", { payload: { principal: { ...actor, id: id(99) } } }],
       [
         "service",
@@ -418,17 +368,12 @@ describe("verification ownership grant admission", () => {
       ["correlation", { correlationId: "eve:dynamic" }],
       ["causation", { causationId: "not-permitted" }],
     ];
-    for (const [, mutation] of cases)
-      expect(await resolver(await signedRequest(mutation))).toBeUndefined();
+    for (const [, mutation] of cases) expect(await resolver(await signedRequest(mutation))).toBeUndefined();
     expect(resolveEveBinding).not.toHaveBeenCalled();
   });
   it("binds signed lineage retries to the frozen context only", async () => {
     const store = database(),
-      resolver = createVerificationOwnershipResolver(
-        store,
-        JSON.stringify([eveGrant]),
-        keyCatalog(publicA),
-      );
+      resolver = createVerificationOwnershipResolver(store, JSON.stringify([eveGrant]), keyCatalog(publicA));
     resolveEveBinding.mockResolvedValue(externalA);
     const input = await signedRequest({ external: externalB });
     const context = await resolver(input);

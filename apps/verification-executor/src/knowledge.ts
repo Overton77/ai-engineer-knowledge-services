@@ -10,7 +10,9 @@ const invokedDirectly = (() => {
     const entry = realpathSync.native(process.argv[1]);
     const modulePath = realpathSync.native(fileURLToPath(import.meta.url));
     return process.platform === "win32" ? entry.toLowerCase() === modulePath.toLowerCase() : entry === modulePath;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 })();
 
 if (invokedDirectly) {

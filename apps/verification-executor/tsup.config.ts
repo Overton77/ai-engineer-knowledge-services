@@ -5,7 +5,14 @@ import { defineConfig } from "tsup";
 // (@modelcontextprotocol/sdk, zod, pg). Splitting is off so the two bins stay self-contained.
 export default defineConfig({
   // local-services.ts is the transitional 5D3 seam `ks` imports through ./local-verification (Unit 5C); 5D3 removes it.
-  entry: ["src/index.ts", "src/knowledge.ts", "src/scoped-host.ts", "src/evidence-reader.ts", "src/root-host.ts", "src/local-services.ts"],
+  entry: [
+    "src/index.ts",
+    "src/knowledge.ts",
+    "src/scoped-host.ts",
+    "src/evidence-reader.ts",
+    "src/root-host.ts",
+    "src/local-services.ts",
+  ],
   format: ["esm"],
   platform: "node",
   target: "node22",

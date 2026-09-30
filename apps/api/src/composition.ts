@@ -9,7 +9,9 @@ export function apiServerOptions(host: ApiHost): ServerOptions {
     ...(verify.decisions ?? {}),
     ...(verify.driftRevalidation ? { verificationDriftRevalidation: verify.driftRevalidation } : {}),
     ...(verify.benchmarkReads ? { verificationBenchmarkReads: verify.benchmarkReads } : {}),
-    ...(verify.benchmarkComparisonReads ? { verificationBenchmarkComparisonReads: verify.benchmarkComparisonReads } : {}),
+    ...(verify.benchmarkComparisonReads
+      ? { verificationBenchmarkComparisonReads: verify.benchmarkComparisonReads }
+      : {}),
     ...(verify.providerReconciliation ? { verificationProviderReconciliation: verify.providerReconciliation } : {}),
     ...(verify.semanticReconciliation ? { verificationSemanticReconciliation: verify.semanticReconciliation } : {}),
     ...(verify.structuredExtractionReads
@@ -35,28 +37,38 @@ export function apiServerOptions(host: ApiHost): ServerOptions {
                 ...(runtime.verificationOperationService
                   ? { verificationOperationService: runtime.verificationOperationService }
                   : {}),
-                ...(runtime.verificationCaptureCatalog ? { verificationCaptureCatalog: runtime.verificationCaptureCatalog } : {}),
+                ...(runtime.verificationCaptureCatalog
+                  ? { verificationCaptureCatalog: runtime.verificationCaptureCatalog }
+                  : {}),
                 ...(runtime.isParseArtifactRequestAdmitted
                   ? { isParseArtifactRequestAdmitted: runtime.isParseArtifactRequestAdmitted }
                   : {}),
                 ...(runtime.isStructuredExtractionRequestAdmitted
                   ? { isStructuredExtractionRequestAdmitted: runtime.isStructuredExtractionRequestAdmitted }
                   : {}),
-                ...(runtime.isBenchmarkRequestAdmitted ? { isBenchmarkRequestAdmitted: runtime.isBenchmarkRequestAdmitted } : {}),
+                ...(runtime.isBenchmarkRequestAdmitted
+                  ? { isBenchmarkRequestAdmitted: runtime.isBenchmarkRequestAdmitted }
+                  : {}),
                 ...(runtime.isBenchmarkComparisonRequestAdmitted
                   ? { isBenchmarkComparisonRequestAdmitted: runtime.isBenchmarkComparisonRequestAdmitted }
                   : {}),
-                ...(runtime.isClaimsRequestAdmitted ? { isClaimsRequestAdmitted: runtime.isClaimsRequestAdmitted } : {}),
+                ...(runtime.isClaimsRequestAdmitted
+                  ? { isClaimsRequestAdmitted: runtime.isClaimsRequestAdmitted }
+                  : {}),
                 ...(runtime.isAuditInspectionRequestAdmitted
                   ? { isAuditInspectionRequestAdmitted: runtime.isAuditInspectionRequestAdmitted }
                   : {}),
                 ...(runtime.isAdjudicationRequestAdmitted
                   ? { isAdjudicationRequestAdmitted: runtime.isAdjudicationRequestAdmitted }
                   : {}),
-                ...(runtime.resolveVerificationContext ? { resolveVerificationContext: runtime.resolveVerificationContext } : {}),
+                ...(runtime.resolveVerificationContext
+                  ? { resolveVerificationContext: runtime.resolveVerificationContext }
+                  : {}),
               }
             : {}),
-          ...(knowledge.canonicalRetrievalExecutor ? { canonicalRetrievalExecutor: knowledge.canonicalRetrievalExecutor } : {}),
+          ...(knowledge.canonicalRetrievalExecutor
+            ? { canonicalRetrievalExecutor: knowledge.canonicalRetrievalExecutor }
+            : {}),
           ...(knowledge.replayEvidencePacketCitations
             ? { replayEvidencePacketCitations: knowledge.replayEvidencePacketCitations }
             : {}),

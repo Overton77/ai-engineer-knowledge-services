@@ -1,17 +1,12 @@
 import { prototypeSha256 } from "./digest.js";
 import type { PrototypeResolvedTextLocator } from "./text-locator.js";
 
-export interface PrototypeResolvedJsonPointer extends Omit<
-  PrototypeResolvedTextLocator,
-  "matchMode"
-> {
+export interface PrototypeResolvedJsonPointer extends Omit<PrototypeResolvedTextLocator, "matchMode"> {
   readonly matchMode: "json_pointer" | "not_found" | "parse_error";
   readonly value: unknown;
 }
 
-function unresolved(
-  matchMode: "not_found" | "parse_error",
-): PrototypeResolvedJsonPointer {
+function unresolved(matchMode: "not_found" | "parse_error"): PrototypeResolvedJsonPointer {
   return {
     matchMode,
     start: null,
@@ -23,10 +18,7 @@ function unresolved(
 }
 
 /** Preserves the prototype JSON pointer behavior, including JSON.stringify bytes. */
-export function resolvePrototypeJsonPointer(
-  content: string,
-  pointer: string,
-): PrototypeResolvedJsonPointer {
+export function resolvePrototypeJsonPointer(content: string, pointer: string): PrototypeResolvedJsonPointer {
   let value: unknown;
   try {
     value = JSON.parse(content) as unknown;
@@ -39,14 +31,9 @@ export function resolvePrototypeJsonPointer(
     .map((item) => item.replace(/~1/g, "/").replace(/~0/g, "~"))) {
     if (Array.isArray(value)) {
       const index = Number(token);
-      if (!Number.isInteger(index) || index < 0 || index >= value.length)
-        return unresolved("not_found");
+      if (!Number.isInteger(index) || index < 0 || index >= value.length) return unresolved("not_found");
       value = value[index];
-    } else if (
-      value !== null &&
-      typeof value === "object" &&
-      Object.prototype.hasOwnProperty.call(value, token)
-    ) {
+    } else if (value !== null && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, token)) {
       value = (value as Record<string, unknown>)[token];
     } else return unresolved("not_found");
   }

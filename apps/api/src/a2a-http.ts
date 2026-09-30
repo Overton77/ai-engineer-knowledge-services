@@ -5,21 +5,9 @@ import {
   type CallbackReplayStore,
   type KnowledgeOperationPort,
 } from "@aiengineer/knowledge-application";
-import {
-  A2ATaskSchema,
-  CallbackAcknowledgementSchema,
-  type ProblemDetails,
-} from "@aiengineer/knowledge-contracts";
-import {
-  actorsMatch,
-  type ApiAction,
-  type LocalApiIdentity,
-} from "@aiengineer/knowledge-host";
-import type {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-} from "fastify";
+import { A2ATaskSchema, CallbackAcknowledgementSchema, type ProblemDetails } from "@aiengineer/knowledge-contracts";
+import { actorsMatch, type ApiAction, type LocalApiIdentity } from "@aiengineer/knowledge-host";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { CanonicalRetrievalExecutorPort } from "@aiengineer/knowledge-application";
 
@@ -47,8 +35,7 @@ export function createCallbackSigningSecretResolver(
     if (secrets.has(key)) throw new Error("DUPLICATE_CALLBACK_SIGNING_KEY_REFERENCE");
     secrets.set(key, entry.secret);
   }
-  return (tenantId, signingKeyReference) =>
-    secrets.get(`${tenantId}\0${signingKeyReference}`);
+  return (tenantId, signingKeyReference) => secrets.get(`${tenantId}\0${signingKeyReference}`);
 }
 
 interface AuthorizedAccess {
@@ -58,8 +45,8 @@ interface AuthorizedAccess {
 
 export interface A2AHttpRouteDependencies {
   readonly operationService: KnowledgeOperationPort;
-  readonly retrievalOperationService?:KnowledgeOperationPort;
-  readonly canonicalRetrievalExecutor?:CanonicalRetrievalExecutorPort;
+  readonly retrievalOperationService?: KnowledgeOperationPort;
+  readonly canonicalRetrievalExecutor?: CanonicalRetrievalExecutorPort;
   readonly requireAccess: (
     request: FastifyRequest,
     reply: FastifyReply,
@@ -80,32 +67,18 @@ export interface A2AHttpRouteDependencies {
   readonly maximumCallbackAgeMs?: number;
 }
 
-export function registerA2AHttpRoutes(
-  server: FastifyInstance,
-  dependencies: A2AHttpRouteDependencies,
-): void {
-  const replayStore =
-    dependencies.callbackReplayStore ?? new CallbackReplayGuard();
-  const resolveSecret =
-    dependencies.resolveCallbackSigningSecret ?? (() => undefined);
+export function registerA2AHttpRoutes(server: FastifyInstance, dependencies: A2AHttpRouteDependencies): void {
+  const replayStore = dependencies.callbackReplayStore ?? new CallbackReplayGuard();
+  const resolveSecret = dependencies.resolveCallbackSigningSecret ?? (() => undefined);
 
   server.post("/v1/a2a/tasks", async (request, reply) => {
-    const access = await dependencies.requireAccess(
-      request,
-      reply,
-      "operation.submit",
-    );
+    const access = await dependencies.requireAccess(request, reply, "operation.submit");
     if (!access) return;
     const task = A2ATaskSchema.parse(request.body);
     if (task.context.tenantId !== access.tenant)
       return sendProblem(
         reply,
-        dependencies.problem(
-          403,
-          "FORBIDDEN",
-          "Tenant context mismatch",
-          dependencies.correlationId(request),
-        ),
+        dependencies.problem(403, "FORBIDDEN", "Tenant context mismatch", dependencies.correlationId(request)),
       );
     if (!actorsMatch(access.identity.actor, task.context.actor))
       return sendProblem(
@@ -128,27 +101,44 @@ export function registerA2AHttpRoutes(
         ),
       );
     let status;
-    if(task.kind==="retrieval"){
-      if(!dependencies.retrievalOperationService||!dependencies.canonicalRetrievalExecutor)return sendProblem(reply,dependencies.problem(503,"INTERNAL_ERROR","Canonical retrieval executor unavailable",dependencies.correlationId(request)));
-      const envelope=operationEnvelopeForA2ATask(task);
-      const accepted=await dependencies.retrievalOperationService.submit("retrieval_run",envelope,dependencies.origin(request));
-      await dependencies.canonicalRetrievalExecutor.execute(envelope,access.identity);
-      status={taskId:task.taskId,operationId:accepted.operationId,state:"accepted" as const,statusUrl:accepted.statusUrl,eventStreamUrl:accepted.eventStreamUrl,cancellationUrl:accepted.cancellationUrl};
-    }else status=await new A2AKnowledgeAdapter(dependencies.operationService,dependencies.origin(request)).dispatch(task);
+    if (task.kind === "retrieval") {
+      if (!dependencies.retrievalOperationService || !dependencies.canonicalRetrievalExecutor)
+        return sendProblem(
+          reply,
+          dependencies.problem(
+            503,
+            "INTERNAL_ERROR",
+            "Canonical retrieval executor unavailable",
+            dependencies.correlationId(request),
+          ),
+        );
+      const envelope = operationEnvelopeForA2ATask(task);
+      const accepted = await dependencies.retrievalOperationService.submit(
+        "retrieval_run",
+        envelope,
+        dependencies.origin(request),
+      );
+      await dependencies.canonicalRetrievalExecutor.execute(envelope, access.identity);
+      status = {
+        taskId: task.taskId,
+        operationId: accepted.operationId,
+        state: "accepted" as const,
+        statusUrl: accepted.statusUrl,
+        eventStreamUrl: accepted.eventStreamUrl,
+        cancellationUrl: accepted.cancellationUrl,
+      };
+    } else
+      status = await new A2AKnowledgeAdapter(dependencies.operationService, dependencies.origin(request)).dispatch(
+        task,
+      );
     return reply.status(202).send(status);
   });
 
   server.post("/v1/a2a/callbacks", async (request, reply) => {
-    const access = await dependencies.requireAccess(
-      request,
-      reply,
-      "callback.receive",
-    );
+    const access = await dependencies.requireAccess(request, reply, "callback.receive");
     if (!access) return;
-    const signingKeyHeader =
-      request.headers["x-knowledge-callback-signing-key-reference"];
-    const signingKeyReference =
-      typeof signingKeyHeader === "string" ? signingKeyHeader.trim() : "";
+    const signingKeyHeader = request.headers["x-knowledge-callback-signing-key-reference"];
+    const signingKeyReference = typeof signingKeyHeader === "string" ? signingKeyHeader.trim() : "";
     if (!signingKeyReference || signingKeyReference.length > 255)
       return sendProblem(
         reply,
@@ -171,12 +161,8 @@ export function registerA2AHttpRoutes(
         ),
       );
     const envelope = authenticateCallback(request.body, secret, {
-      ...(dependencies.callbackClock
-        ? { now: dependencies.callbackClock }
-        : {}),
-      ...(dependencies.maximumCallbackAgeMs
-        ? { maximumAgeMs: dependencies.maximumCallbackAgeMs }
-        : {}),
+      ...(dependencies.callbackClock ? { now: dependencies.callbackClock } : {}),
+      ...(dependencies.maximumCallbackAgeMs ? { maximumAgeMs: dependencies.maximumCallbackAgeMs } : {}),
     });
     if (!envelope)
       return sendProblem(
@@ -188,10 +174,7 @@ export function registerA2AHttpRoutes(
           dependencies.correlationId(request),
         ),
       );
-    if (
-      envelope.tenantId !== access.tenant ||
-      envelope.correlationId !== dependencies.correlationId(request)
-    )
+    if (envelope.tenantId !== access.tenant || envelope.correlationId !== dependencies.correlationId(request))
       return sendProblem(
         reply,
         dependencies.problem(
@@ -201,24 +184,15 @@ export function registerA2AHttpRoutes(
           dependencies.correlationId(request),
         ),
       );
-    const operation = await dependencies.operationService.get(
-      envelope.operationId,
-      access.tenant,
-    );
+    const operation = await dependencies.operationService.get(envelope.operationId, access.tenant);
     if (!operation)
       return sendProblem(
         reply,
-        dependencies.problem(
-          404,
-          "NOT_FOUND",
-          "Callback operation not found",
-          dependencies.correlationId(request),
-        ),
+        dependencies.problem(404, "NOT_FOUND", "Callback operation not found", dependencies.correlationId(request)),
       );
     if (
       operation.context.correlationId !== envelope.correlationId ||
-      (operation.context.causationId ?? undefined) !==
-        (envelope.causationId ?? undefined)
+      (operation.context.causationId ?? undefined) !== (envelope.causationId ?? undefined)
     )
       return sendProblem(
         reply,
@@ -229,16 +203,9 @@ export function registerA2AHttpRoutes(
           dependencies.correlationId(request),
         ),
       );
-    const operationInput = await dependencies.operationService.input(
-      envelope.operationId,
-      access.tenant,
-    );
+    const operationInput = await dependencies.operationService.input(envelope.operationId, access.tenant);
     const binding = a2aCallbackBinding(operationInput);
-    if (
-      !binding ||
-      binding.taskId !== envelope.taskId ||
-      binding.signingKeyReference !== signingKeyReference
-    )
+    if (!binding || binding.taskId !== envelope.taskId || binding.signingKeyReference !== signingKeyReference)
       return sendProblem(
         reply,
         dependencies.problem(
@@ -248,24 +215,13 @@ export function registerA2AHttpRoutes(
           dependencies.correlationId(request),
         ),
       );
-    const receivedAt = (dependencies.callbackClock ?? (() => new Date()))()
-      .toISOString();
+    const receivedAt = (dependencies.callbackClock ?? (() => new Date()))().toISOString();
     const receiverIdentity = `${access.identity.actor.kind}:${access.identity.actor.id}`;
-    const accepted = await replayStore.accept(
-      envelope,
-      signingKeyReference,
-      receivedAt,
-      receiverIdentity,
-    );
+    const accepted = await replayStore.accept(envelope, signingKeyReference, receivedAt, receiverIdentity);
     if (!accepted)
       return sendProblem(
         reply,
-        dependencies.problem(
-          409,
-          "CONFLICT",
-          "Callback replay rejected",
-          dependencies.correlationId(request),
-        ),
+        dependencies.problem(409, "CONFLICT", "Callback replay rejected", dependencies.correlationId(request)),
       );
     return reply.status(202).send(
       CallbackAcknowledgementSchema.parse({
@@ -282,11 +238,8 @@ function sendProblem(reply: FastifyReply, body: ProblemDetails) {
   return reply.status(body.status).type("application/problem+json").send(body);
 }
 
-function a2aCallbackBinding(
-  value: unknown,
-): { taskId: string; signingKeyReference: string } | undefined {
-  if (!isRecord(value) || !isRecord(value.a2a) || !isRecord(value.a2a.callback))
-    return undefined;
+function a2aCallbackBinding(value: unknown): { taskId: string; signingKeyReference: string } | undefined {
+  if (!isRecord(value) || !isRecord(value.a2a) || !isRecord(value.a2a.callback)) return undefined;
   const taskId = value.a2a.taskId;
   const signingKeyReference = value.a2a.callback.signingKeyReference;
   return typeof taskId === "string" && typeof signingKeyReference === "string"

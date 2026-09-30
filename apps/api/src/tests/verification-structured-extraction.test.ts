@@ -11,9 +11,7 @@ describe("structured extraction public custody boundary", () => {
       actor = { kind: "human" as const, id: randomUUID() },
       getExtraction = vi
         .fn()
-        .mockRejectedValueOnce(
-          Object.assign(new Error("private locator"), { code: "NOT_FOUND" }),
-        )
+        .mockRejectedValueOnce(Object.assign(new Error("private locator"), { code: "NOT_FOUND" }))
         .mockRejectedValueOnce(new Error("private signing key"));
     const server = buildServer({
       resolveIdentity: (token) =>
@@ -37,10 +35,7 @@ describe("structured extraction public custody boundary", () => {
           })
         ).statusCode,
       ).toBe(403);
-      expect(
-        (await server.inject({ url: `${url}?publicKeyPem=caller`, headers }))
-          .statusCode,
-      ).toBe(400);
+      expect((await server.inject({ url: `${url}?publicKeyPem=caller`, headers })).statusCode).toBe(400);
       expect(
         (
           await server.inject({
@@ -65,16 +60,11 @@ describe("structured extraction public custody boundary", () => {
     }
   });
   it("requires operator signing trust, Storage and ownership grants", () => {
-    expect(
-      createVerificationStructuredExtractionReads(undefined, {}),
-    ).toBeUndefined();
-    const publicKeyPem = generateKeyPairSync("ed25519")
-      .publicKey.export({ format: "pem", type: "spki" })
-      .toString();
+    expect(createVerificationStructuredExtractionReads(undefined, {})).toBeUndefined();
+    const publicKeyPem = generateKeyPairSync("ed25519").publicKey.export({ format: "pem", type: "spki" }).toString();
     expect(() =>
       createVerificationStructuredExtractionReads(undefined, {
-        VERIFICATION_STRUCTURED_EXTRACTION_READ_PUBLIC_KEYS_JSON:
-          JSON.stringify([{ keyId: "key", publicKeyPem }]),
+        VERIFICATION_STRUCTURED_EXTRACTION_READ_PUBLIC_KEYS_JSON: JSON.stringify([{ keyId: "key", publicKeyPem }]),
       }),
     ).toThrow("STORAGE_AND_OWNERSHIP_REQUIRED");
   });
@@ -83,29 +73,27 @@ describe("structured extraction public custody boundary", () => {
       operationId = randomUUID(),
       actor = { kind: "human" as const, id: randomUUID() },
       digest = `sha256:${"a".repeat(64)}`;
-    const getExtraction = vi
-      .fn()
-      .mockResolvedValue({
-        verificationContractVersion: "verification.v1",
-        tenantId,
-        operationId,
-        requestDigest: digest,
-        publication: {
-          artifact: { artifactId: randomUUID(), digest },
-          signatureStatus: "verified",
-          purpose: "artifact_custody_only",
-        },
-        output: {
-          status: "failed",
-          code: "PROVIDER_HTTP_FAILURE",
-          category: "provider_http",
-          automaticRetry: false,
-          candidateArtifact: null,
-          executionArtifact: { artifactId: randomUUID(), digest },
-          manifestDigest: digest,
-          providerCallDigest: digest,
-        },
-      });
+    const getExtraction = vi.fn().mockResolvedValue({
+      verificationContractVersion: "verification.v1",
+      tenantId,
+      operationId,
+      requestDigest: digest,
+      publication: {
+        artifact: { artifactId: randomUUID(), digest },
+        signatureStatus: "verified",
+        purpose: "artifact_custody_only",
+      },
+      output: {
+        status: "failed",
+        code: "PROVIDER_HTTP_FAILURE",
+        category: "provider_http",
+        automaticRetry: false,
+        candidateArtifact: null,
+        executionArtifact: { artifactId: randomUUID(), digest },
+        manifestDigest: digest,
+        providerCallDigest: digest,
+      },
+    });
     const server = buildServer({
       resolveIdentity: (token) =>
         token === "valid"
@@ -189,16 +177,10 @@ describe("structured extraction public custody boundary", () => {
     };
     const query = vi.fn().mockResolvedValue({ rows: [row] }),
       transaction = vi.fn(async (_tenant, work) => work({ query }));
-    const authorize = createVerificationOperationReadAuthorizer(
-      { transaction },
-      JSON.stringify([grant]),
+    const authorize = createVerificationOperationReadAuthorizer({ transaction }, JSON.stringify([grant]));
+    expect(() => createVerificationOperationReadAuthorizer({ transaction }, JSON.stringify([grant, grant]))).toThrow(
+      "DUPLICATE_VERIFICATION_OWNERSHIP_GRANT",
     );
-    expect(() =>
-      createVerificationOperationReadAuthorizer(
-        { transaction },
-        JSON.stringify([grant, grant]),
-      ),
-    ).toThrow("DUPLICATE_VERIFICATION_OWNERSHIP_GRANT");
     expect(
       await authorize({
         tenantId,

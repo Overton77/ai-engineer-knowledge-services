@@ -10,21 +10,13 @@ export function sourceComponentValue(
 ): { value?: string; detail?: string } {
   if (!rule.sourceComponent) return {};
   if (rule.sourceComponent === "table_cell_value") {
-    if (
-      selector.kind !== "table" ||
-      !isPlainRecord(selectedValue) ||
-      typeof selectedValue.value !== "string"
-    )
+    if (selector.kind !== "table" || !isPlainRecord(selectedValue) || typeof selectedValue.value !== "string")
       return {
-        detail:
-          "table_cell_value requires a table selector whose resolved source cell has a string value.",
+        detail: "table_cell_value requires a table selector whose resolved source cell has a string value.",
       };
     return { value: selectedValue.value };
   }
-  const expectedKind =
-    rule.sourceComponent === "geometry_token_text"
-      ? "bounding_box"
-      : "media_timecode";
+  const expectedKind = rule.sourceComponent === "geometry_token_text" ? "bounding_box" : "media_timecode";
   if (
     selector.kind !== expectedKind ||
     (rule.sourceJoiner !== "space" && rule.sourceJoiner !== "none") ||
@@ -33,10 +25,7 @@ export function sourceComponentValue(
     return {
       detail: `${rule.sourceComponent} requires its matching selector and explicit sourceJoiner.`,
     };
-  const items =
-    rule.sourceComponent === "geometry_token_text"
-      ? selectedValue.tokens
-      : selectedValue.segments;
+  const items = rule.sourceComponent === "geometry_token_text" ? selectedValue.tokens : selectedValue.segments;
   if (
     !Array.isArray(items) ||
     items.length === 0 ||
@@ -46,8 +35,6 @@ export function sourceComponentValue(
       detail: `${rule.sourceComponent} requires ordered source tokens/segments with text.`,
     };
   return {
-    value: items
-      .map((item) => (item as Record<string, string>).text)
-      .join(rule.sourceJoiner === "space" ? " " : ""),
+    value: items.map((item) => (item as Record<string, string>).text).join(rule.sourceJoiner === "space" ? " " : ""),
   };
 }

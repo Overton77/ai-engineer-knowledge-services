@@ -44,22 +44,31 @@ export function verificationAdjudicationRequestActivityHandler(
       let polling = false;
       let timer: ReturnType<typeof setTimeout> | undefined;
       const active = async () => {
-        const operation = await dependencies.operations.getOperationRecord(activity.context.tenantId, activity.context.operationId);
+        const operation = await dependencies.operations.getOperationRecord(
+          activity.context.tenantId,
+          activity.context.operationId,
+        );
         if (!operation || operation.status !== "running") {
           controller.abort();
-          throw new CanonicalActivityError("VERIFICATION_ADJUDICATION_CANCELLED", "VERIFICATION_ADJUDICATION_CANCELLED", false);
+          throw new CanonicalActivityError(
+            "VERIFICATION_ADJUDICATION_CANCELLED",
+            "VERIFICATION_ADJUDICATION_CANCELLED",
+            false,
+          );
         }
       };
       const poll = () => {
         if (polling || controller.signal.aborted) return;
         polling = true;
-        void active().catch((error: unknown) => {
-          pollFailure = error;
-          controller.abort();
-        }).finally(() => {
-          polling = false;
-          if (!controller.signal.aborted) timer = setTimeout(poll, pollMs);
-        });
+        void active()
+          .catch((error: unknown) => {
+            pollFailure = error;
+            controller.abort();
+          })
+          .finally(() => {
+            polling = false;
+            if (!controller.signal.aborted) timer = setTimeout(poll, pollMs);
+          });
       };
       timer = setTimeout(poll, pollMs);
       try {
@@ -70,13 +79,19 @@ export function verificationAdjudicationRequestActivityHandler(
 
         const canonicalBytes = new TextEncoder().encode(canonicalizeJson(prepared.packet));
         const canonicalDigest = sha256Digest(canonicalBytes);
-        if (prepared.requestDigest !== digestCanonicalJson(input.request)
-          || prepared.packet.requestBinding.operationId !== activity.context.operationId
-          || prepared.packet.tenantId !== activity.context.tenantId
-          || canonicalDigest !== prepared.packetDigest
-          || sha256Digest(prepared.packetBytes) !== canonicalDigest
-          || !equalBytes(prepared.packetBytes, canonicalBytes)) {
-          throw new CanonicalActivityError("VERIFICATION_ADJUDICATION_PACKET_BINDING_MISMATCH", "VERIFICATION_ADJUDICATION_PACKET_BINDING_MISMATCH", false);
+        if (
+          prepared.requestDigest !== digestCanonicalJson(input.request) ||
+          prepared.packet.requestBinding.operationId !== activity.context.operationId ||
+          prepared.packet.tenantId !== activity.context.tenantId ||
+          canonicalDigest !== prepared.packetDigest ||
+          sha256Digest(prepared.packetBytes) !== canonicalDigest ||
+          !equalBytes(prepared.packetBytes, canonicalBytes)
+        ) {
+          throw new CanonicalActivityError(
+            "VERIFICATION_ADJUDICATION_PACKET_BINDING_MISMATCH",
+            "VERIFICATION_ADJUDICATION_PACKET_BINDING_MISMATCH",
+            false,
+          );
         }
         const parentArtifactIds = prepared.parentArtifacts.map((artifact) => artifact.artifactId);
         const transformationSignature = digestCanonicalJson({
@@ -110,20 +125,30 @@ export function verificationAdjudicationRequestActivityHandler(
         await active();
         const packetArtifactResult = VerificationArtifactHandleSchema.safeParse(committed.packetArtifact);
         if (!packetArtifactResult.success) {
-          throw new CanonicalActivityError("VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH", "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH", false);
+          throw new CanonicalActivityError(
+            "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH",
+            "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH",
+            false,
+          );
         }
         const packetArtifact = packetArtifactResult.data;
-        if (committed.subjectId !== prepared.subjectId
-          || packetArtifact.tenantId !== activity.context.tenantId
-          || packetArtifact.digest !== canonicalDigest
-          || packetArtifact.byteLength !== canonicalBytes.byteLength
-          || packetArtifact.mediaType !== "application/vnd.aiengineer.verification-adjudication-packet+json"
-          || packetArtifact.producerActivityId !== "verification-service:requestAdjudication"
-          || packetArtifact.producerVersion !== "verification-service.v1"
-          || packetArtifact.dataClassification !== "restricted"
-          || packetArtifact.transformationSignature !== transformationSignature
-          || canonicalizeJson(packetArtifact.parentArtifactIds) !== canonicalizeJson(parentArtifactIds)) {
-          throw new CanonicalActivityError("VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH", "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH", false);
+        if (
+          committed.subjectId !== prepared.subjectId ||
+          packetArtifact.tenantId !== activity.context.tenantId ||
+          packetArtifact.digest !== canonicalDigest ||
+          packetArtifact.byteLength !== canonicalBytes.byteLength ||
+          packetArtifact.mediaType !== "application/vnd.aiengineer.verification-adjudication-packet+json" ||
+          packetArtifact.producerActivityId !== "verification-service:requestAdjudication" ||
+          packetArtifact.producerVersion !== "verification-service.v1" ||
+          packetArtifact.dataClassification !== "restricted" ||
+          packetArtifact.transformationSignature !== transformationSignature ||
+          canonicalizeJson(packetArtifact.parentArtifactIds) !== canonicalizeJson(parentArtifactIds)
+        ) {
+          throw new CanonicalActivityError(
+            "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH",
+            "VERIFICATION_ADJUDICATION_COMMIT_BINDING_MISMATCH",
+            false,
+          );
         }
         const result = VerificationAdjudicationOperationResultSchema.parse({
           schemaVersion: "verification-operation-result.v1",
@@ -145,15 +170,24 @@ export function verificationAdjudicationRequestActivityHandler(
         if (pollFailure !== undefined) error = pollFailure;
         if (error instanceof CanonicalActivityError) throw error;
         if (error instanceof z.ZodError) {
-          throw new CanonicalActivityError("INVALID_VERIFICATION_ADJUDICATION_INPUT", "INVALID_VERIFICATION_ADJUDICATION_INPUT", false, { cause: error });
+          throw new CanonicalActivityError(
+            "INVALID_VERIFICATION_ADJUDICATION_INPUT",
+            "INVALID_VERIFICATION_ADJUDICATION_INPUT",
+            false,
+            { cause: error },
+          );
         }
-        const explicitCode = error instanceof Error && "code" in error && typeof error.code === "string"
-          ? error.code
-          : error instanceof Error ? error.message : "";
+        const explicitCode =
+          error instanceof Error && "code" in error && typeof error.code === "string"
+            ? error.code
+            : error instanceof Error
+              ? error.message
+              : "";
         const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(explicitCode)
           ? explicitCode
           : "VERIFICATION_ADJUDICATION_INFRASTRUCTURE_FAILURE";
-        const retryable = code === "VERIFICATION_ADJUDICATION_INFRASTRUCTURE_FAILURE" || code.startsWith("OBJECT_STORE_");
+        const retryable =
+          code === "VERIFICATION_ADJUDICATION_INFRASTRUCTURE_FAILURE" || code.startsWith("OBJECT_STORE_");
         throw new CanonicalActivityError(code, code, retryable, { cause: error });
       } finally {
         if (timer !== undefined) clearTimeout(timer);

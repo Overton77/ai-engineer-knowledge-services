@@ -11,7 +11,9 @@ export {
   type VerificationAuditInspectionRuntimeService,
 } from "@aiengineer/knowledge-persistence";
 
-export function createVerificationAuditInspectionHandler(dependencies: VerificationAuditInspectionRuntimeDependencies): ReturnType<typeof verificationAuditInspectionActivityHandler> {
+export function createVerificationAuditInspectionHandler(
+  dependencies: VerificationAuditInspectionRuntimeDependencies,
+): ReturnType<typeof verificationAuditInspectionActivityHandler> {
   return verificationAuditInspectionActivityHandler({
     service: createVerificationAuditInspectionService(dependencies),
     repository: dependencies.repository,

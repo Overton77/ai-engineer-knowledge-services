@@ -4,15 +4,9 @@ import { sha256Digest } from "../canonical/index.js";
 import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
 import type { EvidenceSelectionRequest } from "./selection.js";
 
-type TextNormalization = Extract<
-  VerificationSelector,
-  { kind: "text_quote" }
->["normalization"];
+type TextNormalization = Extract<VerificationSelector, { kind: "text_quote" }>["normalization"];
 
-function requestFor(
-  contentText: string,
-  selector: VerificationSelector,
-): EvidenceSelectionRequest {
+function requestFor(contentText: string, selector: VerificationSelector): EvidenceSelectionRequest {
   const content = new TextEncoder().encode(contentText);
   return {
     captureId: "capture",
@@ -58,11 +52,7 @@ describe("core evidence selector: text quotes", () => {
       end: 4,
     });
     expect(crlf?.selectedText).toBe("B");
-    const filler = resolveQuote(
-      "some  uh\r\nFact",
-      "some Fact",
-      "casefold_whitespace_filler_removed",
-    );
+    const filler = resolveQuote("some  uh\r\nFact", "some Fact", "casefold_whitespace_filler_removed");
     expect(filler?.selectedText).toBe("some  uh\r\nFact");
   });
 
@@ -72,17 +62,9 @@ describe("core evidence selector: text quotes", () => {
     expect(repeated?.resolution.status).toBe("ambiguous");
     expect(repeated?.resolution.occurrenceCount).toBe(2);
     expect(repeated?.selectedContent).toHaveLength(0);
-    expect(
-      resolveQuote(source, "42", "none", { prefix: "Panel B: " })?.resolution
-        .status,
-    ).toBe("resolved");
-    expect(
-      resolveQuote(source, "42", "none", { suffix: ". Panel B" })?.resolution
-        .status,
-    ).toBe("resolved");
-    expect(resolveQuote(source, "43", "none")?.resolution.status).toBe(
-      "not_found",
-    );
+    expect(resolveQuote(source, "42", "none", { prefix: "Panel B: " })?.resolution.status).toBe("resolved");
+    expect(resolveQuote(source, "42", "none", { suffix: ". Panel B" })?.resolution.status).toBe("resolved");
+    expect(resolveQuote(source, "43", "none")?.resolution.status).toBe("not_found");
   });
 
   it("reports bytes that are not UTF-8 as parse_error", () => {
@@ -98,17 +80,13 @@ describe("core evidence selector: text quotes", () => {
       } as const,
       content,
     };
-    expect(resolveEvidenceSelector(request)?.resolution.status).toBe(
-      "parse_error",
-    );
+    expect(resolveEvidenceSelector(request)?.resolution.status).toBe("parse_error");
   });
 });
 
 describe("core evidence selector: JSON pointers", () => {
   it("binds nested and escaped JSON Pointers to canonical selected bytes", () => {
-    const content = new TextEncoder().encode(
-      JSON.stringify({ a: { "b/c": { "~key": 7 }, "": { b: 9 } } }),
-    );
+    const content = new TextEncoder().encode(JSON.stringify({ a: { "b/c": { "~key": 7 }, "": { b: 9 } } }));
     const request = {
       captureId: "capture",
       representationArtifactId: "artifact",
@@ -145,18 +123,14 @@ describe("core evidence selector: multi-fragment text", () => {
     quote: text,
     normalization: "none",
   });
-  const fragments = (
-    ...parts: VerificationSelector[]
-  ): VerificationSelector => ({
+  const fragments = (...parts: VerificationSelector[]): VerificationSelector => ({
     kind: "multi_fragment_text",
     fragments: parts as never,
     joiner: " … ",
   });
 
   it("joins ordered fragments with the declared joiner", () => {
-    const result = resolveEvidenceSelector(
-      requestFor(source, fragments(quote("42"), quote("provisional"))),
-    );
+    const result = resolveEvidenceSelector(requestFor(source, fragments(quote("42"), quote("provisional"))));
     expect(result?.resolution.status).toBe("resolved");
     expect(result?.selectedText).toBe("42 … provisional");
     expect(result?.resolution.resolvedRanges).toHaveLength(2);
@@ -164,14 +138,10 @@ describe("core evidence selector: multi-fragment text", () => {
 
   it("rejects fragments that run backwards and fails when any fragment fails", () => {
     expect(
-      resolveEvidenceSelector(
-        requestFor(source, fragments(quote("provisional"), quote("42"))),
-      )?.resolution.status,
+      resolveEvidenceSelector(requestFor(source, fragments(quote("provisional"), quote("42"))))?.resolution.status,
     ).toBe("invalid");
     expect(
-      resolveEvidenceSelector(
-        requestFor(source, fragments(quote("42"), quote("absent"))),
-      )?.resolution.status,
+      resolveEvidenceSelector(requestFor(source, fragments(quote("42"), quote("absent"))))?.resolution.status,
     ).toBe("not_found");
   });
 });

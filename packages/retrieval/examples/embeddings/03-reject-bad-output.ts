@@ -33,7 +33,10 @@ export async function rejectBadOutputExample() {
   };
   const results: Record<string, string> = {};
   for (const [name, data] of Object.entries(cases)) {
-    const adapter = new VercelAiGatewayEmbeddingAdapter({ apiKey: "example-key", fetch: async () => Response.json({ data }) });
+    const adapter = new VercelAiGatewayEmbeddingAdapter({
+      apiKey: "example-key",
+      fetch: async () => Response.json({ data }),
+    });
     try {
       await adapter.embedMany(request);
       results[name] = "accepted";

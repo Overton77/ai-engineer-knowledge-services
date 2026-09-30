@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  AdvancedRetrievalPlan,
-  GraphEdge,
-  RetrievalChannel,
-  RetrievalPolicy,
-  RetrievalRecord,
-} from "../types.js";
+import type { AdvancedRetrievalPlan, GraphEdge, RetrievalChannel, RetrievalPolicy, RetrievalRecord } from "../types.js";
 import { expandVerifiedGraph } from "./expand.js";
 
 const plan = (overrides: Partial<AdvancedRetrievalPlan["graph"]> = {}): AdvancedRetrievalPlan => ({
@@ -112,14 +106,7 @@ describe("expandVerifiedGraph", () => {
     const r0 = record("r0", boundDigest);
     const r1 = record("r1", boundDigest);
     const { calls, rankChannel } = collect();
-    expandVerifiedGraph(
-      plan(),
-      [r0, r1],
-      [edge({ locatorDigest: unboundDigest })],
-      policy(),
-      ["r0"],
-      rankChannel,
-    );
+    expandVerifiedGraph(plan(), [r0, r1], [edge({ locatorDigest: unboundDigest })], policy(), ["r0"], rankChannel);
     expect(calls).toEqual([]);
   });
 
@@ -127,10 +114,7 @@ describe("expandVerifiedGraph", () => {
     const r0 = record("r0", boundDigest);
     const r1 = record("r1", boundDigest);
     const r2 = record("r2", boundDigest);
-    const edges: GraphEdge[] = [
-      edge({ fromId: "r0", toId: "r1" }),
-      edge({ fromId: "r0", toId: "r2" }),
-    ];
+    const edges: GraphEdge[] = [edge({ fromId: "r0", toId: "r1" }), edge({ fromId: "r0", toId: "r2" })];
     const { calls, rankChannel } = collect();
     // seeds already fill the cap, so no new node may be counted as seen; the walk
     // still visits r0's edges (the cap bounds newly seen nodes, not the edge loop

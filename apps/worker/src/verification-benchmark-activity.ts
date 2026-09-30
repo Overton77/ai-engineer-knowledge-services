@@ -67,7 +67,11 @@ export function verificationBenchmarkActivityHandler(dependencies: {
         const operation = await dependencies.operations.getOperationRecord(context.tenantId, context.operationId);
         if (!operation || operation.status !== "running") {
           controller.abort();
-          throw new CanonicalActivityError("VERIFICATION_OPERATION_NOT_ACTIVE", "VERIFICATION_OPERATION_NOT_ACTIVE", false);
+          throw new CanonicalActivityError(
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            false,
+          );
         }
         if (controller.signal.aborted) {
           throw new CanonicalActivityError("BENCHMARK_CANCELLED", "BENCHMARK_CANCELLED", false);
@@ -91,7 +95,9 @@ export function verificationBenchmarkActivityHandler(dependencies: {
       try {
         const input = inputSchema.parse(activity.operationInput);
         await active();
-        const runtime = VerificationBenchmarkPublicationManifestSchema.shape.runtime.parse(dependencies.runtime.resolve(context));
+        const runtime = VerificationBenchmarkPublicationManifestSchema.shape.runtime.parse(
+          dependencies.runtime.resolve(context),
+        );
         if (runtime.attemptId !== context.attemptId) throw new Error("BENCHMARK_RUNTIME_ATTEMPT_MISMATCH");
         const runId = deterministicUuid("verification-benchmark-run", `${context.tenantId}:${context.operationId}`);
         schedulePoll(boundedPollInterval(dependencies.cancellationPollIntervalMs));
@@ -151,7 +157,11 @@ export function verificationBenchmarkActivityHandler(dependencies: {
         });
         await active();
         const qualityClaims = publication.manifest.qualityClaims;
-        if (qualityClaims.humanGoldValidated !== false || qualityClaims.sourceAuthorityAssessed !== false || qualityClaims.calibrated !== false) {
+        if (
+          qualityClaims.humanGoldValidated !== false ||
+          qualityClaims.sourceAuthorityAssessed !== false ||
+          qualityClaims.calibrated !== false
+        ) {
           throw new Error("BENCHMARK_PUBLICATION_QUALITY_CLAIMS_INVALID");
         }
         const completed = await dependencies.publisher.publishCompleted({ ...publication.input, lease: claim });
@@ -173,13 +183,20 @@ export function verificationBenchmarkActivityHandler(dependencies: {
         const source = pollFailure ?? error;
         if (source instanceof CanonicalActivityError) throw source;
         if (source instanceof z.ZodError) {
-          throw new CanonicalActivityError("INVALID_VERIFICATION_BENCHMARK_INPUT", "INVALID_VERIFICATION_BENCHMARK_INPUT", false);
+          throw new CanonicalActivityError(
+            "INVALID_VERIFICATION_BENCHMARK_INPUT",
+            "INVALID_VERIFICATION_BENCHMARK_INPUT",
+            false,
+          );
         }
         const message = source instanceof Error ? source.message : "";
-        const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(message) ? message : "VERIFICATION_BENCHMARK_INFRASTRUCTURE_FAILURE";
-        const retryable = code === "VERIFICATION_BENCHMARK_INFRASTRUCTURE_FAILURE"
-          || code.startsWith("OBJECT_STORE_")
-          || code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
+        const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(message)
+          ? message
+          : "VERIFICATION_BENCHMARK_INFRASTRUCTURE_FAILURE";
+        const retryable =
+          code === "VERIFICATION_BENCHMARK_INFRASTRUCTURE_FAILURE" ||
+          code.startsWith("OBJECT_STORE_") ||
+          code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
         throw new CanonicalActivityError(code, code, retryable, { cause: source });
       } finally {
         stopped = true;
@@ -191,7 +208,7 @@ export function verificationBenchmarkActivityHandler(dependencies: {
 
 function boundedPollInterval(value: number | undefined): number {
   if (value === undefined) return 250;
-  if (!Number.isInteger(value) || value < 25 || value > 60_000) throw new Error("BENCHMARK_CANCELLATION_POLL_INTERVAL_INVALID");
+  if (!Number.isInteger(value) || value < 25 || value > 60_000)
+    throw new Error("BENCHMARK_CANCELLATION_POLL_INTERVAL_INVALID");
   return value;
 }
-

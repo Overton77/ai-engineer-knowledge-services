@@ -1,4 +1,13 @@
-const CAPTURE_METHODS = new Set(["http", "browser", "firecrawl", "api", "youtube_transcript", "repository", "manual", "other"]);
+const CAPTURE_METHODS = new Set([
+  "http",
+  "browser",
+  "firecrawl",
+  "api",
+  "youtube_transcript",
+  "repository",
+  "manual",
+  "other",
+]);
 
 const CAPTURE_ADAPTER_METHODS: Readonly<Record<string, string>> = {
   "direct-http": "http",

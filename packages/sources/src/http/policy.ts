@@ -18,9 +18,7 @@ export interface DnsResolver {
 
 export const defaultResolver: DnsResolver = {
   async resolve(hostname) {
-    return (await lookup(hostname, { all: true, verbatim: true })).map(
-      (entry) => entry.address,
-    );
+    return (await lookup(hostname, { all: true, verbatim: true })).map((entry) => entry.address);
   },
 };
 
@@ -88,21 +86,15 @@ export async function resolveSafeHttpTarget(
   return { url, addresses: [...new Set(addresses)] };
 }
 
-export async function assertSafeHttpUrl(
-  raw: string,
-  policy: HttpPolicy,
-  resolver: DnsResolver,
-): Promise<URL> {
+export async function assertSafeHttpUrl(raw: string, policy: HttpPolicy, resolver: DnsResolver): Promise<URL> {
   return (await resolveSafeHttpTarget(raw, policy, resolver)).url;
 }
 
 function createForbiddenLists(): { ipv4: BlockList; ipv6: BlockList } {
   const ipv6 = new BlockList();
   const ipv4 = new BlockList();
-  for (const address of FORBIDDEN_IPV6_ADDRESSES)
-    ipv6.addAddress(address, "ipv6");
-  for (const [network, prefix] of FORBIDDEN_IPV6_SUBNETS)
-    ipv6.addSubnet(network, prefix, "ipv6");
+  for (const address of FORBIDDEN_IPV6_ADDRESSES) ipv6.addAddress(address, "ipv6");
+  for (const [network, prefix] of FORBIDDEN_IPV6_SUBNETS) ipv6.addSubnet(network, prefix, "ipv6");
   for (const [network, prefix] of FORBIDDEN_IPV4_SUBNETS) {
     ipv4.addSubnet(network, prefix, "ipv4");
     ipv6.addSubnet(`::ffff:${network}`, 96 + prefix, "ipv6");
@@ -111,8 +103,7 @@ function createForbiddenLists(): { ipv4: BlockList; ipv6: BlockList } {
 }
 
 function assertAllowedProtocol(protocol: string, policy: HttpPolicy): void {
-  if (!policy.allowedProtocols.some((allowed) => allowed === protocol))
-    throw new Error("PROTOCOL_DENIED");
+  if (!policy.allowedProtocols.some((allowed) => allowed === protocol)) throw new Error("PROTOCOL_DENIED");
 }
 
 function assertNoUrlCredentials(url: URL): void {
@@ -126,28 +117,19 @@ function assertAllowedPort(url: URL, policy: HttpPolicy): void {
 
 function assertHostPermitted(host: string, policy: HttpPolicy): void {
   if (isDeniedHost(host, policy)) throw new Error("HOST_DENIED");
-  if (policy.allowedHosts && !policy.allowedHosts.includes(host))
-    throw new Error("HOST_NOT_ALLOWLISTED");
+  if (policy.allowedHosts && !policy.allowedHosts.includes(host)) throw new Error("HOST_NOT_ALLOWLISTED");
 }
 
-async function resolveHostAddresses(
-  host: string,
-  resolver: DnsResolver,
-): Promise<readonly string[]> {
+async function resolveHostAddresses(host: string, resolver: DnsResolver): Promise<readonly string[]> {
   return isIP(host) ? [host] : resolver.resolve(host);
 }
 
 function assertAddressesPermitted(addresses: readonly string[]): void {
-  if (addresses.length === 0 || addresses.some(isForbiddenAddress))
-    throw new Error("ADDRESS_DENIED");
+  if (addresses.length === 0 || addresses.some(isForbiddenAddress)) throw new Error("ADDRESS_DENIED");
 }
 
 function isDeniedHost(host: string, policy: HttpPolicy): boolean {
-  return (
-    Boolean(policy.deniedHosts?.includes(host)) ||
-    ALWAYS_DENIED_HOSTS.has(host) ||
-    host.endsWith(".localhost")
-  );
+  return Boolean(policy.deniedHosts?.includes(host)) || ALWAYS_DENIED_HOSTS.has(host) || host.endsWith(".localhost");
 }
 
 function normalizeHostname(hostname: string): string {

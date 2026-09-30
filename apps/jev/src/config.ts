@@ -23,7 +23,7 @@ export function loadJevConfig(env: NodeJS.ProcessEnv = process.env) {
         ...(env.JEV_MODEL ? { model: env.JEV_MODEL } : {}),
       },
       inputPolicy: {
-        allowedRoots: StringListSchema.parse(JSON.parse(env.JEV_ALLOWED_ROOTS ?? "[]")).map(path => resolve(path)),
+        allowedRoots: StringListSchema.parse(JSON.parse(env.JEV_ALLOWED_ROOTS ?? "[]")).map((path) => resolve(path)),
         remoteOrigins: StringListSchema.parse(JSON.parse(env.JEV_REMOTE_ORIGINS ?? "[]")),
       },
     },

@@ -8,14 +8,54 @@ import { parseCanonicalProjection } from "../packages/verification/src/evidence-
 import { projectionSelectorResolver } from "../packages/verification/src/evidence-selection/projection-resolver.js";
 
 const image = "sha256:1669a3f9674b2e0a70ba1c8686c1cb3647492b8268bdfa7a9a4452fb0530fb37" as const;
-const visible = Array.from({ length: 8 }, (_, index) => `<p id="visible-${index}">visible-${index}:${"x".repeat(48)}</p>`).join("");
-const bytes = Buffer.from(`<html><body><main>${visible}<section hidden><span>hidden-secret</span></section><p id="tail">visible-tail</p></main></body></html>`);
-const parsed = await new SandboxedVerificationParser(image).parse({ kind: "html", bytes, parentDigest: sha256Digest(bytes) });
-const content = Buffer.from(canonicalizeJson(parsed.projections[0])); const projection = parseCanonicalProjection(content);
-assert.equal(projection.kind, "html_dom"); assert.ok(!content.includes("hidden-secret"));
-const request = { captureId: "parser-v2-independent", representationArtifactId: "11111111-1111-4111-8111-111111111111", representationDigest: sha256Digest(content), content };
-for (let index = 0; index < 8; index += 1) assert.equal(new TextDecoder().decode(projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: `#visible-${index}` } }).selectedContent), `visible-${index}:${"x".repeat(48)}`);
-assert.equal(new TextDecoder().decode(projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: "#tail" } }).selectedContent), "visible-tail");
-assert.notEqual(projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: "section" } }).resolution.status, "resolved");
-const receipt = { image, source: "packages/verification/src/providers owner independent probe", visibleSelectors: 9, hiddenPayloadAbsent: true, hiddenPlaceholderUnselectable: true, passed: true };
-const output = resolve("..", "internal", `verification-parser-v2-independent-${randomUUID()}.json`); await writeFile(output, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" }); console.log(JSON.stringify({ ...receipt, output }));
+const visible = Array.from(
+  { length: 8 },
+  (_, index) => `<p id="visible-${index}">visible-${index}:${"x".repeat(48)}</p>`,
+).join("");
+const bytes = Buffer.from(
+  `<html><body><main>${visible}<section hidden><span>hidden-secret</span></section><p id="tail">visible-tail</p></main></body></html>`,
+);
+const parsed = await new SandboxedVerificationParser(image).parse({
+  kind: "html",
+  bytes,
+  parentDigest: sha256Digest(bytes),
+});
+const content = Buffer.from(canonicalizeJson(parsed.projections[0]));
+const projection = parseCanonicalProjection(content);
+assert.equal(projection.kind, "html_dom");
+assert.ok(!content.includes("hidden-secret"));
+const request = {
+  captureId: "parser-v2-independent",
+  representationArtifactId: "11111111-1111-4111-8111-111111111111",
+  representationDigest: sha256Digest(content),
+  content,
+};
+for (let index = 0; index < 8; index += 1)
+  assert.equal(
+    new TextDecoder().decode(
+      projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: `#visible-${index}` } })
+        .selectedContent,
+    ),
+    `visible-${index}:${"x".repeat(48)}`,
+  );
+assert.equal(
+  new TextDecoder().decode(
+    projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: "#tail" } }).selectedContent,
+  ),
+  "visible-tail",
+);
+assert.notEqual(
+  projectionSelectorResolver.resolve({ ...request, selector: { kind: "html", css: "section" } }).resolution.status,
+  "resolved",
+);
+const receipt = {
+  image,
+  source: "packages/verification/src/providers owner independent probe",
+  visibleSelectors: 9,
+  hiddenPayloadAbsent: true,
+  hiddenPlaceholderUnselectable: true,
+  passed: true,
+};
+const output = resolve("..", "internal", `verification-parser-v2-independent-${randomUUID()}.json`);
+await writeFile(output, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
+console.log(JSON.stringify({ ...receipt, output }));

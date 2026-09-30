@@ -49,9 +49,7 @@ describe("bounded provider adapters", () => {
       apiKey: "test",
       artifactSink: sink,
       fetch: (async (_url, init) => {
-        bodies.push(
-          JSON.parse(new TextDecoder().decode(init?.body as Uint8Array)),
-        );
+        bodies.push(JSON.parse(new TextDecoder().decode(init?.body as Uint8Array)));
         return bodies.length === 1
           ? completion({ name: "ocr", result: { text: "synthetic" } })
           : completion({ vendor: "Example Labs", systems: 21 });
@@ -76,9 +74,7 @@ describe("bounded provider adapters", () => {
       type: "json_schema",
       json_schema: { name: "task_output", schema: {} },
     });
-    expect(bodies[0]?.messages).toEqual(
-      expect.arrayContaining([{ role: "system", content: "<task>ocr</task>" }]),
-    );
+    expect(bodies[0]?.messages).toEqual(expect.arrayContaining([{ role: "system", content: "<task>ocr</task>" }]));
     expect(bodies[1]?.response_format).toMatchObject({
       type: "json_schema",
       json_schema: {
@@ -116,9 +112,7 @@ describe("bounded provider adapters", () => {
       schema,
       execution: {},
     });
-    expect(
-      (observed?.headers as Record<string, string>)["x-interfaze-zdr"],
-    ).toBe("true");
+    expect((observed?.headers as Record<string, string>)["x-interfaze-zdr"]).toBe("true");
     expect(events).toHaveLength(2);
     expect(events[0]!.startsWith("request:")).toBe(true);
     expect(events[1]!.startsWith("response:200:")).toBe(true);
@@ -298,9 +292,7 @@ describe("bounded provider adapters", () => {
         },
       },
       fetch: async () =>
-        completion({ name: "ocr", result: { text: "synthetic" } }, [
-          { name: "forbidden", result: {} },
-        ]) as Response,
+        completion({ name: "ocr", result: { text: "synthetic" } }, [{ name: "forbidden", result: {} }]) as Response,
     });
     await expect(
       provider.runTask({
@@ -317,9 +309,7 @@ describe("bounded provider adapters", () => {
   });
 
   it("bounds raw response bytes before JSON parsing", async () => {
-    await expect(
-      boundedResponseJson(new Response("x".repeat(2_000)), 1_000),
-    ).rejects.toBeInstanceOf(ProviderFailure);
+    await expect(boundedResponseJson(new Response("x".repeat(2_000)), 1_000)).rejects.toBeInstanceOf(ProviderFailure);
   });
 
   it("keeps Gateway semantic requests tool-free and bounded", async () => {
@@ -336,9 +326,7 @@ describe("bounded provider adapters", () => {
         graderVersion: "evidence-only.v1",
         promptDigest: gatewaySemanticPromptDigest,
         outputSchemaDigest: gatewaySemanticOutputSchemaDigest,
-        configurationDigest: gatewaySemanticConfigurationDigest(
-          "openai/gpt-5.6-luna",
-        ),
+        configurationDigest: gatewaySemanticConfigurationDigest("openai/gpt-5.6-luna"),
       },
       artifactSink: sink,
       fetch: (async (_url, init) => {

@@ -1,23 +1,73 @@
 import { z } from "zod";
 import { OperationContextSchema } from "./identity.js";
-import { ContractVersionSchema, IsoDateTimeSchema, JsonValueSchema, NonEmptyStringSchema, Sha256DigestSchema, UuidSchema } from "./primitives.js";
+import {
+  ContractVersionSchema,
+  IsoDateTimeSchema,
+  JsonValueSchema,
+  NonEmptyStringSchema,
+  Sha256DigestSchema,
+  UuidSchema,
+} from "./primitives.js";
 import { VerificationFailureCategorySchema } from "./verification/primitives.js";
 
 export const OperationKindSchema = z.enum([
-  "source_discovery", "source_resolution", "capture", "capture_inspection", "capture_comparison", "source_vetting",
-  "vector_store_create", "vector_store_documents", "vector_store_ingestion", "vector_store_search", "vector_store_evaluation",
-  "document", "document_version", "representation", "transformation", "representation_inspection", "representation_comparison", "representation_decision",
-  "chunk_preview", "chunk_comparison", "chunk_set", "chunk_set_inspection", "promotion_proposal", "promotion_decision",
-  "embedding_run", "space_publication", "publication_verification", "publication_rollback", "retrieval_run", "evidence_packet",
-  "evaluation_dataset", "experiment", "evaluation_run", "review", "review_decision",
-  "verification_capture", "verification_extraction", "verification_replay", "verification_parse_artifact", "verification_metric", "verification_benchmark", "verification_benchmark_compare", "verification_structured_extraction", "verification_claims", "verification_report", "verification_adjudication", "verification_adjudication_decision", "verification_audit_bundle",
+  "source_discovery",
+  "source_resolution",
+  "capture",
+  "capture_inspection",
+  "capture_comparison",
+  "source_vetting",
+  "vector_store_create",
+  "vector_store_documents",
+  "vector_store_ingestion",
+  "vector_store_search",
+  "vector_store_evaluation",
+  "document",
+  "document_version",
+  "representation",
+  "transformation",
+  "representation_inspection",
+  "representation_comparison",
+  "representation_decision",
+  "chunk_preview",
+  "chunk_comparison",
+  "chunk_set",
+  "chunk_set_inspection",
+  "promotion_proposal",
+  "promotion_decision",
+  "embedding_run",
+  "space_publication",
+  "publication_verification",
+  "publication_rollback",
+  "retrieval_run",
+  "evidence_packet",
+  "evaluation_dataset",
+  "experiment",
+  "evaluation_run",
+  "review",
+  "review_decision",
+  "verification_capture",
+  "verification_extraction",
+  "verification_replay",
+  "verification_parse_artifact",
+  "verification_metric",
+  "verification_benchmark",
+  "verification_benchmark_compare",
+  "verification_structured_extraction",
+  "verification_claims",
+  "verification_report",
+  "verification_adjudication",
+  "verification_adjudication_decision",
+  "verification_audit_bundle",
 ]);
 export type OperationKind = z.infer<typeof OperationKindSchema>;
 
 export const MutationEnvelopeSchema = z.strictObject({
   context: OperationContextSchema,
   input: JsonValueSchema,
-  expectedVersions: z.record(z.string(), NonEmptyStringSchema).refine((versions) => Object.keys(versions).length > 0, "at least one expected contract version is required"),
+  expectedVersions: z
+    .record(z.string(), NonEmptyStringSchema)
+    .refine((versions) => Object.keys(versions).length > 0, "at least one expected contract version is required"),
 });
 export type MutationEnvelope = z.infer<typeof MutationEnvelopeSchema>;
 
@@ -94,12 +144,19 @@ export const ExploratoryBundleDescriptorSchema = z.strictObject({
 });
 export type ExploratoryBundleDescriptor = z.infer<typeof ExploratoryBundleDescriptorSchema>;
 
-export const ExploratoryEvaluationInputSchema = z.strictObject({
-  mode: z.literal("three_bundle_internal_exploratory"),
-  bundles: z.array(ExploratoryBundleDescriptorSchema).length(3),
-}).superRefine((input, context) => {
-  const expected = new Set(ExploratoryBundleDescriptorSchema.shape.video_id.options);
-  const actual = new Set(input.bundles.map((bundle) => bundle.video_id));
-  if (actual.size !== expected.size || [...expected].some((id) => !actual.has(id))) context.addIssue({ code: "custom", path: ["bundles"], message: "bundles must contain each allow-listed exploratory video exactly once" });
-});
+export const ExploratoryEvaluationInputSchema = z
+  .strictObject({
+    mode: z.literal("three_bundle_internal_exploratory"),
+    bundles: z.array(ExploratoryBundleDescriptorSchema).length(3),
+  })
+  .superRefine((input, context) => {
+    const expected = new Set(ExploratoryBundleDescriptorSchema.shape.video_id.options);
+    const actual = new Set(input.bundles.map((bundle) => bundle.video_id));
+    if (actual.size !== expected.size || [...expected].some((id) => !actual.has(id)))
+      context.addIssue({
+        code: "custom",
+        path: ["bundles"],
+        message: "bundles must contain each allow-listed exploratory video exactly once",
+      });
+  });
 export type ExploratoryEvaluationInput = z.infer<typeof ExploratoryEvaluationInputSchema>;

@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  admitExtractionSchema,
-  validateExtractionCandidate,
-  type AdmittedExtractionSchema,
-} from "./schema.js";
+import { admitExtractionSchema, validateExtractionCandidate, type AdmittedExtractionSchema } from "./schema.js";
 
 function openSchema(maxCandidateBytes?: number): AdmittedExtractionSchema {
   const admission = admitExtractionSchema({
@@ -16,9 +12,7 @@ function openSchema(maxCandidateBytes?: number): AdmittedExtractionSchema {
       required: [],
       additionalProperties: true,
     },
-    ...(maxCandidateBytes === undefined
-      ? {}
-      : { limits: { maxCandidateBytes } }),
+    ...(maxCandidateBytes === undefined ? {} : { limits: { maxCandidateBytes } }),
   });
   if (!admission.admitted || !admission.schema) throw new Error("fixture");
   return admission.schema;
@@ -67,8 +61,7 @@ describe("candidate preflight failure precedence", () => {
 
   it("reports more than 50 000 nodes as a node-or-depth bound", () => {
     const wide: Record<string, unknown> = {};
-    for (let index = 0; index < 5_001; index += 1)
-      wide[`k${index}`] = Array.from({ length: 10 }, () => 1);
+    for (let index = 0; index < 5_001; index += 1) wide[`k${index}`] = Array.from({ length: 10 }, () => 1);
     expect(firstCheck(openSchema(), wide)).toEqual({
       code: "CANDIDATE_PREFLIGHT_EXCEEDED",
       detail: "Candidate exceeds preflight node or depth bounds.",
@@ -98,8 +91,7 @@ describe("candidate preflight failure precedence", () => {
     for (let index = 0; index < 60; index += 1) candidate[`key-${index}`] = 1;
     expect(firstCheck(openSchema(1_024), candidate)).toEqual({
       code: "CANDIDATE_PREFLIGHT_EXCEEDED",
-      detail:
-        "Candidate object exceeds conservative aggregate preflight bounds.",
+      detail: "Candidate object exceeds conservative aggregate preflight bounds.",
     });
   });
 
@@ -115,9 +107,7 @@ describe("candidate preflight failure precedence", () => {
   });
 
   it("reports a non-finite number as CANDIDATE_NOT_JSON", () => {
-    expect(
-      firstCheck(openSchema(), { value: Number.POSITIVE_INFINITY }),
-    ).toEqual({
+    expect(firstCheck(openSchema(), { value: Number.POSITIVE_INFINITY })).toEqual({
       code: "CANDIDATE_NOT_JSON",
       detail: "Candidate contains a non-finite number.",
     });
@@ -154,8 +144,7 @@ describe("candidate preflight failure precedence", () => {
   it("lets the depth bound win over a cycle that sits deeper than 64", () => {
     const root = nestedObjects(70);
     let cursor: Record<string, unknown> = root;
-    while (typeof cursor.child === "object" && cursor.child !== null)
-      cursor = cursor.child as Record<string, unknown>;
+    while (typeof cursor.child === "object" && cursor.child !== null) cursor = cursor.child as Record<string, unknown>;
     cursor.back = root;
     expect(firstCheck(openSchema(), root)).toEqual({
       code: "CANDIDATE_PREFLIGHT_EXCEEDED",

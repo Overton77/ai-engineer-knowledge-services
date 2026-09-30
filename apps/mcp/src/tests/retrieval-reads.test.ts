@@ -3,10 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createKnowledgeResourceReads } from "@aiengineer/knowledge-application";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
-import {
-  dispatchCliCommand,
-  resolveCommand,
-} from "../../../cli/src/commands.js";
+import { dispatchCliCommand, resolveCommand } from "../../../cli/src/commands.js";
 import { createMcpToolExecutor } from "../index.js";
 
 function replayFixture() {
@@ -32,9 +29,7 @@ function replayFixture() {
     replayedAt: "2026-09-16T00:00:00.000Z",
   };
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
-    expect(String(url)).toBe(
-      `https://knowledge.example/v1/evidence-packets/${packetId}/citations`,
-    );
+    expect(String(url)).toBe(`https://knowledge.example/v1/evidence-packets/${packetId}/citations`);
     expect(init?.method).toBe("GET");
     const headers = new Headers(init?.headers);
     expect(headers.get("authorization")).toBe("Bearer consumer-token");
@@ -101,15 +96,11 @@ describe("public retrieval citation adapters", () => {
 
   it("MCP permits a reader to replay without submitting an evidence-packet operation", async () => {
     const fixture = replayFixture();
-    const result = await fixture.executor(
-      "retrieval.replay_citations",
-      "evidence_packet",
-      {
-        context: fixture.context,
-        input: { packetId: fixture.packetId },
-        expectedVersions: { api: "v1" },
-      },
-    );
+    const result = await fixture.executor("retrieval.replay_citations", "evidence_packet", {
+      context: fixture.context,
+      input: { packetId: fixture.packetId },
+      expectedVersions: { api: "v1" },
+    });
     expect(result).toMatchObject({ structuredContent: fixture.replay });
     expect(fixture.replayEvidencePacketCitations).toHaveBeenCalledOnce();
     expect(fixture.fetch).not.toHaveBeenCalled();
@@ -126,15 +117,11 @@ describe("public retrieval citation adapters", () => {
       },
     ]) {
       expect(
-        await fixture.executor(
-          "retrieval.replay_citations",
-          "evidence_packet",
-          {
-            context,
-            input: { packetId: fixture.packetId },
-            expectedVersions: { api: "v1" },
-          },
-        ),
+        await fixture.executor("retrieval.replay_citations", "evidence_packet", {
+          context,
+          input: { packetId: fixture.packetId },
+          expectedVersions: { api: "v1" },
+        }),
       ).toMatchObject({ isError: true });
     }
     const input = {
@@ -149,12 +136,7 @@ describe("public retrieval citation adapters", () => {
       }),
     ).toMatchObject({ isError: true });
     await expect(
-      dispatchCliCommand(
-        fixture.client,
-        resolveCommand("retrieve", "citations")!,
-        input,
-        fixture.context,
-      ),
+      dispatchCliCommand(fixture.client, resolveCommand("retrieve", "citations")!, input, fixture.context),
     ).rejects.toThrow("RETRIEVAL_PACKET_READ_INPUT_INVALID");
     expect(fixture.fetch).not.toHaveBeenCalled();
     expect(fixture.replayEvidencePacketCitations).not.toHaveBeenCalled();

@@ -6,8 +6,7 @@ import {
   verifyVerificationBenchmarkComparisonPublication,
 } from "./benchmark-comparison-publication.js";
 import { createEd25519Signer, createEd25519Verifier } from "./seal.js";
-const id = (n: number) =>
-    `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
   digest = `sha256:${"a".repeat(64)}`,
   time = "2026-09-06T00:00:00.000Z";
 function body(): Omit<VerificationBenchmarkComparisonPublication, "seal"> {
@@ -68,32 +67,19 @@ function body(): Omit<VerificationBenchmarkComparisonPublication, "seal"> {
 function keys() {
   const pair = generateKeyPairSync("ed25519");
   return {
-    signer: createEd25519Signer(
-      pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
-      "comparison",
-    ),
+    signer: createEd25519Signer(pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString(), "comparison"),
     verifier: createEd25519Verifier({
-      comparison: pair.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
+      comparison: pair.publicKey.export({ type: "spki", format: "pem" }).toString(),
     }),
   };
 }
 describe("signed comparison publication", () => {
   it("authenticates actual Ed25519 bytes and rejects changed result bindings or signing identities", async () => {
     const key = keys(),
-      manifest = await sealVerificationBenchmarkComparisonPublication(
-        body(),
-        key.signer,
-      );
-    expect(
-      (
-        await verifyVerificationBenchmarkComparisonPublication(
-          manifest,
-          key.verifier,
-        )
-      ).signatureStatus,
-    ).toBe("verified");
+      manifest = await sealVerificationBenchmarkComparisonPublication(body(), key.signer);
+    expect((await verifyVerificationBenchmarkComparisonPublication(manifest, key.verifier)).signatureStatus).toBe(
+      "verified",
+    );
     await expect(
       verifyVerificationBenchmarkComparisonPublication(
         {
@@ -106,12 +92,9 @@ describe("signed comparison publication", () => {
         key.verifier,
       ),
     ).rejects.toThrow("DIGEST_MISMATCH");
-    await expect(
-      verifyVerificationBenchmarkComparisonPublication(
-        manifest,
-        keys().verifier,
-      ),
-    ).rejects.toThrow("SIGNATURE_INVALID");
+    await expect(verifyVerificationBenchmarkComparisonPublication(manifest, keys().verifier)).rejects.toThrow(
+      "SIGNATURE_INVALID",
+    );
     await expect(
       verifyVerificationBenchmarkComparisonPublication(
         { ...manifest, seal: { payloadDigest: manifest.seal.payloadDigest } },
@@ -137,14 +120,9 @@ describe("signed comparison publication", () => {
     release();
     const manifest = await pending;
     expect(manifest.result.resultDigest).toBe(digest);
-    expect(
-      (
-        await verifyVerificationBenchmarkComparisonPublication(
-          manifest,
-          key.verifier,
-        )
-      ).signatureStatus,
-    ).toBe("verified");
+    expect((await verifyVerificationBenchmarkComparisonPublication(manifest, key.verifier)).signatureStatus).toBe(
+      "verified",
+    );
   });
   it("rejects cross-tenant custody, missing dirty source state, and contradictory gate claims", async () => {
     const key = keys(),
@@ -168,10 +146,7 @@ describe("signed comparison publication", () => {
       ),
     ).rejects.toThrow();
     await expect(
-      sealVerificationBenchmarkComparisonPublication(
-        { ...input, engineeringGateOutcome: "pass" },
-        key.signer,
-      ),
+      sealVerificationBenchmarkComparisonPublication({ ...input, engineeringGateOutcome: "pass" }, key.signer),
     ).rejects.toThrow();
   });
 });

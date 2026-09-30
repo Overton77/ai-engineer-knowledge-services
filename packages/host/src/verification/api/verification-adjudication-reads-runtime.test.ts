@@ -9,32 +9,18 @@ describe("adjudication read native runtime configuration", () => {
     expect(createVerificationAdjudicationReads(undefined, {})).toBeUndefined();
     expect(() =>
       createVerificationAdjudicationReads(undefined, {
-        VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON: JSON.stringify([
-          { keyId: "key", publicKeyPem: "x".repeat(64) },
-        ]),
+        VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON: JSON.stringify([{ keyId: "key", publicKeyPem: "x".repeat(64) }]),
       }),
     ).toThrow("VERIFICATION_ADJUDICATION_READ_RUNTIME_REQUIRED");
   });
 
   it("allows only the three canonical replay purposes for the authorized tenant", () => {
     const tenantId = "00000000-0000-4000-8000-000000000001";
-    for (const purpose of [
-      "verification_replay",
-      "policy_replay",
-      "verification_admission",
-    ])
-      expect(
-        allowsVerificationAdjudicationReadArtifact(
-          { tenantId, purpose },
-          tenantId,
-        ),
-      ).toBe(true);
-    expect(
-      allowsVerificationAdjudicationReadArtifact(
-        { tenantId, purpose: "verification_write" },
-        tenantId,
-      ),
-    ).toBe(false);
+    for (const purpose of ["verification_replay", "policy_replay", "verification_admission"])
+      expect(allowsVerificationAdjudicationReadArtifact({ tenantId, purpose }, tenantId)).toBe(true);
+    expect(allowsVerificationAdjudicationReadArtifact({ tenantId, purpose: "verification_write" }, tenantId)).toBe(
+      false,
+    );
     expect(
       allowsVerificationAdjudicationReadArtifact(
         {
@@ -52,9 +38,7 @@ describe("adjudication read native runtime configuration", () => {
     const artifactId = "00000000-0000-4000-8000-000000000002";
     expect(() =>
       createVerificationAdjudicationReads({} as never, {
-        VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON: JSON.stringify([
-          { keyId: "key", publicKeyPem: "x".repeat(64) },
-        ]),
+        VERIFICATION_ADJUDICATION_PUBLIC_KEYS_JSON: JSON.stringify([{ keyId: "key", publicKeyPem: "x".repeat(64) }]),
         VERIFICATION_ADJUDICATION_GRANTS_JSON: JSON.stringify([
           {
             tenantId,

@@ -23,13 +23,9 @@ export class ExploratoryPublicationCoordinator {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async publish(
-    request: PublishExploratoryRequest,
-  ): Promise<ExploratoryPublication> {
+  async publish(request: PublishExploratoryRequest): Promise<ExploratoryPublication> {
     validatePublishRequest(request);
-    const inspection = await this.inspector.inspect(
-      request.vectorSpaceVersionId,
-    );
+    const inspection = await this.inspector.inspect(request.vectorSpaceVersionId);
     const verificationDigest = verifyInspection(
       request.vectorSpaceVersionId,
       request.expectedItemCount,
@@ -40,10 +36,7 @@ export class ExploratoryPublicationCoordinator {
     const publishedAt = this.now().toISOString();
 
     return this.repository.transaction((transaction) => {
-      const existing = transaction.getPublication(
-        request.tenantId,
-        request.publicationId,
-      );
+      const existing = transaction.getPublication(request.tenantId, request.publicationId);
       if (existing !== undefined) {
         if (
           existing.verificationDigest !== verificationDigest ||
@@ -61,10 +54,7 @@ export class ExploratoryPublicationCoordinator {
         }
         return existing;
       }
-      const active = transaction.getActivePointer(
-        request.tenantId,
-        request.vectorStoreSpaceId,
-      );
+      const active = transaction.getActivePointer(request.tenantId, request.vectorStoreSpaceId);
       const publication = freezePublication({
         id: request.publicationId,
         tenantId: request.tenantId,
@@ -80,9 +70,7 @@ export class ExploratoryPublicationCoordinator {
         ...(request.candidateEvidenceDigest === undefined
           ? {}
           : { candidateEvidenceDigest: request.candidateEvidenceDigest }),
-        ...(active === undefined
-          ? {}
-          : { predecessorId: active.publicationId }),
+        ...(active === undefined ? {} : { predecessorId: active.publicationId }),
         state: "published",
         verificationDigest,
         receiptId: request.receiptId,
@@ -104,9 +92,7 @@ export class ExploratoryPublicationCoordinator {
           tenantId: request.tenantId,
           vectorStoreSpaceId: request.vectorStoreSpaceId,
           kind: "publication.activated",
-          ...(active === undefined
-            ? {}
-            : { fromPublicationId: active.publicationId }),
+          ...(active === undefined ? {} : { fromPublicationId: active.publicationId }),
           toPublicationId: publication.id,
           reason: request.reason,
           receiptId: request.receiptId,
@@ -117,18 +103,10 @@ export class ExploratoryPublicationCoordinator {
     });
   }
 
-  async rollback(
-    request: RollbackPublicationRequest,
-  ): Promise<ActivePublicationPointer> {
+  async rollback(request: RollbackPublicationRequest): Promise<ActivePublicationPointer> {
     if (request.reason.trim().length === 0)
-      throw new VectorBackendError(
-        "INVALID_ROLLBACK",
-        "Rollback requires a reason",
-      );
-    const target = await this.repository.getPublication(
-      request.tenantId,
-      request.targetPublicationId,
-    );
+      throw new VectorBackendError("INVALID_ROLLBACK", "Rollback requires a reason");
+    const target = await this.repository.getPublication(request.tenantId, request.targetPublicationId);
     if (
       target === undefined ||
       target.vectorStoreSpaceId !== request.vectorStoreSpaceId ||
@@ -139,9 +117,7 @@ export class ExploratoryPublicationCoordinator {
         "Rollback target is not an intact publication for this tenant and store space",
       );
     }
-    const inspection = await this.inspector.inspect(
-      target.vectorSpaceVersionId,
-    );
+    const inspection = await this.inspector.inspect(target.vectorSpaceVersionId);
     verifyInspection(
       target.vectorSpaceVersionId,
       target.expectedItemCount,
@@ -151,15 +127,9 @@ export class ExploratoryPublicationCoordinator {
     );
     const occurredAt = this.now().toISOString();
     return this.repository.transaction((transaction) => {
-      const active = transaction.getActivePointer(
-        request.tenantId,
-        request.vectorStoreSpaceId,
-      );
+      const active = transaction.getActivePointer(request.tenantId, request.vectorStoreSpaceId);
       if (active === undefined)
-        throw new VectorBackendError(
-          "NO_ACTIVE_PUBLICATION",
-          "Cannot rollback without an active publication",
-        );
+        throw new VectorBackendError("NO_ACTIVE_PUBLICATION", "Cannot rollback without an active publication");
       if (active.publicationId === target.id) return active;
       const pointer = Object.freeze({
         tenantId: request.tenantId,
@@ -187,14 +157,8 @@ export class ExploratoryPublicationCoordinator {
     });
   }
 
-  async reconcile(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): Promise<PublicationReconciliationReport> {
-    const pointer = await this.repository.getActivePointer(
-      tenantId,
-      vectorStoreSpaceId,
-    );
+  async reconcile(tenantId: string, vectorStoreSpaceId: string): Promise<PublicationReconciliationReport> {
+    const pointer = await this.repository.getActivePointer(tenantId, vectorStoreSpaceId);
     if (pointer === undefined)
       return freezeReport(undefined, [
         {
@@ -203,10 +167,7 @@ export class ExploratoryPublicationCoordinator {
           detail: "No active publication pointer exists",
         },
       ]);
-    const publication = await this.repository.getPublication(
-      tenantId,
-      pointer.publicationId,
-    );
+    const publication = await this.repository.getPublication(tenantId, pointer.publicationId);
     if (publication === undefined)
       return freezeReport(pointer.publicationId, [
         {
@@ -223,18 +184,13 @@ export class ExploratoryPublicationCoordinator {
         detail: "Pointer and publication vector-space versions differ",
       });
     try {
-      const inspection = await this.inspector.inspect(
-        publication.vectorSpaceVersionId,
-      );
+      const inspection = await this.inspector.inspect(publication.vectorSpaceVersionId);
       collectInspectionFindings(publication, inspection, findings);
     } catch (error) {
       findings.push({
         code: "INSPECTION_FAILED",
         classification: "retryable",
-        detail:
-          error instanceof Error
-            ? error.message
-            : "Publication inspection failed",
+        detail: error instanceof Error ? error.message : "Publication inspection failed",
       });
     }
     return freezeReport(publication.id, findings);
@@ -247,17 +203,8 @@ function validatePublishRequest(request: PublishExploratoryRequest): void {
       "AUTHORITY_CLASS_VIOLATION",
       "This coordinator only publishes internal exploratory stores",
     );
-  if (
-    !Number.isInteger(request.expectedItemCount) ||
-    request.expectedItemCount < 0
-  )
-    throw new VectorBackendError(
-      "INVALID_ITEM_COUNT",
-      "Expected item count must be a non-negative integer",
-    );
+  if (!Number.isInteger(request.expectedItemCount) || request.expectedItemCount < 0)
+    throw new VectorBackendError("INVALID_ITEM_COUNT", "Expected item count must be a non-negative integer");
   if (request.reason.trim().length === 0)
-    throw new VectorBackendError(
-      "INVALID_PUBLICATION",
-      "Publication requires a reason",
-    );
+    throw new VectorBackendError("INVALID_PUBLICATION", "Publication requires a reason");
 }

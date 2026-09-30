@@ -8,13 +8,11 @@ export async function runHttpThenInspectExample() {
     examplePolicy,
     publicResolver,
     async () =>
-      new Response("Public guidance. token = \"super-secret-value\"", {
+      new Response('Public guidance. token = "super-secret-value"', {
         headers: { "content-type": "text/plain" },
       }),
   );
-  const plan = await adapter.plan(
-    exampleRequest({ kind: "http", url: "https://example.com/guide" }),
-  );
+  const plan = await adapter.plan(exampleRequest({ kind: "http", url: "https://example.com/guide" }));
   const result = await adapter.execute({ ...plan, admissionId: "example-sequence" });
   const digest = result.artifacts[0]!.digest;
   const bytes = await store.get(result.plan.request.tenantId, digest);
@@ -33,9 +31,7 @@ export async function runHttpThenInspectExample() {
     sequence: ["plan", "execute", "verify", "read", "observe"],
     digest,
     excerpt,
-    secretClassObserved: observation.findings.some(
-      (item) => item.dimension === "secret_class" && item.secretClass,
-    ),
+    secretClassObserved: observation.findings.some((item) => item.dimension === "secret_class" && item.secretClass),
     mockedFetch: true,
   });
   return { result, excerpt, observation };

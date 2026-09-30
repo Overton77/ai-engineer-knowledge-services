@@ -24,12 +24,16 @@ function required(environment: CanonicalPersistenceEnvironment, name: string): s
 }
 
 /** Parse the one admitted Postgres + private Storage configuration used by deployed processes. */
-export function canonicalPersistenceConfigFromEnvironment(environment: CanonicalPersistenceEnvironment): CanonicalPersistenceConfig {
-  const storageBucket = (environment.SUPABASE_STORAGE_BUCKET?.trim() || "source-captures");
-  if (storageBucket !== "source-captures" && storageBucket !== "content-derivatives") throw new Error("CANONICAL_STORAGE_BUCKET_REQUIRED");
+export function canonicalPersistenceConfigFromEnvironment(
+  environment: CanonicalPersistenceEnvironment,
+): CanonicalPersistenceConfig {
+  const storageBucket = environment.SUPABASE_STORAGE_BUCKET?.trim() || "source-captures";
+  if (storageBucket !== "source-captures" && storageBucket !== "content-derivatives")
+    throw new Error("CANONICAL_STORAGE_BUCKET_REQUIRED");
   const maximumArtifactBytesValue = environment.MAXIMUM_ARTIFACT_BYTES?.trim();
   const maximumArtifactBytes = maximumArtifactBytesValue ? Number(maximumArtifactBytesValue) : undefined;
-  if (maximumArtifactBytes !== undefined && (!Number.isSafeInteger(maximumArtifactBytes) || maximumArtifactBytes < 1)) throw new Error("INVALID_MAXIMUM_ARTIFACT_BYTES");
+  if (maximumArtifactBytes !== undefined && (!Number.isSafeInteger(maximumArtifactBytes) || maximumArtifactBytes < 1))
+    throw new Error("INVALID_MAXIMUM_ARTIFACT_BYTES");
   return {
     postgres: {
       connectionString: required(environment, "POSTGRES_URL"),
@@ -44,11 +48,17 @@ export function canonicalPersistenceConfigFromEnvironment(environment: Canonical
 
 export function createCanonicalPersistence(config: CanonicalPersistenceConfig): CanonicalPersistence {
   const database = new PostgresCanonicalRepository(config.postgres);
-  const artifacts = new SupabaseArtifactStore({ projectUrl: config.supabaseUrl, serviceRoleKey: config.supabaseSecretKey, bucket: config.storageBucket, maximumBytes: config.maximumArtifactBytes ?? 1_073_741_824 });
+  const artifacts = new SupabaseArtifactStore({
+    projectUrl: config.supabaseUrl,
+    serviceRoleKey: config.supabaseSecretKey,
+    bucket: config.storageBucket,
+    maximumBytes: config.maximumArtifactBytes ?? 1_073_741_824,
+  });
   return { database, artifacts, close: () => database.close() };
 }
 
-
-export function createCanonicalPersistenceFromEnvironment(environment: CanonicalPersistenceEnvironment = process.env): CanonicalPersistence {
+export function createCanonicalPersistenceFromEnvironment(
+  environment: CanonicalPersistenceEnvironment = process.env,
+): CanonicalPersistence {
   return createCanonicalPersistence(canonicalPersistenceConfigFromEnvironment(environment));
 }

@@ -1,6 +1,12 @@
 import { sha256Digest } from "@aiengineer/knowledge-core";
 import { CANONICAL_EMBEDDING_DIMENSIONS, VectorBackendError } from "../types.js";
-import type { Digest, ExploratoryPublication, PublicationInspection, PublicationManifests, ReconciliationFinding } from "./types.js";
+import type {
+  Digest,
+  ExploratoryPublication,
+  PublicationInspection,
+  PublicationManifests,
+  ReconciliationFinding,
+} from "./types.js";
 
 // Finding order and the digest's input object are load-bearing: the digest is
 // a published verification digest, so neither may change independent of an
@@ -17,32 +23,20 @@ export function verifyInspection(
   if (candidateEvidenceDigest !== undefined) {
     if (inspection.candidateEvidenceDigest !== candidateEvidenceDigest)
       findings.push("candidate evidence digest mismatch");
-    if (inspection.requiredDependenciesEligible !== true)
-      findings.push("required dependency revoked");
+    if (inspection.requiredDependenciesEligible !== true) findings.push("required dependency revoked");
   }
-  if (inspection.vectorSpaceVersionId !== versionId)
-    findings.push("vector-space version mismatch");
-  if (inspection.itemCount !== count)
-    findings.push(`item count ${inspection.itemCount}/${count}`);
+  if (inspection.vectorSpaceVersionId !== versionId) findings.push("vector-space version mismatch");
+  if (inspection.itemCount !== count) findings.push(`item count ${inspection.itemCount}/${count}`);
   if (inspection.dimensions !== CANONICAL_EMBEDDING_DIMENSIONS)
-    findings.push(
-      `dimensions ${inspection.dimensions}/${CANONICAL_EMBEDDING_DIMENSIONS}`,
-    );
-  if (inspection.precision !== "halfvec")
-    findings.push(`precision ${inspection.precision}/halfvec`);
+    findings.push(`dimensions ${inspection.dimensions}/${CANONICAL_EMBEDDING_DIMENSIONS}`);
+  if (inspection.precision !== "halfvec") findings.push(`precision ${inspection.precision}/halfvec`);
   for (const key of manifestKeys)
-    if (inspection.manifests[key] !== manifests[key])
-      findings.push(`${key} manifest mismatch`);
+    if (inspection.manifests[key] !== manifests[key]) findings.push(`${key} manifest mismatch`);
   if (!inspection.indexReady) findings.push("index not ready");
-  if (!inspection.authorizationPassed)
-    findings.push("authorization verification failed");
+  if (!inspection.authorizationPassed) findings.push("authorization verification failed");
   if (!inspection.evaluationPassed) findings.push("evaluation gate failed");
   if (!inspection.sampleSearchPassed) findings.push("sample search failed");
-  if (findings.length > 0)
-    throw new VectorBackendError(
-      "PUBLICATION_VERIFICATION_FAILED",
-      findings.join("; "),
-    );
+  if (findings.length > 0) throw new VectorBackendError("PUBLICATION_VERIFICATION_FAILED", findings.join("; "));
   return sha256Digest(
     JSON.stringify({
       versionId,
@@ -75,10 +69,7 @@ export function collectInspectionFindings(
       classification: "repairable",
       detail: `Expected ${publication.expectedItemCount}, observed ${inspection.itemCount}`,
     });
-  if (
-    inspection.dimensions !== publication.dimensions ||
-    inspection.precision !== "halfvec"
-  )
+  if (inspection.dimensions !== publication.dimensions || inspection.precision !== "halfvec")
     findings.push({
       code: "VECTOR_FORMAT_MISMATCH",
       classification: "security_critical",
@@ -116,9 +107,7 @@ export function collectInspectionFindings(
       detail: "Immediate sample search failed",
     });
   if (publication.candidateEvidenceDigest !== undefined) {
-    if (
-      inspection.candidateEvidenceDigest !== publication.candidateEvidenceDigest
-    )
+    if (inspection.candidateEvidenceDigest !== publication.candidateEvidenceDigest)
       findings.push({
         code: "CANDIDATE_EVIDENCE_MISMATCH",
         classification: "security_critical",

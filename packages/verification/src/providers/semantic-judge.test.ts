@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  RecordedSemanticJudgeAdapter,
-  ThreeWayNliSemanticJudgeAdapter,
-} from "./semantic-judge.js";
+import { RecordedSemanticJudgeAdapter, ThreeWayNliSemanticJudgeAdapter } from "./semantic-judge.js";
 import { digestCanonicalJson } from "../canonical/index.js";
 
 const digest = ("sha256:" + "a".repeat(64)) as `sha256:${string}`;
@@ -48,10 +45,7 @@ describe("semantic judge adapters", () => {
     recorded.clear();
     expect(adapter.toolCatalog).toEqual([]);
     await expect(
-      adapter.judge(
-        { ...input, inputArtifactDigest: digestCanonicalJson(input) },
-        {},
-      ),
+      adapter.judge({ ...input, inputArtifactDigest: digestCanonicalJson(input) }, {}),
     ).resolves.toMatchObject({ verdict: "directly_supported" });
     await expect(
       adapter.judge(

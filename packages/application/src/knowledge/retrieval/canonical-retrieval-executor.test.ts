@@ -5,10 +5,7 @@ import {
   isRetrievalUnsupportedError,
   RetrievalUnsupportedError,
 } from "./canonical-retrieval-executor.js";
-import {
-  RetrievalPlanSchema,
-  RetrievalUnsupportedResponseSchema,
-} from "@aiengineer/knowledge-contracts";
+import { RetrievalPlanSchema, RetrievalUnsupportedResponseSchema } from "@aiengineer/knowledge-contracts";
 
 describe("canonical retrieval reranker boundary", () => {
   it("admits a unique finite subset of the bounded fused candidates", () => {
@@ -33,9 +30,7 @@ describe("canonical retrieval reranker boundary", () => {
       [{ vectorItemId: "a", score: 2 }],
       [],
     ])
-      expect(() => validateRerankerOutput(["a", "b"], scores)).toThrow(
-        "INVALID_RERANKER_OUTPUT",
-      );
+      expect(() => validateRerankerOutput(["a", "b"], scores)).toThrow("INVALID_RERANKER_OUTPUT");
   });
 });
 
@@ -103,9 +98,7 @@ describe("retrieval capability preflight", () => {
       unavailableRetrievalCapabilities(
         {
           ...plan,
-          subqueries: [
-            { id: "optional", text: "maybe graph", coverageRole: "optional" },
-          ],
+          subqueries: [{ id: "optional", text: "maybe graph", coverageRole: "optional" }],
           anchors: {
             ...plan.anchors,
             concepts: ["00000000-0000-4000-8000-000000000003"],
@@ -135,10 +128,7 @@ describe("typed unsupported-capability answer", () => {
   });
   it("carries a validated 422 body instead of a generic message", () => {
     try {
-      unavailableRetrievalCapabilities(
-        { ...plan, temporalScope: { effectiveBefore: "2026-01-01T00:00:00Z" } },
-        0,
-      );
+      unavailableRetrievalCapabilities({ ...plan, temporalScope: { effectiveBefore: "2026-01-01T00:00:00Z" } }, 0);
       throw new Error("expected unsupported capabilities");
     } catch (error) {
       expect(isRetrievalUnsupportedError(error)).toBe(true);
@@ -146,9 +136,7 @@ describe("typed unsupported-capability answer", () => {
       expect(RetrievalUnsupportedResponseSchema.parse(response)).toEqual({
         schemaVersion: "knowledge.retrieval-unsupported/v1",
         code: "RETRIEVAL_CAPABILITY_UNSUPPORTED",
-        unsupported: [
-          { capability: "freshness_upper_bound", reason: "not_implemented" },
-        ],
+        unsupported: [{ capability: "freshness_upper_bound", reason: "not_implemented" }],
       });
     }
   });
@@ -162,9 +150,7 @@ describe("typed unsupported-capability answer", () => {
         },
         0,
       ),
-    ).toEqual([
-      { capability: "freshness_upper_bound", reason: "not_implemented" },
-    ]);
+    ).toEqual([{ capability: "freshness_upper_bound", reason: "not_implemented" }]);
   });
   it("reports every required unimplemented capability at once, before any provider call", () => {
     try {
@@ -178,11 +164,11 @@ describe("typed unsupported-capability answer", () => {
       );
       throw new Error("expected unsupported capabilities");
     } catch (error) {
-      expect(
-        (error as RetrievalUnsupportedError).response.unsupported.map(
-          (item) => item.capability,
-        ),
-      ).toEqual(["use_case_anchors", "soft_boosts", "context"]);
+      expect((error as RetrievalUnsupportedError).response.unsupported.map((item) => item.capability)).toEqual([
+        "use_case_anchors",
+        "soft_boosts",
+        "context",
+      ]);
     }
   });
 });

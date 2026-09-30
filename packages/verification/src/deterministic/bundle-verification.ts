@@ -9,26 +9,12 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import type { EvidenceSelectorResolver } from "../evidence-selection/index.js";
 import { VERIFICATION_CONTRACT_VERSION } from "../versions.js";
-import {
-  verifyAssertion,
-  type AssertionResult,
-} from "./assertion-verification.js";
-import {
-  indexBundle,
-  verifyCaptures,
-  type VerifiedCaptures,
-} from "./capture-integrity.js";
+import { verifyAssertion, type AssertionResult } from "./assertion-verification.js";
+import { indexBundle, verifyCaptures, type VerifiedCaptures } from "./capture-integrity.js";
 import { combineCheckStatus } from "./checks.js";
-import {
-  verifyEvidenceEdge,
-  type EvidenceEdgeContext,
-  type EvidenceEdgeVerifier,
-} from "./evidence-edge.js";
+import { verifyEvidenceEdge, type EvidenceEdgeContext, type EvidenceEdgeVerifier } from "./evidence-edge.js";
 import { verifyMetricGraph } from "./metric-verification.js";
-import {
-  establishRuntimeSeparation,
-  type RuntimeSeparation,
-} from "./runtime-separation.js";
+import { establishRuntimeSeparation, type RuntimeSeparation } from "./runtime-separation.js";
 
 export interface HydratedVerificationArtifact {
   readonly artifactId: string;
@@ -74,27 +60,16 @@ export function verifyDeterministicBundle(
 ): DeterministicVerificationResult {
   const bundle = VerificationBundleSchema.parse(input.bundle);
   const index = indexBundle(bundle, input.artifacts);
-  const captures = verifyCaptures(
-    bundle,
-    index,
-    options.isProjectionLineageAdmitted,
-  );
-  const separation = establishRuntimeSeparation(
-    bundle,
-    input.runtimePrincipals,
-  );
+  const captures = verifyCaptures(bundle, index, options.isProjectionLineageAdmitted);
+  const separation = establishRuntimeSeparation(bundle, input.runtimePrincipals);
   const evidenceContext: EvidenceEdgeContext = {
     captures: index.captures,
     verifiedArtifacts: captures.verifiedArtifacts,
     selectorResolvers: options.selectorResolvers ?? [],
   };
-  const verifyEvidence: EvidenceEdgeVerifier = (edge) =>
-    verifyEvidenceEdge(evidenceContext, edge);
+  const verifyEvidence: EvidenceEdgeVerifier = (edge) => verifyEvidenceEdge(evidenceContext, edge);
   const assertions = bundle.assertions.map((assertion) =>
-    verifyAssertion(
-      { producer: bundle.producer, separation, verifyEvidence },
-      assertion,
-    ),
+    verifyAssertion({ producer: bundle.producer, separation, verifyEvidence }, assertion),
   );
   const metricGraph = verifyMetricGraph({
     observations: bundle.metricObservations,
@@ -104,12 +79,7 @@ export function verifyDeterministicBundle(
   return buildDeterministicResult({
     bundle,
     runtimePrincipals: input.runtimePrincipals,
-    captureChecks: [
-      ...index.duplicateChecks,
-      ...captures.checks,
-      ...separation.checks,
-      ...metricGraph.duplicateChecks,
-    ],
+    captureChecks: [...index.duplicateChecks, ...captures.checks, ...separation.checks, ...metricGraph.duplicateChecks],
     verifiedArtifacts: captures.verifiedArtifacts,
     separation,
     assertions,
@@ -127,16 +97,11 @@ interface DeterministicResultParts {
   readonly metrics: readonly MetricMechanicalResult[];
 }
 
-function buildDeterministicResult(
-  parts: DeterministicResultParts,
-): DeterministicVerificationResult {
+function buildDeterministicResult(parts: DeterministicResultParts): DeterministicVerificationResult {
   const { bundle, assertions, metrics, captureChecks } = parts;
   const allChecks = [
     ...captureChecks,
-    ...assertions.flatMap((item) => [
-      ...item.checks,
-      ...item.evidence.flatMap((edge) => edge.checks),
-    ]),
+    ...assertions.flatMap((item) => [...item.checks, ...item.evidence.flatMap((edge) => edge.checks)]),
     ...metrics.flatMap((item) => item.checks),
   ];
   const status = combineCheckStatus(allChecks);
@@ -163,23 +128,15 @@ function buildDeterministicResult(
         parts.verifiedArtifacts.has(capture.contentArtifact.artifactId),
       ).length,
       assertionsTotal: assertions.length,
-      assertionsPassed: assertions.filter((item) => item.status === "passed")
-        .length,
+      assertionsPassed: assertions.filter((item) => item.status === "passed").length,
       metricsTotal: metrics.length,
       metricsPassed: metrics.filter((item) => item.status === "passed").length,
-      failedCheckCodes: uniqueSorted(
-        allChecks
-          .filter((item) => item.status === "failed")
-          .map((item) => item.code),
-      ),
+      failedCheckCodes: uniqueSorted(allChecks.filter((item) => item.status === "failed").map((item) => item.code)),
       reviewReasons: uniqueSorted(
-        allChecks
-          .filter((item) => item.status === "review_required")
-          .map((item) => item.detail),
+        allChecks.filter((item) => item.status === "review_required").map((item) => item.detail),
       ),
     },
   });
 }
 
-const uniqueSorted = (values: readonly string[]): string[] =>
-  [...new Set(values)].sort();
+const uniqueSorted = (values: readonly string[]): string[] => [...new Set(values)].sort();

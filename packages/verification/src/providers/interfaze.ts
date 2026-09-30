@@ -1,19 +1,8 @@
 import { sha256Digest } from "../canonical/index.js";
 import type { AdmittedExtractionSchema } from "../extraction/index.js";
-import {
-  boundedRequest,
-  dispatchBoundedCompletion,
-  type CapturedCompletion,
-} from "./dispatch.js";
-import {
-  boundedJsonBytes,
-  parseBoundedResponseJson,
-  type ProviderExecution,
-} from "./http.js";
-import {
-  admitOutputSchema,
-  validateOutputAgainstSchema,
-} from "./output-schema.js";
+import { boundedRequest, dispatchBoundedCompletion, type CapturedCompletion } from "./dispatch.js";
+import { boundedJsonBytes, parseBoundedResponseJson, type ProviderExecution } from "./http.js";
+import { admitOutputSchema, validateOutputAgainstSchema } from "./output-schema.js";
 import {
   ProviderFailure,
   providerDigest,
@@ -26,29 +15,18 @@ const MAX_REQUEST_BYTES = 160_000;
 const MAX_RESPONSE_BYTES = 160_000;
 const MAX_PRECONTEXT_BYTES = 64_000;
 
-export const INTERFAZE_ENDPOINT =
-  "https://api.interfaze.ai/v1/chat/completions";
+export const INTERFAZE_ENDPOINT = "https://api.interfaze.ai/v1/chat/completions";
 export const INTERFAZE_MODEL = "interfaze-beta";
-export type InterfazeTask =
-  "ocr" | "object_detection" | "scraper" | "speech_to_text" | "translate";
-const taskNames = new Set<InterfazeTask>([
-  "ocr",
-  "object_detection",
-  "scraper",
-  "speech_to_text",
-  "translate",
-]);
-const precontextAliases: Readonly<Record<InterfazeTask, readonly string[]>> =
-  Object.freeze({
-    ocr: ["ocr"],
-    object_detection: ["object_detection"],
-    scraper: ["scraper", "ai_scraper"],
-    speech_to_text: ["speech_to_text", "stt"],
-    translate: ["translate"],
-  });
-const boundedExtractionPrecontextNames = Object.freeze([
-  ...new Set(Object.values(precontextAliases).flat()),
-]);
+export type InterfazeTask = "ocr" | "object_detection" | "scraper" | "speech_to_text" | "translate";
+const taskNames = new Set<InterfazeTask>(["ocr", "object_detection", "scraper", "speech_to_text", "translate"]);
+const precontextAliases: Readonly<Record<InterfazeTask, readonly string[]>> = Object.freeze({
+  ocr: ["ocr"],
+  object_detection: ["object_detection"],
+  scraper: ["scraper", "ai_scraper"],
+  speech_to_text: ["speech_to_text", "stt"],
+  translate: ["translate"],
+});
+const boundedExtractionPrecontextNames = Object.freeze([...new Set(Object.values(precontextAliases).flat())]);
 
 export interface InterfazeCallRecord {
   readonly requestDigest: `sha256:${string}`;
@@ -83,17 +61,12 @@ type Completion = {
 };
 
 function usage(value: unknown): InterfazeCallRecord["usage"] {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    return {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
   const input = value as Record<string, unknown>;
   const whole = (name: string): number | undefined =>
-    Number.isSafeInteger(input[name]) && (input[name] as number) >= 0
-      ? (input[name] as number)
-      : undefined;
+    Number.isSafeInteger(input[name]) && (input[name] as number) >= 0 ? (input[name] as number) : undefined;
   const dollars =
-    typeof input.cost === "number" &&
-    Number.isFinite(input.cost) &&
-    input.cost >= 0
+    typeof input.cost === "number" && Number.isFinite(input.cost) && input.cost >= 0
       ? Math.ceil(input.cost * 1_000_000)
       : undefined;
   const promptTokens = whole("prompt_tokens"),
@@ -113,12 +86,7 @@ function completionPayload(value: unknown): Completion {
 }
 function messageContent(payload: Completion): string {
   const choices = payload.choices;
-  if (
-    !Array.isArray(choices) ||
-    choices.length !== 1 ||
-    choices[0] === null ||
-    typeof choices[0] !== "object"
-  )
+  if (!Array.isArray(choices) || choices.length !== 1 || choices[0] === null || typeof choices[0] !== "object")
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   const message = (choices[0] as { message?: unknown }).message;
   if (
@@ -135,8 +103,7 @@ function precontext(
   allowedNames: readonly string[],
 ): readonly { readonly name: string; readonly result: unknown }[] {
   if (value === undefined) return [];
-  if (!Array.isArray(value) || value.length > 32)
-    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+  if (!Array.isArray(value) || value.length > 32) throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   return Object.freeze(
     value.map((entry) => {
       if (entry === null || typeof entry !== "object" || Array.isArray(entry))
@@ -154,8 +121,7 @@ function precontext(
   );
 }
 function admittedDataUri(value: string, task?: InterfazeTask): boolean {
-  const match =
-    /^data:([a-z]+\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]*={0,2})$/u.exec(value);
+  const match = /^data:([a-z]+\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]*={0,2})$/u.exec(value);
   if (!match || match[2]!.length > 128_000) return false;
   const mediaType = match[1]!;
   const allowed =
@@ -180,8 +146,7 @@ export class InterfazeStructuredExtractionProvider {
     readonly artifactSink: ProviderArtifactSink;
     readonly fetch?: typeof fetch;
   }) {
-    if (!config.apiKey || !config.artifactSink)
-      throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
+    if (!config.apiKey || !config.artifactSink) throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
     this.#apiKey = config.apiKey;
     this.#fetch = config.fetch ?? fetch;
     this.#artifactSink = config.artifactSink;
@@ -201,8 +166,7 @@ export class InterfazeStructuredExtractionProvider {
       input.prompt.length > 24_000 ||
       !/^[A-Za-z][A-Za-z0-9_]{0,80}$/.test(input.schemaName) ||
       (input.inputData &&
-        (!/^[A-Za-z0-9._-]{1,120}$/.test(input.inputData.filename) ||
-          !admittedDataUri(input.inputData.dataUri)))
+        (!/^[A-Za-z0-9._-]{1,120}$/.test(input.inputData.filename) || !admittedDataUri(input.inputData.dataUri)))
     )
       throw new ProviderFailure("PROVIDER_INPUT_POLICY_REJECTED", false);
     const schema = admitOutputSchema(input.schema, input.schemaName, "v1");
@@ -299,9 +263,7 @@ export class InterfazeStructuredExtractionProvider {
       !precontextAliases[input.task].includes(result.output.name) ||
       !Object.hasOwn(result.output, "result") ||
       Object.keys(result.output).length !== 2 ||
-      result.precontext.some(
-        (entry) => !precontextAliases[input.task].includes(entry.name),
-      )
+      result.precontext.some((entry) => !precontextAliases[input.task].includes(entry.name))
     )
       throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
     return result;
@@ -327,8 +289,7 @@ export class InterfazeStructuredExtractionProvider {
       maxResponseBytes: MAX_RESPONSE_BYTES,
       execution,
       fetch: this.#fetch,
-      interpret: (captured) =>
-        interpretCompletion(captured, { schema, allowedPrecontextNames }),
+      interpret: (captured) => interpretCompletion(captured, { schema, allowedPrecontextNames }),
     });
   }
 }
@@ -344,24 +305,14 @@ async function interpretCompletion(
   expectation: CompletionExpectation,
 ): Promise<InterfazeExtractionResult> {
   const { request, rawResponseBytes } = captured;
-  const payload = completionPayload(
-    parseBoundedResponseJson(rawResponseBytes, MAX_RESPONSE_BYTES),
-  );
+  const payload = completionPayload(parseBoundedResponseJson(rawResponseBytes, MAX_RESPONSE_BYTES));
   if (payload.model !== undefined && payload.model !== INTERFAZE_MODEL)
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   const output = parseMessageJson(payload);
-  if (expectation.schema)
-    validateOutputAgainstSchema(expectation.schema, output);
-  else if (
-    output === null ||
-    typeof output !== "object" ||
-    Array.isArray(output)
-  )
+  if (expectation.schema) validateOutputAgainstSchema(expectation.schema, output);
+  else if (output === null || typeof output !== "object" || Array.isArray(output))
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
-  const context = precontext(
-    payload.precontext,
-    expectation.allowedPrecontextNames,
-  );
+  const context = precontext(payload.precontext, expectation.allowedPrecontextNames);
   const contextBytes = boundedJsonBytes(context, MAX_PRECONTEXT_BYTES);
   if (context.length) await captured.persistPrecontext(contextBytes);
   return Object.freeze({
@@ -369,23 +320,15 @@ async function interpretCompletion(
     precontext: context.map((entry) =>
       Object.freeze({
         name: entry.name,
-        resultDigest: sha256Digest(
-          entry.result === undefined
-            ? "undefined"
-            : JSON.stringify(entry.result),
-        ),
+        resultDigest: sha256Digest(entry.result === undefined ? "undefined" : JSON.stringify(entry.result)),
       }),
     ),
     call: Object.freeze({
       requestDigest: request.digest,
       rawResponseDigest: sha256Digest(rawResponseBytes),
       precontextDigest: providerDigest(context),
-      ...(typeof payload.id === "string" && payload.id.length <= 256
-        ? { providerResponseId: payload.id }
-        : {}),
-      ...(typeof payload.model === "string" && payload.model.length <= 256
-        ? { observedModel: payload.model }
-        : {}),
+      ...(typeof payload.id === "string" && payload.id.length <= 256 ? { providerResponseId: payload.id } : {}),
+      ...(typeof payload.model === "string" && payload.model.length <= 256 ? { observedModel: payload.model } : {}),
       latencyMs: Date.now() - captured.startedEpochMs,
       usage: usage(payload.usage),
       vcache: payload.vcache === true,

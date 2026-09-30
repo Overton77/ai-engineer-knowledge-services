@@ -19,19 +19,15 @@ describe("knowledge_get_verification_operation MCP read", () => {
       apiOrigin: "https://knowledge.example",
       identity: {
         actor: { kind: "human" as const, id: randomUUID() },
-        grants: [
-          { tenantId, roles: ["knowledge_reader" as const], scopes: [] },
-        ],
+        grants: [{ tenantId, roles: ["knowledge_reader" as const], scopes: [] }],
       },
     };
     const execute = createVerificationOperationReadMcpExecutor(options);
-    await expect(
-      execute({ context: { ...context, tenantId: randomUUID() }, operationId }),
-    ).resolves.toMatchObject({ isError: true });
+    await expect(execute({ context: { ...context, tenantId: randomUUID() }, operationId })).resolves.toMatchObject({
+      isError: true,
+    });
     await expect(execute({ context, operationId: "latest" })).rejects.toThrow();
-    await expect(
-      execute({ context, operationId, state: "succeeded" }),
-    ).rejects.toThrow();
+    await expect(execute({ context, operationId, state: "succeeded" })).rejects.toThrow();
     expect(get).not.toHaveBeenCalled();
     await expect(execute({ context, operationId })).resolves.toMatchObject({
       structuredContent: status,

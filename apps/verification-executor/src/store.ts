@@ -4,7 +4,13 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "@aiengineer/knowledge-verification";
-import { assertSameArtifact, readArtifactFile, validateStoredArtifact, writeArtifactFileOnce, type ArtifactCustody } from "./store-custody.js";
+import {
+  assertSameArtifact,
+  readArtifactFile,
+  validateStoredArtifact,
+  writeArtifactFileOnce,
+  type ArtifactCustody,
+} from "./store-custody.js";
 
 /**
  * Content-addressed filesystem store.
@@ -99,7 +105,10 @@ export class FilesystemStore {
     if (visiting.has(handle.artifactId)) throw new Error("ARTIFACT_LINEAGE_CYCLE");
     visiting.add(handle.artifactId);
     try {
-      for (const parentId of [...handle.parentArtifactIds, ...(handle.attestationArtifactId ? [handle.attestationArtifactId] : [])]) {
+      for (const parentId of [
+        ...handle.parentArtifactIds,
+        ...(handle.attestationArtifactId ? [handle.attestationArtifactId] : []),
+      ]) {
         const parent = await this.handleById(parentId);
         if (!parent) throw new Error(`ARTIFACT_PARENT_NOT_FOUND:${parentId}`);
         await this.persist(parent, visiting);
@@ -113,7 +122,9 @@ export class FilesystemStore {
       } else {
         assertSameArtifact(handle, await this.custody.register(handle, await this.bytes(handle)));
       }
-    } finally { visiting.delete(handle.artifactId); }
+    } finally {
+      visiting.delete(handle.artifactId);
+    }
   }
 
   async preserve(artifactId: string): Promise<VerificationArtifactHandle> {
@@ -126,7 +137,11 @@ export class FilesystemStore {
   private async materialize(value: VerificationArtifactHandle, bytes: Uint8Array): Promise<VerificationArtifactHandle> {
     const handle = validateStoredArtifact(this.tenantId, value, bytes);
     await mkdir(join(this.rootDir, "artifacts"), { recursive: true });
-    validateStoredArtifact(this.tenantId, handle, await writeArtifactFileOnce(join(this.rootDir, handle.objectKey), bytes));
+    validateStoredArtifact(
+      this.tenantId,
+      handle,
+      await writeArtifactFileOnce(join(this.rootDir, handle.objectKey), bytes),
+    );
     const path = join(this.rootDir, "artifacts", `${handle.digest.slice(7)}.${handle.artifactId}.handle.json`);
     const stored = await writeArtifactFileOnce(path, encoder.encode(JSON.stringify(handle)));
     assertSameArtifact(handle, validateStoredArtifact(this.tenantId, JSON.parse(decoder.decode(stored))));
@@ -134,7 +149,9 @@ export class FilesystemStore {
   }
 
   async init(): Promise<void> {
-    await Promise.all(["artifacts", "captures", "runs"].map((dir) => mkdir(join(this.rootDir, dir), { recursive: true })));
+    await Promise.all(
+      ["artifacts", "captures", "runs"].map((dir) => mkdir(join(this.rootDir, dir), { recursive: true })),
+    );
   }
 
   // ---- artifacts -----------------------------------------------------------
@@ -148,34 +165,63 @@ export class FilesystemStore {
    * their original identity; the stored bytes remain shared by digest.
    */
   artifactIdFor(digest: `sha256:${string}`, lineageSignature?: `sha256:${string}`): string {
-    return deterministicUuid("artifact", lineageSignature ? `${this.tenantId}:${digest}:${lineageSignature}` : `${this.tenantId}:${digest}`);
+    return deterministicUuid(
+      "artifact",
+      lineageSignature ? `${this.tenantId}:${digest}:${lineageSignature}` : `${this.tenantId}:${digest}`,
+    );
   }
 
   private handlePath(hex: string, lineageSignature?: `sha256:${string}`): string {
-    return join(this.rootDir, "artifacts", lineageSignature ? `${hex}.${lineageSignature.slice("sha256:".length, "sha256:".length + 16)}.handle.json` : `${hex}.handle.json`);
+    return join(
+      this.rootDir,
+      "artifacts",
+      lineageSignature
+        ? `${hex}.${lineageSignature.slice("sha256:".length, "sha256:".length + 16)}.handle.json`
+        : `${hex}.handle.json`,
+    );
   }
 
   async put(input: RegisterArtifactInput): Promise<VerificationArtifactHandle> {
     const digest = sha256Digest(input.bytes);
     const hex = digest.slice("sha256:".length);
     const parents = [...(input.parentArtifactIds ?? [])].sort();
-    if (parents.length > 0 && input.transformation === undefined) throw new Error("ARTIFACT_TRANSFORMATION_REQUIRED_FOR_PARENTS");
-    const transformationSignature = input.transformation !== undefined ? sha256Digest(canonicalizeJson(stripUndefined(input.transformation))) : undefined;
-    const lineageSignature = sha256Digest(canonicalizeJson(stripUndefined({
-      parents, transformationSignature, producerActivityId: input.producerActivityId,
-      producerVersion: input.producerVersion, mediaType: input.mediaType,
-      dataClassification: input.dataClassification ?? "public",
-    })));
+    if (parents.length > 0 && input.transformation === undefined)
+      throw new Error("ARTIFACT_TRANSFORMATION_REQUIRED_FOR_PARENTS");
+    const transformationSignature =
+      input.transformation !== undefined
+        ? sha256Digest(canonicalizeJson(stripUndefined(input.transformation)))
+        : undefined;
+    const lineageSignature = sha256Digest(
+      canonicalizeJson(
+        stripUndefined({
+          parents,
+          transformationSignature,
+          producerActivityId: input.producerActivityId,
+          producerVersion: input.producerVersion,
+          mediaType: input.mediaType,
+          dataClassification: input.dataClassification ?? "public",
+        }),
+      ),
+    );
     const handlePath = this.handlePath(hex, lineageSignature);
-    const legacySignature = parents.length > 0 ? sha256Digest(canonicalizeJson({ parents, transformationSignature })) : undefined;
+    const legacySignature =
+      parents.length > 0 ? sha256Digest(canonicalizeJson({ parents, transformationSignature })) : undefined;
     const legacyPath = this.handlePath(hex, legacySignature);
     const priorPath = existsSync(handlePath) ? handlePath : existsSync(legacyPath) ? legacyPath : undefined;
     if (priorPath) {
-      const existing = validateStoredArtifact(this.tenantId, JSON.parse(await readFile(priorPath, "utf8")), input.bytes);
-      if (existing.producerActivityId === input.producerActivityId && existing.producerVersion === input.producerVersion
-        && existing.mediaType === input.mediaType && existing.dataClassification === (input.dataClassification ?? "public")
-        && canonicalizeJson(existing.parentArtifactIds) === canonicalizeJson(parents)
-        && existing.transformationSignature === transformationSignature) {
+      const existing = validateStoredArtifact(
+        this.tenantId,
+        JSON.parse(await readFile(priorPath, "utf8")),
+        input.bytes,
+      );
+      if (
+        existing.producerActivityId === input.producerActivityId &&
+        existing.producerVersion === input.producerVersion &&
+        existing.mediaType === input.mediaType &&
+        existing.dataClassification === (input.dataClassification ?? "public") &&
+        canonicalizeJson(existing.parentArtifactIds) === canonicalizeJson(parents) &&
+        existing.transformationSignature === transformationSignature
+      ) {
         await this.persist(existing);
         return existing;
       }
@@ -215,14 +261,21 @@ export class FilesystemStore {
       assertSameArtifact({ ...handle, createdAt: winner.createdAt }, winner);
       handle = winner;
     }
-    const stored = validateStoredArtifact(this.tenantId, JSON.parse(decoder.decode(await writeArtifactFileOnce(handlePath, encoder.encode(JSON.stringify(handle))))), input.bytes);
+    const stored = validateStoredArtifact(
+      this.tenantId,
+      JSON.parse(decoder.decode(await writeArtifactFileOnce(handlePath, encoder.encode(JSON.stringify(handle))))),
+      input.bytes,
+    );
     assertSameArtifact({ ...handle, createdAt: stored.createdAt }, stored);
     if (!this.custody) return stored;
     assertSameArtifact(handle, stored);
     return stored;
   }
 
-  async putJson(value: unknown, input: Omit<RegisterArtifactInput, "bytes">): Promise<{ handle: VerificationArtifactHandle; bytes: Uint8Array }> {
+  async putJson(
+    value: unknown,
+    input: Omit<RegisterArtifactInput, "bytes">,
+  ): Promise<{ handle: VerificationArtifactHandle; bytes: Uint8Array }> {
     const bytes = encoder.encode(canonicalizeJson(stripUndefined(value)));
     return { handle: await this.put({ ...input, bytes }), bytes };
   }
@@ -234,7 +287,9 @@ export class FilesystemStore {
     if (existsSync(plain)) return JSON.parse(await readFile(plain, "utf8")) as VerificationArtifactHandle;
     const dir = join(this.rootDir, "artifacts");
     if (!existsSync(dir)) return undefined;
-    const lineaged = (await readdir(dir)).filter((name) => name.startsWith(`${hex}.`) && name.endsWith(".handle.json")).sort();
+    const lineaged = (await readdir(dir))
+      .filter((name) => name.startsWith(`${hex}.`) && name.endsWith(".handle.json"))
+      .sort();
     if (lineaged.length === 0) return undefined;
     return JSON.parse(await readFile(join(dir, lineaged[0]!), "utf8")) as VerificationArtifactHandle;
   }
@@ -291,7 +346,10 @@ export class FilesystemStore {
 
   async writeCapture(record: CaptureRecord): Promise<void> {
     await mkdir(join(this.rootDir, "captures"), { recursive: true });
-    await writeFile(join(this.rootDir, "captures", `${safeName(record.captureId)}.json`), JSON.stringify(record, null, 2));
+    await writeFile(
+      join(this.rootDir, "captures", `${safeName(record.captureId)}.json`),
+      JSON.stringify(record, null, 2),
+    );
   }
 
   async readCapture(captureId: string): Promise<CaptureRecord> {
@@ -304,7 +362,8 @@ export class FilesystemStore {
     const dir = join(this.rootDir, "captures");
     if (!existsSync(dir)) return [];
     const records: CaptureRecord[] = [];
-    for (const name of await readdir(dir)) if (name.endsWith(".json")) records.push(JSON.parse(await readFile(join(dir, name), "utf8")) as CaptureRecord);
+    for (const name of await readdir(dir))
+      if (name.endsWith(".json")) records.push(JSON.parse(await readFile(join(dir, name), "utf8")) as CaptureRecord);
     return records.sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
   }
 
@@ -343,7 +402,10 @@ export class FilesystemStore {
   async listSteps(runId: string): Promise<StepReceipt[]> {
     const path = join(this.runDir(runId), "steps.jsonl");
     if (!existsSync(path)) return [];
-    return (await readFile(path, "utf8")).split("\n").filter(Boolean).map((line) => JSON.parse(line) as StepReceipt);
+    return (await readFile(path, "utf8"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as StepReceipt);
   }
 }
 

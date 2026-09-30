@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VectorSpace } from "@aiengineer/knowledge-contracts";
-import {
-  buildRetrievalPlan,
-  retrieve,
-  type RetrievalPolicy,
-  type RetrievalRecord,
-} from "./index.js";
+import { buildRetrievalPlan, retrieve, type RetrievalPolicy, type RetrievalRecord } from "./index.js";
 
 const tenant = "00000000-0000-7000-8000-000000000001";
 
@@ -42,42 +37,41 @@ const locator = {
   nodeId: "00000000-0000-7000-8000-000000000011",
   startOffset: 0,
   endOffset: 5,
-  quoteDigest:
-    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const,
+  quoteDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const,
 };
 
-const records = spaces.map((space, index): RetrievalRecord => ({
-  id: `r${index}`,
-  tenantId: tenant,
-  projectionId: `p${index}`,
-  projectionVersionId: "v1",
-  space,
-  targetKind: space,
-  targetSchemaVersion: "v1",
-  text:
-    index === 0
-      ? "Agent loops use tools and evidence for reliable engineering"
-      : "Context about model tools benchmark code paper organizations",
-  identifiers: index === 0 ? ["agent-loop"] : [],
-  vector: index === 0 ? [1, 0] : [0, 1],
-  fields: { language: "en", visibility: "tenant" },
-  locators: [locator],
-  authority: "exploratory",
-  assurance: "high",
-  freshnessAt: "2026-08-01T00:00:00.000Z",
-  promoted: true,
-  lifecycle: "active",
-  sourceId: index < 2 ? "source-a" : `source-${index}`,
-  ordinal: index,
-}));
+const records = spaces.map(
+  (space, index): RetrievalRecord => ({
+    id: `r${index}`,
+    tenantId: tenant,
+    projectionId: `p${index}`,
+    projectionVersionId: "v1",
+    space,
+    targetKind: space,
+    targetSchemaVersion: "v1",
+    text:
+      index === 0
+        ? "Agent loops use tools and evidence for reliable engineering"
+        : "Context about model tools benchmark code paper organizations",
+    identifiers: index === 0 ? ["agent-loop"] : [],
+    vector: index === 0 ? [1, 0] : [0, 1],
+    fields: { language: "en", visibility: "tenant" },
+    locators: [locator],
+    authority: "exploratory",
+    assurance: "high",
+    freshnessAt: "2026-08-01T00:00:00.000Z",
+    promoted: true,
+    lifecycle: "active",
+    sourceId: index < 2 ? "source-a" : `source-${index}`,
+    ordinal: index,
+  }),
+);
 
 describe("advanced retrieval", () => {
   it("validates policy, decomposes intent, spaces, filters and limits", () => {
-    const plan = buildRetrievalPlan(
-      "How to implement an API; compare tools?",
-      policy,
-      { hardFilters: [{ field: "language", op: "eq", value: "en" }] },
-    );
+    const plan = buildRetrievalPlan("How to implement an API; compare tools?", policy, {
+      hardFilters: [{ field: "language", op: "eq", value: "en" }],
+    });
     expect(plan.subqueries.length).toBeGreaterThan(1);
     expect(plan.intents).toContain("implementation_support");
     expect(() =>
@@ -85,12 +79,8 @@ describe("advanced retrieval", () => {
         hardFilters: [{ field: "secret", op: "eq", value: true }],
       }),
     ).toThrow("FILTER_NOT_ALLOWED");
-    expect(() =>
-      buildRetrievalPlan("x", policy, { candidateK: 0, finalK: 0 }),
-    ).toThrow("RETRIEVAL_LIMIT_EXCEEDED");
-    expect(() => buildRetrievalPlan("x", { ...policy, rrfK: 0 })).toThrow(
-      "INVALID_RRF_POLICY",
-    );
+    expect(() => buildRetrievalPlan("x", policy, { candidateK: 0, finalK: 0 })).toThrow("RETRIEVAL_LIMIT_EXCEEDED");
+    expect(() => buildRetrievalPlan("x", { ...policy, rrfK: 0 })).toThrow("INVALID_RRF_POLICY");
   });
 
   it("fuses independent channels deterministically, verifies filters, expands graph and attaches context", async () => {
@@ -122,11 +112,7 @@ describe("advanced retrieval", () => {
     expect(first.members[0]!.contributions.map((x) => x.channel)).toEqual(
       expect.arrayContaining(["exact", "trigram", "semantic"]),
     );
-    expect(
-      first.members
-        .find((x) => x.recordId === "r1")
-        ?.contributions.some((x) => x.channel === "graph"),
-    ).toBe(true);
+    expect(first.members.find((x) => x.recordId === "r1")?.contributions.some((x) => x.channel === "graph")).toBe(true);
     const withContext = await retrieve("agent-loop", {
       ...args,
       finalK: 1,
@@ -134,9 +120,7 @@ describe("advanced retrieval", () => {
     });
     expect(withContext.members.some((x) => x.contextOnly)).toBe(true);
     expect(
-      withContext.members
-        .filter((x) => x.contextOnly)
-        .every((x) => x.finalScore === 0 && x.contributions.length === 0),
+      withContext.members.filter((x) => x.contextOnly).every((x) => x.finalScore === 0 && x.contributions.length === 0),
     ).toBe(true);
   });
 
@@ -154,9 +138,7 @@ describe("advanced retrieval", () => {
     });
     expect(packet.degradedMode).toBe(true);
     expect(packet.members.length).toBeGreaterThan(0);
-    expect(
-      packet.omittedResults.some((x) => x.reason.includes("reranker_failed")),
-    ).toBe(true);
+    expect(packet.omittedResults.some((x) => x.reason.includes("reranker_failed"))).toBe(true);
   });
 
   it("abstains with reasoned coverage and rejects cross-tenant/unpromoted content", async () => {
@@ -207,8 +189,7 @@ describe("advanced retrieval", () => {
           verified: true,
           rationale: "claims support",
           provenance: ["fixture:v1"],
-          locatorDigest:
-            "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          locatorDigest: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         },
       ],
     });
@@ -216,8 +197,6 @@ describe("advanced retrieval", () => {
       recordId: "r1",
       reason: "visibility_not_authorized",
     });
-    expect(
-      packet.members.flatMap((x) => x.contributions).some((x) => x.channel === "graph"),
-    ).toBe(false);
+    expect(packet.members.flatMap((x) => x.contributions).some((x) => x.channel === "graph")).toBe(false);
   });
 });

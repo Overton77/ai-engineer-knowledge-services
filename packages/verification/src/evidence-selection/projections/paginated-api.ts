@@ -1,9 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { evaluateJsonPointer } from "../json-pointer.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolvedValue, unresolved } from "./report.js";
 import {
   boundedArray,
@@ -61,12 +58,7 @@ function parsePage(item: unknown): ApiPage {
 }
 
 function parseRecord(record: unknown): ApiRecord {
-  if (
-    !isRecord(record) ||
-    !boundedString(record.recordKey) ||
-    record.recordKey.length === 0 ||
-    !("value" in record)
-  )
+  if (!isRecord(record) || !boundedString(record.recordKey) || record.recordKey.length === 0 || !("value" in record))
     fail("API_RECORD");
   only(record, ["recordKey", "value"], "API_RECORD");
   return {
@@ -91,22 +83,12 @@ export function resolveApi(
       .filter((record) => record.recordKey === selector.recordKey)
       .map((record) => ({ pageKey: page.pageKey, record })),
   );
-  if (matches.length !== 1)
-    return unresolved(
-      request,
-      matches.length > 1 ? "ambiguous" : "not_found",
-      matches.length,
-    );
+  if (matches.length !== 1) return unresolved(request, matches.length > 1 ? "ambiguous" : "not_found", matches.length);
   const match = matches[0]!;
   const recordSpace = `api:${projection.apiVersion}:page:${match.pageKey}:record:${selector.recordKey}`;
   if (selector.fieldPointer === undefined)
-    return resolvedValue(request, match.record, [
-      { start: 0, end: 1, coordinateSpace: recordSpace },
-    ]);
-  const pointed = evaluateJsonPointer(
-    selector.fieldPointer,
-    match.record.value,
-  );
+    return resolvedValue(request, match.record, [{ start: 0, end: 1, coordinateSpace: recordSpace }]);
+  const pointed = evaluateJsonPointer(selector.fieldPointer, match.record.value);
   if (!pointed.found) return unresolved(request, "not_found");
   return resolvedValue(request, pointed.value, [
     {

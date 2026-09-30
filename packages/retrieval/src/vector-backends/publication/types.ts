@@ -82,44 +82,23 @@ export interface RollbackPublicationRequest {
 }
 
 export interface PublicationTransaction {
-  getPublication(
-    tenantId: string,
-    publicationId: string,
-  ): ExploratoryPublication | undefined;
-  getActivePointer(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): ActivePublicationPointer | undefined;
+  getPublication(tenantId: string, publicationId: string): ExploratoryPublication | undefined;
+  getActivePointer(tenantId: string, vectorStoreSpaceId: string): ActivePublicationPointer | undefined;
   insertPublication(publication: ExploratoryPublication): void;
   setActivePointer(pointer: ActivePublicationPointer): void;
   appendEvent(event: PublicationEvent): void;
 }
 
 export interface PublicationRepository {
-  transaction<T>(
-    operation: (transaction: PublicationTransaction) => T | Promise<T>,
-  ): Promise<T>;
-  getPublication(
-    tenantId: string,
-    publicationId: string,
-  ): Promise<ExploratoryPublication | undefined>;
-  getActivePointer(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): Promise<ActivePublicationPointer | undefined>;
-  listEvents(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): Promise<readonly PublicationEvent[]>;
+  transaction<T>(operation: (transaction: PublicationTransaction) => T | Promise<T>): Promise<T>;
+  getPublication(tenantId: string, publicationId: string): Promise<ExploratoryPublication | undefined>;
+  getActivePointer(tenantId: string, vectorStoreSpaceId: string): Promise<ActivePublicationPointer | undefined>;
+  listEvents(tenantId: string, vectorStoreSpaceId: string): Promise<readonly PublicationEvent[]>;
 }
 
 export interface ReconciliationFinding {
   readonly code: string;
-  readonly classification:
-    | "repairable"
-    | "retryable"
-    | "review_required"
-    | "security_critical";
+  readonly classification: "repairable" | "retryable" | "review_required" | "security_critical";
   readonly detail: string;
 }
 

@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildServer } from "../server.js";
 
-const id = (value: number) =>
-  `20000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+const id = (value: number) => `20000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
 const tenantId = id(1),
   operationId = id(2),
   providerAttemptId = id(3),
@@ -89,10 +88,7 @@ describe("semantic claims/report reconciliation routes", () => {
             })
           ).statusCode,
         ).toBe(200);
-      expect(getDecision.mock.calls.map(([input]) => input.host)).toEqual([
-        "claims",
-        "report",
-      ]);
+      expect(getDecision.mock.calls.map(([input]) => input.host)).toEqual(["claims", "report"]);
       const posted = await api.inject({
         method: "POST",
         url: `/v1/verification/claims/${operationId}/provider-attempts/${providerAttemptId}/reconciliation`,

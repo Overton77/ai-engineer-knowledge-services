@@ -11,9 +11,7 @@ describe("example 01: plan and admission", () => {
   });
 
   it("denies a space the policy never admitted with SPACE_NOT_ADMITTED", () => {
-    expect(planAndAdmissionExample().spaceDenied).toContain(
-      "SPACE_NOT_ADMITTED:benchmark_intelligence",
-    );
+    expect(planAndAdmissionExample().spaceDenied).toContain("SPACE_NOT_ADMITTED:benchmark_intelligence");
   });
 
   it("denies a filter field the policy never allowed with FILTER_NOT_ALLOWED", () => {

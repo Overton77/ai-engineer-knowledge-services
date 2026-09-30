@@ -14,11 +14,7 @@ import {
   type CanonicalProjection,
 } from "./projections/index.js";
 import { unresolved } from "./projections/report.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-  EvidenceSelectorResolver,
-} from "./selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest, EvidenceSelectorResolver } from "./selection.js";
 
 type ProjectionSelectorKind =
   | "html"
@@ -30,10 +26,7 @@ type ProjectionSelectorKind =
   | "dataset"
   | "api_record";
 
-type ProjectionOf<Kind extends CanonicalProjection["kind"]> = Extract<
-  CanonicalProjection,
-  { kind: Kind }
->;
+type ProjectionOf<Kind extends CanonicalProjection["kind"]> = Extract<CanonicalProjection, { kind: Kind }>;
 
 /** Which projection kind a selector kind reads, and the resolver that applies it. */
 interface ProjectionRoute {
@@ -50,10 +43,7 @@ interface ProjectionRoute {
  * erased signature; `ProjectionSelectorResolver.resolve` re-establishes the pairing at runtime
  * (projection kind equality, selector kind lookup) before calling, so this is the only widening.
  */
-const route = <
-  ProjectionKind extends CanonicalProjection["kind"],
-  Selector extends VerificationSelector,
->(
+const route = <ProjectionKind extends CanonicalProjection["kind"], Selector extends VerificationSelector>(
   projectionKind: ProjectionKind,
   resolve: (
     request: EvidenceSelectionRequest,
@@ -76,18 +66,12 @@ const routes: Readonly<Record<ProjectionSelectorKind, ProjectionRoute>> = {
   api_record: route("paginated_api", resolveApi),
 };
 
-const isProjectionSelectorKind = (
-  kind: VerificationSelector["kind"],
-): kind is ProjectionSelectorKind => Object.hasOwn(routes, kind);
+const isProjectionSelectorKind = (kind: VerificationSelector["kind"]): kind is ProjectionSelectorKind =>
+  Object.hasOwn(routes, kind);
 
 /** Projection bytes must hash to the declared digest and parse as a canonical projection before any locator runs. */
-function requireProjection(
-  request: EvidenceSelectionRequest,
-): CanonicalProjection | EvidenceSelection {
-  if (
-    !isSha256Digest(request.representationDigest) ||
-    sha256Digest(request.content) !== request.representationDigest
-  )
+function requireProjection(request: EvidenceSelectionRequest): CanonicalProjection | EvidenceSelection {
+  if (!isSha256Digest(request.representationDigest) || sha256Digest(request.content) !== request.representationDigest)
     return unresolved(request, "invalid");
   try {
     return parseCanonicalProjection(request.content);
@@ -96,9 +80,8 @@ function requireProjection(
   }
 }
 
-const isSelection = (
-  value: CanonicalProjection | EvidenceSelection,
-): value is EvidenceSelection => "resolution" in value;
+const isSelection = (value: CanonicalProjection | EvidenceSelection): value is EvidenceSelection =>
+  "resolution" in value;
 
 /**
  * Resolves selectors over canonical media projections (HTML DOM, PDF text, geometry, tables,
@@ -107,19 +90,15 @@ const isSelection = (
  */
 export class ProjectionSelectorResolver implements EvidenceSelectorResolver {
   readonly resolverVersion = PROJECTION_RESOLVER_VERSION;
-  readonly supportedKinds = Object.keys(
-    routes,
-  ) as readonly ProjectionSelectorKind[];
+  readonly supportedKinds = Object.keys(routes) as readonly ProjectionSelectorKind[];
 
   resolve(request: EvidenceSelectionRequest): EvidenceSelection {
     const projection = requireProjection(request);
     if (isSelection(projection)) return projection;
     const { selector } = request;
-    if (!isProjectionSelectorKind(selector.kind))
-      return unresolved(request, "invalid");
+    if (!isProjectionSelectorKind(selector.kind)) return unresolved(request, "invalid");
     const { projectionKind, resolve } = routes[selector.kind];
-    if (projection.kind !== projectionKind)
-      return unresolved(request, "invalid");
+    if (projection.kind !== projectionKind) return unresolved(request, "invalid");
     return resolve(request, projection, selector);
   }
 }

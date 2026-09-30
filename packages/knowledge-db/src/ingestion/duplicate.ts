@@ -22,7 +22,10 @@ export const DEFAULT_DUPLICATE_WAIT: DuplicateWaitPolicy = {
   now: Date.now,
 };
 
-export interface DuplicateIdentity { readonly intentId: string; readonly idempotencyKey: string }
+export interface DuplicateIdentity {
+  readonly intentId: string;
+  readonly idempotencyKey: string;
+}
 
 export function isIdempotencyKeyCollision(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
@@ -31,14 +34,22 @@ export function isIdempotencyKeyCollision(error: unknown): boolean {
 }
 
 /** Polls `lookup` until the winner's receipt appears; `DUPLICATE_PENDING` once the policy's timeout elapses. */
-export async function awaitWinnerReceipt<TReceipt>(lookup: () => Promise<TReceipt | undefined>, identity: DuplicateIdentity, policy: DuplicateWaitPolicy = DEFAULT_DUPLICATE_WAIT): Promise<TReceipt> {
+export async function awaitWinnerReceipt<TReceipt>(
+  lookup: () => Promise<TReceipt | undefined>,
+  identity: DuplicateIdentity,
+  policy: DuplicateWaitPolicy = DEFAULT_DUPLICATE_WAIT,
+): Promise<TReceipt> {
   const deadline = policy.now() + policy.timeoutMs;
   for (let attempts = 1; ; attempts += 1) {
     const receipt = await lookup();
     if (receipt !== undefined) return receipt;
     const remainingMs = deadline - policy.now();
     if (remainingMs <= 0) {
-      throw domainError("DUPLICATE_PENDING", `intent ${identity.intentId} was submitted concurrently and the winning submission has no receipt after ${policy.timeoutMs} ms`, { ...identity, attempts });
+      throw domainError(
+        "DUPLICATE_PENDING",
+        `intent ${identity.intentId} was submitted concurrently and the winning submission has no receipt after ${policy.timeoutMs} ms`,
+        { ...identity, attempts },
+      );
     }
     await policy.sleep(Math.min(policy.backoffMs, remainingMs));
   }

@@ -220,7 +220,8 @@ export function evaluateSelectionEligibility(
 
   if (candidate.revoked) reasons.push("REVOKED");
   if (candidate.lineage.length === 0) reasons.push("LINEAGE_MISSING");
-  if (candidate.targetSpaces.some((space) => !context.admittedSpaces.includes(space))) reasons.push("SPACE_NOT_ADMITTED");
+  if (candidate.targetSpaces.some((space) => !context.admittedSpaces.includes(space)))
+    reasons.push("SPACE_NOT_ADMITTED");
 
   switch (representationKind) {
     case "raw_source_bytes": {
@@ -230,19 +231,22 @@ export function evaluateSelectionEligibility(
     case "faithful_source_section": {
       if (candidate.admittedClaims.length === 0) reasons.push("SECTION_RELEVANCE_NOT_ADMITTED");
       if (candidate.locators?.reconstructable !== true) reasons.push("SECTION_LOCATOR_NOT_RECONSTRUCTABLE");
-      if (candidate.targetSpaces.some((space) => space !== "source_native_sections")) reasons.push("SECTION_NOT_ELIGIBLE_FOR_OFFICIAL_SPACE");
+      if (candidate.targetSpaces.some((space) => space !== "source_native_sections"))
+        reasons.push("SECTION_NOT_ELIGIBLE_FOR_OFFICIAL_SPACE");
       break;
     }
     case "atomic_projection": {
       if (candidate.admittedClaims.length === 0) reasons.push("PROJECTION_CLAIM_NOT_ADMITTED");
-      else if (!candidate.admittedClaims.some((claim) => promotableStatuses.has(claim.status))) reasons.push("PROJECTION_CLAIM_STATUS_NOT_PROMOTABLE");
+      else if (!candidate.admittedClaims.some((claim) => promotableStatuses.has(claim.status)))
+        reasons.push("PROJECTION_CLAIM_STATUS_NOT_PROMOTABLE");
       if (candidate.temporalLink !== true) reasons.push("PROJECTION_TEMPORAL_LINK_MISSING");
       if (candidate.entityLink !== true) reasons.push("PROJECTION_ENTITY_LINK_MISSING");
       break;
     }
     case "derived_summary": {
       if (candidate.reportAdmission?.admitted !== true) reasons.push("SUMMARY_REPORT_NOT_ADMITTED");
-      if (candidate.reportAdmission?.dependencies.some((dependency) => !dependency.eligible)) reasons.push("SUMMARY_DEPENDENCY_INELIGIBLE");
+      if (candidate.reportAdmission?.dependencies.some((dependency) => !dependency.eligible))
+        reasons.push("SUMMARY_DEPENDENCY_INELIGIBLE");
       break;
     }
     case "exploratory_draft": {

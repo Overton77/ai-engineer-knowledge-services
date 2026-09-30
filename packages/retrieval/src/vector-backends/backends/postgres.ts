@@ -17,24 +17,17 @@ export interface PostgresRpcResult {
 }
 
 export interface PostgresRpcClient {
-  rpc(
-    functionName: string,
-    parameters: Readonly<Record<string, unknown>>,
-  ): PromiseLike<PostgresRpcResult>;
+  rpc(functionName: string, parameters: Readonly<Record<string, unknown>>): PromiseLike<PostgresRpcResult>;
 }
 
 /** Authoritative pgvector adapter. Tenant authorization is enforced by the RPC's session context and RLS. */
 export class PostgresVectorSearchBackend implements VectorSearchBackend {
   constructor(
     private readonly client: PostgresRpcClient,
-    private readonly assertTenantContext?: (
-      tenantId: string,
-    ) => void | Promise<void>,
+    private readonly assertTenantContext?: (tenantId: string) => void | Promise<void>,
   ) {}
 
-  async search(
-    request: VectorSearchRequest,
-  ): Promise<readonly VectorSearchCandidate[]> {
+  async search(request: VectorSearchRequest): Promise<readonly VectorSearchCandidate[]> {
     validateEmbedding(request.embedding);
     validateSearchLimit(request.limit);
     await this.assertTenantContext?.(request.tenantId);
@@ -51,10 +44,7 @@ export class PostgresVectorSearchBackend implements VectorSearchBackend {
       );
     }
     if (!Array.isArray(result.data))
-      throw new VectorBackendError(
-        "INVALID_RPC_RESPONSE",
-        "Postgres vector search returned a non-array response",
-      );
+      throw new VectorBackendError("INVALID_RPC_RESPONSE", "Postgres vector search returned a non-array response");
     return Object.freeze(result.data.map(parseCandidate));
   }
 }
@@ -66,10 +56,7 @@ export function serializeHalfVector(embedding: readonly number[]): string {
 
 function parseCandidate(value: unknown, index: number): VectorSearchCandidate {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new VectorBackendError(
-      "INVALID_RPC_RESPONSE",
-      `Candidate ${index} is not an object`,
-    );
+    throw new VectorBackendError("INVALID_RPC_RESPONSE", `Candidate ${index} is not an object`);
   }
   const row = value as Record<string, unknown>;
   if (
@@ -78,39 +65,22 @@ function parseCandidate(value: unknown, index: number): VectorSearchCandidate {
     typeof row.score !== "number" ||
     !Number.isFinite(row.score)
   ) {
-    throw new VectorBackendError(
-      "INVALID_RPC_RESPONSE",
-      `Candidate ${index} has invalid identity or score`,
-    );
+    throw new VectorBackendError("INVALID_RPC_RESPONSE", `Candidate ${index} has invalid identity or score`);
   }
   if (
     row.search_projection_id !== null &&
     row.search_projection_id !== undefined &&
     typeof row.search_projection_id !== "string"
   ) {
-    throw new VectorBackendError(
-      "INVALID_RPC_RESPONSE",
-      `Candidate ${index} has an invalid projection identity`,
-    );
+    throw new VectorBackendError("INVALID_RPC_RESPONSE", `Candidate ${index} has an invalid projection identity`);
   }
-  if (
-    row.search_text !== null &&
-    row.search_text !== undefined &&
-    typeof row.search_text !== "string"
-  ) {
-    throw new VectorBackendError(
-      "INVALID_RPC_RESPONSE",
-      `Candidate ${index} has invalid search text`,
-    );
+  if (row.search_text !== null && row.search_text !== undefined && typeof row.search_text !== "string") {
+    throw new VectorBackendError("INVALID_RPC_RESPONSE", `Candidate ${index} has invalid search text`);
   }
   return Object.freeze({
     vectorItemId: row.vector_item_id,
-    ...(typeof row.search_projection_id === "string"
-      ? { searchProjectionId: row.search_projection_id }
-      : {}),
+    ...(typeof row.search_projection_id === "string" ? { searchProjectionId: row.search_projection_id } : {}),
     score: row.score,
-    ...(typeof row.search_text === "string"
-      ? { searchText: row.search_text }
-      : {}),
+    ...(typeof row.search_text === "string" ? { searchText: row.search_text } : {}),
   });
 }

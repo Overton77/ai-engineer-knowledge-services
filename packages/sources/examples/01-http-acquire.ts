@@ -25,9 +25,7 @@ export async function runHttpAcquireExample() {
         },
       }),
   );
-  const plan = await adapter.plan(
-    exampleRequest({ kind: "http", url: "https://example.com/durable-agents" }),
-  );
+  const plan = await adapter.plan(exampleRequest({ kind: "http", url: "https://example.com/durable-agents" }));
   const result = await adapter.execute({ ...plan, admissionId: "example-http" });
   const verification = await adapter.verify(result);
   printJson({
@@ -41,6 +39,9 @@ export async function runHttpAcquireExample() {
   return { result, verification, puts };
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}` || process.argv[1]?.endsWith("01-http-acquire.ts")) {
+if (
+  import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}` ||
+  process.argv[1]?.endsWith("01-http-acquire.ts")
+) {
   await runHttpAcquireExample();
 }

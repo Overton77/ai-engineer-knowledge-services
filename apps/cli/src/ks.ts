@@ -33,12 +33,20 @@ export async function runKs(argv: readonly string[], io: KsIo, options: KsOption
   }
   const [group] = words;
   if (group === "jev") {
-    error(io, { code: "COMMAND_GROUP_NOT_BOUND", group, message: "Unit 5F binds `ks jev`; until then use the `jev` binary" });
+    error(io, {
+      code: "COMMAND_GROUP_NOT_BOUND",
+      group,
+      message: "Unit 5F binds `ks jev`; until then use the `jev` binary",
+    });
     return EXIT.error;
   }
   const resolved = resolveKsCommand(argv);
   if (!resolved) {
-    error(io, { code: "UNKNOWN_COMMAND", command: words.slice(0, 4).join(" "), help: isKsGroup(group) ? `ks ${group} --help` : "ks --help" });
+    error(io, {
+      code: "UNKNOWN_COMMAND",
+      command: words.slice(0, 4).join(" "),
+      help: isKsGroup(group) ? `ks ${group} --help` : "ks --help",
+    });
     return EXIT.error;
   }
   const { name, command, rest } = resolved;
@@ -54,8 +62,14 @@ export async function runKs(argv: readonly string[], io: KsIo, options: KsOption
       }
     }
   } catch (failure) {
-    if (failure instanceof KsUsageError) error(io, { code: "USAGE", command: name, message: failure.message, help: `ks ${name} --help` });
-    else error(io, { code: "CLI_ERROR", command: name, message: failure instanceof Error ? failure.message : "Unknown error" });
+    if (failure instanceof KsUsageError)
+      error(io, { code: "USAGE", command: name, message: failure.message, help: `ks ${name} --help` });
+    else
+      error(io, {
+        code: "CLI_ERROR",
+        command: name,
+        message: failure instanceof Error ? failure.message : "Unknown error",
+      });
     return EXIT.error;
   }
 }

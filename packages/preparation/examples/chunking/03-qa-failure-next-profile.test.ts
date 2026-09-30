@@ -11,7 +11,10 @@ describe("example 03: QA failure, next admitted profile", () => {
 
   it("accepts the next profile admitted for the same space and node kinds", () => {
     const result = qaFailureNextProfileExample();
-    expect(result.attempts.map(({ profile }) => profile)).toEqual(["atomic-claims-v1@1.0.0", "transcript-topics-v1@1.0.0"]);
+    expect(result.attempts.map(({ profile }) => profile)).toEqual([
+      "atomic-claims-v1@1.0.0",
+      "transcript-topics-v1@1.0.0",
+    ]);
     expect(result.attempts[1]?.valid).toBe(true);
     expect(result.accepted).toBe("transcript-topics-v1@1.0.0");
   });

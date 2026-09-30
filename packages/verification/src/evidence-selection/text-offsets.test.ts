@@ -4,10 +4,7 @@ import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 
-type PositionSelector = Extract<
-  VerificationSelector,
-  { kind: "character_position" }
->;
+type PositionSelector = Extract<VerificationSelector, { kind: "character_position" }>;
 type OffsetRange = Pick<PositionSelector, "start" | "end" | "offsetBasis">;
 
 const source = "A😀é42";
@@ -39,8 +36,7 @@ const adapters = [
   },
   {
     name: "PDF text positions",
-    coordinateSpace: (basis: OffsetRange["offsetBasis"]) =>
-      `pdf_physical_page_1:${basis}`,
+    coordinateSpace: (basis: OffsetRange["offsetBasis"]) => `pdf_physical_page_1:${basis}`,
     resolve: (range: OffsetRange, text = source) =>
       resolveText(
         canonicalizeJson({
@@ -91,66 +87,47 @@ const invalidRanges: readonly OffsetRange[] = [
 ];
 
 describe.each(adapters)("$name", (adapter) => {
-  it.each(validRanges)(
-    "retains $offsetBasis coordinates [$start, $end)",
-    (range) => {
-      const result = adapter.resolve(range);
-      expect(result?.resolution.status).toBe("resolved");
-      expect(new TextDecoder().decode(result?.selectedContent)).toBe(
-        range.expectedText,
-      );
-      expect(result?.resolution.resolvedRanges).toEqual([
-        {
-          start: range.start,
-          end: range.end,
-          coordinateSpace: adapter.coordinateSpace(range.offsetBasis),
-        },
-      ]);
-    },
-  );
+  it.each(validRanges)("retains $offsetBasis coordinates [$start, $end)", (range) => {
+    const result = adapter.resolve(range);
+    expect(result?.resolution.status).toBe("resolved");
+    expect(new TextDecoder().decode(result?.selectedContent)).toBe(range.expectedText);
+    expect(result?.resolution.resolvedRanges).toEqual([
+      {
+        start: range.start,
+        end: range.end,
+        coordinateSpace: adapter.coordinateSpace(range.offsetBasis),
+      },
+    ]);
+  });
 
-  it.each(invalidRanges)(
-    "rejects incomplete or invalid $offsetBasis coordinates [$start, $end)",
-    (range) => {
-      const result = adapter.resolve(range);
-      expect(result?.resolution.status).toBe("invalid");
-      expect(result?.selectedContent).toHaveLength(0);
-      expect(result?.resolution.resolvedRanges).toEqual([]);
-    },
-  );
+  it.each(invalidRanges)("rejects incomplete or invalid $offsetBasis coordinates [$start, $end)", (range) => {
+    const result = adapter.resolve(range);
+    expect(result?.resolution.status).toBe("invalid");
+    expect(result?.selectedContent).toHaveLength(0);
+    expect(result?.resolution.resolvedRanges).toEqual([]);
+  });
 
   it.each([
     { start: 0, end: 1, expectedText: "A" },
     { start: 1, end: 4, expectedText: "\uFEFF" },
     { start: 1, end: 5, expectedText: "\uFEFFB" },
     { start: 4, end: 5, expectedText: "B" },
-  ])(
-    "preserves UTF-8 positions [$start, $end) around an interior U+FEFF",
-    ({ start, end, expectedText }) => {
-      const result = adapter.resolve(
-        { start, end, offsetBasis: "utf8_bytes" },
-        "A\uFEFFB",
-      );
-      expect(result?.resolution.status).toBe("resolved");
-      expect(result?.selectedContent).toEqual(
-        new TextEncoder().encode(expectedText),
-      );
-      expect(result?.resolution.resolvedRanges).toEqual([
-        {
-          start,
-          end,
-          coordinateSpace: adapter.coordinateSpace("utf8_bytes"),
-        },
-      ]);
-    },
-  );
+  ])("preserves UTF-8 positions [$start, $end) around an interior U+FEFF", ({ start, end, expectedText }) => {
+    const result = adapter.resolve({ start, end, offsetBasis: "utf8_bytes" }, "A\uFEFFB");
+    expect(result?.resolution.status).toBe("resolved");
+    expect(result?.selectedContent).toEqual(new TextEncoder().encode(expectedText));
+    expect(result?.resolution.resolvedRanges).toEqual([
+      {
+        start,
+        end,
+        coordinateSpace: adapter.coordinateSpace("utf8_bytes"),
+      },
+    ]);
+  });
 });
 
 it("counts an initial U+FEFF preserved inside a PDF text layer", () => {
-  const result = adapters[1]!.resolve(
-    { start: 3, end: 4, offsetBasis: "utf8_bytes" },
-    "\uFEFFA",
-  );
+  const result = adapters[1]!.resolve({ start: 3, end: 4, offsetBasis: "utf8_bytes" }, "\uFEFFA");
   expect(result?.resolution.status).toBe("resolved");
   expect(result?.selectedContent).toEqual(new TextEncoder().encode("A"));
   expect(result?.resolution.resolvedRanges).toEqual([
@@ -178,9 +155,7 @@ it("counts an initial U+FEFF preserved inside repository content", () => {
   );
   expect(result?.resolution.status).toBe("resolved");
   expect(result?.selectedContent).toEqual(new TextEncoder().encode("A"));
-  expect(result?.resolution.resolvedRanges).toEqual([
-    { start: 3, end: 4, coordinateSpace: "repository_utf8_bytes" },
-  ]);
+  expect(result?.resolution.resolvedRanges).toEqual([{ start: 3, end: 4, coordinateSpace: "repository_utf8_bytes" }]);
 });
 
 it("keeps character positions in the declared normalized text coordinate space", () => {
@@ -192,8 +167,6 @@ it("keeps character positions in the declared normalized text coordinate space",
     end: 5,
   });
   expect(new TextDecoder().decode(result?.selectedContent)).toBe("42");
-  expect(result?.resolution.resolvedRanges).toEqual([
-    { start: 3, end: 5, coordinateSpace: "unicode_code_points" },
-  ]);
+  expect(result?.resolution.resolvedRanges).toEqual([{ start: 3, end: 5, coordinateSpace: "unicode_code_points" }]);
   expect(result?.resolution.normalization).toBe("lf");
 });

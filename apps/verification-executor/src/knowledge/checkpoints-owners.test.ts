@@ -15,19 +15,36 @@ function fixture(owner: "verification" | "publication" = "verification") {
     database: {
       getOperationRecord: vi.fn(async () => record),
       listReceipts: vi.fn(async () => [{ body: {} }]),
-      transaction: vi.fn(async (_tenant: string, callback: (client: { query: typeof query }) => unknown) => callback({ query })),
+      transaction: vi.fn(async (_tenant: string, callback: (client: { query: typeof query }) => unknown) =>
+        callback({ query }),
+      ),
     },
-    verification: { loadAuditBundleArtifactForOperationRecovery: vi.fn(async () => ({
-      manifestArtifact: handle, auditBundle: { manifest: { inputArtifacts: [], outputArtifacts: [] } },
-    })) },
+    verification: {
+      loadAuditBundleArtifactForOperationRecovery: vi.fn(async () => ({
+        manifestArtifact: handle,
+        auditBundle: { manifest: { inputArtifacts: [], outputArtifacts: [] } },
+      })),
+    },
     publications: { verifyPublication: vi.fn(async () => ({ publicationId: resourceId, status: "published" })) },
     artifacts: { reconcile: vi.fn(async () => ({ digest })) },
     custody: { resolve: vi.fn() },
     store: { putJson: vi.fn(async () => ({ handle })) },
   };
-  const reconciler = createCheckpointOwnerReconciler(dependencies as unknown as Parameters<typeof createCheckpointOwnerReconciler>[0]);
-  const request = { tenantId, scope: { tenantId, runId: "run", producerAttemptId: "producer", sessionId: "session", sandboxId: "sandbox", namespace: "notes" },
-    operation: { owner, operationId, requestDigest: digest } };
+  const reconciler = createCheckpointOwnerReconciler(
+    dependencies as unknown as Parameters<typeof createCheckpointOwnerReconciler>[0],
+  );
+  const request = {
+    tenantId,
+    scope: {
+      tenantId,
+      runId: "run",
+      producerAttemptId: "producer",
+      sessionId: "session",
+      sandboxId: "sandbox",
+      namespace: "notes",
+    },
+    operation: { owner, operationId, requestDigest: digest },
+  };
   return { dependencies, record, query, run: () => reconciler.reconcile(request) };
 }
 
@@ -35,21 +52,31 @@ describe("checkpoint existing owner reconciliation", () => {
   it("uses the exact database run and verifier binding and verifies remote artifacts", async () => {
     const test = fixture();
     expect(await test.run()).toMatchObject({ state: "settled", outcome: "succeeded" });
-    expect(test.dependencies.verification.loadAuditBundleArtifactForOperationRecovery).toHaveBeenCalledWith({ tenantId, runId: resourceId, operationId, verifierAttemptId: operationId });
+    expect(test.dependencies.verification.loadAuditBundleArtifactForOperationRecovery).toHaveBeenCalledWith({
+      tenantId,
+      runId: resourceId,
+      operationId,
+      verifierAttemptId: operationId,
+    });
     expect(test.dependencies.artifacts.reconcile).toHaveBeenCalledWith({ tenantId, artifactId });
   });
 
-  it.each(["verification", "publication"] as const)("leaves pending %s untouched without owner execution", async owner => {
-    const test = fixture(owner); test.record.status = "running";
-    expect(await test.run()).toMatchObject({ state: "unresolved" });
-    expect(test.query).not.toHaveBeenCalled();
-    expect(test.dependencies.verification.loadAuditBundleArtifactForOperationRecovery).not.toHaveBeenCalled();
-    expect(test.dependencies.publications.verifyPublication).not.toHaveBeenCalled();
-    expect(test.dependencies.store.putJson).not.toHaveBeenCalled();
-  });
+  it.each(["verification", "publication"] as const)(
+    "leaves pending %s untouched without owner execution",
+    async (owner) => {
+      const test = fixture(owner);
+      test.record.status = "running";
+      expect(await test.run()).toMatchObject({ state: "unresolved" });
+      expect(test.query).not.toHaveBeenCalled();
+      expect(test.dependencies.verification.loadAuditBundleArtifactForOperationRecovery).not.toHaveBeenCalled();
+      expect(test.dependencies.publications.verifyPublication).not.toHaveBeenCalled();
+      expect(test.dependencies.store.putJson).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects changed request identity before owner reconciliation", async () => {
-    const test = fixture(); test.record.requestSha256 = "b".repeat(64);
+    const test = fixture();
+    test.record.requestSha256 = "b".repeat(64);
     expect(await test.run()).toMatchObject({ state: "unresolved" });
     expect(test.query).not.toHaveBeenCalled();
   });
@@ -70,7 +97,9 @@ describe("checkpoint existing owner reconciliation", () => {
 
   it("refuses publication when its existing owner verification fails", async () => {
     const test = fixture("publication");
-    test.dependencies.publications.verifyPublication.mockRejectedValueOnce(new Error("PUBLICATION_VERIFICATION_FAILED"));
+    test.dependencies.publications.verifyPublication.mockRejectedValueOnce(
+      new Error("PUBLICATION_VERIFICATION_FAILED"),
+    );
     await expect(test.run()).rejects.toThrow("PUBLICATION_VERIFICATION_FAILED");
     expect(test.dependencies.store.putJson).not.toHaveBeenCalled();
   });

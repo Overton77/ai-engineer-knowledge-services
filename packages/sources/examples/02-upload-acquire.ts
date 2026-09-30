@@ -6,9 +6,7 @@ import { BoundedManualUploadAdapter } from "../src/index.js";
 import { exampleRequest, exampleStore, printJson } from "./helpers.js";
 
 export async function runUploadAcquireExample() {
-  const bytes = await readFile(
-    join(dirname(fileURLToPath(import.meta.url)), "fixtures", "notes.txt"),
-  );
+  const bytes = await readFile(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "notes.txt"));
   const adapter = new BoundedManualUploadAdapter(
     exampleStore(),
     {
@@ -30,9 +28,7 @@ export async function runUploadAcquireExample() {
     },
     { maximumBytes: 10_000, maximumPathLength: 80 },
   );
-  const plan = await adapter.plan(
-    exampleRequest({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" }),
-  );
+  const plan = await adapter.plan(exampleRequest({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" }));
   const result = await adapter.execute({ ...plan, admissionId: "example-upload" });
   const verification = await adapter.verify(result);
   printJson({

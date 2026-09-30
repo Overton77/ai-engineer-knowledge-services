@@ -31,8 +31,7 @@ export function admittedInvoiceSchema(): AdmittedExtractionSchema {
       additionalProperties: false,
     },
   });
-  if (!admission.admitted)
-    throw new Error(admission.checks.map((check) => check.code).join(","));
+  if (!admission.admitted) throw new Error(admission.checks.map((check) => check.code).join(","));
   return admission.schema;
 }
 

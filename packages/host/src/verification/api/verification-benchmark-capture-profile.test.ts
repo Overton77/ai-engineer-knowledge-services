@@ -2,8 +2,7 @@ import type { LocalApiIdentity } from "@aiengineer/knowledge-application";
 import { describe, expect, it, vi } from "vitest";
 import { ServerOwnedBenchmarkCaptureProfileResolver } from "./verification-benchmark-capture-profile.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenantId = id(1),
   actor = {
     kind: "service" as const,
@@ -44,10 +43,8 @@ const database = (options: { owned?: boolean } = {}) => {
   });
   return {
     database: {
-      transaction: async (
-        _tenant: string,
-        work: (client: { query: typeof query }) => Promise<unknown>,
-      ) => work({ query }),
+      transaction: async (_tenant: string, work: (client: { query: typeof query }) => Promise<unknown>) =>
+        work({ query }),
     },
     query,
   };
@@ -56,11 +53,7 @@ const database = (options: { owned?: boolean } = {}) => {
 describe("ServerOwnedBenchmarkCaptureProfileResolver", () => {
   it("uses configured canonical routing only after bearer actor and tenant action checks", async () => {
     const fixture = database(),
-      resolver = new ServerOwnedBenchmarkCaptureProfileResolver(
-        fixture.database as never,
-        profiles,
-        ownershipGrants,
-      );
+      resolver = new ServerOwnedBenchmarkCaptureProfileResolver(fixture.database as never, profiles, ownershipGrants);
     const context = await resolver.resolve(
       "diagnostics-companies",
       identity,
@@ -82,43 +75,22 @@ describe("ServerOwnedBenchmarkCaptureProfileResolver", () => {
   it("returns no distinguishable profile result before a canonical ownership query for unknown, foreign, or unauthorized callers", async () => {
     for (const candidate of [
       ["unknown", identity],
-      [
-        "diagnostics-companies",
-        { ...identity, actor: { ...actor, id: id(99) } },
-      ],
+      ["diagnostics-companies", { ...identity, actor: { ...actor, id: id(99) } }],
       ["diagnostics-companies", { ...identity, grants: [] }],
     ] as const) {
       const fixture = database(),
-        resolver = new ServerOwnedBenchmarkCaptureProfileResolver(
-          fixture.database as never,
-          profiles,
-          ownershipGrants,
-        );
+        resolver = new ServerOwnedBenchmarkCaptureProfileResolver(fixture.database as never, profiles, ownershipGrants);
       await expect(
-        resolver.resolve(
-          candidate[0],
-          candidate[1],
-          "profile-correlation",
-          "profile-idempotency-key",
-        ),
+        resolver.resolve(candidate[0], candidate[1], "profile-correlation", "profile-idempotency-key"),
       ).resolves.toBeUndefined();
       expect(fixture.query).not.toHaveBeenCalled();
     }
   });
   it("refuses stale or mismatched canonical attempt ownership without manufacturing context", async () => {
     const fixture = database({ owned: false }),
-      resolver = new ServerOwnedBenchmarkCaptureProfileResolver(
-        fixture.database as never,
-        profiles,
-        ownershipGrants,
-      );
+      resolver = new ServerOwnedBenchmarkCaptureProfileResolver(fixture.database as never, profiles, ownershipGrants);
     await expect(
-      resolver.resolve(
-        "diagnostics-companies",
-        identity,
-        "profile-correlation",
-        "profile-idempotency-key",
-      ),
+      resolver.resolve("diagnostics-companies", identity, "profile-correlation", "profile-idempotency-key"),
     ).resolves.toBeUndefined();
     expect(fixture.query).toHaveBeenCalledTimes(1);
   });
@@ -142,12 +114,7 @@ describe("ServerOwnedBenchmarkCaptureProfileResolver", () => {
       },
     ]);
     expect(
-      () =>
-        new ServerOwnedBenchmarkCaptureProfileResolver(
-          database().database as never,
-          duplicate,
-          ownershipGrants,
-        ),
+      () => new ServerOwnedBenchmarkCaptureProfileResolver(database().database as never, duplicate, ownershipGrants),
     ).toThrow("DUPLICATE_VERIFICATION_BENCHMARK_CLI_PROFILE");
     expect(
       () =>

@@ -141,39 +141,63 @@ export const ClaimTypeSchema = z.enum([
 ]);
 export const DerivationTypeSchema = z.enum(["direct", "normalized", "computed", "inferred"]);
 
-export const AssertionSchema = z.strictObject({
-  assertionId: VerificationIdSchema,
-  kind: AssertionKindSchema,
-  claimType: ClaimTypeSchema.optional(),
-  value: JsonValueSchema.optional(),
-  proposition: NonEmptyStringSchema.optional(),
-  producer: VerificationActorDeploymentSchema,
-  outputArtifactId: UuidSchema.optional(),
-  outputRange: z.strictObject({ start: z.int().nonnegative(), end: z.int().positive() }).optional(),
-  qualifiers: z.array(NonEmptyStringSchema),
-  entityBindings: z.array(z.strictObject({ role: NonEmptyStringSchema, canonicalId: NonEmptyStringSchema })),
-  derivation: DerivationTypeSchema,
-  evidence: z.array(EvidenceEdgeSchema),
-  intent: VerificationIntentSchema,
-  riskClass: z.enum(["low", "medium", "high", "critical"]),
-  downstreamUse: z.array(NonEmptyStringSchema).min(1),
-  atomic: z.boolean(),
-}).superRefine((assertion, context) => {
-  if (assertion.value === undefined && assertion.proposition === undefined) context.addIssue({ code: "custom", message: "an assertion requires a value or proposition" });
-  if (assertion.outputRange && assertion.outputRange.end <= assertion.outputRange.start) context.addIssue({ code: "custom", path: ["outputRange", "end"], message: "output range end must be greater than start" });
-  if ((assertion.kind === "claim" || assertion.kind === "report_assertion") && assertion.claimType === undefined) context.addIssue({ code: "custom", path: ["claimType"], message: "claim assertions require a claim type" });
-});
+export const AssertionSchema = z
+  .strictObject({
+    assertionId: VerificationIdSchema,
+    kind: AssertionKindSchema,
+    claimType: ClaimTypeSchema.optional(),
+    value: JsonValueSchema.optional(),
+    proposition: NonEmptyStringSchema.optional(),
+    producer: VerificationActorDeploymentSchema,
+    outputArtifactId: UuidSchema.optional(),
+    outputRange: z.strictObject({ start: z.int().nonnegative(), end: z.int().positive() }).optional(),
+    qualifiers: z.array(NonEmptyStringSchema),
+    entityBindings: z.array(z.strictObject({ role: NonEmptyStringSchema, canonicalId: NonEmptyStringSchema })),
+    derivation: DerivationTypeSchema,
+    evidence: z.array(EvidenceEdgeSchema),
+    intent: VerificationIntentSchema,
+    riskClass: z.enum(["low", "medium", "high", "critical"]),
+    downstreamUse: z.array(NonEmptyStringSchema).min(1),
+    atomic: z.boolean(),
+  })
+  .superRefine((assertion, context) => {
+    if (assertion.value === undefined && assertion.proposition === undefined)
+      context.addIssue({ code: "custom", message: "an assertion requires a value or proposition" });
+    if (assertion.outputRange && assertion.outputRange.end <= assertion.outputRange.start)
+      context.addIssue({
+        code: "custom",
+        path: ["outputRange", "end"],
+        message: "output range end must be greater than start",
+      });
+    if ((assertion.kind === "claim" || assertion.kind === "report_assertion") && assertion.claimType === undefined)
+      context.addIssue({ code: "custom", path: ["claimType"], message: "claim assertions require a claim type" });
+  });
 export type Assertion = z.infer<typeof AssertionSchema>;
 
 export const EntityIdentitySchema = z.strictObject({
-  kind: z.enum(["library", "repository", "package", "paper", "person", "organization", "product", "model", "video", "dataset", "other"]),
+  kind: z.enum([
+    "library",
+    "repository",
+    "package",
+    "paper",
+    "person",
+    "organization",
+    "product",
+    "model",
+    "video",
+    "dataset",
+    "other",
+  ]),
   canonicalId: NonEmptyStringSchema,
   label: NonEmptyStringSchema,
   parentCanonicalId: NonEmptyStringSchema.optional(),
   aliases: z.array(NonEmptyStringSchema),
 });
 
-export const DecimalStringSchema = z.string().max(128).regex(/^-?(?:0|[1-9]\d{0,63})(?:\.\d{1,63})?$/);
+export const DecimalStringSchema = z
+  .string()
+  .max(128)
+  .regex(/^-?(?:0|[1-9]\d{0,63})(?:\.\d{1,63})?$/);
 export const UnitDescriptorSchema = z.strictObject({
   symbol: NonEmptyStringSchema,
   dimension: NonEmptyStringSchema,
@@ -205,9 +229,15 @@ export const ObservationPeriodSchema = z.discriminatedUnion("semantics", [
 
 export const CalculationProofSchema = z.strictObject({
   operation: z.enum(["identity", "sum", "difference", "product", "ratio", "percent_change"]),
-  operands: z.array(z.strictObject({ observationId: VerificationIdSchema, value: DecimalStringSchema })).min(1).max(100),
+  operands: z
+    .array(z.strictObject({ observationId: VerificationIdSchema, value: DecimalStringSchema }))
+    .min(1)
+    .max(100),
   expectedResult: DecimalStringSchema,
-  rounding: z.strictObject({ mode: z.enum(["none", "half_even", "half_up", "down"]), decimalPlaces: z.int().nonnegative().max(18) }),
+  rounding: z.strictObject({
+    mode: z.enum(["none", "half_even", "half_up", "down"]),
+    decimalPlaces: z.int().nonnegative().max(18),
+  }),
   tolerance: DecimalStringSchema,
   operationVersion: NonEmptyStringSchema,
 });
@@ -219,38 +249,62 @@ export const MetricEvidenceBindingSchema = z.strictObject({
   comparison: z.enum(["decimal", "exact_text", "iso_datetime"]),
 });
 
-export const VerificationMetricObservationSchema = z.strictObject({
-  observationId: VerificationIdSchema,
-  entity: EntityIdentitySchema,
-  artifactLevel: NonEmptyStringSchema,
-  provider: NonEmptyStringSchema,
-  providerNativeField: NonEmptyStringSchema,
-  metricDefinition: NonEmptyStringSchema,
-  metricDefinitionVersion: NonEmptyStringSchema,
-  rawValue: JsonValueSchema,
-  canonicalValue: DecimalStringSchema,
-  unit: UnitDescriptorSchema,
-  period: ObservationPeriodSchema,
-  numerator: DecimalStringSchema.optional(),
-  denominator: DecimalStringSchema.optional(),
-  population: NonEmptyStringSchema.optional(),
-  aggregation: NonEmptyStringSchema,
-  deduplication: NonEmptyStringSchema,
-  caveats: z.array(NonEmptyStringSchema),
-  observedAt: IsoDateTimeSchema,
-  effectiveAt: IsoDateTimeSchema.optional(),
-  comparabilityGroup: NonEmptyStringSchema,
-  evidence: z.array(EvidenceEdgeSchema).min(1),
-  evidenceBindings: z.array(MetricEvidenceBindingSchema).min(3),
-  calculation: CalculationProofSchema.optional(),
-}).superRefine((observation, context) => {
-  const facets = new Set(observation.evidenceBindings.map((binding) => binding.facet));
-  for (const facet of ["value", "unit", "identity"] as const) if (!facets.has(facet)) context.addIssue({ code: "custom", path: ["evidenceBindings"], message: `metric requires a ${facet} evidence binding` });
-  if (observation.period.start !== undefined && !facets.has("period_start")) context.addIssue({ code: "custom", path: ["evidenceBindings"], message: "metric period start requires an evidence binding" });
-  if (observation.period.end !== undefined && !facets.has("period_end")) context.addIssue({ code: "custom", path: ["evidenceBindings"], message: "metric period end requires an evidence binding" });
-  const evidenceIds = observation.evidence.map((edge) => edge.evidenceId);
-  for (const binding of observation.evidenceBindings) if (!evidenceIds.includes(binding.evidenceId)) context.addIssue({ code: "custom", path: ["evidenceBindings"], message: `binding references unknown evidence ${binding.evidenceId}` });
-});
+export const VerificationMetricObservationSchema = z
+  .strictObject({
+    observationId: VerificationIdSchema,
+    entity: EntityIdentitySchema,
+    artifactLevel: NonEmptyStringSchema,
+    provider: NonEmptyStringSchema,
+    providerNativeField: NonEmptyStringSchema,
+    metricDefinition: NonEmptyStringSchema,
+    metricDefinitionVersion: NonEmptyStringSchema,
+    rawValue: JsonValueSchema,
+    canonicalValue: DecimalStringSchema,
+    unit: UnitDescriptorSchema,
+    period: ObservationPeriodSchema,
+    numerator: DecimalStringSchema.optional(),
+    denominator: DecimalStringSchema.optional(),
+    population: NonEmptyStringSchema.optional(),
+    aggregation: NonEmptyStringSchema,
+    deduplication: NonEmptyStringSchema,
+    caveats: z.array(NonEmptyStringSchema),
+    observedAt: IsoDateTimeSchema,
+    effectiveAt: IsoDateTimeSchema.optional(),
+    comparabilityGroup: NonEmptyStringSchema,
+    evidence: z.array(EvidenceEdgeSchema).min(1),
+    evidenceBindings: z.array(MetricEvidenceBindingSchema).min(3),
+    calculation: CalculationProofSchema.optional(),
+  })
+  .superRefine((observation, context) => {
+    const facets = new Set(observation.evidenceBindings.map((binding) => binding.facet));
+    for (const facet of ["value", "unit", "identity"] as const)
+      if (!facets.has(facet))
+        context.addIssue({
+          code: "custom",
+          path: ["evidenceBindings"],
+          message: `metric requires a ${facet} evidence binding`,
+        });
+    if (observation.period.start !== undefined && !facets.has("period_start"))
+      context.addIssue({
+        code: "custom",
+        path: ["evidenceBindings"],
+        message: "metric period start requires an evidence binding",
+      });
+    if (observation.period.end !== undefined && !facets.has("period_end"))
+      context.addIssue({
+        code: "custom",
+        path: ["evidenceBindings"],
+        message: "metric period end requires an evidence binding",
+      });
+    const evidenceIds = observation.evidence.map((edge) => edge.evidenceId);
+    for (const binding of observation.evidenceBindings)
+      if (!evidenceIds.includes(binding.evidenceId))
+        context.addIssue({
+          code: "custom",
+          path: ["evidenceBindings"],
+          message: `binding references unknown evidence ${binding.evidenceId}`,
+        });
+  });
 export type VerificationMetricObservation = z.infer<typeof VerificationMetricObservationSchema>;
 
 export const SemanticVerdictSchema = z.enum([

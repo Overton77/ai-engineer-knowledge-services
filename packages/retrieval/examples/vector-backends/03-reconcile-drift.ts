@@ -4,18 +4,36 @@ import { StubPublicationInspector, baseInspection, digest, id, manifests, printJ
 
 function publishRequest(publicationId: string): PublishExploratoryRequest {
   return {
-    publicationId, eventId: `event-${publicationId}`, receiptId: `receipt-${publicationId}`, tenantId: id(1),
-    vectorStoreId: id(2), vectorStoreSpaceId: id(3), vectorSpaceVersionId: "v1", storeClass: "internal_exploratory",
-    expectedItemCount: 2, manifests, promotionDecisionId: `decision-${publicationId}`,
-    evaluationGateResultId: `gate-${publicationId}`, reason: "verified evaluation promotion",
+    publicationId,
+    eventId: `event-${publicationId}`,
+    receiptId: `receipt-${publicationId}`,
+    tenantId: id(1),
+    vectorStoreId: id(2),
+    vectorStoreSpaceId: id(3),
+    vectorSpaceVersionId: "v1",
+    storeClass: "internal_exploratory",
+    expectedItemCount: 2,
+    manifests,
+    promotionDecisionId: `decision-${publicationId}`,
+    evaluationGateResultId: `gate-${publicationId}`,
+    reason: "verified evaluation promotion",
   };
 }
 
 /** A hand-written stub, not the real repository: it proves a pointer can outlive its publication only for this one drift shape. */
 function orphanRepository(tenantId: string, vectorStoreSpaceId: string): PublicationRepository {
-  const pointer: ActivePublicationPointer = { tenantId, vectorStoreSpaceId, publicationId: "publication-missing", vectorSpaceVersionId: "v1", revision: 1, updatedAt: "2026-09-03T12:00:00Z" };
+  const pointer: ActivePublicationPointer = {
+    tenantId,
+    vectorStoreSpaceId,
+    publicationId: "publication-missing",
+    vectorSpaceVersionId: "v1",
+    revision: 1,
+    updatedAt: "2026-09-03T12:00:00Z",
+  };
   return {
-    transaction: async () => { throw new Error("not exercised by this example"); },
+    transaction: async () => {
+      throw new Error("not exercised by this example");
+    },
     getPublication: async () => undefined,
     getActivePointer: async () => pointer,
     listEvents: async () => [],
@@ -43,10 +61,16 @@ export async function reconcileDriftExample() {
   manifestInspector.inspections.set("v1", baseInspection("v1"));
   const manifestCoordinator = new ExploratoryPublicationCoordinator(manifestRepository, manifestInspector);
   await manifestCoordinator.publish(publishRequest("publication-manifest"));
-  manifestInspector.inspections.set("v1", baseInspection("v1", { manifests: { ...manifests, embedding: digest("f") } }));
+  manifestInspector.inspections.set(
+    "v1",
+    baseInspection("v1", { manifests: { ...manifests, embedding: digest("f") } }),
+  );
   const manifestReport = await manifestCoordinator.reconcile(id(1), id(3));
 
-  const orphanCoordinator = new ExploratoryPublicationCoordinator(orphanRepository(id(1), id(3)), new StubPublicationInspector());
+  const orphanCoordinator = new ExploratoryPublicationCoordinator(
+    orphanRepository(id(1), id(3)),
+    new StubPublicationInspector(),
+  );
   const orphanReport = await orphanCoordinator.reconcile(id(1), id(3));
 
   const codes = (report: { findings: readonly { code: string; classification: string }[] }) =>

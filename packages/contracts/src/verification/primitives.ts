@@ -13,12 +13,7 @@ import {
 
 export const VerificationContractVersionSchema = z.literal("verification.v1");
 export const VerificationIdSchema = z.string().trim().min(1).max(255);
-export const VerificationDataClassificationSchema = z.enum([
-  "public",
-  "internal",
-  "confidential",
-  "restricted",
-]);
+export const VerificationDataClassificationSchema = z.enum(["public", "internal", "confidential", "restricted"]);
 
 export const VerificationArtifactHandleSchema = ArtifactReferenceSchema.extend({
   byteLength: z.int().nonnegative(),
@@ -59,10 +54,12 @@ export const VerificationOperationContextSchema = z.strictObject({
   requestedAt: IsoDateTimeSchema,
   dataClassification: VerificationDataClassificationSchema,
   requestedPolicyVersion: NonEmptyStringSchema,
-  inputArtifacts: z.array(z.strictObject({
-    artifactId: UuidSchema,
-    digest: Sha256DigestSchema,
-  })),
+  inputArtifacts: z.array(
+    z.strictObject({
+      artifactId: UuidSchema,
+      digest: Sha256DigestSchema,
+    }),
+  ),
 });
 export type VerificationOperationContext = z.infer<typeof VerificationOperationContextSchema>;
 

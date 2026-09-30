@@ -1,8 +1,4 @@
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-  sha256Digest,
-} from "../canonical/index.js";
+import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "../canonical/index.js";
 import { CORE_RESOLVER_VERSION } from "../versions.js";
 import { resolveCoreEvidenceSelector } from "./core-resolver.js";
 import {
@@ -25,19 +21,14 @@ export function resolveEvidenceSelector(
   request: EvidenceSelectionRequest,
   resolvers: readonly EvidenceSelectorResolver[] = [],
 ): EvidenceSelection | undefined {
-  return (
-    resolveCoreEvidenceSelector(request) ??
-    delegateToResolver(request, resolvers)
-  );
+  return resolveCoreEvidenceSelector(request) ?? delegateToResolver(request, resolvers);
 }
 
 function delegateToResolver(
   request: EvidenceSelectionRequest,
   resolvers: readonly EvidenceSelectorResolver[],
 ): EvidenceSelection | undefined {
-  const resolver = resolvers.find((candidate) =>
-    candidate.supportedKinds.includes(request.selector.kind),
-  );
+  const resolver = resolvers.find((candidate) => candidate.supportedKinds.includes(request.selector.kind));
   if (!resolver) return undefined;
   return verifyClaimedSelection(request, resolver, resolver.resolve(request));
 }
@@ -48,10 +39,8 @@ function verifyClaimedSelection(
   resolver: EvidenceSelectorResolver,
   claimed: EvidenceSelection,
 ): EvidenceSelection {
-  if (!isBoundToRequest(claimed, request, resolver.resolverVersion))
-    return report.unresolved(request, "invalid");
-  if (!selectedDigestsReplay(claimed))
-    return report.unresolved(request, "invalid");
+  if (!isBoundToRequest(claimed, request, resolver.resolverVersion)) return report.unresolved(request, "invalid");
+  if (!selectedDigestsReplay(claimed)) return report.unresolved(request, "invalid");
   return withDecodedText(claimed);
 }
 
@@ -70,25 +59,16 @@ function isBoundToRequest(
   );
 }
 
-function selectedDigestsReplay({
-  resolution,
-  selectedContent,
-}: EvidenceSelection): boolean {
+function selectedDigestsReplay({ resolution, selectedContent }: EvidenceSelection): boolean {
   const digest = sha256Digest(selectedContent);
-  const contentReplays =
-    resolution.status !== "resolved" ||
-    resolution.selectedContentDigest === digest;
+  const contentReplays = resolution.status !== "resolved" || resolution.selectedContentDigest === digest;
   const valueReplays =
-    resolution.selectedValue === undefined ||
-    sha256Digest(canonicalizeJson(resolution.selectedValue)) === digest;
+    resolution.selectedValue === undefined || sha256Digest(canonicalizeJson(resolution.selectedValue)) === digest;
   return contentReplays && valueReplays;
 }
 
 /** Attaches the UTF-8 text when the selected bytes decode; structured selections stay bytes-only. */
-function withDecodedText({
-  resolution,
-  selectedContent,
-}: EvidenceSelection): EvidenceSelection {
+function withDecodedText({ resolution, selectedContent }: EvidenceSelection): EvidenceSelection {
   try {
     return {
       resolution,

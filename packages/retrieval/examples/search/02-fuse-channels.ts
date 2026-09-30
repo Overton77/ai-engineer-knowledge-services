@@ -41,5 +41,4 @@ export async function fuseChannelsExample() {
   };
 }
 
-if (process.argv[1]?.includes("02-fuse-channels"))
-  printJson(await fuseChannelsExample());
+if (process.argv[1]?.includes("02-fuse-channels")) printJson(await fuseChannelsExample());

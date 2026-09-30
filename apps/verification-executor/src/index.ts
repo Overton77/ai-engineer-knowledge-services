@@ -80,7 +80,11 @@ Environment
   VERIFY_VERIFIER_DEPLOYMENT_ID   VERIFY_PRINCIPAL_SALT   VERIFY_JUDGE_MODEL   VERIFY_CROSS_FAMILY_JUDGE_MODEL
   AI_GATEWAY_API_KEY (judge)   FIRECRAWL_API_KEY (capture + document parsing)`;
 
-interface Parsed { command: string; positionals: string[]; flags: Record<string, string | true> }
+interface Parsed {
+  command: string;
+  positionals: string[];
+  flags: Record<string, string | true>;
+}
 
 function parseArgs(argv: string[]): Parsed {
   const [command = "help", ...rest] = argv;
@@ -91,18 +95,35 @@ function parseArgs(argv: string[]): Parsed {
     if (item.startsWith("--")) {
       const key = item.slice(2);
       const next = rest[index + 1];
-      if (next !== undefined && !next.startsWith("--")) { flags[key] = next; index += 1; } else flags[key] = true;
+      if (next !== undefined && !next.startsWith("--")) {
+        flags[key] = next;
+        index += 1;
+      } else flags[key] = true;
     } else positionals.push(item);
   }
   return { command, positionals, flags };
 }
 
 const str = (value: string | true | undefined): string | undefined => (typeof value === "string" ? value : undefined);
-const num = (value: string | true | undefined): number | undefined => (typeof value === "string" ? Number(value) : undefined);
-const need = (value: string | undefined, name: string): string => { if (!value) throw new UsageError(`${name} is required`); return value; };
+const num = (value: string | true | undefined): number | undefined =>
+  typeof value === "string" ? Number(value) : undefined;
+const need = (value: string | undefined, name: string): string => {
+  if (!value) throw new UsageError(`${name} is required`);
+  return value;
+};
 
-class UsageError extends Error { override name = "UsageError"; }
-class QualityGateError extends Error { override name = "QualityGateError"; constructor(readonly payload: unknown, readonly reason: string) { super(reason); } }
+class UsageError extends Error {
+  override name = "UsageError";
+}
+class QualityGateError extends Error {
+  override name = "QualityGateError";
+  constructor(
+    readonly payload: unknown,
+    readonly reason: string,
+  ) {
+    super(reason);
+  }
+}
 
 async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, "utf8"));
@@ -111,7 +132,13 @@ async function readJson(path: string): Promise<unknown> {
 function artifactMediaTypeFor(path: string, override?: string): string {
   if (override) return override;
   const ext = extname(path).toLowerCase();
-  return ext === ".json" ? "application/json" : ext === ".md" ? "text/markdown; charset=utf-8" : ext === ".txt" ? "text/plain; charset=utf-8" : "application/octet-stream";
+  return ext === ".json"
+    ? "application/json"
+    : ext === ".md"
+      ? "text/markdown; charset=utf-8"
+      : ext === ".txt"
+        ? "text/plain; charset=utf-8"
+        : "application/octet-stream";
 }
 
 // ---- backends -------------------------------------------------------------------------------
@@ -120,7 +147,14 @@ interface Backend {
   readonly mode: "local" | "remote";
   call(operation: string, args: Record<string, unknown>): Promise<unknown>;
   registerBytes(input: { bytes: Uint8Array; mediaType: string; label?: string; runId?: string }): Promise<unknown>;
-  captureBytes(input: { bytes: Uint8Array; filename: string; mediaType?: string; sourceUri?: string; captureId?: string; runId?: string }): Promise<unknown>;
+  captureBytes(input: {
+    bytes: Uint8Array;
+    filename: string;
+    mediaType?: string;
+    sourceUri?: string;
+    captureId?: string;
+    runId?: string;
+  }): Promise<unknown>;
   status(runId: string): Promise<unknown>;
   artifact(id: string, as: "text" | "json" | "handle" | undefined): Promise<unknown>;
   health(): Promise<unknown>;
@@ -143,12 +177,22 @@ function localBackend(executor: VerificationExecutor): Backend {
   };
   return {
     mode: "local",
-    call: (operation, args) => { const fn = table[operation]; if (!fn) throw new UsageError(`unknown operation ${operation}`); return fn(args); },
+    call: (operation, args) => {
+      const fn = table[operation];
+      if (!fn) throw new UsageError(`unknown operation ${operation}`);
+      return fn(args);
+    },
     registerBytes: (input) => executor.registerArtifact(input),
     captureBytes: (input) => executor.captureFile(input),
     status: (runId) => executor.runStatus({ runId }),
-    artifact: (id, as) => executor.artifact({ ...(id.startsWith("sha256:") ? { digest: id } : { artifactId: id }), ...(as ? { as } : {}) }),
-    health: async () => ({ status: "ok", mode: "local", store: executor.store.rootDir, tenantId: executor.store.tenantId }),
+    artifact: (id, as) =>
+      executor.artifact({ ...(id.startsWith("sha256:") ? { digest: id } : { artifactId: id }), ...(as ? { as } : {}) }),
+    health: async () => ({
+      status: "ok",
+      mode: "local",
+      store: executor.store.rootDir,
+      tenantId: executor.store.tenantId,
+    }),
     listCaptures: () => executor.listCaptures(),
     mediaTypes: async () => executor.supportedMediaTypes(),
   };
@@ -175,18 +219,39 @@ const ADMITTED_VERDICTS = new Set(["directly_supported", "supported_with_qualifi
 function qualityGate(command: string, output: unknown): string | undefined {
   const value = (output ?? {}) as Record<string, unknown>;
   switch (command) {
-    case "locate": return value.status === "resolved" ? undefined : `locate status=${String(value.status)} occurrenceCount=${String(value.occurrenceCount)}`;
-    case "verify-claims": return value.status === "passed" ? undefined : `mechanical status=${String(value.status)}`;
-    case "verify-extraction": return value.valid === true ? undefined : `extraction valid=${String(value.valid)} failedPaths=${JSON.stringify(value.failedPaths ?? [])}`;
+    case "locate":
+      return value.status === "resolved"
+        ? undefined
+        : `locate status=${String(value.status)} occurrenceCount=${String(value.occurrenceCount)}`;
+    case "verify-claims":
+      return value.status === "passed" ? undefined : `mechanical status=${String(value.status)}`;
+    case "verify-extraction":
+      return value.valid === true
+        ? undefined
+        : `extraction valid=${String(value.valid)} failedPaths=${JSON.stringify(value.failedPaths ?? [])}`;
     case "judge": {
-      const assessed = Array.isArray(value.assessed) ? (value.assessed as { assertionId: string; verdict: string }[]) : [];
+      const assessed = Array.isArray(value.assessed)
+        ? (value.assessed as { assertionId: string; verdict: string }[])
+        : [];
       const rejected = assessed.filter((item) => !ADMITTED_VERDICTS.has(item.verdict));
-      return rejected.length === 0 ? undefined : `judge rejected ${rejected.length}/${assessed.length}: ${rejected.map((item) => `${item.assertionId}=${item.verdict}`).join(", ")}`;
+      return rejected.length === 0
+        ? undefined
+        : `judge rejected ${rejected.length}/${assessed.length}: ${rejected.map((item) => `${item.assertionId}=${item.verdict}`).join(", ")}`;
     }
-    case "policy": return value.outcome === "pass" || value.outcome === "pass_with_warnings" ? undefined : `policy outcome=${String(value.outcome)} reasons=${JSON.stringify(value.reasonCodes ?? [])}`;
-    case "seal": { const inspection = value.inspection as { valid?: boolean } | undefined; return inspection?.valid === true ? undefined : "audit bundle inspection invalid"; }
-    case "check-report": return value.ok === true ? undefined : `report check ok=false problems=${JSON.stringify(value.problems ?? [])} citationsOnFailedClaims=${JSON.stringify(value.citationsOnFailedClaims ?? [])}`;
-    default: return undefined;
+    case "policy":
+      return value.outcome === "pass" || value.outcome === "pass_with_warnings"
+        ? undefined
+        : `policy outcome=${String(value.outcome)} reasons=${JSON.stringify(value.reasonCodes ?? [])}`;
+    case "seal": {
+      const inspection = value.inspection as { valid?: boolean } | undefined;
+      return inspection?.valid === true ? undefined : "audit bundle inspection invalid";
+    }
+    case "check-report":
+      return value.ok === true
+        ? undefined
+        : `report check ok=false problems=${JSON.stringify(value.problems ?? [])} citationsOnFailedClaims=${JSON.stringify(value.citationsOnFailedClaims ?? [])}`;
+    default:
+      return undefined;
   }
 }
 
@@ -194,7 +259,9 @@ function summarize(output: unknown): unknown {
   if (!output || typeof output !== "object" || Array.isArray(output)) return output;
   const summary: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(output as Record<string, unknown>)) {
-    if (value === null || ["string", "number", "boolean"].includes(typeof value)) summary[key] = typeof value === "string" && value.length > 200 ? `${value.slice(0, 200)}… (${value.length} chars)` : value;
+    if (value === null || ["string", "number", "boolean"].includes(typeof value))
+      summary[key] =
+        typeof value === "string" && value.length > 200 ? `${value.slice(0, 200)}… (${value.length} chars)` : value;
     else if (Array.isArray(value)) summary[key] = `[${value.length} items]`;
     else if (typeof value === "object" && "artifactId" in (value as object)) summary[key] = value;
     else summary[key] = "{…}";
@@ -206,7 +273,10 @@ function summarize(output: unknown): unknown {
 
 export async function main(argv = process.argv.slice(2)): Promise<void> {
   const { command, positionals, flags } = parseArgs(argv);
-  if (command === "help" || command === "--help" || command === "-h") { console.log(HELP); return; }
+  if (command === "help" || command === "--help" || command === "-h") {
+    console.log(HELP);
+    return;
+  }
 
   const remoteUrl = str(flags.remote) ?? process.env.VERIFY_EXECUTOR_URL?.trim();
   const token = str(flags.token) ?? process.env.VERIFY_EXECUTOR_TOKEN?.trim();
@@ -215,13 +285,17 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
   const emit = async (value: unknown) => {
     const text = JSON.stringify(value, null, 2);
-    if (out) { await writeFile(out, `${text}\n`, "utf8"); process.stdout.write(`${JSON.stringify({ ...(summarize(value) as object), writtenTo: out }, null, 2)}\n`); }
-    else process.stdout.write(`${text}\n`);
+    if (out) {
+      await writeFile(out, `${text}\n`, "utf8");
+      process.stdout.write(`${JSON.stringify({ ...(summarize(value) as object), writtenTo: out }, null, 2)}\n`);
+    } else process.stdout.write(`${text}\n`);
   };
 
   if (command === "mcp-stdio") {
     const executor = await VerificationExecutor.create(loadExecutorConfig());
-    await createVerificationMcpServer(executor, await createKnowledgeFromEnv(process.env, executor)).connect(new StdioServerTransport());
+    await createVerificationMcpServer(executor, await createKnowledgeFromEnv(process.env, executor)).connect(
+      new StdioServerTransport(),
+    );
     return;
   }
   if (command === "serve") {
@@ -229,7 +303,10 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
     const host = str(flags.host) ?? process.env.VERIFY_HOST ?? "127.0.0.1";
     const running = await startExecutorServer({ port, host, ...(token ? { token } : {}) });
     console.error(JSON.stringify(describeRunning(running, token ? "bearer" : "none")));
-    await new Promise<void>((resolve) => { process.on("SIGINT", () => void running.close().then(resolve)); process.on("SIGTERM", () => void running.close().then(resolve)); });
+    await new Promise<void>((resolve) => {
+      process.on("SIGINT", () => void running.close().then(resolve));
+      process.on("SIGTERM", () => void running.close().then(resolve));
+    });
     return;
   }
 
@@ -240,12 +317,25 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
   const withRun = (args: Record<string, unknown>) => ({ ...args, ...(run ? { runId: run } : {}) });
   let output: unknown;
   switch (command) {
-    case "health": output = await backend.health(); break;
-    case "media-types": output = await backend.mediaTypes(); break;
-    case "captures": output = await backend.listCaptures(); break;
+    case "health":
+      output = await backend.health();
+      break;
+    case "media-types":
+      output = await backend.mediaTypes();
+      break;
+    case "captures":
+      output = await backend.listCaptures();
+      break;
     case "capture": {
       const method = str(flags.method);
-      output = await backend.call("verify_capture_source", withRun({ url: need(positionals[0], "url"), ...(str(flags["capture-id"]) ? { captureId: str(flags["capture-id"]) } : {}), ...(method ? { method } : {}) }));
+      output = await backend.call(
+        "verify_capture_source",
+        withRun({
+          url: need(positionals[0], "url"),
+          ...(str(flags["capture-id"]) ? { captureId: str(flags["capture-id"]) } : {}),
+          ...(method ? { method } : {}),
+        }),
+      );
       break;
     }
     case "capture-file": {
@@ -253,25 +343,103 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
       const bytes = new Uint8Array(await readFile(path));
       const filename = basename(path);
       const mediaType = str(flags["media-type"]) ?? mediaTypeForFilename(filename);
-      output = await backend.captureBytes({ bytes, filename, ...(mediaType ? { mediaType } : {}), ...(str(flags["source-uri"]) ? { sourceUri: str(flags["source-uri"]) } : {}), ...(str(flags["capture-id"]) ? { captureId: str(flags["capture-id"]) } : {}), ...(run ? { runId: run } : {}) });
+      output = await backend.captureBytes({
+        bytes,
+        filename,
+        ...(mediaType ? { mediaType } : {}),
+        ...(str(flags["source-uri"]) ? { sourceUri: str(flags["source-uri"]) } : {}),
+        ...(str(flags["capture-id"]) ? { captureId: str(flags["capture-id"]) } : {}),
+        ...(run ? { runId: run } : {}),
+      });
       break;
     }
-    case "read": output = await backend.call("verify_read_capture", withRun({ captureId: need(positionals[0], "captureId"), ...(num(flags.offset) !== undefined ? { offset: num(flags.offset) } : {}), ...(num(flags.length) !== undefined ? { length: num(flags.length) } : {}) })); break;
-    case "search": output = await backend.call("verify_search_capture", withRun({ captureId: need(positionals[0], "captureId"), query: need(positionals.slice(1).join(" "), "query"), ...(num(flags.limit) !== undefined ? { limit: num(flags.limit) } : {}) })); break;
-    case "locate": output = await backend.call("verify_locate_quote", withRun({ captureId: need(positionals[0], "captureId"), quote: need(positionals.slice(1).join(" "), "quote") })); break;
+    case "read":
+      output = await backend.call(
+        "verify_read_capture",
+        withRun({
+          captureId: need(positionals[0], "captureId"),
+          ...(num(flags.offset) !== undefined ? { offset: num(flags.offset) } : {}),
+          ...(num(flags.length) !== undefined ? { length: num(flags.length) } : {}),
+        }),
+      );
+      break;
+    case "search":
+      output = await backend.call(
+        "verify_search_capture",
+        withRun({
+          captureId: need(positionals[0], "captureId"),
+          query: need(positionals.slice(1).join(" "), "query"),
+          ...(num(flags.limit) !== undefined ? { limit: num(flags.limit) } : {}),
+        }),
+      );
+      break;
+    case "locate":
+      output = await backend.call(
+        "verify_locate_quote",
+        withRun({ captureId: need(positionals[0], "captureId"), quote: need(positionals.slice(1).join(" "), "quote") }),
+      );
+      break;
     case "register": {
       const path = need(positionals[0], "file");
-      output = await backend.registerBytes({ bytes: new Uint8Array(await readFile(path)), mediaType: artifactMediaTypeFor(path, str(flags["media-type"])), ...(str(flags.label) ? { label: str(flags.label) } : {}), ...(run ? { runId: run } : {}) });
+      output = await backend.registerBytes({
+        bytes: new Uint8Array(await readFile(path)),
+        mediaType: artifactMediaTypeFor(path, str(flags["media-type"])),
+        ...(str(flags.label) ? { label: str(flags.label) } : {}),
+        ...(run ? { runId: run } : {}),
+      });
       break;
     }
-    case "artifact": output = await backend.artifact(need(positionals[0], "artifactId"), str(flags.as) as "text" | "json" | "handle" | undefined); break;
-    case "verify-claims": output = await backend.call("verify_claims", { runId: need(run, "--run"), intent: await readJson(need(positionals[0], "intent file")) }); break;
-    case "verify-extraction": output = await backend.call("verify_extraction", withRun({ intent: await readJson(need(positionals[0], "intent file")) })); break;
-    case "judge": output = await backend.call("verify_judge_semantics", { runId: need(run, "--run"), ...(str(flags.model) ? { model: str(flags.model) } : {}), ...(str(flags["cross-family"]) ? { crossFamilyModel: str(flags["cross-family"]) } : {}), ...(str(flags.assertions) ? { assertionIds: str(flags.assertions)!.split(",").map((item) => item.trim()).filter(Boolean) } : {}) }); break;
-    case "policy": output = await backend.call("verify_evaluate_policy", { runId: need(run, "--run"), ...(str(flags.policy) ? { policy: await readJson(str(flags.policy)!) } : {}) }); break;
-    case "seal": output = await backend.call("verify_seal_run", { runId: need(run, "--run") }); break;
-    case "check-report": output = await backend.call("verify_check_report", withRun({ intent: await readJson(need(positionals[0], "intent file")) })); break;
-    case "status": output = await backend.status(need(run, "--run")); break;
+    case "artifact":
+      output = await backend.artifact(
+        need(positionals[0], "artifactId"),
+        str(flags.as) as "text" | "json" | "handle" | undefined,
+      );
+      break;
+    case "verify-claims":
+      output = await backend.call("verify_claims", {
+        runId: need(run, "--run"),
+        intent: await readJson(need(positionals[0], "intent file")),
+      });
+      break;
+    case "verify-extraction":
+      output = await backend.call(
+        "verify_extraction",
+        withRun({ intent: await readJson(need(positionals[0], "intent file")) }),
+      );
+      break;
+    case "judge":
+      output = await backend.call("verify_judge_semantics", {
+        runId: need(run, "--run"),
+        ...(str(flags.model) ? { model: str(flags.model) } : {}),
+        ...(str(flags["cross-family"]) ? { crossFamilyModel: str(flags["cross-family"]) } : {}),
+        ...(str(flags.assertions)
+          ? {
+              assertionIds: str(flags.assertions)!
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            }
+          : {}),
+      });
+      break;
+    case "policy":
+      output = await backend.call("verify_evaluate_policy", {
+        runId: need(run, "--run"),
+        ...(str(flags.policy) ? { policy: await readJson(str(flags.policy)!) } : {}),
+      });
+      break;
+    case "seal":
+      output = await backend.call("verify_seal_run", { runId: need(run, "--run") });
+      break;
+    case "check-report":
+      output = await backend.call(
+        "verify_check_report",
+        withRun({ intent: await readJson(need(positionals[0], "intent file")) }),
+      );
+      break;
+    case "status":
+      output = await backend.status(need(run, "--run"));
+      break;
     default:
       throw new UsageError(`Unknown command: ${command}\n\n${HELP}`);
   }
@@ -286,7 +454,9 @@ const invokedDirectly = (() => {
     const entry = realpathSync.native(process.argv[1]);
     const modulePath = realpathSync.native(fileURLToPath(import.meta.url));
     return process.platform === "win32" ? entry.toLowerCase() === modulePath.toLowerCase() : entry === modulePath;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 })();
 
 if (invokedDirectly) {
@@ -297,9 +467,12 @@ if (invokedDirectly) {
       return;
     }
     const message = error instanceof Error ? error.message : String(error);
-    const issues = typeof error === "object" && error && "issues" in error ? (error as { issues: unknown }).issues : undefined;
+    const issues =
+      typeof error === "object" && error && "issues" in error ? (error as { issues: unknown }).issues : undefined;
     const payload = error instanceof RemoteExecutorError ? error.payload : undefined;
-    process.stderr.write(`${JSON.stringify({ error: message, ...(issues ? { issues } : {}), ...(payload !== undefined ? { payload } : {}) }, null, 2)}\n`);
+    process.stderr.write(
+      `${JSON.stringify({ error: message, ...(issues ? { issues } : {}), ...(payload !== undefined ? { payload } : {}) }, null, 2)}\n`,
+    );
     process.exitCode = 2;
   });
 }

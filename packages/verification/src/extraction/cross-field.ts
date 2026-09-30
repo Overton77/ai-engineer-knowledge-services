@@ -1,19 +1,8 @@
 import { canonicalizeJson } from "../canonical/index.js";
-import {
-  parseDecimal,
-  replayDecimalOperation,
-  withinTolerance,
-} from "../decimal/index.js";
-import {
-  getAtBoundedPointer,
-  isBoundedJsonPointer,
-  type ExtractionChecks,
-} from "./checks.js";
+import { parseDecimal, replayDecimalOperation, withinTolerance } from "../decimal/index.js";
+import { getAtBoundedPointer, isBoundedJsonPointer, type ExtractionChecks } from "./checks.js";
 import { strictDecimal } from "./field-comparators.js";
-import type {
-  CrossFieldTotalRule,
-  DuplicateRecordRule,
-} from "./field-rules.js";
+import type { CrossFieldTotalRule, DuplicateRecordRule } from "./field-rules.js";
 
 const MAX_DUPLICATE_KEY_PATHS = 16;
 const MAX_DUPLICATE_WORK = 100_000;
@@ -69,22 +58,11 @@ export function checkDuplicateRecords(
   }
 }
 
-function recordKeysUnique(
-  records: readonly unknown[],
-  keyPaths: readonly string[],
-): boolean {
+function recordKeysUnique(records: readonly unknown[], keyPaths: readonly string[]): boolean {
   const keys = new Set<string>();
   for (const record of records) {
     const values = keyPaths.map((path) => getAtBoundedPointer(record, path));
-    if (
-      values.some(
-        (value) =>
-          !value.found ||
-          value.value === null ||
-          typeof value.value === "object",
-      )
-    )
-      return false;
+    if (values.some((value) => !value.found || value.value === null || typeof value.value === "object")) return false;
     const key = canonicalizeJson(values.map((value) => value.value));
     if (keys.has(key)) return false;
     keys.add(key);
@@ -126,11 +104,7 @@ export function replayCrossFieldTotals(
   }
 }
 
-function replayTotal(
-  checks: ExtractionChecks,
-  candidate: unknown,
-  rule: CrossFieldTotalRule,
-): void {
+function replayTotal(checks: ExtractionChecks, candidate: unknown, rule: CrossFieldTotalRule): void {
   const result = getAtBoundedPointer(candidate, rule.resultPath);
   const resultDecimal = result.found ? strictDecimal(result.value) : undefined;
   const operandDecimals = rule.operandPaths.map((path) => {
@@ -151,8 +125,7 @@ function replayTotal(
   }
   try {
     const replayed = replayDecimalOperation(rule.operation, operandDecimals);
-    const toleranceText =
-      rule.tolerance === undefined ? "0" : strictDecimal(rule.tolerance);
+    const toleranceText = rule.tolerance === undefined ? "0" : strictDecimal(rule.tolerance);
     if (!toleranceText) throw new TypeError("invalid tolerance");
     const tolerance = parseDecimal(toleranceText);
     if (tolerance.numerator < 0n) throw new TypeError("negative tolerance");

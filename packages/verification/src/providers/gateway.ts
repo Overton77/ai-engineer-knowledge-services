@@ -1,43 +1,19 @@
-import {
-  SEMANTIC_JUDGE_SCHEMA_VERSION,
-  SEMANTIC_RESPONSE_OBSERVATION_SCHEMA_VERSION,
-} from "../versions.js";
+import { SEMANTIC_JUDGE_SCHEMA_VERSION, SEMANTIC_RESPONSE_OBSERVATION_SCHEMA_VERSION } from "../versions.js";
 import { isSha256Digest, sha256Digest } from "../canonical/index.js";
-import type {
-  SemanticJudgeAdapter,
-  SemanticJudgeExecution,
-} from "../semantic/ports.js";
+import type { SemanticJudgeAdapter, SemanticJudgeExecution } from "../semantic/ports.js";
 import type { SemanticJudgeIdentity } from "@aiengineer/knowledge-contracts";
-import {
-  boundedRequest,
-  dispatchBoundedCompletion,
-  isRetryableHttpStatus,
-  type BoundedRequest,
-} from "./dispatch.js";
+import { boundedRequest, dispatchBoundedCompletion, isRetryableHttpStatus, type BoundedRequest } from "./dispatch.js";
 import { parseBoundedResponseJson, preflightJson } from "./http.js";
-import {
-  admitOutputSchema,
-  validateOutputAgainstSchema,
-} from "./output-schema.js";
-import {
-  artifactFailure,
-  ProviderFailure,
-  providerDigest,
-  type ProviderArtifactSink,
-} from "./port.js";
+import { admitOutputSchema, validateOutputAgainstSchema } from "./output-schema.js";
+import { artifactFailure, ProviderFailure, providerDigest, type ProviderArtifactSink } from "./port.js";
 
 const MAX_REQUEST_BYTES = 96_000;
 const MAX_RESPONSE_BYTES = 96_000;
 
 const endpoint = "https://ai-gateway.vercel.sh/v1/chat/completions";
 const extractionModel = "openai/gpt-5.6-luna";
-const permittedModels = new Set([
-  extractionModel,
-  "anthropic/claude-haiku-4.5",
-  "openai/gpt-5.6-terra",
-]);
-const string = (description: string, maxLength = 800) =>
-  ({ type: "string", description, maxLength }) as const;
+const permittedModels = new Set([extractionModel, "anthropic/claude-haiku-4.5", "openai/gpt-5.6-terra"]);
+const string = (description: string, maxLength = 800) => ({ type: "string", description, maxLength }) as const;
 const semanticOutputSchema = {
   type: "object",
   description: "Bounded evidence-only semantic judgment.",
@@ -97,10 +73,7 @@ const semanticOutputSchema = {
       type: "boolean",
       description: "Whether all material qualifiers were preserved.",
     },
-    publicRationale: string(
-      "Short public rationale with no hidden reasoning.",
-      800,
-    ),
+    publicRationale: string("Short public rationale with no hidden reasoning.", 800),
   },
 } as const;
 const legacySemanticPrompt =
@@ -144,24 +117,18 @@ function parsedContent(payload: GatewayPayload): unknown {
 
 function content(payload: GatewayPayload): string {
   const value = payload.choices?.[0]?.message?.content;
-  if (typeof value !== "string" || value.length > 32_000)
-    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+  if (typeof value !== "string" || value.length > 32_000) throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   return value;
 }
 
 function usage(payload: GatewayPayload) {
   const integer = (value: unknown) =>
-    typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-      ? value
-      : undefined;
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
   // Gateway's wire usage.cost is the provider-reported debit. BYOK cost omits
   // upstream supplier charges, so it must remain unknown rather than zero.
   const isByok = payload.usage?.is_byok === true;
   const wireCost =
-    typeof payload.usage?.cost === "number" &&
-    Number.isFinite(payload.usage.cost) &&
-    payload.usage.cost >= 0 &&
-    !isByok
+    typeof payload.usage?.cost === "number" && Number.isFinite(payload.usage.cost) && payload.usage.cost >= 0 && !isByok
       ? Math.ceil(payload.usage.cost * 1_000_000)
       : undefined;
   const metadataCost =
@@ -192,10 +159,7 @@ export function prepareGatewaySemanticRequest(
   expectedPromptDigest: string = gatewaySemanticPromptDigest,
 ) {
   const legacy = expectedPromptDigest === providerDigest(legacySemanticPrompt);
-  if (
-    (!legacy && expectedPromptDigest !== gatewaySemanticPromptDigest) ||
-    (legacy && input.value !== undefined)
-  )
+  if ((!legacy && expectedPromptDigest !== gatewaySemanticPromptDigest) || (legacy && input.value !== undefined))
     throw new Error("SEMANTIC_REQUEST_PROMPT_BINDING");
   preflightJson(input, {
     maximumNodes: 256,
@@ -234,27 +198,18 @@ export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
   readonly #apiKey: string;
   readonly #fetch: typeof fetch;
   readonly #artifactSink: ProviderArtifactSink;
-  readonly #recordObservation:
-    | ((observation: GatewaySemanticResponseObservation) => Promise<void>)
-    | undefined;
+  readonly #recordObservation: ((observation: GatewaySemanticResponseObservation) => Promise<void>) | undefined;
 
   constructor(config: {
     readonly apiKey: string;
-    readonly model:
-      | "openai/gpt-5.6-luna"
-      | "anthropic/claude-haiku-4.5"
-      | "openai/gpt-5.6-terra";
+    readonly model: "openai/gpt-5.6-luna" | "anthropic/claude-haiku-4.5" | "openai/gpt-5.6-terra";
     readonly identity: SemanticJudgeIdentity;
     readonly artifactSink: ProviderArtifactSink;
     readonly maximumInputCharacters?: number;
     readonly fetch?: typeof fetch;
-    readonly recordObservation?: (
-      observation: GatewaySemanticResponseObservation,
-    ) => Promise<void>;
+    readonly recordObservation?: (observation: GatewaySemanticResponseObservation) => Promise<void>;
   }) {
-    const expectedFamily = config.model.startsWith("anthropic/")
-      ? "anthropic"
-      : "openai";
+    const expectedFamily = config.model.startsWith("anthropic/") ? "anthropic" : "openai";
     if (
       !config.apiKey ||
       !config.artifactSink ||
@@ -264,10 +219,8 @@ export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
       config.identity.family !== expectedFamily ||
       config.identity.capability !== "llm_evidence_rubric" ||
       config.identity.promptDigest !== gatewaySemanticPromptDigest ||
-      config.identity.outputSchemaDigest !==
-        gatewaySemanticOutputSchemaDigest ||
-      config.identity.configurationDigest !==
-        gatewaySemanticConfigurationDigest(config.model)
+      config.identity.outputSchemaDigest !== gatewaySemanticOutputSchemaDigest ||
+      config.identity.configurationDigest !== gatewaySemanticConfigurationDigest(config.model)
     ) {
       throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
     }
@@ -309,12 +262,8 @@ export class GatewaySemanticJudgeAdapter implements SemanticJudgeAdapter {
           httpStatus: captured.httpStatus,
           requestDigest,
           identity: this.identity,
-          ...(input.inputArtifactDigest
-            ? { inputArtifactDigest: input.inputArtifactDigest }
-            : {}),
-          ...(this.#recordObservation
-            ? { recordObservation: this.#recordObservation }
-            : {}),
+          ...(input.inputArtifactDigest ? { inputArtifactDigest: input.inputArtifactDigest } : {}),
+          ...(this.#recordObservation ? { recordObservation: this.#recordObservation } : {}),
           assertActive: captured.assertActive,
         }),
     });
@@ -329,55 +278,32 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
   readonly requestDigest: `sha256:${string}`;
   readonly identity: SemanticJudgeIdentity;
   readonly inputArtifactDigest?: `sha256:${string}`;
-  readonly recordObservation?: (
-    observation: GatewaySemanticResponseObservation,
-  ) => Promise<void>;
+  readonly recordObservation?: (observation: GatewaySemanticResponseObservation) => Promise<void>;
   readonly assertActive: () => void;
 }): Promise<unknown> {
   const bytes = new Uint8Array(input.rawResponseBytes),
     identity = { ...input.identity };
-  const {
-    rawResponseDigest,
-    requestDigest,
-    inputArtifactDigest,
-    httpStatus,
-    recordObservation,
-    assertActive,
-  } = input;
+  const { rawResponseDigest, requestDigest, inputArtifactDigest, httpStatus, recordObservation, assertActive } = input;
   assertActive();
   if (
     !Number.isInteger(httpStatus) ||
     httpStatus < 100 ||
     httpStatus > 599 ||
     !isSha256Digest(requestDigest) ||
-    (inputArtifactDigest !== undefined &&
-      !isSha256Digest(inputArtifactDigest)) ||
+    (inputArtifactDigest !== undefined && !isSha256Digest(inputArtifactDigest)) ||
     sha256Digest(bytes) !== rawResponseDigest
   )
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   if (httpStatus < 200 || httpStatus >= 300)
-    throw new ProviderFailure(
-      "PROVIDER_HTTP_FAILURE",
-      isRetryableHttpStatus(httpStatus),
-    );
-  const payload = parseBoundedResponseJson(
-    bytes,
-    MAX_RESPONSE_BYTES,
-  ) as GatewayPayload;
+    throw new ProviderFailure("PROVIDER_HTTP_FAILURE", isRetryableHttpStatus(httpStatus));
+  const payload = parseBoundedResponseJson(bytes, MAX_RESPONSE_BYTES) as GatewayPayload;
   if (!payload || typeof payload !== "object" || Array.isArray(payload))
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   if (recordObservation) {
     const observedModel =
-      typeof payload.model === "string" &&
-      /^[A-Za-z0-9_./:-]{1,255}$/u.test(payload.model)
-        ? payload.model
-        : undefined;
+      typeof payload.model === "string" && /^[A-Za-z0-9_./:-]{1,255}$/u.test(payload.model) ? payload.model : undefined;
     const modelStatus =
-      payload.model === undefined
-        ? "missing"
-        : payload.model === identity.model
-          ? "matched"
-          : "mismatch";
+      payload.model === undefined ? "missing" : payload.model === identity.model ? "matched" : "mismatch";
     try {
       await recordObservation(
         Object.freeze({
@@ -401,14 +327,7 @@ export async function interpretCapturedGatewaySemanticResponse(input: {
   if (payload.model !== undefined && payload.model !== identity.model)
     throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   const output = parsedContent(payload);
-  validateOutputAgainstSchema(
-    admitOutputSchema(
-      semanticOutputSchema,
-      "verification_semantic_judge",
-      "v1",
-    ),
-    output,
-  );
+  validateOutputAgainstSchema(admitOutputSchema(semanticOutputSchema, "verification_semantic_judge", "v1"), output);
   assertActive();
   return output;
 }
@@ -427,11 +346,8 @@ export interface GatewaySemanticResponseObservation {
 }
 
 export const gatewaySemanticPromptDigest = providerDigest(semanticPrompt);
-export const gatewaySemanticOutputSchemaDigest =
-  providerDigest(semanticOutputSchema);
-export const gatewaySemanticConfigurationDigest = (
-  model: string,
-): `sha256:${string}` =>
+export const gatewaySemanticOutputSchemaDigest = providerDigest(semanticOutputSchema);
+export const gatewaySemanticConfigurationDigest = (model: string): `sha256:${string}` =>
   providerDigest({
     endpoint,
     model,
@@ -451,8 +367,7 @@ export class GatewayStructuredExtractionProvider {
     readonly artifactSink: ProviderArtifactSink;
     readonly fetch?: typeof fetch;
   }) {
-    if (!config.apiKey || !config.artifactSink)
-      throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
+    if (!config.apiKey || !config.artifactSink) throw new ProviderFailure("PROVIDER_CONFIGURATION_INVALID", false);
     this.#apiKey = config.apiKey;
     this.#artifactSink = config.artifactSink;
     this.#fetch = config.fetch ?? fetch;
@@ -471,11 +386,7 @@ export class GatewayStructuredExtractionProvider {
     readonly observedModel?: string;
     readonly usage: ReturnType<typeof usage>;
   }> {
-    if (
-      !input.prompt ||
-      input.prompt.length > 24_000 ||
-      !/^[A-Za-z][A-Za-z0-9_]{0,80}$/.test(input.schemaName)
-    )
+    if (!input.prompt || input.prompt.length > 24_000 || !/^[A-Za-z][A-Za-z0-9_]{0,80}$/.test(input.schemaName))
       throw new ProviderFailure("PROVIDER_INPUT_POLICY_REJECTED", false);
     const schema = admitOutputSchema(input.schema, input.schemaName, "v1");
     const body = {
@@ -506,10 +417,7 @@ export class GatewayStructuredExtractionProvider {
       execution: input.execution,
       fetch: this.#fetch,
       interpret: ({ request, rawResponseBytes, assertActive }) => {
-        const payload = parseBoundedResponseJson(
-          rawResponseBytes,
-          MAX_RESPONSE_BYTES,
-        ) as GatewayPayload;
+        const payload = parseBoundedResponseJson(rawResponseBytes, MAX_RESPONSE_BYTES) as GatewayPayload;
         if (payload.model !== undefined && payload.model !== extractionModel)
           throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
         const output = parsedContent(payload);
@@ -519,12 +427,8 @@ export class GatewayStructuredExtractionProvider {
           output: output as Record<string, unknown>,
           requestDigest: request.digest,
           rawResponseDigest: sha256Digest(rawResponseBytes),
-          ...(typeof payload.id === "string"
-            ? { providerResponseId: payload.id }
-            : {}),
-          ...(typeof payload.model === "string"
-            ? { observedModel: payload.model }
-            : {}),
+          ...(typeof payload.id === "string" ? { providerResponseId: payload.id } : {}),
+          ...(typeof payload.model === "string" ? { observedModel: payload.model } : {}),
           usage: usage(payload),
         });
       },

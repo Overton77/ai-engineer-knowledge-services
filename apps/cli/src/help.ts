@@ -19,14 +19,17 @@ Exit codes
   1  the command ran but its quality gate failed (read the JSON, fix the input, run again)
   2  usage, authorization, network or executor error (JSON on stderr); never a fallback to another profile`;
 
-const names = (group: KsGroup) => (Object.keys(KS_COMMANDS) as KsCommandName[]).filter((name) => name.split(" ")[0] === group);
+const names = (group: KsGroup) =>
+  (Object.keys(KS_COMMANDS) as KsCommandName[]).filter((name) => name.split(" ")[0] === group);
 const line = (name: KsCommandName) => `  ks ${name.padEnd(48)} ${PROFILE[KS_COMMANDS[name].profile]}`;
 
 /** Help for `ks`, a group or a command prefix. Printing it constructs nothing. */
 export function ksHelp(words: readonly string[] = []): string {
   const [group] = words;
   if (!group || !Object.hasOwn(KS_GROUPS, group)) {
-    const groups = (Object.keys(KS_GROUPS) as KsGroup[]).map((name) => `  ${name.padEnd(10)} ${KS_GROUPS[name]}`).join("\n");
+    const groups = (Object.keys(KS_GROUPS) as KsGroup[])
+      .map((name) => `  ${name.padEnd(10)} ${KS_GROUPS[name]}`)
+      .join("\n");
     return `ks — Knowledge Services command line\n\nUsage: ks <group> <command> [arguments] [options]\n       ks <group> --help\n\nGroups\n${groups}\n\n${SHARED}\n`;
   }
   const prefix = words.join(" ");

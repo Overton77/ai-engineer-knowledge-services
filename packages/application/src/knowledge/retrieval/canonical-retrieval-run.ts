@@ -5,10 +5,7 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import type { LocalApiIdentity } from "../../access/api-access.js";
 import type { KnowledgeOperationPort } from "../../operations/surface.js";
-import {
-  isRetrievalUnsupportedError,
-  type CanonicalRetrievalExecutorPort,
-} from "./canonical-retrieval-executor.js";
+import { isRetrievalUnsupportedError, type CanonicalRetrievalExecutorPort } from "./canonical-retrieval-executor.js";
 
 export type CanonicalRetrievalRunSubmission =
   | { readonly ok: true; readonly accepted: AcceptedOperation }
@@ -39,7 +36,9 @@ export async function submitCanonicalRetrievalRun(
  * Problem classification for a failed retrieval execution, shared by the API error
  * handler and MCP. Unclassified failures remain internal errors in each transport.
  */
-export function retrievalExecutionProblem(error: unknown):
+export function retrievalExecutionProblem(
+  error: unknown,
+):
   | { readonly status: 422; readonly code: "RETRIEVAL_CAPABILITY_UNSUPPORTED"; readonly response: unknown }
   | { readonly status: 409 | 503; readonly code: "CONFLICT" | "INTERNAL_ERROR" }
   | undefined {

@@ -54,11 +54,16 @@ export interface DiagnosticsFullDemoQualityGateResult {
   readonly reasons: readonly string[];
 }
 
-const digest = (value: unknown): value is `sha256:${string}` => typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.test(value);
-const string = (value: unknown, maximum: number) => typeof value === "string" && value.length > 0 && value.length <= maximum;
+const digest = (value: unknown): value is `sha256:${string}` =>
+  typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.test(value);
+const string = (value: unknown, maximum: number) =>
+  typeof value === "string" && value.length > 0 && value.length <= maximum;
 const knownGateIds = new Set<string>(DIAGNOSTICS_FULL_DEMO_GATE_IDS);
 
-function invalidResult(input: DiagnosticsFullDemoQualityGateInput, reasons: readonly string[]): DiagnosticsFullDemoQualityGateResult {
+function invalidResult(
+  input: DiagnosticsFullDemoQualityGateInput,
+  reasons: readonly string[],
+): DiagnosticsFullDemoQualityGateResult {
   return Object.freeze({
     schemaVersion: "verification-diagnostics-full-demo-quality-gate.v1",
     outcome: "unavailable",
@@ -78,34 +83,55 @@ function invalidResult(input: DiagnosticsFullDemoQualityGateInput, reasons: read
  * missing execution path is configuration-incomplete (2), a measured failure
  * after complete coverage is a quality failure (1), and only full pass is 0.
  */
-export function evaluateDiagnosticsFullDemoQualityGate(input: DiagnosticsFullDemoQualityGateInput): DiagnosticsFullDemoQualityGateResult {
+export function evaluateDiagnosticsFullDemoQualityGate(
+  input: DiagnosticsFullDemoQualityGateInput,
+): DiagnosticsFullDemoQualityGateResult {
   const invalid: string[] = [];
   if (!digest(input.datasetManifestDigest)) invalid.push("DATASET_MANIFEST_DIGEST_INVALID");
   if (!digest(input.runManifestDigest)) invalid.push("RUN_MANIFEST_DIGEST_INVALID");
-  if (input.admissionChanged !== undefined && input.admissionChanged !== false) invalid.push("ADMISSION_CHANGE_FORBIDDEN");
-  if (input.humanGoldScoringEligible !== undefined && input.humanGoldScoringEligible !== false) invalid.push("HUMAN_GOLD_ELIGIBILITY_FORBIDDEN");
-  if (input.labelBoundary !== undefined && input.labelBoundary !== "engineering_expectations_only") invalid.push("LABEL_BOUNDARY_INVALID");
+  if (input.admissionChanged !== undefined && input.admissionChanged !== false)
+    invalid.push("ADMISSION_CHANGE_FORBIDDEN");
+  if (input.humanGoldScoringEligible !== undefined && input.humanGoldScoringEligible !== false)
+    invalid.push("HUMAN_GOLD_ELIGIBILITY_FORBIDDEN");
+  if (input.labelBoundary !== undefined && input.labelBoundary !== "engineering_expectations_only")
+    invalid.push("LABEL_BOUNDARY_INVALID");
   if (!Array.isArray(input.observations)) invalid.push("GATE_OBSERVATIONS_INVALID");
   if (invalid.length > 0) return invalidResult(input, invalid);
 
   const byId = new Map<string, DiagnosticsFullDemoGateObservation>();
   for (const observation of input.observations) {
-    if (!observation || typeof observation !== "object") { invalid.push("GATE_RECORD_INVALID"); continue; }
-    if (!knownGateIds.has(observation.gateId)) { invalid.push(`GATE_UNKNOWN:${String(observation.gateId)}`); continue; }
-    if (byId.has(observation.gateId)) { invalid.push(`GATE_DUPLICATE:${observation.gateId}`); continue; }
-    if (!(["passed", "failed", "unavailable"] as const).includes(observation.outcome)
-      || !Array.isArray(observation.evidence) || observation.evidence.length === 0 || observation.evidence.length > 24
-      || observation.evidence.some((item) => !string(item, 240))
-      || (observation.reason !== undefined && !string(observation.reason, 500))) {
+    if (!observation || typeof observation !== "object") {
+      invalid.push("GATE_RECORD_INVALID");
+      continue;
+    }
+    if (!knownGateIds.has(observation.gateId)) {
+      invalid.push(`GATE_UNKNOWN:${String(observation.gateId)}`);
+      continue;
+    }
+    if (byId.has(observation.gateId)) {
+      invalid.push(`GATE_DUPLICATE:${observation.gateId}`);
+      continue;
+    }
+    if (
+      !(["passed", "failed", "unavailable"] as const).includes(observation.outcome) ||
+      !Array.isArray(observation.evidence) ||
+      observation.evidence.length === 0 ||
+      observation.evidence.length > 24 ||
+      observation.evidence.some((item) => !string(item, 240)) ||
+      (observation.reason !== undefined && !string(observation.reason, 500))
+    ) {
       invalid.push(`GATE_RECORD_INVALID:${observation.gateId}`);
       continue;
     }
-    byId.set(observation.gateId, Object.freeze({
-      gateId: observation.gateId,
-      outcome: observation.outcome,
-      evidence: Object.freeze([...observation.evidence]),
-      ...(observation.reason === undefined ? {} : { reason: observation.reason }),
-    }));
+    byId.set(
+      observation.gateId,
+      Object.freeze({
+        gateId: observation.gateId,
+        outcome: observation.outcome,
+        evidence: Object.freeze([...observation.evidence]),
+        ...(observation.reason === undefined ? {} : { reason: observation.reason }),
+      }),
+    );
   }
   for (const gateId of DIAGNOSTICS_FULL_DEMO_GATE_IDS) if (!byId.has(gateId)) invalid.push(`GATE_MISSING:${gateId}`);
   if (invalid.length > 0) return invalidResult(input, invalid);
@@ -113,10 +139,14 @@ export function evaluateDiagnosticsFullDemoQualityGate(input: DiagnosticsFullDem
   const gates = Object.freeze(DIAGNOSTICS_FULL_DEMO_GATE_IDS.map((gateId) => byId.get(gateId)!));
   const unavailable = gates.filter((gate) => gate.outcome === "unavailable");
   const failed = gates.filter((gate) => gate.outcome === "failed");
-  const outcome: DiagnosticsFullDemoGateOutcome = unavailable.length > 0 ? "unavailable" : failed.length > 0 ? "fail" : "pass";
-  const reasons = outcome === "pass"
-    ? ["FULL_DEMO_GATE_PASSED"]
-    : (outcome === "unavailable" ? unavailable : failed).map((gate) => `${gate.gateId}:${gate.reason ?? gate.outcome.toUpperCase()}`);
+  const outcome: DiagnosticsFullDemoGateOutcome =
+    unavailable.length > 0 ? "unavailable" : failed.length > 0 ? "fail" : "pass";
+  const reasons =
+    outcome === "pass"
+      ? ["FULL_DEMO_GATE_PASSED"]
+      : (outcome === "unavailable" ? unavailable : failed).map(
+          (gate) => `${gate.gateId}:${gate.reason ?? gate.outcome.toUpperCase()}`,
+        );
   return Object.freeze({
     schemaVersion: "verification-diagnostics-full-demo-quality-gate.v1",
     outcome,

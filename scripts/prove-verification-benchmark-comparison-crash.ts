@@ -80,14 +80,28 @@ type ComparisonRow = {
 const postgres = process.env.POSTGRES_URL;
 const projectUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SECRET_KEY;
-if (!postgres || !/^postgres(?:ql)?:\/\/(?:[^@/]+@)?(?:127\.0\.0\.1|localhost):54322\//u.test(postgres)) throw new Error("COMPARISON_CRASH_LOCAL_DB_REQUIRED");
-if (!projectUrl || !serviceRoleKey || !["localhost", "127.0.0.1"].includes(new URL(projectUrl).hostname) || new URL(projectUrl).port !== "54321") throw new Error("COMPARISON_CRASH_LOCAL_STORAGE_REQUIRED");
+if (!postgres || !/^postgres(?:ql)?:\/\/(?:[^@/]+@)?(?:127\.0\.0\.1|localhost):54322\//u.test(postgres))
+  throw new Error("COMPARISON_CRASH_LOCAL_DB_REQUIRED");
+if (
+  !projectUrl ||
+  !serviceRoleKey ||
+  !["localhost", "127.0.0.1"].includes(new URL(projectUrl).hostname) ||
+  new URL(projectUrl).port !== "54321"
+)
+  throw new Error("COMPARISON_CRASH_LOCAL_STORAGE_REQUIRED");
 
 const internal = resolve("../internal");
-const readJson = async <T>(name: string): Promise<T> => JSON.parse(await readFile(resolve(internal, name), "utf8")) as T;
-const applicationReceipt = await readJson<ApplicationReceipt>("verification-benchmark-comparison-application-a8f9486b-c122-4b7b-b9b5-e5c986dfaa9a.json");
-const benchmarkWorker = await readJson<InputKeyReceipt>("verification-benchmark-worker-62c9b30e-fb46-478c-9e8c-3da5701fce3a.json");
-const benchmarkCrash = await readJson<BenchmarkCrashReceipt>("verification-benchmark-crash-5b42b488-405c-4b02-b28b-44eeaacc1bcd.json");
+const readJson = async <T>(name: string): Promise<T> =>
+  JSON.parse(await readFile(resolve(internal, name), "utf8")) as T;
+const applicationReceipt = await readJson<ApplicationReceipt>(
+  "verification-benchmark-comparison-application-a8f9486b-c122-4b7b-b9b5-e5c986dfaa9a.json",
+);
+const benchmarkWorker = await readJson<InputKeyReceipt>(
+  "verification-benchmark-worker-62c9b30e-fb46-478c-9e8c-3da5701fce3a.json",
+);
+const benchmarkCrash = await readJson<BenchmarkCrashReceipt>(
+  "verification-benchmark-crash-5b42b488-405c-4b02-b28b-44eeaacc1bcd.json",
+);
 const tenantId = applicationReceipt.tenantId;
 const namespace = randomUUID();
 const missionId = randomUUID();
@@ -98,9 +112,16 @@ const database = new PostgresCanonicalRepository({ connectionString: postgres, l
 const repository = new PostgresVerificationRepository(
   database,
   new SupabaseArtifactStore({ projectUrl, serviceRoleKey, bucket, maximumBytes: 8_000_000 }),
-  { async authorize(input) { if (input.tenantId !== tenantId || !["verification_admission", "verification_replay"].includes(input.purpose)) throw new Error("COMPARISON_CRASH_ARTIFACT_DENIED"); } },
+  {
+    async authorize(input) {
+      if (input.tenantId !== tenantId || !["verification_admission", "verification_replay"].includes(input.purpose))
+        throw new Error("COMPARISON_CRASH_ARTIFACT_DENIED");
+    },
+  },
 );
-const operationService = new PostgresKnowledgeOperationService(database, { admittedOperationKinds: ["verification_benchmark_compare"] });
+const operationService = new PostgresKnowledgeOperationService(database, {
+  admittedOperationKinds: ["verification_benchmark_compare"],
+});
 const application = new VerificationOperationApplicationService(operationService, "http://localhost");
 const actor = { kind: "service" as const, id: attemptId, serviceIdentity: "evaluation_executor" as const };
 const keys = generateKeyPairSync("ed25519");
@@ -112,9 +133,10 @@ const operationIds: string[] = [];
 const configFiles: string[] = [];
 
 const profileRef = (profileId: ProfileId): Ref => {
-  const artifact = profileId === "paired_default"
-    ? applicationReceipt.profiles.pairedDefault.profileArtifact
-    : applicationReceipt.profiles.regressionGate.profileArtifact;
+  const artifact =
+    profileId === "paired_default"
+      ? applicationReceipt.profiles.pairedDefault.profileArtifact
+      : applicationReceipt.profiles.regressionGate.profileArtifact;
   return { artifactId: artifact.artifactId, digest: artifact.digest };
 };
 const request = (profileId: ProfileId) => ({
@@ -123,14 +145,20 @@ const request = (profileId: ProfileId) => ({
   candidateRunId: applicationReceipt.candidate.runId,
   comparisonProfile: profileId,
 });
-const sha = (hex: string | null): string | null => hex === null ? null : `sha256:${hex}`;
-const iso = (value: Date | string | null): string | null => value === null ? null : new Date(value).toISOString();
+const sha = (hex: string | null): string | null => (hex === null ? null : `sha256:${hex}`);
+const iso = (value: Date | string | null): string | null => (value === null ? null : new Date(value).toISOString());
 
 async function comparisonRow(operationId: string): Promise<ReturnType<typeof projectRow>> {
-  const row = await database.transaction(tenantId, async sql => (await sql.query<ComparisonRow>(
-    "select * from evaluation.verification_benchmark_comparison where tenant_id=$1 and operation_id=$2",
-    [tenantId, operationId],
-  )).rows[0]);
+  const row = await database.transaction(
+    tenantId,
+    async (sql) =>
+      (
+        await sql.query<ComparisonRow>(
+          "select * from evaluation.verification_benchmark_comparison where tenant_id=$1 and operation_id=$2",
+          [tenantId, operationId],
+        )
+      ).rows[0],
+  );
   assert.ok(row, "comparison row missing");
   return projectRow(row);
 }
@@ -141,61 +169,88 @@ function projectRow(row: ComparisonRow) {
     operationId: row.operation_id,
     baseline: {
       runId: row.baseline_run_id,
-      publicationArtifact: { artifactId: row.baseline_publication_artifact_id, digest: sha(row.baseline_publication_sha256)! },
+      publicationArtifact: {
+        artifactId: row.baseline_publication_artifact_id,
+        digest: sha(row.baseline_publication_sha256)!,
+      },
       payloadDigest: sha(row.baseline_payload_sha256)!,
     },
     candidate: {
       runId: row.candidate_run_id,
-      publicationArtifact: { artifactId: row.candidate_publication_artifact_id, digest: sha(row.candidate_publication_sha256)! },
+      publicationArtifact: {
+        artifactId: row.candidate_publication_artifact_id,
+        digest: sha(row.candidate_publication_sha256)!,
+      },
       payloadDigest: sha(row.candidate_payload_sha256)!,
     },
-    profile: { profileId: row.profile_id, artifact: { artifactId: row.profile_artifact_id, digest: sha(row.profile_sha256)! } },
+    profile: {
+      profileId: row.profile_id,
+      artifact: { artifactId: row.profile_artifact_id, digest: sha(row.profile_sha256)! },
+    },
     runtime: row.runtime,
     runtimeDigest: sha(row.runtime_sha256)!,
     status: row.status,
     startedAt: iso(row.started_at)!,
     completedAt: iso(row.completed_at),
-    resultArtifact: row.result_artifact_id === null ? null : { artifactId: row.result_artifact_id, digest: sha(row.result_sha256)! },
+    resultArtifact:
+      row.result_artifact_id === null ? null : { artifactId: row.result_artifact_id, digest: sha(row.result_sha256)! },
     resultDigest: sha(row.result_digest_sha256),
     engineeringGateOutcome: row.engineering_gate_outcome,
-    publicationArtifact: row.publication_artifact_id === null ? null : { artifactId: row.publication_artifact_id, digest: sha(row.publication_sha256)! },
+    publicationArtifact:
+      row.publication_artifact_id === null
+        ? null
+        : { artifactId: row.publication_artifact_id, digest: sha(row.publication_sha256)! },
     publicationPayloadDigest: sha(row.publication_payload_sha256),
   };
 }
 
 function startChild(operationId: string, configPath: string, crashPoint: "result_completed" | "sealed" | "none") {
-  const child = spawn(process.execPath, ["--import", "tsx", resolve("scripts/verification-benchmark-comparison-crash-child.ts")], {
-    windowsHide: true,
-    env: {
-      SYSTEMROOT: process.env.SYSTEMROOT,
-      WINDIR: process.env.WINDIR,
-      POSTGRES_URL: postgres,
-      SUPABASE_URL: projectUrl,
-      SUPABASE_SECRET_KEY: serviceRoleKey,
-      VERIFICATION_STORAGE_BUCKET: bucket,
-      VERIFICATION_BENCHMARK_COMPARISON_SIGNING_PRIVATE_KEY_PEM: privateKeyPem,
-      VERIFICATION_BENCHMARK_COMPARISON_SIGNING_KEY_ID: keyId,
-      COMPARISON_CRASH_OPERATION_ID: operationId,
-      COMPARISON_CRASH_CONFIG_FILE: configPath,
-      COMPARISON_CRASH_POINT: crashPoint,
+  const child = spawn(
+    process.execPath,
+    ["--import", "tsx", resolve("scripts/verification-benchmark-comparison-crash-child.ts")],
+    {
+      windowsHide: true,
+      env: {
+        SYSTEMROOT: process.env.SYSTEMROOT,
+        WINDIR: process.env.WINDIR,
+        POSTGRES_URL: postgres,
+        SUPABASE_URL: projectUrl,
+        SUPABASE_SECRET_KEY: serviceRoleKey,
+        VERIFICATION_STORAGE_BUCKET: bucket,
+        VERIFICATION_BENCHMARK_COMPARISON_SIGNING_PRIVATE_KEY_PEM: privateKeyPem,
+        VERIFICATION_BENCHMARK_COMPARISON_SIGNING_KEY_ID: keyId,
+        COMPARISON_CRASH_OPERATION_ID: operationId,
+        COMPARISON_CRASH_CONFIG_FILE: configPath,
+        COMPARISON_CRASH_POINT: crashPoint,
+      },
+      stdio: ["ignore", "ignore", "pipe", "ipc"],
     },
-    stdio: ["ignore", "ignore", "pipe", "ipc"],
-  });
+  );
   childProcesses.add(child);
   let stderr = "";
-  child.stderr!.on("data", value => { stderr = (stderr + value.toString()).slice(-12_000); });
-  const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(resolveExit => child.once("exit", (code, signal) => {
-    childProcesses.delete(child);
-    resolveExit({ code, signal });
-  }));
+  child.stderr!.on("data", (value) => {
+    stderr = (stderr + value.toString()).slice(-12_000);
+  });
+  const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolveExit) =>
+    child.once("exit", (code, signal) => {
+      childProcesses.delete(child);
+      resolveExit({ code, signal });
+    }),
+  );
   const message = new Promise<ChildMessage>((resolveMessage, reject) => {
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
       reject(new Error(`COMPARISON_CRASH_CHILD_TIMEOUT:${crashPoint}`));
     }, 90_000);
-    child.once("error", error => { clearTimeout(timeout); reject(error); });
-    child.once("exit", () => { clearTimeout(timeout); reject(new Error(`COMPARISON_CRASH_CHILD_PREMATURE_EXIT:${stderr}`)); });
-    child.once("message", raw => {
+    child.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.once("exit", () => {
+      clearTimeout(timeout);
+      reject(new Error(`COMPARISON_CRASH_CHILD_PREMATURE_EXIT:${stderr}`));
+    });
+    child.once("message", (raw) => {
       clearTimeout(timeout);
       const value = raw as ChildMessage;
       if (value.kind === "error") reject(new Error(value.code ?? "COMPARISON_CRASH_CHILD_FAILURE"));
@@ -208,21 +263,36 @@ function startChild(operationId: string, configPath: string, crashPoint: "result
 async function waitForNaturalExpiry(claim: LeasedStep): Promise<void> {
   const deadline = Date.now() + 50_000;
   while (Date.now() < deadline) {
-    const expired = await database.transaction(tenantId, async sql => (await sql.query<{ expired: boolean }>(
-      "select expires_at<=clock_timestamp() expired from knowledge_service.lease where tenant_id=$1 and operation_step_id=$2 and lease_token=$3 and fencing_token=$4",
-      [tenantId, claim.id, claim.leaseToken, claim.fencingToken],
-    )).rows[0]?.expired ?? false);
+    const expired = await database.transaction(
+      tenantId,
+      async (sql) =>
+        (
+          await sql.query<{ expired: boolean }>(
+            "select expires_at<=clock_timestamp() expired from knowledge_service.lease where tenant_id=$1 and operation_step_id=$2 and lease_token=$3 and fencing_token=$4",
+            [tenantId, claim.id, claim.leaseToken, claim.fencingToken],
+          )
+        ).rows[0]?.expired ?? false,
+    );
     if (expired) return;
-    await new Promise(resolveWait => setTimeout(resolveWait, 100));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 100));
   }
   throw new Error("COMPARISON_CRASH_NATURAL_LEASE_EXPIRY_TIMEOUT");
 }
 
 try {
-  await database.transaction(tenantId, async sql => {
-    await sql.query("insert into orchestration.mission(id,tenant_id,slug,goal) values($1,$2,$3,'Actual comparison process recovery proof')", [missionId, tenantId, `comparison-crash-${namespace}`]);
-    await sql.query("insert into orchestration.work_item(id,tenant_id,mission_id,kind) values($1,$2,$3,'review_task')", [workItemId, tenantId, missionId]);
-    await sql.query("insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,1,'benchmark-comparison-crash-proof')", [attemptId, tenantId, workItemId]);
+  await database.transaction(tenantId, async (sql) => {
+    await sql.query(
+      "insert into orchestration.mission(id,tenant_id,slug,goal) values($1,$2,$3,'Actual comparison process recovery proof')",
+      [missionId, tenantId, `comparison-crash-${namespace}`],
+    );
+    await sql.query(
+      "insert into orchestration.work_item(id,tenant_id,mission_id,kind) values($1,$2,$3,'review_task')",
+      [workItemId, tenantId, missionId],
+    );
+    await sql.query(
+      "insert into orchestration.attempt(id,tenant_id,work_item_id,attempt_no,agent_deployment_id) values($1,$2,$3,1,'benchmark-comparison-crash-proof')",
+      [attemptId, tenantId, workItemId],
+    );
   });
 
   const sourcePaths = [
@@ -238,15 +308,24 @@ try {
     "packages/persistence/src/verification-benchmark-comparison.ts",
     "packages/verification/src/provenance/benchmark-comparison-publication.ts",
   ];
-  const sourceFiles = await Promise.all(sourcePaths.map(async path => {
-    const bytes = await readFile(path);
-    return { path, digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`, bytesBase64: bytes.toString("base64") };
-  }));
-  const snapshotBytes = new TextEncoder().encode(canonicalizeJson({
-    schemaVersion: "verification-benchmark-comparison-crash-source-snapshot.v1",
-    scope: "Configured comparison worker, lifecycle, signature and proof sources; scoped custody, not a complete dependency or deployment image",
-    files: sourceFiles,
-  }));
+  const sourceFiles = await Promise.all(
+    sourcePaths.map(async (path) => {
+      const bytes = await readFile(path);
+      return {
+        path,
+        digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+        bytesBase64: bytes.toString("base64"),
+      };
+    }),
+  );
+  const snapshotBytes = new TextEncoder().encode(
+    canonicalizeJson({
+      schemaVersion: "verification-benchmark-comparison-crash-source-snapshot.v1",
+      scope:
+        "Configured comparison worker, lifecycle, signature and proof sources; scoped custody, not a complete dependency or deployment image",
+      files: sourceFiles,
+    }),
+  );
   const sourceSnapshot = await repository.registerContentAddressedArtifact({
     tenantId,
     producerAttemptId: attemptId,
@@ -275,7 +354,10 @@ try {
   const config = {
     schemaVersion: "verification-benchmark-comparison-runtime.v1",
     tenantId,
-    profiles: (["paired_default", "regression_gate"] as const).map(profileId => ({ profileId, artifact: profileRef(profileId) })),
+    profiles: (["paired_default", "regression_gate"] as const).map((profileId) => ({
+      profileId,
+      artifact: profileRef(profileId),
+    })),
     inputPublicKeys: [
       { keyId: benchmarkWorker.publicKey.keyId, publicKeyPem: benchmarkWorker.publicKey.pem },
       { keyId: benchmarkCrash.keyId, publicKeyPem: benchmarkCrash.publicKey },
@@ -291,7 +373,10 @@ try {
   const verifier = createEd25519Verifier({ [keyId]: publicKeyPem });
   const trusted = repository.createTrustedArtifactResolver();
   const scenarios = [];
-  for (const [crashPoint, profileId] of [["result_completed", "paired_default"], ["sealed", "regression_gate"]] as const) {
+  for (const [crashPoint, profileId] of [
+    ["result_completed", "paired_default"],
+    ["sealed", "regression_gate"],
+  ] as const) {
     const operationId = randomUUID();
     operationIds.push(operationId);
     const comparisonId = deterministicUuid("verification-benchmark-comparison", `${tenantId}:${operationId}`);
@@ -373,18 +458,27 @@ try {
       assert.equal(final.publicationPayloadDigest, original.publicationPayloadDigest);
     }
 
-    const counts = await database.transaction(tenantId, async sql => (await sql.query<{ by_operation: number; by_identity: number }>(
-      `select
+    const counts = await database.transaction(
+      tenantId,
+      async (sql) =>
+        (
+          await sql.query<{ by_operation: number; by_identity: number }>(
+            `select
         (select count(*)::int from evaluation.verification_benchmark_comparison where tenant_id=$1 and operation_id=$2) by_operation,
         (select count(*)::int from evaluation.verification_benchmark_comparison where tenant_id=$1 and id=$3) by_identity`,
-      [tenantId, operationId, comparisonId],
-    )).rows[0]!);
+            [tenantId, operationId, comparisonId],
+          )
+        ).rows[0]!,
+    );
     assert.deepEqual(counts, { by_operation: 1, by_identity: 1 });
     const receipts = await database.listReceipts(tenantId, operationId);
     assert.equal(receipts.length, 1);
     const receipt = receipts[0]!;
     assert.equal(receipt.outcome, "succeeded");
-    assert.equal(receipt.id, deterministicUuid("knowledge-worker-receipt", `${operationId}:${originalClaim.id}:${originalClaim.inputSha256}`));
+    assert.equal(
+      receipt.id,
+      deterministicUuid("knowledge-worker-receipt", `${operationId}:${originalClaim.id}:${originalClaim.inputSha256}`),
+    );
     assert.equal(receipt.receiptKind, "compare_registered_and_publish.succeeded");
     const receiptBody = receipt.body as {
       schemaVersion: string;
@@ -405,12 +499,28 @@ try {
     assert.equal(output.resultDigest, final.resultDigest);
     assert.equal(output.manifestDigest, final.publicationPayloadDigest);
     assert.equal(output.engineeringGateOutcome, profileId === "paired_default" ? "not_requested" : "pass");
-    assert.deepEqual(output.qualityClaims, { humanGoldValidated: false, sourceAuthorityAssessed: false, calibrated: false });
+    assert.deepEqual(output.qualityClaims, {
+      humanGoldValidated: false,
+      sourceAuthorityAssessed: false,
+      calibrated: false,
+    });
 
-    assert.ok(final.publicationArtifact && final.resultArtifact && final.resultDigest && final.publicationPayloadDigest);
-    await trusted.authorizeArtifact({ tenantId, artifactId: final.publicationArtifact.artifactId, purpose: "verification_admission" });
-    const publicationBytes = await trusted.hydrateRegisteredArtifact({ tenantId, artifactId: final.publicationArtifact.artifactId });
-    const verified = await verifyVerificationBenchmarkComparisonPublication(JSON.parse(new TextDecoder().decode(publicationBytes.bytes)), verifier);
+    assert.ok(
+      final.publicationArtifact && final.resultArtifact && final.resultDigest && final.publicationPayloadDigest,
+    );
+    await trusted.authorizeArtifact({
+      tenantId,
+      artifactId: final.publicationArtifact.artifactId,
+      purpose: "verification_admission",
+    });
+    const publicationBytes = await trusted.hydrateRegisteredArtifact({
+      tenantId,
+      artifactId: final.publicationArtifact.artifactId,
+    });
+    const verified = await verifyVerificationBenchmarkComparisonPublication(
+      JSON.parse(new TextDecoder().decode(publicationBytes.bytes)),
+      verifier,
+    );
     assert.equal(verified.signatureStatus, "verified");
     assert.equal(verified.manifest.seal.signature?.keyId, keyId);
     assert.equal(verified.manifest.operationId, operationId);
@@ -423,20 +533,30 @@ try {
     assert.equal(verified.manifest.seal.payloadDigest, final.publicationPayloadDigest);
     assert.equal(verified.manifest.execution.externalProviderRequests, 0);
 
-    await trusted.authorizeArtifact({ tenantId, artifactId: final.resultArtifact.artifactId, purpose: "verification_admission" });
-    const resultBytes = await trusted.hydrateRegisteredArtifact({ tenantId, artifactId: final.resultArtifact.artifactId });
+    await trusted.authorizeArtifact({
+      tenantId,
+      artifactId: final.resultArtifact.artifactId,
+      purpose: "verification_admission",
+    });
+    const resultBytes = await trusted.hydrateRegisteredArtifact({
+      tenantId,
+      artifactId: final.resultArtifact.artifactId,
+    });
     const resultValue = JSON.parse(new TextDecoder().decode(resultBytes.bytes)) as Record<string, unknown>;
     const { resultDigest: embeddedResultDigest, ...resultMaterial } = resultValue;
     assert.equal(embeddedResultDigest, final.resultDigest);
     assert.equal(digestCanonicalJson(resultMaterial), final.resultDigest);
 
-    await assert.rejects(database.completeStep(tenantId, originalClaim, {
-      id: randomUUID(),
-      idempotencyKey: `dead-comparison-worker-${namespace}-${crashPoint}`,
-      receiptKind: "dead-comparison-worker.succeeded",
-      executorIdentity: "dead-comparison-worker",
-      output: { stale: true },
-    }), /STALE_LEASE/u);
+    await assert.rejects(
+      database.completeStep(tenantId, originalClaim, {
+        id: randomUUID(),
+        idempotencyKey: `dead-comparison-worker-${namespace}-${crashPoint}`,
+        receiptKind: "dead-comparison-worker.succeeded",
+        executorIdentity: "dead-comparison-worker",
+        output: { stale: true },
+      }),
+      /STALE_LEASE/u,
+    );
 
     scenarios.push({
       crashPoint,
@@ -469,38 +589,62 @@ try {
   }
 
   const receiptPath = resolve(internal, `verification-benchmark-comparison-crash-${namespace}.json`);
-  await writeFile(receiptPath, JSON.stringify({
-    status: "passed",
-    capturedAt: new Date().toISOString(),
-    scope: "Actual separate-process SIGKILL and naturally expired lease recovery for configured registered benchmark comparison after result completion and after publication sealing; offline recorded engineering observations only",
-    tenantId,
-    missionId,
-    workItemId,
-    attemptId,
-    inputPublications: { baseline: applicationReceipt.baseline, candidate: applicationReceipt.candidate },
-    profiles: { pairedDefault: profileRef("paired_default"), regressionGate: profileRef("regression_gate") },
-    runtime,
-    publicKey: { keyId, pem: publicKeyPem },
-    sourceSnapshot,
-    sourceHashes: Object.fromEntries(sourceFiles.map(source => [source.path, source.digest])),
-    sourceSnapshotScope: "Scoped source custody, not a complete dependency graph or deployment image",
-    scenarios,
-    externalProviderRequests: 0,
-    limitations: [
-      "This proof covers two named committed comparison boundaries on the local configured runtime; it is not a proof of every crash point or deployment topology.",
-      "Inputs are completed offline-recorded benchmark publications and the results are engineering observations without human-gold, source-authority, calibration, population or promotion claims.",
-    ],
-  }, null, 2), { flag: "wx" });
-  console.log(JSON.stringify({ status: "passed", receipt: receiptPath, scenarios: scenarios.map(value => ({ crashPoint: value.crashPoint, operationId: value.operationId, comparisonId: value.comparisonId })) }));
+  await writeFile(
+    receiptPath,
+    JSON.stringify(
+      {
+        status: "passed",
+        capturedAt: new Date().toISOString(),
+        scope:
+          "Actual separate-process SIGKILL and naturally expired lease recovery for configured registered benchmark comparison after result completion and after publication sealing; offline recorded engineering observations only",
+        tenantId,
+        missionId,
+        workItemId,
+        attemptId,
+        inputPublications: { baseline: applicationReceipt.baseline, candidate: applicationReceipt.candidate },
+        profiles: { pairedDefault: profileRef("paired_default"), regressionGate: profileRef("regression_gate") },
+        runtime,
+        publicKey: { keyId, pem: publicKeyPem },
+        sourceSnapshot,
+        sourceHashes: Object.fromEntries(sourceFiles.map((source) => [source.path, source.digest])),
+        sourceSnapshotScope: "Scoped source custody, not a complete dependency graph or deployment image",
+        scenarios,
+        externalProviderRequests: 0,
+        limitations: [
+          "This proof covers two named committed comparison boundaries on the local configured runtime; it is not a proof of every crash point or deployment topology.",
+          "Inputs are completed offline-recorded benchmark publications and the results are engineering observations without human-gold, source-authority, calibration, population or promotion claims.",
+        ],
+      },
+      null,
+      2,
+    ),
+    { flag: "wx" },
+  );
+  console.log(
+    JSON.stringify({
+      status: "passed",
+      receipt: receiptPath,
+      scenarios: scenarios.map((value) => ({
+        crashPoint: value.crashPoint,
+        operationId: value.operationId,
+        comparisonId: value.comparisonId,
+      })),
+    }),
+  );
 } finally {
   for (const child of childProcesses) child.kill("SIGKILL");
   for (const operationId of operationIds) {
     try {
       const operation = await database.getOperation(tenantId, operationId);
       if (operation?.status === "queued" || operation?.status === "running") {
-        await database.cancelOperation(tenantId, operationId, { actorIdentity: "comparison-crash-proof-cleanup", correlationId: namespace });
+        await database.cancelOperation(tenantId, operationId, {
+          actorIdentity: "comparison-crash-proof-cleanup",
+          correlationId: namespace,
+        });
       }
-    } catch { /* Preserve the primary proof failure. */ }
+    } catch {
+      /* Preserve the primary proof failure. */
+    }
   }
   await database.close();
 }

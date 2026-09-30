@@ -1,10 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { createVerificationResourceReads } from "@aiengineer/knowledge-application";
-import {
-  createAdjudicationDecisionReadMcpExecutor,
-  createAdjudicationReadMcpExecutor,
-} from "../index.js";
+import { createAdjudicationDecisionReadMcpExecutor, createAdjudicationReadMcpExecutor } from "../index.js";
 
 const digest = (value: string) => `sha256:${value.repeat(64)}`;
 const artifact = (value: string) => ({ artifactId: randomUUID(), digest: digest(value) });
@@ -85,29 +82,23 @@ describe("adjudication MCP reads", () => {
       apiOrigin: "https://knowledge.example",
       identity: {
         actor,
-        grants: [
-          { tenantId, roles: ["knowledge_reader" as const], scopes: [] },
-        ],
+        grants: [{ tenantId, roles: ["knowledge_reader" as const], scopes: [] }],
       },
       verificationReads: createVerificationResourceReads({
         adjudicationReads: { getPendingSubject },
       }),
     };
     const execute = createAdjudicationReadMcpExecutor(options);
-    await expect(
-      execute({ context: { ...context, tenantId: randomUUID() }, operationId }),
-    ).resolves.toMatchObject({ isError: true });
-    await expect(
-      execute({ context, operationId, reviewerRole: "expert" }),
-    ).rejects.toThrow();
+    await expect(execute({ context: { ...context, tenantId: randomUUID() }, operationId })).resolves.toMatchObject({
+      isError: true,
+    });
+    await expect(execute({ context, operationId, reviewerRole: "expert" })).rejects.toThrow();
     expect(getPendingSubject).not.toHaveBeenCalled();
     await expect(execute({ context, operationId })).resolves.toMatchObject({
       structuredContent: { output: { status: "pending_human_adjudication" } },
     });
     expect(getPendingSubject).toHaveBeenCalledWith({ tenantId, operationId, actor });
-    getPendingSubject.mockRejectedValueOnce(
-      Object.assign(new Error("missing"), { code: "NOT_FOUND" }),
-    );
+    getPendingSubject.mockRejectedValueOnce(Object.assign(new Error("missing"), { code: "NOT_FOUND" }));
     await expect(execute({ context, operationId })).resolves.toMatchObject({
       isError: true,
       content: [{ text: JSON.stringify({ code: "NOT_FOUND" }) }],
@@ -124,18 +115,14 @@ describe("adjudication MCP reads", () => {
       operationId = randomUUID(),
       actor = { kind: "human" as const, id: randomUUID() },
       context = { tenantId, correlationId: "decision-read" };
-    const getDecision = vi
-      .fn()
-      .mockResolvedValue(decisionTerminal(tenantId, operationId));
+    const getDecision = vi.fn().mockResolvedValue(decisionTerminal(tenantId, operationId));
     const isAdjudicationDecisionReadAdmitted = vi.fn(async () => true);
     const options = {
       operationService: {} as never,
       apiOrigin: "https://knowledge.example",
       identity: {
         actor,
-        grants: [
-          { tenantId, roles: ["knowledge_reader" as const], scopes: [] },
-        ],
+        grants: [{ tenantId, roles: ["knowledge_reader" as const], scopes: [] }],
       },
       verificationReads: createVerificationResourceReads({
         adjudicationDecisionReads: { getDecision },
@@ -143,12 +130,10 @@ describe("adjudication MCP reads", () => {
       }),
     };
     const execute = createAdjudicationDecisionReadMcpExecutor(options);
-    await expect(
-      execute({ context: { ...context, tenantId: randomUUID() }, operationId }),
-    ).resolves.toMatchObject({ isError: true });
-    await expect(
-      execute({ context, operationId, reviewerRole: "caller" }),
-    ).rejects.toThrow();
+    await expect(execute({ context: { ...context, tenantId: randomUUID() }, operationId })).resolves.toMatchObject({
+      isError: true,
+    });
+    await expect(execute({ context, operationId, reviewerRole: "caller" })).rejects.toThrow();
     expect(getDecision).not.toHaveBeenCalled();
     await expect(execute({ context, operationId })).resolves.toMatchObject({
       structuredContent: { output: { decision: "affirm" } },

@@ -11,11 +11,7 @@ export async function runHttpPolicyFailureExample() {
     },
     get: store.get.bind(store),
   };
-  const adapter = new ExactHttpAcquisitionAdapter(
-    artifacts,
-    examplePolicy,
-    { resolve: async () => ["10.0.0.4"] },
-  );
+  const adapter = new ExactHttpAcquisitionAdapter(artifacts, examplePolicy, { resolve: async () => ["10.0.0.4"] });
   let denied = "";
   try {
     await adapter.plan(exampleRequest({ kind: "http", url: "https://internal.example/private" }));

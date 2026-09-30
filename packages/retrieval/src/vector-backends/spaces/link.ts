@@ -39,7 +39,10 @@ function blank(value: string): boolean {
  * Reports completeness; never throws. A `not_admitted` link is a valid,
  * incomplete link — callers decide whether an incomplete link blocks them.
  */
-export function validateVectorItemEntityLink(link: VectorItemEntityLink): { complete: boolean; issues: readonly string[] } {
+export function validateVectorItemEntityLink(link: VectorItemEntityLink): {
+  complete: boolean;
+  issues: readonly string[];
+} {
   const issues: string[] = [];
   const requireIdentity = (label: string, value: string) => {
     if (blank(value)) issues.push(`${label} is empty`);

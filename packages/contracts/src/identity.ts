@@ -2,9 +2,18 @@ import { z } from "zod";
 import { ContractVersionSchema, IdempotencyKeySchema, NonEmptyStringSchema, UuidSchema } from "./primitives.js";
 
 export const ServiceIdentitySchema = z.enum([
-  "knowledge_api", "knowledge_worker", "acquisition_executor", "conversion_executor",
-  "inspection_agent", "content_curator_agent", "embedding_executor", "retrieval_executor",
-  "evaluation_executor", "human_reviewer", "mission_control_client", "retention_worker",
+  "knowledge_api",
+  "knowledge_worker",
+  "acquisition_executor",
+  "conversion_executor",
+  "inspection_agent",
+  "content_curator_agent",
+  "embedding_executor",
+  "retrieval_executor",
+  "evaluation_executor",
+  "human_reviewer",
+  "mission_control_client",
+  "retention_worker",
   "control_plane",
 ]);
 export type ServiceIdentity = z.infer<typeof ServiceIdentitySchema>;
@@ -12,7 +21,13 @@ export type ServiceIdentity = z.infer<typeof ServiceIdentitySchema>;
 export const ActorSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("human"), id: UuidSchema, displayName: NonEmptyStringSchema.optional() }),
   z.strictObject({ kind: z.literal("service"), id: UuidSchema, serviceIdentity: ServiceIdentitySchema }),
-  z.strictObject({ kind: z.literal("model"), id: UuidSchema, serviceIdentity: z.enum(["inspection_agent", "content_curator_agent"]), model: NonEmptyStringSchema, providerRunId: NonEmptyStringSchema }),
+  z.strictObject({
+    kind: z.literal("model"),
+    id: UuidSchema,
+    serviceIdentity: z.enum(["inspection_agent", "content_curator_agent"]),
+    model: NonEmptyStringSchema,
+    providerRunId: NonEmptyStringSchema,
+  }),
 ]);
 export type Actor = z.infer<typeof ActorSchema>;
 
