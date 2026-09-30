@@ -34,7 +34,13 @@ interface Fetched {
   readonly content: string;
   readonly finalUrl: string;
   readonly title?: string;
-  readonly method: "firecrawl" | "https_get" | "https_get+firecrawl_parse" | "file_text" | "file_html" | "firecrawl_parse";
+  readonly method:
+    | "firecrawl"
+    | "https_get"
+    | "https_get+firecrawl_parse"
+    | "file_text"
+    | "file_html"
+    | "firecrawl_parse";
   readonly sourceKind: CaptureRecord["sourceKind"];
   readonly originalBytes?: Uint8Array;
   readonly originalMediaType?: string;
@@ -48,22 +54,33 @@ interface Fetched {
  * `/v2/parse` (requires FIRECRAWL_API_KEY). Anything else is refused: there is no
  * text representation to select quotes from, so it cannot carry evidence.
  */
-export const SUPPORTED_MEDIA_TYPES: Readonly<Record<string, { readonly kind: "text" | "html" | "document"; readonly extensions: readonly string[] }>> = {
+export const SUPPORTED_MEDIA_TYPES: Readonly<
+  Record<string, { readonly kind: "text" | "html" | "document"; readonly extensions: readonly string[] }>
+> = {
   "text/markdown": { kind: "text", extensions: [".md", ".markdown"] },
   "text/plain": { kind: "text", extensions: [".txt"] },
   "application/json": { kind: "text", extensions: [".json"] },
   "text/csv": { kind: "document", extensions: [".csv"] },
   "text/html": { kind: "html", extensions: [".html", ".htm", ".xhtml"] },
   "application/pdf": { kind: "document", extensions: [".pdf"] },
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": { kind: "document", extensions: [".docx", ".docm"] },
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+    kind: "document",
+    extensions: [".docx", ".docm"],
+  },
   "application/msword": { kind: "document", extensions: [".doc"] },
   "application/vnd.oasis.opendocument.text": { kind: "document", extensions: [".odt"] },
   "application/vnd.oasis.opendocument.spreadsheet": { kind: "document", extensions: [".ods"] },
   "application/vnd.oasis.opendocument.presentation": { kind: "document", extensions: [".odp"] },
   "application/rtf": { kind: "document", extensions: [".rtf"] },
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { kind: "document", extensions: [".xlsx", ".xlsm", ".xlsb"] },
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+    kind: "document",
+    extensions: [".xlsx", ".xlsm", ".xlsb"],
+  },
   "application/vnd.ms-excel": { kind: "document", extensions: [".xls"] },
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": { kind: "document", extensions: [".pptx", ".pptm"] },
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+    kind: "document",
+    extensions: [".pptx", ".pptm"],
+  },
   "application/vnd.ms-powerpoint": { kind: "document", extensions: [".ppt"] },
   "application/epub+zip": { kind: "document", extensions: [".epub"] },
 };
@@ -90,13 +107,19 @@ function mediaKind(mediaType: string): "text" | "html" | "document" | undefined 
 }
 
 /** The media type captureFile converts: a supported declared type, otherwise the one the filename implies. */
-export function captureFileMediaType(input: { readonly filename: string; readonly mediaType?: string }): string | undefined {
+export function captureFileMediaType(input: {
+  readonly filename: string;
+  readonly mediaType?: string;
+}): string | undefined {
   const declared = normalizeMediaType(input.mediaType);
   return declared && mediaKind(declared) ? declared : mediaTypeForFilename(input.filename);
 }
 
 /** How captureFile would convert this input, without converting it. */
-export function captureFileMediaKind(input: { readonly filename: string; readonly mediaType?: string }): "text" | "html" | "document" | undefined {
+export function captureFileMediaKind(input: {
+  readonly filename: string;
+  readonly mediaType?: string;
+}): "text" | "html" | "document" | undefined {
   const mediaType = captureFileMediaType(input);
   return mediaType ? mediaKind(mediaType) : undefined;
 }
@@ -117,7 +140,8 @@ async function viaFirecrawlScrape(url: string, apiKey: string): Promise<Fetched>
     body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: false, parsePDF: true, timeout: 90_000 }),
     signal: AbortSignal.timeout(120_000),
   });
-  if (!response.ok) throw new Error(`FIRECRAWL_SCRAPE_FAILED:${response.status}:${(await response.text()).slice(0, 300)}`);
+  if (!response.ok)
+    throw new Error(`FIRECRAWL_SCRAPE_FAILED:${response.status}:${(await response.text()).slice(0, 300)}`);
   const payload = (await response.json()) as {
     success?: boolean;
     data?: { markdown?: string; metadata?: { url?: string; sourceURL?: string; title?: string; contentType?: string } };
@@ -136,7 +160,12 @@ async function viaFirecrawlScrape(url: string, apiKey: string): Promise<Fetched>
 }
 
 /** Firecrawl `/v2/parse`: multipart upload of document bytes → markdown. */
-export async function parseDocumentViaFirecrawl(bytes: Uint8Array, filename: string, mediaType: string, apiKey: string): Promise<string> {
+export async function parseDocumentViaFirecrawl(
+  bytes: Uint8Array,
+  filename: string,
+  mediaType: string,
+  apiKey: string,
+): Promise<string> {
   if (bytes.byteLength > 50_000_000) throw new Error("DOCUMENT_TOO_LARGE:50MB");
   const form = new FormData();
   form.append("file", new Blob([Uint8Array.from(bytes)], { type: mediaType }), filename);
@@ -147,8 +176,14 @@ export async function parseDocumentViaFirecrawl(bytes: Uint8Array, filename: str
     body: form,
     signal: AbortSignal.timeout(300_000),
   });
-  if (!response.ok) throw new Error(`FIRECRAWL_PARSE_FAILED:${response.status}:${(await response.text()).slice(0, 300)}`);
-  const payload = (await response.json()) as { success?: boolean; data?: { markdown?: string }; markdown?: string; error?: string };
+  if (!response.ok)
+    throw new Error(`FIRECRAWL_PARSE_FAILED:${response.status}:${(await response.text()).slice(0, 300)}`);
+  const payload = (await response.json()) as {
+    success?: boolean;
+    data?: { markdown?: string };
+    markdown?: string;
+    error?: string;
+  };
   const markdown = (payload.data?.markdown ?? payload.markdown)?.trim();
   if (!markdown) throw new Error(`FIRECRAWL_PARSE_EMPTY:${payload.error ?? "no markdown"}`);
   return markdown;
@@ -172,7 +207,11 @@ export function htmlToText(html: string): { text: string; title?: string } {
 }
 
 async function viaHttps(url: string, firecrawlKey: string | undefined): Promise<Fetched> {
-  const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(60_000), headers: { "user-agent": "knowledge-verification-executor/0.2" } });
+  const response = await fetch(url, {
+    redirect: "follow",
+    signal: AbortSignal.timeout(60_000),
+    headers: { "user-agent": "knowledge-verification-executor/0.2" },
+  });
   if (!response.ok) throw new Error(`HTTPS_GET_FAILED:${response.status}`);
   const declared = normalizeMediaType(response.headers.get("content-type") ?? undefined);
   const mediaType = declared && mediaKind(declared) ? declared : (mediaTypeForFilename(url) ?? declared ?? "text/html");
@@ -183,7 +222,14 @@ async function viaHttps(url: string, firecrawlKey: string | undefined): Promise<
     const bytes = new Uint8Array(await response.arrayBuffer());
     const filename = new URL(response.url || url).pathname.split("/").pop() || "document";
     const markdown = await parseDocumentViaFirecrawl(bytes, filename, mediaType, firecrawlKey);
-    return { content: markdown, finalUrl: response.url || url, method: "https_get+firecrawl_parse", sourceKind: sourceKindFor(mediaType), originalBytes: bytes, originalMediaType: mediaType };
+    return {
+      content: markdown,
+      finalUrl: response.url || url,
+      method: "https_get+firecrawl_parse",
+      sourceKind: sourceKindFor(mediaType),
+      originalBytes: bytes,
+      originalMediaType: mediaType,
+    };
   }
   const body = await response.text();
   if (kind === "text") {
@@ -192,7 +238,13 @@ async function viaHttps(url: string, firecrawlKey: string | undefined): Promise<
   }
   const { text, title } = htmlToText(body);
   if (text.length < 200) throw new Error("HTTPS_GET_TEXT_EMPTY");
-  return { content: text, finalUrl: response.url || url, ...(title ? { title } : {}), method: "https_get", sourceKind: "web_page" };
+  return {
+    content: text,
+    finalUrl: response.url || url,
+    ...(title ? { title } : {}),
+    method: "https_get",
+    sourceKind: "web_page",
+  };
 }
 
 export function sourceIdFor(url: string): string {
@@ -211,19 +263,30 @@ export function canonicalUrl(url: string): string {
 
 // ---- store write ------------------------------------------------------------------------
 
-async function persistCapture(store: FilesystemStore, fetched: Fetched, requestedUri: string, captureIdInput: string | undefined): Promise<CaptureOutcome> {
+async function persistCapture(
+  store: FilesystemStore,
+  fetched: Fetched,
+  requestedUri: string,
+  captureIdInput: string | undefined,
+): Promise<CaptureOutcome> {
   const contentBytes = encoder.encode(fetched.content);
   const contentDigest = sha256Digest(contentBytes);
-  const captureId = captureIdInput?.trim() || `capture-${shortId(canonicalUrl(requestedUri), 10)}-${contentDigest.slice(7, 15)}`;
+  const captureId =
+    captureIdInput?.trim() || `capture-${shortId(canonicalUrl(requestedUri), 10)}-${contentDigest.slice(7, 15)}`;
   let previous: CaptureRecord | undefined;
-  try { previous = await store.readCapture(captureId); }
-  catch (error) {
+  try {
+    previous = await store.readCapture(captureId);
+  } catch (error) {
     if (!(error instanceof Error) || !error.message.startsWith("CAPTURE_NOT_FOUND:")) throw error;
   }
   if (previous) {
     const originalDigest = fetched.originalBytes ? sha256Digest(fetched.originalBytes) : undefined;
-    if (previous.contentArtifact.digest !== contentDigest || canonicalUrl(previous.requestedUrl) !== canonicalUrl(requestedUri)
-      || previous.originalArtifact?.digest !== originalDigest) throw new Error(`CAPTURE_ID_CONFLICT:${captureId}:choose a new --capture-id`);
+    if (
+      previous.contentArtifact.digest !== contentDigest ||
+      canonicalUrl(previous.requestedUrl) !== canonicalUrl(requestedUri) ||
+      previous.originalArtifact?.digest !== originalDigest
+    )
+      throw new Error(`CAPTURE_ID_CONFLICT:${captureId}:choose a new --capture-id`);
     return { record: previous, content: fetched.content, reused: true };
   }
   const acquisitionIdentity = shortId(JSON.stringify([captureId, canonicalUrl(requestedUri)]), 64);
@@ -266,13 +329,20 @@ async function persistCapture(store: FilesystemStore, fetched: Fetched, requeste
 }
 
 /** Capture a URL. HTML → Firecrawl markdown (or tag-stripped text), PDF/DOCX/XLSX/… → Firecrawl parse. */
-export async function captureSource(store: FilesystemStore, input: CaptureInput, env: Readonly<Record<string, string | undefined>> = process.env): Promise<CaptureOutcome> {
+export async function captureSource(
+  store: FilesystemStore,
+  input: CaptureInput,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<CaptureOutcome> {
   const method = input.method ?? "auto";
   const firecrawlKey = env.FIRECRAWL_API_KEY?.trim();
   const guessed = mediaTypeForFilename(input.url);
   const guessedKind = guessed ? mediaKind(guessed) : undefined;
   let fetched: Fetched;
-  if (method === "firecrawl" || (method === "auto" && firecrawlKey && guessedKind !== "document" && guessedKind !== "text")) {
+  if (
+    method === "firecrawl" ||
+    (method === "auto" && firecrawlKey && guessedKind !== "document" && guessedKind !== "text")
+  ) {
     if (!firecrawlKey) throw new Error("FIRECRAWL_API_KEY_REQUIRED");
     fetched = await viaFirecrawlScrape(input.url, firecrawlKey);
   } else if (method === "auto" && firecrawlKey && guessed === "application/pdf") {
@@ -280,7 +350,11 @@ export async function captureSource(store: FilesystemStore, input: CaptureInput,
     // capture and a file capture of the same document yield the same text digest and the
     // original bytes are stored for provenance). Firecrawl scrape is only a fallback when the
     // direct download is refused (bot walls, auth redirects).
-    try { fetched = await viaHttps(input.url, firecrawlKey); } catch { fetched = await viaFirecrawlScrape(input.url, firecrawlKey); }
+    try {
+      fetched = await viaHttps(input.url, firecrawlKey);
+    } catch {
+      fetched = await viaFirecrawlScrape(input.url, firecrawlKey);
+    }
   } else {
     fetched = await viaHttps(input.url, firecrawlKey);
   }
@@ -292,10 +366,17 @@ export async function captureSource(store: FilesystemStore, input: CaptureInput,
  * The executor performs the text conversion itself so the agent cannot substitute
  * a doctored representation; the original bytes are stored beside the text.
  */
-export async function captureFile(store: FilesystemStore, input: CaptureFileInput, env: Readonly<Record<string, string | undefined>> = process.env): Promise<CaptureOutcome> {
+export async function captureFile(
+  store: FilesystemStore,
+  input: CaptureFileInput,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<CaptureOutcome> {
   if (input.bytes.byteLength === 0) throw new Error("CAPTURE_FILE_EMPTY");
   const mediaType = captureFileMediaType(input);
-  if (!mediaType) throw new Error(`CAPTURE_FILE_UNSUPPORTED_TYPE:${input.mediaType ?? input.filename}:supported=${Object.keys(SUPPORTED_MEDIA_TYPES).join(",")}`);
+  if (!mediaType)
+    throw new Error(
+      `CAPTURE_FILE_UNSUPPORTED_TYPE:${input.mediaType ?? input.filename}:supported=${Object.keys(SUPPORTED_MEDIA_TYPES).join(",")}`,
+    );
   const kind = mediaKind(mediaType)!;
   const sourceUri = input.sourceUri?.trim() || `file:///${input.filename.replace(/^\/+/, "")}`;
   const decoder = new TextDecoder("utf-8", { fatal: false });
@@ -307,12 +388,28 @@ export async function captureFile(store: FilesystemStore, input: CaptureFileInpu
   } else if (kind === "html") {
     const { text, title } = htmlToText(decoder.decode(input.bytes));
     if (text.length === 0) throw new Error("CAPTURE_FILE_TEXT_EMPTY");
-    fetched = { content: text, finalUrl: sourceUri, ...(title ? { title } : {}), method: "file_html", sourceKind: "web_page", originalBytes: input.bytes, originalMediaType: mediaType };
+    fetched = {
+      content: text,
+      finalUrl: sourceUri,
+      ...(title ? { title } : {}),
+      method: "file_html",
+      sourceKind: "web_page",
+      originalBytes: input.bytes,
+      originalMediaType: mediaType,
+    };
   } else {
     const firecrawlKey = env.FIRECRAWL_API_KEY?.trim();
     if (!firecrawlKey) throw new Error(`CAPTURE_FILE_DOCUMENT_REQUIRES_FIRECRAWL:${mediaType}`);
     const markdown = await parseDocumentViaFirecrawl(input.bytes, input.filename, mediaType, firecrawlKey);
-    fetched = { content: markdown, finalUrl: sourceUri, title: input.filename, method: "firecrawl_parse", sourceKind: sourceKindFor(mediaType), originalBytes: input.bytes, originalMediaType: mediaType };
+    fetched = {
+      content: markdown,
+      finalUrl: sourceUri,
+      title: input.filename,
+      method: "firecrawl_parse",
+      sourceKind: sourceKindFor(mediaType),
+      originalBytes: input.bytes,
+      originalMediaType: mediaType,
+    };
   }
   return persistCapture(store, fetched, sourceUri, input.captureId);
 }

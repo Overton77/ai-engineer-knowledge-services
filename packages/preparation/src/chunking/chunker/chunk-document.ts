@@ -15,19 +15,30 @@ export function chunkDocument(nodes: readonly DocumentNode[], profile: ChunkProf
   const ordered = orderDocumentNodes(nodes);
   const boilerplate = findBoilerplate(ordered, profile.boilerplateOccurrences);
   const seenContent = new Set<string>();
-  const omittedNodeIds = ordered.filter((node) => {
-    const key = normalizedDuplicateKey(node.text);
-    const omit = boilerplate.has(key) || node.role === "boilerplate" || seenContent.has(key);
-    seenContent.add(key);
-    return omit;
-  }).map(({ id }) => id);
+  const omittedNodeIds = ordered
+    .filter((node) => {
+      const key = normalizedDuplicateKey(node.text);
+      const omit = boilerplate.has(key) || node.role === "boilerplate" || seenContent.has(key);
+      seenContent.add(key);
+      return omit;
+    })
+    .map(({ id }) => id);
   const admitted = ordered.filter((node) => !omittedNodeIds.includes(node.id) && node.text.trim().length > 0);
   const selected = selectForStrategy(admitted, profile.strategy);
   const rawGroups = buildGroups(selected, profile);
   const chunks = rawGroups.map((spans, ordinal) => materializeChunk(spans, ordinal, profile, ordered));
   const qa = validateChunks(chunks, nodes, profile);
   const inputDigest = sha256Digest(nodes.map(({ id, digest }) => ({ id, digest })));
-  const outputDigest = sha256Digest(JSON.stringify(chunks.map(({ id, sourceTextDigest, embeddingTextDigest, spans }) => ({ id, sourceTextDigest, embeddingTextDigest, spans }))));
+  const outputDigest = sha256Digest(
+    JSON.stringify(
+      chunks.map(({ id, sourceTextDigest, embeddingTextDigest, spans }) => ({
+        id,
+        sourceTextDigest,
+        embeddingTextDigest,
+        spans,
+      })),
+    ),
+  );
   return deepFreeze({ profile, inputDigest, outputDigest, chunks, omittedNodeIds, qa });
 }
 
@@ -60,31 +71,60 @@ function buildGroups(nodes: readonly DocumentNode[], profile: ChunkProfile): rea
       const partTokens = tokenize(part.node.text.slice(part.startOffset, part.endOffset)).length;
       const structuralBoundary = node.kind === "heading" && current.length > 0;
       if (current.length > 0 && (structuralBoundary || tokens + partTokens > profile.targetTokens)) {
-        groups.push(current); current = []; tokens = 0;
+        groups.push(current);
+        current = [];
+        tokens = 0;
       }
-      current.push(part); tokens += partTokens;
-      if (tokens >= profile.targetTokens) { groups.push(current); current = []; tokens = 0; }
+      current.push(part);
+      tokens += partTokens;
+      if (tokens >= profile.targetTokens) {
+        groups.push(current);
+        current = [];
+        tokens = 0;
+      }
     }
   }
   if (current.length > 0) groups.push(current);
   return groups;
 }
 
-function materializeChunk(spans: readonly RawSpan[], ordinal: number, profile: ChunkProfile, allNodes: readonly DocumentNode[]): PreparedChunk {
-  const sourceText = spans.map(({ node, startOffset, endOffset }) => node.text.slice(startOffset, endOffset)).join("\n\n");
+function materializeChunk(
+  spans: readonly RawSpan[],
+  ordinal: number,
+  profile: ChunkProfile,
+  allNodes: readonly DocumentNode[],
+): PreparedChunk {
+  const sourceText = spans
+    .map(({ node, startOffset, endOffset }) => node.text.slice(startOffset, endOffset))
+    .join("\n\n");
   const heading = profile.contextualHeadingPrefix ? nearestHeading(spans[0]!.node, allNodes) : undefined;
   const contextualPrefix = heading === undefined ? "" : `${heading.text}\n\n`;
   const embeddingText = `${contextualPrefix}${sourceText}`;
   const preparedSpans = spans.map(({ node, startOffset, endOffset }) => ({
-    nodeId: node.id, startOffset, endOffset,
+    nodeId: node.id,
+    startOffset,
+    endOffset,
     locator: { ...node.locator, startOffset, endOffset },
   }));
-  const identity = sha256Digest(JSON.stringify({ profile: `${profile.name}@${profile.version}`, spans: preparedSpans, sourceText: sha256Digest(sourceText), projection: sha256Digest(embeddingText) }));
+  const identity = sha256Digest(
+    JSON.stringify({
+      profile: `${profile.name}@${profile.version}`,
+      spans: preparedSpans,
+      sourceText: sha256Digest(sourceText),
+      projection: sha256Digest(embeddingText),
+    }),
+  );
   return deepFreeze({
-    id: deterministicUuid(identity), ordinal, role: spans[0]!.node.role ?? profile.strategy,
-    sourceText, contextualPrefix, embeddingText,
-    sourceTextDigest: sha256Digest(sourceText), embeddingTextDigest: sha256Digest(embeddingText),
-    sourceTokenCount: tokenize(sourceText).length, embeddingTokenCount: tokenize(embeddingText).length,
+    id: deterministicUuid(identity),
+    ordinal,
+    role: spans[0]!.node.role ?? profile.strategy,
+    sourceText,
+    contextualPrefix,
+    embeddingText,
+    sourceTextDigest: sha256Digest(sourceText),
+    embeddingTextDigest: sha256Digest(embeddingText),
+    sourceTokenCount: tokenize(sourceText).length,
+    embeddingTokenCount: tokenize(embeddingText).length,
     spans: preparedSpans,
   });
 }
@@ -99,7 +139,9 @@ function nearestHeading(node: DocumentNode, allNodes: readonly DocumentNode[]): 
   return undefined;
 }
 
-function normalizedDuplicateKey(text: string): string { return text.replace(/\s+/g, " ").trim().toLocaleLowerCase(); }
+function normalizedDuplicateKey(text: string): string {
+  return text.replace(/\s+/g, " ").trim().toLocaleLowerCase();
+}
 
 function findBoilerplate(nodes: readonly DocumentNode[], threshold: number): ReadonlySet<string> {
   const counts = new Map<string, number>();

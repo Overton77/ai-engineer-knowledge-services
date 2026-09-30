@@ -29,7 +29,10 @@ export function createDurableRecoveryCustody(store: FilesystemStore, custody: Ar
       if (totalBytes > 256_000_000) throw new Error("RECOVERY_ARTIFACT_DEPENDENCY_LIMIT");
       visited.add(artifactId);
       active.add(artifactId);
-      for (const parent of [...value.handle.parentArtifactIds, ...(value.handle.attestationArtifactId ? [value.handle.attestationArtifactId] : [])]) {
+      for (const parent of [
+        ...value.handle.parentArtifactIds,
+        ...(value.handle.attestationArtifactId ? [value.handle.attestationArtifactId] : []),
+      ]) {
         await verified(parent);
       }
       active.delete(artifactId);

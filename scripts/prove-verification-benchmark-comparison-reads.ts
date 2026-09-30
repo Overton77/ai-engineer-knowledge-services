@@ -10,7 +10,11 @@ import { createVerificationBenchmarkComparisonReads } from "../packages/host/src
 import { buildKnowledgeMcpApp } from "../apps/mcp/src/index.js";
 import { KnowledgeClient } from "@aiengineer/knowledge-client";
 import { VerificationBenchmarkComparisonResourceSchema } from "@aiengineer/knowledge-contracts";
-import { PostgresCanonicalRepository, PostgresKnowledgeOperationService, PostgresVerificationRepository } from "@aiengineer/knowledge-persistence";
+import {
+  PostgresCanonicalRepository,
+  PostgresKnowledgeOperationService,
+  PostgresVerificationRepository,
+} from "@aiengineer/knowledge-persistence";
 import { SupabaseArtifactStore } from "@aiengineer/knowledge-core";
 import { canonicalizeJson } from "@aiengineer/knowledge-verification";
 import { inProcessMcpOptions } from "./mcp-in-process-options.js";
@@ -30,11 +34,23 @@ type WorkerReceipt = {
 const postgres = process.env.POSTGRES_URL;
 const projectUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SECRET_KEY;
-if (!postgres || !/^postgres(?:ql)?:\/\/(?:[^@/]+@)?(?:127\.0\.0\.1|localhost):54322\//u.test(postgres)) throw new Error("COMPARISON_READ_LOCAL_DB_REQUIRED");
-if (!projectUrl || !serviceRoleKey || !["localhost", "127.0.0.1"].includes(new URL(projectUrl).hostname) || new URL(projectUrl).port !== "54321") throw new Error("COMPARISON_READ_LOCAL_STORAGE_REQUIRED");
+if (!postgres || !/^postgres(?:ql)?:\/\/(?:[^@/]+@)?(?:127\.0\.0\.1|localhost):54322\//u.test(postgres))
+  throw new Error("COMPARISON_READ_LOCAL_DB_REQUIRED");
+if (
+  !projectUrl ||
+  !serviceRoleKey ||
+  !["localhost", "127.0.0.1"].includes(new URL(projectUrl).hostname) ||
+  new URL(projectUrl).port !== "54321"
+)
+  throw new Error("COMPARISON_READ_LOCAL_STORAGE_REQUIRED");
 
 const internal = resolve("../internal");
-const worker = JSON.parse(await readFile(resolve(internal, "verification-benchmark-comparison-worker-f861733d-499b-43d0-96a5-4596ee51944c.json"), "utf8")) as WorkerReceipt;
+const worker = JSON.parse(
+  await readFile(
+    resolve(internal, "verification-benchmark-comparison-worker-f861733d-499b-43d0-96a5-4596ee51944c.json"),
+    "utf8",
+  ),
+) as WorkerReceipt;
 const tenantId = worker.tenantId;
 const comparisonId = worker.results[0]!.output.comparisonId;
 const namespace = randomUUID();
@@ -49,9 +65,18 @@ const reads = createVerificationBenchmarkComparisonReads(database, {
 });
 assert.ok(reads);
 const actor = { kind: "human" as const, id: randomUUID() };
-const identity = { actor, grants: [{ tenantId, roles: ["knowledge_reader" as const], scopes: [] }, { tenantId: foreignTenant, roles: ["knowledge_reader" as const], scopes: [] }] };
+const identity = {
+  actor,
+  grants: [
+    { tenantId, roles: ["knowledge_reader" as const], scopes: [] },
+    { tenantId: foreignTenant, roles: ["knowledge_reader" as const], scopes: [] },
+  ],
+};
 const operationService = new PostgresKnowledgeOperationService(database);
-const api = buildServer({ verificationBenchmarkComparisonReads: reads, resolveIdentity: value => value === token ? identity : undefined });
+const api = buildServer({
+  verificationBenchmarkComparisonReads: reads,
+  resolveIdentity: (value) => (value === token ? identity : undefined),
+});
 const checks: Record<string, boolean> = {};
 let mcp: ReturnType<typeof buildKnowledgeMcpApp> | undefined;
 
@@ -70,17 +95,43 @@ function runCli(baseUrl: string) {
     correlationId: namespace,
   };
   return new Promise<{ code: number | null; stdout: string; stderr: string }>((done, reject) => {
-    const child = spawn(process.execPath, [resolve("apps/cli/dist/index.js"), "verify","benchmark", "comparison", "--base-url", baseUrl, "--context", JSON.stringify(context), "--input", JSON.stringify({ comparisonId })], {
-      windowsHide: true,
-      env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, KNOWLEDGE_API_TOKEN: token },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+      process.execPath,
+      [
+        resolve("apps/cli/dist/index.js"),
+        "verify",
+        "benchmark",
+        "comparison",
+        "--base-url",
+        baseUrl,
+        "--context",
+        JSON.stringify(context),
+        "--input",
+        JSON.stringify({ comparisonId }),
+      ],
+      {
+        windowsHide: true,
+        env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, KNOWLEDGE_API_TOKEN: token },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
     const timer = setTimeout(() => child.kill("SIGKILL"), 20_000);
-    let stdout = "", stderr = "";
-    child.stdout.on("data", chunk => { stdout += chunk; });
-    child.stderr.on("data", chunk => { stderr += chunk; });
-    child.on("error", error => { clearTimeout(timer); reject(error); });
-    child.on("close", code => { clearTimeout(timer); done({ code, stdout, stderr }); });
+    let stdout = "",
+      stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      done({ code, stdout, stderr });
+    });
   });
 }
 
@@ -90,7 +141,13 @@ function assertProjection(publicValue: unknown, rawValue: unknown): void {
   assert.equal(projected.statisticalScope, "paired_engineering_observations_without_assessed_cluster_independence");
   type RawMetric = Record<string, unknown> & { mcnemar: { pValue: number }; pairedClusterSignFlip: { pValue: number } };
   const raw = rawValue as {
-    pairComparisons: readonly { pairId: string; comparison: { pairing: { caseCount: number; clusterCount: number; clusterUnit: string }; metrics: Record<string, RawMetric> } }[];
+    pairComparisons: readonly {
+      pairId: string;
+      comparison: {
+        pairing: { caseCount: number; clusterCount: number; clusterUnit: string };
+        metrics: Record<string, RawMetric>;
+      };
+    }[];
     globalInference: unknown;
   };
   assert.equal(projected.pairs.length, raw.pairComparisons.length);
@@ -105,7 +162,13 @@ function assertProjection(publicValue: unknown, rawValue: unknown): void {
       const source = retained.comparison.metrics[metric.metric]!;
       const rate = (value: unknown) => {
         const candidate = value as Record<string, unknown>;
-        return { successes: candidate.successes, denominator: candidate.denominator, estimate: candidate.estimate, lower: candidate.lower, upper: candidate.upper };
+        return {
+          successes: candidate.successes,
+          denominator: candidate.denominator,
+          estimate: candidate.estimate,
+          lower: candidate.lower,
+          upper: candidate.upper,
+        };
       };
       assert.deepEqual(metric, {
         metric: metric.metric,
@@ -130,9 +193,16 @@ try {
   const context = { tenantId, correlationId: namespace };
 
   const resultArtifactId = worker.results[0]!.publication.result.artifact.artifactId;
-  const verificationRepository = new PostgresVerificationRepository(database, new SupabaseArtifactStore({ projectUrl, serviceRoleKey, bucket, maximumBytes: 8_000_000 }), {
-    async authorize(input) { if (input.tenantId !== tenantId || input.purpose !== "verification_replay") throw new Error("COMPARISON_READ_PROOF_ARTIFACT_DENIED"); },
-  });
+  const verificationRepository = new PostgresVerificationRepository(
+    database,
+    new SupabaseArtifactStore({ projectUrl, serviceRoleKey, bucket, maximumBytes: 8_000_000 }),
+    {
+      async authorize(input) {
+        if (input.tenantId !== tenantId || input.purpose !== "verification_replay")
+          throw new Error("COMPARISON_READ_PROOF_ARTIFACT_DENIED");
+      },
+    },
+  );
   const resolver = verificationRepository.createTrustedArtifactResolver();
   await resolver.authorizeArtifact({ tenantId, artifactId: resultArtifactId, purpose: "verification_replay" });
   const retained = await resolver.hydrateRegisteredArtifact({ tenantId, artifactId: resultArtifactId });
@@ -146,27 +216,74 @@ try {
   checks.typedClientMatchesActualSignedResult = true;
 
   const serialized = JSON.stringify(resource);
-  for (const field of ["objectKey", "storageBucket", "signatureBase64", "publicKeyPem", "parentArtifactIds", "transformationSignature", "pairComparisons"]) assert.equal(serialized.includes(`\"${field}\"`), false);
+  for (const field of [
+    "objectKey",
+    "storageBucket",
+    "signatureBase64",
+    "publicKeyPem",
+    "parentArtifactIds",
+    "transformationSignature",
+    "pairComparisons",
+  ])
+    assert.equal(serialized.includes(`\"${field}\"`), false);
   checks.noPrivateStorageOrSignatureFields = true;
 
   const headers = { authorization: `Bearer ${token}`, "x-tenant-id": tenantId, "x-correlation-id": namespace };
-  assert.equal((await api.inject({ url: `/v1/verification/benchmarks/comparisons/${randomUUID()}`, headers })).statusCode, 404);
-  assert.equal((await api.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}`, headers: { ...headers, "x-tenant-id": foreignTenant } })).statusCode, 404);
-  assert.equal((await api.inject({ url: "/v1/verification/benchmarks/comparisons/not-a-uuid", headers })).statusCode, 400);
-  assert.equal((await api.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}?include=result`, headers })).statusCode, 400);
+  assert.equal(
+    (await api.inject({ url: `/v1/verification/benchmarks/comparisons/${randomUUID()}`, headers })).statusCode,
+    404,
+  );
+  assert.equal(
+    (
+      await api.inject({
+        url: `/v1/verification/benchmarks/comparisons/${comparisonId}`,
+        headers: { ...headers, "x-tenant-id": foreignTenant },
+      })
+    ).statusCode,
+    404,
+  );
+  assert.equal(
+    (await api.inject({ url: "/v1/verification/benchmarks/comparisons/not-a-uuid", headers })).statusCode,
+    400,
+  );
+  assert.equal(
+    (await api.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}?include=result`, headers }))
+      .statusCode,
+    400,
+  );
   checks.missingAndForeignHiddenInvalidAndQueryKeysRejected = true;
 
-  const unconfigured = buildServer({ resolveIdentity: value => value === token ? identity : undefined });
-  assert.equal((await unconfigured.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}`, headers })).statusCode, 503);
+  const unconfigured = buildServer({ resolveIdentity: (value) => (value === token ? identity : undefined) });
+  assert.equal(
+    (await unconfigured.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}`, headers })).statusCode,
+    503,
+  );
   await unconfigured.close();
-  assert.equal(createVerificationBenchmarkComparisonReads(database, { ...process.env, VERIFICATION_BENCHMARK_COMPARISON_READ_PUBLIC_KEYS_JSON: "" }), undefined);
+  assert.equal(
+    createVerificationBenchmarkComparisonReads(database, {
+      ...process.env,
+      VERIFICATION_BENCHMARK_COMPARISON_READ_PUBLIC_KEYS_JSON: "",
+    }),
+    undefined,
+  );
   checks.unconfiguredReadCapabilityDenied = true;
 
   const wrongPublicKey = generateKeyPairSync("ed25519").publicKey.export({ format: "pem", type: "spki" }).toString();
-  const wrongReads = createVerificationBenchmarkComparisonReads(database, { ...process.env, VERIFICATION_BENCHMARK_COMPARISON_READ_PUBLIC_KEYS_JSON: JSON.stringify([{ keyId: worker.publicKey.keyId, publicKeyPem: wrongPublicKey }]) });
+  const wrongReads = createVerificationBenchmarkComparisonReads(database, {
+    ...process.env,
+    VERIFICATION_BENCHMARK_COMPARISON_READ_PUBLIC_KEYS_JSON: JSON.stringify([
+      { keyId: worker.publicKey.keyId, publicKeyPem: wrongPublicKey },
+    ]),
+  });
   assert.ok(wrongReads);
-  const wrongApi = buildServer({ verificationBenchmarkComparisonReads: wrongReads, resolveIdentity: value => value === token ? identity : undefined });
-  assert.equal((await wrongApi.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}`, headers })).statusCode, 503);
+  const wrongApi = buildServer({
+    verificationBenchmarkComparisonReads: wrongReads,
+    resolveIdentity: (value) => (value === token ? identity : undefined),
+  });
+  assert.equal(
+    (await wrongApi.inject({ url: `/v1/verification/benchmarks/comparisons/${comparisonId}`, headers })).statusCode,
+    503,
+  );
   await wrongApi.close();
   checks.wrongTrustedKeyFailsClosed = true;
 
@@ -178,17 +295,26 @@ try {
   mcp = buildKnowledgeMcpApp({
     operationService,
     apiOrigin: origin,
-    resolveIdentity: value => value === token ? identity : undefined,
+    resolveIdentity: (value) => (value === token ? identity : undefined),
     ...inProcessMcpOptions({ verificationBenchmarkComparisonReads: reads }, origin),
   });
   const mcpOrigin = await mcp.listen({ host: "127.0.0.1", port: 0 });
   const require = createRequire(resolve("apps/mcp/package.json"));
   const { Client } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/index.js")).href);
-  const { StreamableHTTPClientTransport } = await import(pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/streamableHttp.js")).href);
+  const { StreamableHTTPClientTransport } = await import(
+    pathToFileURL(require.resolve("@modelcontextprotocol/sdk/client/streamableHttp.js")).href
+  );
   const protocolClient = new Client({ name: "comparison-read-proof", version: "1" });
   try {
-    await protocolClient.connect(new StreamableHTTPClientTransport(new URL(`${mcpOrigin}/mcp`), { requestInit: { headers: { authorization: `Bearer ${token}` } } }));
-    const mcpResult = await protocolClient.callTool({ name: "knowledge_get_benchmark_comparison", arguments: { context, comparisonId } });
+    await protocolClient.connect(
+      new StreamableHTTPClientTransport(new URL(`${mcpOrigin}/mcp`), {
+        requestInit: { headers: { authorization: `Bearer ${token}` } },
+      }),
+    );
+    const mcpResult = await protocolClient.callTool({
+      name: "knowledge_get_benchmark_comparison",
+      arguments: { context, comparisonId },
+    });
     assert.notEqual(mcpResult.isError, true, JSON.stringify(mcpResult));
     assertProjection(mcpResult.structuredContent, rawResult);
   } finally {
@@ -207,23 +333,38 @@ try {
     "apps/mcp/src/index.ts",
     "scripts/prove-verification-benchmark-comparison-reads.ts",
   ];
-  const sources = await Promise.all(sourcePaths.map(async path => {
-    const bytes = await readFile(path);
-    return { path, digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`, bytesBase64: bytes.toString("base64") };
-  }));
+  const sources = await Promise.all(
+    sourcePaths.map(async (path) => {
+      const bytes = await readFile(path);
+      return {
+        path,
+        digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+        bytesBase64: bytes.toString("base64"),
+      };
+    }),
+  );
   const output = resolve(internal, `verification-benchmark-comparison-reads-${namespace}.json`);
-  await writeFile(output, JSON.stringify({
-    status: "passed",
-    capturedAt: new Date().toISOString(),
-    scope: "Read-only local sealed benchmark comparison SQL/Storage custody through configured HTTP, typed client, built CLI and actual MCP HTTP; no comparison execution",
-    tenantId,
-    comparisonId,
-    checks,
-    resource,
-    rawResultArtifact: { artifactId: resultArtifactId, digest: retained.registration.digest },
-    sources,
-    externalProviderRequests: 0,
-  }, null, 2), { flag: "wx" });
+  await writeFile(
+    output,
+    JSON.stringify(
+      {
+        status: "passed",
+        capturedAt: new Date().toISOString(),
+        scope:
+          "Read-only local sealed benchmark comparison SQL/Storage custody through configured HTTP, typed client, built CLI and actual MCP HTTP; no comparison execution",
+        tenantId,
+        comparisonId,
+        checks,
+        resource,
+        rawResultArtifact: { artifactId: resultArtifactId, digest: retained.registration.digest },
+        sources,
+        externalProviderRequests: 0,
+      },
+      null,
+      2,
+    ),
+    { flag: "wx" },
+  );
   console.log(JSON.stringify({ status: "passed", output, checks }));
 } finally {
   await mcp?.close();

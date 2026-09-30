@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildServer } from "../server.js";
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const actor = {
   kind: "service" as const,
   id: id(3),
@@ -41,9 +40,7 @@ function fixture(allowed: boolean | undefined) {
       grants: [{ tenantId: id(1), roles: ["knowledge_operator"], scopes: [] }],
     }),
     verificationAdjudicationDecisionReadService: { getDecision: read },
-    ...(allowed === undefined
-      ? {}
-      : { isAdjudicationDecisionReadAdmitted: authorize }),
+    ...(allowed === undefined ? {} : { isAdjudicationDecisionReadAdmitted: authorize }),
   });
   const send = () =>
     server.inject({

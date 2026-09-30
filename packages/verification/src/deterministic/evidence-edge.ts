@@ -3,11 +3,7 @@ import type {
   EvidenceMechanicalResult,
   VerificationSourceCapture,
 } from "@aiengineer/knowledge-contracts";
-import {
-  digestCanonicalJson,
-  sha256Digest,
-  ZERO_SHA256_DIGEST,
-} from "../canonical/index.js";
+import { digestCanonicalJson, sha256Digest, ZERO_SHA256_DIGEST } from "../canonical/index.js";
 import {
   resolveEvidenceSelector,
   type EvidenceSelection,
@@ -37,26 +33,14 @@ export type EvidenceEdgeVerifier = (edge: EvidenceEdge) => EvidenceEdgeResult;
  * the admitted resolver, then binds the resolver's claim back to the request.
  * A resolver's word is never taken: the selected bytes are re-hashed here.
  */
-export function verifyEvidenceEdge(
-  context: EvidenceEdgeContext,
-  edge: EvidenceEdge,
-): EvidenceEdgeResult {
+export function verifyEvidenceEdge(context: EvidenceEdgeContext, edge: EvidenceEdge): EvidenceEdgeResult {
   const { fragment } = edge;
   const capture = context.captures.get(fragment.captureId);
-  if (!capture)
-    return unresolvedEvidence(
-      edge,
-      CHECK.CAPTURE_PRESENT,
-      `Capture ${fragment.captureId} is missing.`,
-    );
+  if (!capture) return unresolvedEvidence(edge, CHECK.CAPTURE_PRESENT, `Capture ${fragment.captureId} is missing.`);
   const handle = [
     capture.contentArtifact,
-    ...(capture.canonicalProjectionArtifact
-      ? [capture.canonicalProjectionArtifact]
-      : []),
-  ].find(
-    (artifact) => artifact.artifactId === fragment.representationArtifactId,
-  );
+    ...(capture.canonicalProjectionArtifact ? [capture.canonicalProjectionArtifact] : []),
+  ].find((artifact) => artifact.artifactId === fragment.representationArtifactId);
   if (!handle)
     return unresolvedEvidence(
       edge,
@@ -111,8 +95,7 @@ function bindResolutionToRequest(
     )
     .require(
       CHECK.SELECTOR_REPRESENTATION_BOUND,
-      resolution.representationArtifactId ===
-        request.representationArtifactId &&
+      resolution.representationArtifactId === request.representationArtifactId &&
         resolution.representationDigest === request.representationDigest,
       "Selector resolution must bind to verified representation bytes.",
     )
@@ -128,8 +111,7 @@ function bindResolutionToRequest(
     )
     .require(
       CHECK.SELECTED_CONTENT_DIGEST_REPLAYED,
-      resolution.selectedContentDigest ===
-        sha256Digest(selection.selectedContent),
+      resolution.selectedContentDigest === sha256Digest(selection.selectedContent),
       "Selected bytes must replay to the resolution digest.",
     )
     .require(
@@ -140,22 +122,14 @@ function bindResolutionToRequest(
     );
   if (
     edge.fragment.selector.kind === "text_quote" &&
-    edge.fragment.selector.normalization ===
-      "casefold_whitespace_filler_removed"
+    edge.fragment.selector.normalization === "casefold_whitespace_filler_removed"
   )
-    checks.review(
-      CHECK.LOSSY_TEXT_NORMALIZATION,
-      "Filler removal and case folding require mechanical review.",
-    );
+    checks.review(CHECK.LOSSY_TEXT_NORMALIZATION, "Filler removal and case folding require mechanical review.");
   return checks;
 }
 
 /** A failed edge still reports a resolution shape so consumers can address it by selector; the digest is the zero sentinel. */
-function unresolvedEvidence(
-  edge: EvidenceEdge,
-  code: CheckCode,
-  detail: string,
-): EvidenceEdgeResult {
+function unresolvedEvidence(edge: EvidenceEdge, code: CheckCode, detail: string): EvidenceEdgeResult {
   const { fragment } = edge;
   return {
     contract: {
@@ -173,9 +147,7 @@ function unresolvedEvidence(
         normalization: "none",
         resolverVersion: CORE_RESOLVER_VERSION,
       },
-      checks: [
-        verificationCheck(code, "failed", "hard", detail, edge.evidenceId),
-      ],
+      checks: [verificationCheck(code, "failed", "hard", detail, edge.evidenceId)],
     },
   };
 }

@@ -38,10 +38,14 @@ describe("canonical preparation vocabulary", () => {
     expect(canonicalDocumentType(kind)).toBe(code);
   });
 
-  it.each(["official_docs_page", "entity_profile", "research_report", "official_homepage", "unregistered_kind", "constructor"])(
-    "preserves unaliased document type %s for canonical database validation",
-    (kind) => {
-      expect(canonicalDocumentType(kind)).toBe(kind);
-    },
-  );
+  it.each([
+    "official_docs_page",
+    "entity_profile",
+    "research_report",
+    "official_homepage",
+    "unregistered_kind",
+    "constructor",
+  ])("preserves unaliased document type %s for canonical database validation", (kind) => {
+    expect(canonicalDocumentType(kind)).toBe(kind);
+  });
 });

@@ -1,19 +1,7 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolvedValue, unresolved } from "./report.js";
-import {
-  boundedArray,
-  fail,
-  integer,
-  isRecord,
-  only,
-  string,
-  unique,
-  type UnknownRecord,
-} from "./shared.js";
+import { boundedArray, fail, integer, isRecord, only, string, unique, type UnknownRecord } from "./shared.js";
 
 export interface TranscriptSegment {
   readonly segmentId: string;
@@ -30,25 +18,19 @@ export interface TranscriptProjection {
   readonly segments: readonly TranscriptSegment[];
 }
 
-type MediaTimecodeSelector = Extract<
-  VerificationSelector,
-  { kind: "media_timecode" }
->;
+type MediaTimecodeSelector = Extract<VerificationSelector, { kind: "media_timecode" }>;
 
 export function parseTranscript(input: UnknownRecord): TranscriptProjection {
   only(input, ["kind", "durationMs", "segments"], "TRANSCRIPT");
   const durationMs = input.durationMs;
   if (!integer(durationMs) || durationMs < 0) fail("TRANSCRIPT_DURATION");
-  const segments = boundedArray(input.segments, "TRANSCRIPT_SEGMENTS").map(
-    (item) => parseSegment(item, durationMs),
-  );
+  const segments = boundedArray(input.segments, "TRANSCRIPT_SEGMENTS").map((item) => parseSegment(item, durationMs));
   unique(
     segments.map((segment) => segment.segmentId),
     "TRANSCRIPT_SEGMENT_ID",
   );
   for (let index = 1; index < segments.length; index += 1)
-    if (segments[index - 1]!.endMs > segments[index]!.startMs)
-      fail("TRANSCRIPT_OVERLAP_OR_UNSORTED");
+    if (segments[index - 1]!.endMs > segments[index]!.startMs) fail("TRANSCRIPT_OVERLAP_OR_UNSORTED");
   return { kind: "transcript", durationMs, segments };
 }
 
@@ -66,11 +48,7 @@ function parseSegment(item: unknown, durationMs: number): TranscriptSegment {
     (item.channel !== undefined && !string(item.channel))
   )
     fail("TRANSCRIPT_SEGMENT");
-  only(
-    item,
-    ["segmentId", "startMs", "endMs", "text", "speaker", "channel"],
-    "TRANSCRIPT_SEGMENT",
-  );
+  only(item, ["segmentId", "startMs", "endMs", "text", "speaker", "channel"], "TRANSCRIPT_SEGMENT");
   const { segmentId, startMs, endMs, text, speaker, channel } = item;
   return {
     segmentId,
@@ -91,14 +69,12 @@ export function resolveMedia(
   projection: TranscriptProjection,
   selector: MediaTimecodeSelector,
 ): EvidenceSelection {
-  if (selector.endMs > projection.durationMs)
-    return unresolved(request, "invalid");
+  if (selector.endMs > projection.durationMs) return unresolved(request, "invalid");
   const segments = projection.segments.filter(
     (segment) =>
       segment.startMs >= selector.startMs &&
       segment.endMs <= selector.endMs &&
-      (selector.speaker === undefined ||
-        segment.speaker === selector.speaker) &&
+      (selector.speaker === undefined || segment.speaker === selector.speaker) &&
       (selector.channel === undefined || segment.channel === selector.channel),
   );
   if (segments.length === 0) return unresolved(request, "not_found");
@@ -125,7 +101,5 @@ export function resolveMedia(
   );
 }
 
-const mixes = (
-  segments: readonly TranscriptSegment[],
-  field: "speaker" | "channel",
-): boolean => new Set(segments.map((segment) => segment[field] ?? "")).size > 1;
+const mixes = (segments: readonly TranscriptSegment[], field: "speaker" | "channel"): boolean =>
+  new Set(segments.map((segment) => segment[field] ?? "")).size > 1;

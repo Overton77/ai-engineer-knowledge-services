@@ -30,20 +30,16 @@ function indexTrustedPublicKeys(
 ): Record<string, string> {
   const result: Record<string, string> = Object.create(null) as Record<string, string>;
   for (const row of rows) {
-    if (Object.hasOwn(result, row.keyId) || !isPemPublicKey(row.publicKeyPem))
-      throw new Error("INVALID_PUBLIC_KEY");
+    if (Object.hasOwn(result, row.keyId) || !isPemPublicKey(row.publicKeyPem)) throw new Error("INVALID_PUBLIC_KEY");
     result[row.keyId] = normalizeEd25519PublicKey(row.publicKeyPem);
   }
   return result;
 }
 
 /** Only operator-configured public keys establish signing trust for reads. */
-export function parseBenchmarkReadPublicKeys(
-  raw: string,
-): Readonly<Record<string, string>> {
+export function parseBenchmarkReadPublicKeys(raw: string): Readonly<Record<string, string>> {
   try {
-    if (Buffer.byteLength(raw, "utf8") > READ_PUBLIC_KEYS_MAX_BYTES)
-      throw new Error("KEYRING_TOO_LARGE");
+    if (Buffer.byteLength(raw, "utf8") > READ_PUBLIC_KEYS_MAX_BYTES) throw new Error("KEYRING_TOO_LARGE");
     const rows = PublicKeysSchema.parse(JSON.parse(raw));
     return Object.freeze(indexTrustedPublicKeys(rows));
   } catch {

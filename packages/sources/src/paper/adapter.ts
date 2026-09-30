@@ -38,13 +38,9 @@ export class IdentityBoundPaperAcquisitionAdapter implements PaperAdapterContrac
     private readonly provider: PaperProvider,
   ) {}
   supports(request: AcquisitionRequest): SupportDecision {
-    if (request.target.kind !== "paper")
-      return { supported: false, reason: "paper target required" };
+    if (request.target.kind !== "paper") return { supported: false, reason: "paper target required" };
     try {
-      normalizePaperIdentifier(
-        request.target.identifierKind,
-        request.target.identifier,
-      );
+      normalizePaperIdentifier(request.target.identifierKind, request.target.identifier);
       return {
         supported: true,
         reason: "recognized immutable scholarly identity",
@@ -58,10 +54,7 @@ export class IdentityBoundPaperAcquisitionAdapter implements PaperAdapterContrac
   }
   async plan(request: AcquisitionRequest): Promise<AcquisitionPlan> {
     if (request.target.kind !== "paper") throw new Error("UNSUPPORTED_TARGET");
-    const identifier = normalizePaperIdentifier(
-      request.target.identifierKind,
-      request.target.identifier,
-    );
+    const identifier = normalizePaperIdentifier(request.target.identifierKind, request.target.identifier);
     return {
       adapterKey: this.adapterKey,
       adapterVersion: this.version,
@@ -75,31 +68,14 @@ export class IdentityBoundPaperAcquisitionAdapter implements PaperAdapterContrac
   }
   async resolvePaper(request: AcquisitionRequest): Promise<PaperResolution> {
     if (request.target.kind !== "paper") throw new Error("UNSUPPORTED_TARGET");
-    const identifier = normalizePaperIdentifier(
-      request.target.identifierKind,
-      request.target.identifier,
-    );
-    const resolved = await this.provider.resolve(
-      request.target.identifierKind,
-      identifier,
-    );
+    const identifier = normalizePaperIdentifier(request.target.identifierKind, request.target.identifier);
+    const resolved = await this.provider.resolve(request.target.identifierKind, identifier);
     if (!resolved) throw new Error("PAPER_NOT_FOUND");
-    this.assertIdentity(
-      request.target.identifierKind,
-      identifier,
-      resolved.resolution,
-    );
+    this.assertIdentity(request.target.identifierKind, identifier, resolved.resolution);
     return resolved.resolution;
   }
-  private assertIdentity(
-    kind: "doi" | "arxiv" | "openreview",
-    identifier: string,
-    resolution: PaperResolution,
-  ): void {
-    if (
-      resolution.identifierKind !== kind ||
-      normalizePaperIdentifier(kind, resolution.identifier) !== identifier
-    )
+  private assertIdentity(kind: "doi" | "arxiv" | "openreview", identifier: string, resolution: PaperResolution): void {
+    if (resolution.identifierKind !== kind || normalizePaperIdentifier(kind, resolution.identifier) !== identifier)
       throw new Error("PAPER_IDENTITY_MISMATCH");
     if (
       !resolution.title.trim() ||
@@ -110,40 +86,22 @@ export class IdentityBoundPaperAcquisitionAdapter implements PaperAdapterContrac
       throw new Error("PAPER_RESOLUTION_INCOMPLETE");
   }
   async execute(plan: AdmittedAcquisitionPlan): Promise<AcquisitionResult> {
-    if (plan.request.target.kind !== "paper")
-      throw new Error("UNSUPPORTED_TARGET");
-    const identifier = normalizePaperIdentifier(
-      plan.request.target.identifierKind,
-      plan.request.target.identifier,
-    );
-    const resolved = await this.provider.resolve(
-      plan.request.target.identifierKind,
-      identifier,
-    );
+    if (plan.request.target.kind !== "paper") throw new Error("UNSUPPORTED_TARGET");
+    const identifier = normalizePaperIdentifier(plan.request.target.identifierKind, plan.request.target.identifier);
+    const resolved = await this.provider.resolve(plan.request.target.identifierKind, identifier);
     if (!resolved) throw new Error("PAPER_NOT_FOUND");
-    this.assertIdentity(
-      plan.request.target.identifierKind,
-      identifier,
-      resolved.resolution,
-    );
-    if (
-      resolved.representations.length !==
-      resolved.resolution.representations.length
-    )
+    this.assertIdentity(plan.request.target.identifierKind, identifier, resolved.resolution);
+    if (resolved.representations.length !== resolved.resolution.representations.length)
       throw new Error("PAPER_REPRESENTATION_MISMATCH");
     let total = 0;
     const artifacts = [];
     for (let index = 0; index < resolved.representations.length; index++) {
       const representation = resolved.representations[index]!;
       const declared = resolved.resolution.representations[index]!;
-      if (
-        representation.mediaType !== declared.mediaType ||
-        representation.url !== declared.url
-      )
+      if (representation.mediaType !== declared.mediaType || representation.url !== declared.url)
         throw new Error("PAPER_REPRESENTATION_MISMATCH");
       total += representation.bytes.byteLength;
-      if (total > plan.request.maximumBytes)
-        throw new Error("BYTE_LIMIT_EXCEEDED");
+      if (total > plan.request.maximumBytes) throw new Error("BYTE_LIMIT_EXCEEDED");
       artifacts.push(
         await this.artifacts.put({
           tenantId: plan.request.tenantId,
@@ -175,23 +133,15 @@ export class IdentityBoundPaperAcquisitionAdapter implements PaperAdapterContrac
   }
   async verify(result: AcquisitionResult): Promise<AcquisitionVerification> {
     const findings: string[] = [];
-    if (!this.#resolutions.has(result.plan.admissionId))
-      findings.push("resolution_missing");
+    if (!this.#resolutions.has(result.plan.admissionId)) findings.push("resolution_missing");
     if (
       result.artifacts.length === 0 ||
-      result.artifacts.some(
-        (item, index) => item.digest !== result.contentDigests[index],
-      )
+      result.artifacts.some((item, index) => item.digest !== result.contentDigests[index])
     )
       findings.push("artifact_digest_mismatch");
     return {
       accepted: findings.length === 0,
-      checks: [
-        "canonical_identity",
-        "revision",
-        "representation_identity",
-        "artifact_digest",
-      ],
+      checks: ["canonical_identity", "revision", "representation_identity", "artifact_digest"],
       findings,
     };
   }

@@ -23,12 +23,7 @@ export const RetrievalIntentSchema = z.enum([
 const FilterSchema = z.strictObject({
   field: NonEmptyStringSchema,
   op: z.enum(["eq", "neq", "in", "contains", "gte", "lte"]),
-  value: z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.array(z.union([z.string(), z.number(), z.boolean()])),
-  ]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number(), z.boolean()]))]),
 });
 /**
  * Retrieval reads three independent clocks and never substitutes one for another.
@@ -42,22 +37,33 @@ const FilterSchema = z.strictObject({
  *
  * A freshness bound is never evidence that a fact held, and K is never evidence of world time.
  */
-const RetrievalInstantSchema = z.iso.datetime({ offset: true }).refine(value => (/\.(\d+)/.exec(value)?.[1]?.length ?? 0) <= 6,
-  "PostgreSQL retrieval instants support at most six fractional digits");
+const RetrievalInstantSchema = z.iso
+  .datetime({ offset: true })
+  .refine(
+    (value) => (/\.(\d+)/.exec(value)?.[1]?.length ?? 0) <= 6,
+    "PostgreSQL retrieval instants support at most six fractional digits",
+  );
 
 /** Canonical historical search accepts at most this many entity anchors per query. */
 export const MAX_RETRIEVAL_ENTITY_ANCHORS = 64;
-export const RetrievalWorldScopeSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("at"), at: RetrievalInstantSchema }),
-  z.strictObject({ kind: z.literal("overlap"), from: RetrievalInstantSchema, to: RetrievalInstantSchema }),
-]).superRefine((scope, context) => {
-  if (scope.kind === "overlap" && compareRetrievalInstants(scope.from, scope.to) >= 0)
-    context.addIssue({ code: "custom", message: "world interval requires from < to", path: ["to"] });
-});
+export const RetrievalWorldScopeSchema = z
+  .discriminatedUnion("kind", [
+    z.strictObject({ kind: z.literal("at"), at: RetrievalInstantSchema }),
+    z.strictObject({ kind: z.literal("overlap"), from: RetrievalInstantSchema, to: RetrievalInstantSchema }),
+  ])
+  .superRefine((scope, context) => {
+    if (scope.kind === "overlap" && compareRetrievalInstants(scope.from, scope.to) >= 0)
+      context.addIssue({ code: "custom", message: "world interval requires from < to", path: ["to"] });
+  });
 export type RetrievalWorldScope = z.infer<typeof RetrievalWorldScopeSchema>;
 export const RetrievalOptionalCapabilitySchema = z.enum([
-  "graph", "concept_anchors", "use_case_anchors", "soft_boosts", "context",
-  "freshness_upper_bound", "observed_upper_bound",
+  "graph",
+  "concept_anchors",
+  "use_case_anchors",
+  "soft_boosts",
+  "context",
+  "freshness_upper_bound",
+  "observed_upper_bound",
 ]);
 export type RetrievalOptionalCapability = z.infer<typeof RetrievalOptionalCapabilitySchema>;
 export const RetrievalUnsupportedCapabilitySchema = z.strictObject({
@@ -81,9 +87,11 @@ export type RetrievalUnsupportedResponse = z.infer<typeof RetrievalUnsupportedRe
 
 /** ISO input is schema-validated before comparison; preserve fractions that Date truncates. */
 function compareRetrievalInstants(left: string, right: string): number {
-  const key = (value: string) => BigInt(Date.parse(value.replace(/\.\d+/, ""))) * 1_000_000n
-    + BigInt((/\.(\d+)/.exec(value)?.[1] ?? "").padEnd(9, "0").slice(0, 9));
-  const a = key(left), b = key(right);
+  const key = (value: string) =>
+    BigInt(Date.parse(value.replace(/\.\d+/, ""))) * 1_000_000n +
+    BigInt((/\.(\d+)/.exec(value)?.[1] ?? "").padEnd(9, "0").slice(0, 9));
+  const a = key(left),
+    b = key(right);
   return a < b ? -1 : a > b ? 1 : 0;
 }
 export const RetrievalPlanSchema = z
@@ -118,7 +126,9 @@ export const RetrievalPlanSchema = z
     /** World time the asserted fact must hold at, or overlap with. */
     worldScope: RetrievalWorldScopeSchema.optional(),
     /** Tenant belief clock. Omitted means the current sealed head at execution time. */
-    knowledgeScope: z.strictObject({ atKnowledgeSeq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER) }).optional(),
+    knowledgeScope: z
+      .strictObject({ atKnowledgeSeq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER) })
+      .optional(),
     /** Capabilities the caller accepts as best-effort; anything else requested is required. */
     optionalCapabilities: z.array(RetrievalOptionalCapabilitySchema).max(7).optional(),
     candidateK: z.int().min(1).max(1_000),
@@ -131,15 +141,34 @@ export const RetrievalPlanSchema = z
     abstention: z.strictObject({ minimumCoverage: z.number().min(0).max(1) }),
   })
   .superRefine((plan, context) => {
-    if (new Set(plan.anchors.entities).size !== plan.anchors.entities.length || plan.anchors.entities.length > MAX_RETRIEVAL_ENTITY_ANCHORS)
-      context.addIssue({ code: "custom", message: `entity anchors must be distinct and bounded to ${MAX_RETRIEVAL_ENTITY_ANCHORS}`, path: ["anchors", "entities"] });
+    if (
+      new Set(plan.anchors.entities).size !== plan.anchors.entities.length ||
+      plan.anchors.entities.length > MAX_RETRIEVAL_ENTITY_ANCHORS
+    )
+      context.addIssue({
+        code: "custom",
+        message: `entity anchors must be distinct and bounded to ${MAX_RETRIEVAL_ENTITY_ANCHORS}`,
+        path: ["anchors", "entities"],
+      });
     const { effectiveAfter, effectiveBefore, observedBefore } = plan.temporalScope;
     if (effectiveAfter && effectiveBefore && compareRetrievalInstants(effectiveAfter, effectiveBefore) >= 0)
-      context.addIssue({ code: "custom", message: "effectiveAfter must precede effectiveBefore", path: ["temporalScope", "effectiveBefore"] });
+      context.addIssue({
+        code: "custom",
+        message: "effectiveAfter must precede effectiveBefore",
+        path: ["temporalScope", "effectiveBefore"],
+      });
     if (effectiveAfter && observedBefore && compareRetrievalInstants(effectiveAfter, observedBefore) >= 0)
-      context.addIssue({ code: "custom", message: "observedBefore must follow effectiveAfter", path: ["temporalScope", "observedBefore"] });
+      context.addIssue({
+        code: "custom",
+        message: "observedBefore must follow effectiveAfter",
+        path: ["temporalScope", "observedBefore"],
+      });
     if (new Set(plan.optionalCapabilities ?? []).size !== (plan.optionalCapabilities?.length ?? 0))
-      context.addIssue({ code: "custom", message: "optional capabilities must be distinct", path: ["optionalCapabilities"] });
+      context.addIssue({
+        code: "custom",
+        message: "optional capabilities must be distinct",
+        path: ["optionalCapabilities"],
+      });
     if (plan.finalK > plan.candidateK)
       context.addIssue({
         code: "custom",
@@ -152,10 +181,7 @@ export const RetrievalPlanSchema = z
         message: "spaces must be unique",
         path: ["spaces"],
       });
-    if (
-      new Set(plan.subqueries.map(({ id }) => id)).size !==
-      plan.subqueries.length
-    )
+    if (new Set(plan.subqueries.map(({ id }) => id)).size !== plan.subqueries.length)
       context.addIssue({
         code: "custom",
         message: "subquery ids must be unique",
@@ -231,7 +257,11 @@ export type RetrievalSupportPath = z.infer<typeof RetrievalSupportPathSchema>;
 
 /** Bounded canonical support a packet member carries for replay and diversity. */
 export const RetrievalMemberSupportSchema = z.strictObject({
-  target: z.strictObject({ kind: z.enum(["entity", "record", "chunk", "claim", "summary"]), canonicalId: UuidSchema, projectionTargetId: UuidSchema }),
+  target: z.strictObject({
+    kind: z.enum(["entity", "record", "chunk", "claim", "summary"]),
+    canonicalId: UuidSchema,
+    projectionTargetId: UuidSchema,
+  }),
   sourceFamilyIds: z.array(UuidSchema).min(1).max(32),
   paths: z.array(RetrievalSupportPathSchema).min(1).max(32),
   truncated: z.boolean(),
@@ -261,7 +291,9 @@ export const RetrievalCitationReplaySchema = z.strictObject({
   retrievalRunId: UuidSchema,
   packetDigest: Sha256DigestSchema,
   citations: z.array(RetrievalReplayedCitationSchema).max(128),
-  failures: z.array(z.strictObject({ memberId: UuidSchema, locatorId: UuidSchema, code: NonEmptyStringSchema })).max(128),
+  failures: z
+    .array(z.strictObject({ memberId: UuidSchema, locatorId: UuidSchema, code: NonEmptyStringSchema }))
+    .max(128),
   replayedAt: z.iso.datetime({ offset: true }),
 });
 export type RetrievalCitationReplay = z.infer<typeof RetrievalCitationReplaySchema>;
@@ -285,23 +317,31 @@ export const EvidencePacketMemberSchema = z
     artifactReferences: z.array(ArtifactReferenceSchema),
     support: RetrievalMemberSupportSchema.optional(),
   })
-  .refine(
-    (member) =>
-      member.canonicalRecord !== undefined ||
-      member.faithfulSectionRepresentationId !== undefined,
-    { message: "member requires a canonical record or faithful section" },
-  );
+  .refine((member) => member.canonicalRecord !== undefined || member.faithfulSectionRepresentationId !== undefined, {
+    message: "member requires a canonical record or faithful section",
+  });
 
 export const EvidencePacketSchema = ImmutableResourceSchema.extend({
   retrievalRunId: UuidSchema,
   normalizedQuery: NonEmptyStringSchema,
   plan: RetrievalPlanSchema,
-  queryClock: z.strictObject({
-    atKnowledgeSeq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
-    worldScope: RetrievalWorldScopeSchema.optional(),
-    /** The authorized publications this answer was read from, pinned for replay. */
-    publications: z.array(z.strictObject({ vectorSpace: VectorSpaceSchema, vectorSpaceVersionId: UuidSchema, publicationId: UuidSchema })).max(8).optional(),
-  }).optional(),
+  queryClock: z
+    .strictObject({
+      atKnowledgeSeq: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      worldScope: RetrievalWorldScopeSchema.optional(),
+      /** The authorized publications this answer was read from, pinned for replay. */
+      publications: z
+        .array(
+          z.strictObject({
+            vectorSpace: VectorSpaceSchema,
+            vectorSpaceVersionId: UuidSchema,
+            publicationId: UuidSchema,
+          }),
+        )
+        .max(8)
+        .optional(),
+    })
+    .optional(),
   unsupportedCapabilities: z.array(RetrievalUnsupportedCapabilitySchema).max(7).optional(),
   authorization: AuthorizationDecisionSchema,
   procedureVersionIds: z.array(UuidSchema),

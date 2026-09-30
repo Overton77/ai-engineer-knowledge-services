@@ -9,10 +9,7 @@ import {
   type VerificationArtifactHandle,
   type VerificationPolicyReplayPort,
 } from "../src/index.js";
-import {
-  auditBundleFixture,
-  policyBytes,
-} from "../src/provenance/audit-bundle.fixture.js";
+import { auditBundleFixture, policyBytes } from "../src/provenance/audit-bundle.fixture.js";
 import { CONTENT, passingInput } from "./bundle-fixture.js";
 
 /**
@@ -30,13 +27,9 @@ function inMemoryKeys() {
   };
 }
 
-function inMemoryResolver(
-  entries: readonly (readonly [VerificationArtifactHandle, Uint8Array])[],
-) {
+function inMemoryResolver(entries: readonly (readonly [VerificationArtifactHandle, Uint8Array])[]) {
   const calls: string[] = [];
-  const byId = new Map(
-    entries.map(([handle, bytes]) => [handle.artifactId, { handle, bytes }]),
-  );
+  const byId = new Map(entries.map(([handle, bytes]) => [handle.artifactId, { handle, bytes }]));
   const resolver: TrustedArtifactResolver = {
     async authorizeArtifact(input) {
       calls.push(`authorize:${input.artifactId}`);
@@ -105,8 +98,7 @@ export async function sealInspectReplayExample() {
     },
     replay: {
       deterministicResultDigest: replay.deterministicResultDigest,
-      matchesSealedDigest:
-        replay.deterministicResultDigest === audit.deterministicResultDigest,
+      matchesSealedDigest: replay.deterministicResultDigest === audit.deterministicResultDigest,
       policyOutcome: replay.policyOutcome,
       replayedArtifactIds: replay.replayedArtifactIds,
       policyReplays,

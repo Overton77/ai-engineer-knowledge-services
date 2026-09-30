@@ -20,8 +20,7 @@ export const locator = {
   nodeId: "00000000-0000-7000-8000-000000000011",
   startOffset: 0,
   endOffset: 5,
-  quoteDigest:
-    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const,
+  quoteDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const,
 };
 
 export const policy: RetrievalPolicy = {

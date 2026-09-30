@@ -29,9 +29,15 @@ export interface ExactVectorItem {
   readonly lifecycle?: "active" | "superseded" | "withdrawn";
 }
 
-export function validateEmbedding(embedding: readonly number[], expectedDimensions = CANONICAL_EMBEDDING_DIMENSIONS): void {
+export function validateEmbedding(
+  embedding: readonly number[],
+  expectedDimensions = CANONICAL_EMBEDDING_DIMENSIONS,
+): void {
   if (embedding.length !== expectedDimensions) {
-    throw new VectorBackendError("INVALID_DIMENSIONS", `Embedding has ${embedding.length} dimensions; expected ${expectedDimensions}`);
+    throw new VectorBackendError(
+      "INVALID_DIMENSIONS",
+      `Embedding has ${embedding.length} dimensions; expected ${expectedDimensions}`,
+    );
   }
   if (embedding.some((value) => !Number.isFinite(value))) {
     throw new VectorBackendError("INVALID_EMBEDDING", "Embedding values must all be finite");
@@ -45,7 +51,11 @@ export function validateSearchLimit(limit: number): void {
 }
 
 export class VectorBackendError extends Error {
-  constructor(readonly code: string, message: string, readonly cause?: unknown) {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly cause?: unknown,
+  ) {
     super(message);
     this.name = "VectorBackendError";
   }

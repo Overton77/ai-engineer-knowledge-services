@@ -1,10 +1,7 @@
 const KIND_PREFIX = /^(service|human|model|agent):/;
 
 export interface ActorIdentitySqlClient {
-  query<T extends Record<string, unknown>>(
-    sql: string,
-    values?: readonly unknown[],
-  ): Promise<{ rows: T[] }>;
+  query<T extends Record<string, unknown>>(sql: string, values?: readonly unknown[]): Promise<{ rows: T[] }>;
 }
 
 /** Strip a durable kind:id prefix so raw uuid and service:<uuid> name the same actor. */
@@ -25,10 +22,12 @@ export async function operationActorIdentity(input: {
   readonly operationId: string;
   readonly claimedIdentity: string;
 }): Promise<string> {
-  const row = (await input.client.query<{ actor_identity: string }>(
-    "select actor_identity from knowledge_service.operation where tenant_id=$1 and id=$2",
-    [input.tenantId, input.operationId],
-  )).rows[0];
+  const row = (
+    await input.client.query<{ actor_identity: string }>(
+      "select actor_identity from knowledge_service.operation where tenant_id=$1 and id=$2",
+      [input.tenantId, input.operationId],
+    )
+  ).rows[0];
   if (!row || !sameActorIdentity(String(row.actor_identity), input.claimedIdentity)) {
     throw new Error("ACTOR_IDENTITY_MISMATCH");
   }

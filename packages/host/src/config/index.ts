@@ -19,7 +19,10 @@ const SemanticJudgeConfigSchema = z.object({
   SEMANTIC_PRIMARY_PROVIDER: z.string().default("gateway-semantic-rubric-haiku.v1"),
   SEMANTIC_CROSS_FAMILY_PROVIDER: z.string().default(""),
   SEMANTIC_MAX_INPUT_CHARACTERS: z.coerce.number().int().min(1).max(64_000).default(64_000),
-  SEMANTIC_TOOL_CATALOG: z.string().default("").refine((value) => value.trim() === "", "semantic judges must have an empty tool catalog"),
+  SEMANTIC_TOOL_CATALOG: z
+    .string()
+    .default("")
+    .refine((value) => value.trim() === "", "semantic judges must have an empty tool catalog"),
 });
 export type SemanticJudgeConfig = z.infer<typeof SemanticJudgeConfigSchema>;
 

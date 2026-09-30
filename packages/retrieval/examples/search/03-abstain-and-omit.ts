@@ -51,5 +51,4 @@ export async function abstainAndOmitExample() {
   };
 }
 
-if (process.argv[1]?.includes("03-abstain-and-omit"))
-  printJson(await abstainAndOmitExample());
+if (process.argv[1]?.includes("03-abstain-and-omit")) printJson(await abstainAndOmitExample());

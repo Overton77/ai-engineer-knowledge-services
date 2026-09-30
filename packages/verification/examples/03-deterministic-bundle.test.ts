@@ -10,9 +10,7 @@ describe("example 03: deterministic bundle", () => {
 
   it("fails CAPTURE_DIGEST_MATCH on a same-length byte corruption", () => {
     const { corrupted } = deterministicBundleExample();
-    expect(corrupted.summary.failedCheckCodes).toContain(
-      "CAPTURE_DIGEST_MATCH",
-    );
+    expect(corrupted.summary.failedCheckCodes).toContain("CAPTURE_DIGEST_MATCH");
   });
 
   it("closes semantic eligibility once a capture fails", () => {

@@ -1,13 +1,9 @@
-import {
-  VerificationProfileCaptureAcceptedSchema,
-} from "@aiengineer/knowledge-contracts";
+import { VerificationProfileCaptureAcceptedSchema } from "@aiengineer/knowledge-contracts";
 import {
   VerificationAdjudicationDecisionRequestSchema,
   type VerificationAdjudicationDecisionRequest,
 } from "@aiengineer/knowledge-contracts";
-import {
-  type VerificationAdjudicationDecisionTerminalResource,
-} from "@aiengineer/knowledge-contracts";
+import { type VerificationAdjudicationDecisionTerminalResource } from "@aiengineer/knowledge-contracts";
 import {
   bindResolvedVerificationContext,
   createVerificationResourceReads,
@@ -15,23 +11,15 @@ import {
   type VerificationContextBindingFailure,
   type VerificationResourceReadServices,
 } from "@aiengineer/knowledge-application";
-import {
-  ApplyProviderReconciliationRequestSchema,
-} from "@aiengineer/knowledge-contracts";
-import {
-  ExtractStructuredDataRequestSchema,
-  type ExtractStructuredDataRequest,
-} from "@aiengineer/knowledge-contracts";
+import { ApplyProviderReconciliationRequestSchema } from "@aiengineer/knowledge-contracts";
+import { ExtractStructuredDataRequestSchema, type ExtractStructuredDataRequest } from "@aiengineer/knowledge-contracts";
 import {
   CompareBenchmarkRunsRequestSchema,
   type CompareBenchmarkRunsRequest,
   RunBenchmarkRequestSchema,
   type RunBenchmarkRequest,
 } from "@aiengineer/knowledge-contracts";
-import {
-  ParseArtifactRequestSchema,
-  type ParseArtifactRequest,
-} from "@aiengineer/knowledge-contracts";
+import { ParseArtifactRequestSchema, type ParseArtifactRequest } from "@aiengineer/knowledge-contracts";
 import {
   AgenticKnowledgeService,
   createIntegrationService,
@@ -77,11 +65,7 @@ import {
   type RequestAdjudicationRequest,
 } from "@aiengineer/knowledge-contracts";
 import type { ResourceReadRepository } from "@aiengineer/knowledge-persistence";
-import Fastify, {
-  type FastifyInstance,
-  type FastifyReply,
-  type FastifyRequest,
-} from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
@@ -95,10 +79,7 @@ import {
   type LocalApiIdentity,
   type ResolveApiIdentity,
 } from "./auth.js";
-import {
-  registerA2AHttpRoutes,
-  type ResolveCallbackSigningSecret,
-} from "./a2a-http.js";
+import { registerA2AHttpRoutes, type ResolveCallbackSigningSecret } from "./a2a-http.js";
 import {
   createKnowledgeResourceReads,
   retrievalExecutionProblem,
@@ -122,10 +103,7 @@ export interface ServerOptions {
   maximumResourceResponseBytes?: number;
   publicOrigin?: string;
   resolveIdentity?: ResolveApiIdentity;
-  replayEvidencePacketCitations?: (
-    tenantId: string,
-    packetId: string,
-  ) => Promise<RetrievalCitationReplay>;
+  replayEvidencePacketCitations?: (tenantId: string, packetId: string) => Promise<RetrievalCitationReplay>;
   getEvidencePacket?: (
     tenantId: string,
     packetId: string,
@@ -138,18 +116,9 @@ export interface ServerOptions {
   /** Dedicated verification operations remain unavailable unless both trusted ports are configured. */
   verificationOperationService?: KnowledgeOperationPort;
   verificationCaptureCatalog?: import("@aiengineer/knowledge-application").VerificationServiceCatalog;
-  verificationCaseReads?: Pick<
-    VerificationCaseReadService,
-    "listRunCases" | "getCase" | "getEvidence"
-  >;
-  verificationBenchmarkReads?: Pick<
-    VerificationBenchmarkReadService,
-    "getRun" | "getManifest"
-  >;
-  verificationBenchmarkComparisonReads?: Pick<
-    VerificationBenchmarkComparisonReadService,
-    "getComparison"
-  >;
+  verificationCaseReads?: Pick<VerificationCaseReadService, "listRunCases" | "getCase" | "getEvidence">;
+  verificationBenchmarkReads?: Pick<VerificationBenchmarkReadService, "getRun" | "getManifest">;
+  verificationBenchmarkComparisonReads?: Pick<VerificationBenchmarkComparisonReadService, "getComparison">;
   verificationProviderReconciliation?: VerificationResourceReadServices["providerReconciliation"];
   verificationSemanticReconciliation?: VerificationResourceReadServices["semanticReconciliation"];
   verificationStructuredExtractionReads?: {
@@ -157,27 +126,21 @@ export interface ServerOptions {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationStructuredExtractionResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationStructuredExtractionResource>;
   };
   verificationAuditInspectionReads?: {
     getInspection(input: {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationAuditInspectionResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationAuditInspectionResource>;
   };
   verificationAdjudicationReadService?: {
     getPendingSubject(input: {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationAdjudicationTerminalResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationAdjudicationTerminalResource>;
   };
   verificationAdjudicationDecisionReadService?: {
     getDecision(input: {
@@ -189,16 +152,8 @@ export interface ServerOptions {
   /** Private, service-only drift queue. It is absent unless runtime policy config composes it. */
   verificationDriftRevalidation?: {
     readonly serviceIdentities: readonly string[];
-    scan(input: {
-      tenantId: string;
-      limit: number;
-    }): Promise<{ planned: number; alreadyPlanned: number }>;
-    claim(input: {
-      tenantId: string;
-      owner: string;
-      limit: number;
-      visibilityTimeoutMs: number;
-    }): Promise<
+    scan(input: { tenantId: string; limit: number }): Promise<{ planned: number; alreadyPlanned: number }>;
+    claim(input: { tenantId: string; owner: string; limit: number; visibilityTimeoutMs: number }): Promise<
       readonly {
         id: string;
         observationArtifactId: string;
@@ -209,16 +164,8 @@ export interface ServerOptions {
         claimToken: string;
       }[]
     >;
-    ack(input: {
-      tenantId: string;
-      id: string;
-      owner: string;
-      claimToken: string;
-    }): Promise<void>;
-    listAlerts(input: {
-      tenantId: string;
-      limit: number;
-    }): Promise<
+    ack(input: { tenantId: string; id: string; owner: string; claimToken: string }): Promise<void>;
+    listAlerts(input: { tenantId: string; limit: number }): Promise<
       readonly {
         id: string;
         observationArtifactId: string;
@@ -239,69 +186,39 @@ export interface ServerOptions {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationCaptureTerminalResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationCaptureTerminalResource>;
   };
   verificationClaimsReportReads?: {
     getClaims(input: {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationClaimsTerminalResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationClaimsTerminalResource>;
     getReport(input: {
       tenantId: string;
       operationId: string;
       actor: import("@aiengineer/knowledge-contracts").Actor;
-    }): Promise<
-      import("@aiengineer/knowledge-contracts").VerificationReportTerminalResource
-    >;
+    }): Promise<import("@aiengineer/knowledge-contracts").VerificationReportTerminalResource>;
   };
   verificationReads?: {
-    getRun(input: {
-      tenantId: string;
-      runId: string;
-    }): Promise<VerificationRunSummaryResource>;
-    getRunManifest(input: {
-      tenantId: string;
-      runId: string;
-    }): Promise<VerificationRunManifestResource>;
+    getRun(input: { tenantId: string; runId: string }): Promise<VerificationRunSummaryResource>;
+    getRunManifest(input: { tenantId: string; runId: string }): Promise<VerificationRunManifestResource>;
   };
-  isStructuredExtractionRequestAdmitted?: (
-    tenantId: string,
-    request: ExtractStructuredDataRequest,
-  ) => boolean;
-  isBenchmarkRequestAdmitted?: (
-    tenantId: string,
-    request: RunBenchmarkRequest,
-  ) => boolean;
-  isBenchmarkComparisonRequestAdmitted?: (
-    tenantId: string,
-    request: CompareBenchmarkRunsRequest,
-  ) => boolean;
-  isClaimsRequestAdmitted?: (
-    tenantId: string,
-    request: VerifyClaimsRequest | VerifyReportRequest,
-  ) => boolean;
+  isStructuredExtractionRequestAdmitted?: (tenantId: string, request: ExtractStructuredDataRequest) => boolean;
+  isBenchmarkRequestAdmitted?: (tenantId: string, request: RunBenchmarkRequest) => boolean;
+  isBenchmarkComparisonRequestAdmitted?: (tenantId: string, request: CompareBenchmarkRunsRequest) => boolean;
+  isClaimsRequestAdmitted?: (tenantId: string, request: VerifyClaimsRequest | VerifyReportRequest) => boolean;
   isAuditInspectionRequestAdmitted?: (
     tenantId: string,
     request: InspectAuditBundleRequest,
   ) => boolean | Promise<boolean>;
-  isAdjudicationRequestAdmitted?: (
-    tenantId: string,
-    request: RequestAdjudicationRequest,
-  ) => boolean | Promise<boolean>;
+  isAdjudicationRequestAdmitted?: (tenantId: string, request: RequestAdjudicationRequest) => boolean | Promise<boolean>;
   isAdjudicationDecisionAdmitted?: (input: {
     request: VerificationAdjudicationDecisionRequest;
     context: OperationContext;
   }) => boolean | Promise<boolean>;
   /** Exact trusted capture grants are checked before an operation is enqueued. */
-  isParseArtifactRequestAdmitted?: (
-    tenantId: string,
-    request: ParseArtifactRequest,
-  ) => boolean;
+  isParseArtifactRequestAdmitted?: (tenantId: string, request: ParseArtifactRequest) => boolean;
   resolveVerificationBenchmarkCaptureProfile?: (input: {
     profileName: string;
     identity: LocalApiIdentity;
@@ -334,9 +251,7 @@ export interface ServerOptions {
   observeRoute?: (method: string, path: string) => void;
 }
 type Params = { id: string };
-const VERIFICATION_CONTEXT_BINDING_TITLES: Readonly<
-  Record<VerificationContextBindingFailure, string>
-> = {
+const VERIFICATION_CONTEXT_BINDING_TITLES: Readonly<Record<VerificationContextBindingFailure, string>> = {
   ownership_denied: "Verification operation ownership denied",
   context_mismatch: "Trusted verification context mismatch",
   ownership_binding_mismatch: "Trusted verification ownership binding mismatch",
@@ -365,9 +280,7 @@ const operationInputSchemas: Partial<Record<OperationKind, ZodType>> = {
 };
 function correlationId(request: FastifyRequest) {
   const value = request.headers["x-correlation-id"];
-  return typeof value === "string" && value.trim()
-    ? value.slice(0, 255)
-    : randomUUID();
+  return typeof value === "string" && value.trim() ? value.slice(0, 255) : randomUUID();
 }
 function tenantId(request: FastifyRequest) {
   const value = request.headers["x-tenant-id"];
@@ -396,18 +309,14 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const server = Fastify({ logger: false });
   if (options.observeRoute)
     server.addHook("onRoute", (route) => {
-      const methods = Array.isArray(route.method)
-        ? route.method
-        : [route.method];
+      const methods = Array.isArray(route.method) ? route.method : [route.method];
       for (const method of methods) options.observeRoute?.(method, route.url);
     });
   const application = createKnowledgeApplication();
   const service = options.service ?? createIntegrationService();
   const operationService = options.operationService ?? service;
-  const retrievalOperationService =
-    options.retrievalOperationService ?? operationService;
-  const resolveIdentity =
-    options.resolveIdentity ?? createLocalIdentityResolver();
+  const retrievalOperationService = options.retrievalOperationService ?? operationService;
+  const resolveIdentity = options.resolveIdentity ?? createLocalIdentityResolver();
   server.addHook("onRequest", async (request, reply) => {
     const id = correlationId(request);
     request.headers["x-correlation-id"] = id;
@@ -419,14 +328,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Operation capability unavailable",
-            correlation,
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Operation capability unavailable", correlation));
     if (error instanceof ZodError)
       return reply
         .status(400)
@@ -449,56 +351,24 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(409)
         .type("application/problem+json")
-        .send(
-          problem(
-            409,
-            "IDEMPOTENCY_CONFLICT",
-            "Idempotency conflict",
-            correlation,
-          ),
-        );
+        .send(problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency conflict", correlation));
     if (message === "INVALID_STATE_TRANSITION")
       return reply
         .status(409)
         .type("application/problem+json")
-        .send(
-          problem(
-            409,
-            "INVALID_STATE_TRANSITION",
-            "Invalid state transition",
-            correlation,
-          ),
-        );
+        .send(problem(409, "INVALID_STATE_TRANSITION", "Invalid state transition", correlation));
     if (message === "RESOURCE_INTEGRITY_CONFLICT")
       return reply
         .status(409)
         .type("application/problem+json")
-        .send(
-          problem(
-            409,
-            "CONFLICT",
-            "Stored resource failed its integrity checks",
-            correlation,
-          ),
-        );
+        .send(problem(409, "CONFLICT", "Stored resource failed its integrity checks", correlation));
     if (message === "RESOURCE_RESPONSE_LIMIT_EXCEEDED")
       return reply
         .status(413)
         .type("application/problem+json")
-        .send(
-          problem(
-            413,
-            "LIMIT_EXCEEDED",
-            "Stored resource exceeds the bounded response contract",
-            correlation,
-          ),
-        );
+        .send(problem(413, "LIMIT_EXCEEDED", "Stored resource exceeds the bounded response contract", correlation));
     const retrieval = retrievalExecutionProblem(error);
-    if (retrieval?.status === 422)
-      return reply
-        .status(422)
-        .type("application/json")
-        .send(retrieval.response);
+    if (retrieval?.status === 422) return reply.status(422).type("application/json").send(retrieval.response);
     if (retrieval)
       return reply
         .status(retrieval.status)
@@ -516,14 +386,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     return reply
       .status(500)
       .type("application/problem+json")
-      .send(
-        problem(500, "INTERNAL_ERROR", "Internal service error", correlation),
-      );
+      .send(problem(500, "INTERNAL_ERROR", "Internal service error", correlation));
   });
-  const requireTenant = async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => {
+  const requireTenant = async (request: FastifyRequest, reply: FastifyReply) => {
     const tenant = tenantId(request);
     if (!tenant) {
       await reply
@@ -554,14 +419,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       await reply
         .status(401)
         .type("application/problem+json")
-        .send(
-          problem(
-            401,
-            "UNAUTHORIZED",
-            "Authentication required",
-            correlationId(request),
-          ),
-        );
+        .send(problem(401, "UNAUTHORIZED", "Authentication required", correlationId(request)));
       return undefined;
     }
     const tenant = await requireTenant(request, reply);
@@ -570,14 +428,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       await reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Action is not authorized",
-            correlationId(request),
-          ),
-        );
+        .send(problem(403, "FORBIDDEN", "Action is not authorized", correlationId(request)));
       return undefined;
     }
     return { tenant, identity };
@@ -594,40 +445,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           .status(403)
           .type("application/problem+json")
           .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Authenticated actor does not match operation actor",
-              correlationId(request),
-            ),
+            problem(403, "FORBIDDEN", "Authenticated actor does not match operation actor", correlationId(request)),
           );
   const origin = (request: FastifyRequest) =>
-    options.publicOrigin ??
-    `${request.protocol}://${request.headers.host ?? "localhost"}`;
-  const requireResourceReader = (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => {
+    options.publicOrigin ?? `${request.protocol}://${request.headers.host ?? "localhost"}`;
+  const requireResourceReader = (request: FastifyRequest, reply: FastifyReply) => {
     if (options.resourceReader) return options.resourceReader;
     void reply
       .status(503)
       .type("application/problem+json")
-      .send(
-        problem(
-          503,
-          "INTERNAL_ERROR",
-          "Canonical resource store unavailable",
-          correlationId(request),
-        ),
-      );
+      .send(problem(503, "INTERNAL_ERROR", "Canonical resource store unavailable", correlationId(request)));
     return undefined;
   };
   const knowledgeReads = createKnowledgeResourceReads({
     ...(options.resourceReader ? { resources: options.resourceReader } : {}),
     operations: operationService,
-    ...(options.getEvidencePacket
-      ? { getEvidencePacket: options.getEvidencePacket }
-      : {}),
+    ...(options.getEvidencePacket ? { getEvidencePacket: options.getEvidencePacket } : {}),
     ...(options.replayEvidencePacketCitations
       ? { replayEvidencePacketCitations: options.replayEvidencePacketCitations }
       : {}),
@@ -658,24 +491,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           ),
         );
     if (reason === "inconsistent" && inconsistent)
-      return reply
-        .status(409)
-        .send(problem(409, "CONFLICT", inconsistent, correlationId(request)));
+      return reply.status(409).send(problem(409, "CONFLICT", inconsistent, correlationId(request)));
     if (reason === "unavailable")
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "INTERNAL_ERROR",
-            "Canonical resource store unavailable",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(404)
-      .send(problem(404, "NOT_FOUND", notFound, correlationId(request)));
+        .send(problem(503, "INTERNAL_ERROR", "Canonical resource store unavailable", correlationId(request)));
+    return reply.status(404).send(problem(404, "NOT_FOUND", notFound, correlationId(request)));
   };
   const verificationReads = createVerificationResourceReads({
     ...(options.verificationStructuredExtractionReads
@@ -693,22 +515,14 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     ...(options.isAdjudicationDecisionReadAdmitted
       ? { isAdjudicationDecisionReadAdmitted: options.isAdjudicationDecisionReadAdmitted }
       : {}),
-    ...(options.verificationCaptureReads
-      ? { captureReads: options.verificationCaptureReads }
-      : {}),
-    ...(options.verificationClaimsReportReads
-      ? { claimsReportReads: options.verificationClaimsReportReads }
-      : {}),
+    ...(options.verificationCaptureReads ? { captureReads: options.verificationCaptureReads } : {}),
+    ...(options.verificationClaimsReportReads ? { claimsReportReads: options.verificationClaimsReportReads } : {}),
     ...(options.verificationBenchmarkComparisonReads
       ? { benchmarkComparisonReads: options.verificationBenchmarkComparisonReads }
       : {}),
-    ...(options.verificationBenchmarkReads
-      ? { benchmarkReads: options.verificationBenchmarkReads }
-      : {}),
+    ...(options.verificationBenchmarkReads ? { benchmarkReads: options.verificationBenchmarkReads } : {}),
     ...(options.verificationReads ? { runReads: options.verificationReads } : {}),
-    ...(options.verificationCaseReads
-      ? { caseReads: options.verificationCaseReads }
-      : {}),
+    ...(options.verificationCaseReads ? { caseReads: options.verificationCaseReads } : {}),
     ...(options.verificationProviderReconciliation
       ? { providerReconciliation: options.verificationProviderReconciliation }
       : {}),
@@ -776,21 +590,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   ) => {
     const access = await requireAccess(request, reply, "operation.submit");
     if (!access) return undefined;
-    if (
-      !options.verificationOperationService ||
-      !options.resolveVerificationContext
-    ) {
+    if (!options.verificationOperationService || !options.resolveVerificationContext) {
       await reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Verification operation unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Verification operation unavailable", correlationId(request)));
       return undefined;
     }
     const raw = request.headers["idempotency-key"],
@@ -799,21 +603,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       await reply
         .status(400)
         .type("application/problem+json")
-        .send(
-          problem(
-            400,
-            "INVALID_CONTRACT",
-            "Idempotency key required",
-            correlationId(request),
-          ),
-        );
+        .send(problem(400, "INVALID_CONTRACT", "Idempotency key required", correlationId(request)));
       return undefined;
     }
     const header = (name: string): string | undefined => {
       const value = request.headers[name];
       if (value === undefined) return undefined;
-      if (typeof value !== "string" || value.trim() === "")
-        throw new ZodError([]);
+      if (typeof value !== "string" || value.trim() === "") throw new ZodError([]);
       return value.trim();
     };
     const externalHeaders = Object.fromEntries(
@@ -826,9 +622,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         toolCallId: header("x-external-tool-call-id"),
       }).filter(([, value]) => value !== undefined),
     );
-    const hasExternal = Object.values(externalHeaders).some(
-      (value) => value !== undefined,
-    );
+    const hasExternal = Object.values(externalHeaders).some((value) => value !== undefined);
     const hints = VerificationOperationContextHintsSchema.parse({
       attemptId: header("x-verification-attempt-id"),
       workItemId: header("x-verification-work-item-id"),
@@ -858,14 +652,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       await reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            VERIFICATION_CONTEXT_BINDING_TITLES[binding.failure],
-            correlationId(request),
-          ),
-        );
+        .send(problem(403, "FORBIDDEN", VERIFICATION_CONTEXT_BINDING_TITLES[binding.failure], correlationId(request)));
       return undefined;
     }
     const { context } = binding;
@@ -885,11 +672,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     kind: OperationKind,
     pathVectorStoreId?: string,
   ) => {
-    const access = await requireAccess(
-      request,
-      reply,
-      requiredSubmissionAction(kind),
-    );
+    const access = await requireAccess(request, reply, requiredSubmissionAction(kind));
     if (!access) return;
     const envelope = MutationEnvelopeSchema.parse(request.body);
     operationInputSchemas[kind]?.parse(envelope.input);
@@ -897,30 +680,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Tenant context mismatch",
-            correlationId(request),
-          ),
-        );
-    if (
-      requireEnvelopeActor(access.identity, envelope, request, reply) !== true
-    )
-      return;
+        .send(problem(403, "FORBIDDEN", "Tenant context mismatch", correlationId(request)));
+    if (requireEnvelopeActor(access.identity, envelope, request, reply) !== true) return;
     if (envelope.context.correlationId !== correlationId(request))
       return reply
         .status(400)
         .type("application/problem+json")
-        .send(
-          problem(
-            400,
-            "INVALID_CONTRACT",
-            "Correlation context mismatch",
-            correlationId(request),
-          ),
-        );
+        .send(problem(400, "INVALID_CONTRACT", "Correlation context mismatch", correlationId(request)));
     if (pathVectorStoreId) {
       const input = envelope.input as { vectorStoreId?: unknown };
       if (input.vectorStoreId !== UuidSchema.parse(pathVectorStoreId))
@@ -936,81 +702,46 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             ),
           );
     }
-    return reply
-      .status(202)
-      .send(await operationService.submit(kind, envelope, origin(request)));
+    return reply.status(202).send(await operationService.submit(kind, envelope, origin(request)));
   };
 
   registerA2AHttpRoutes(server, {
     operationService,
     retrievalOperationService,
-    ...(options.canonicalRetrievalExecutor
-      ? { canonicalRetrievalExecutor: options.canonicalRetrievalExecutor }
-      : {}),
+    ...(options.canonicalRetrievalExecutor ? { canonicalRetrievalExecutor: options.canonicalRetrievalExecutor } : {}),
     requireAccess,
     correlationId,
     origin,
     problem,
-    ...(options.callbackReplayStore
-      ? { callbackReplayStore: options.callbackReplayStore }
-      : {}),
+    ...(options.callbackReplayStore ? { callbackReplayStore: options.callbackReplayStore } : {}),
     ...(options.resolveCallbackSigningSecret
       ? { resolveCallbackSigningSecret: options.resolveCallbackSigningSecret }
       : {}),
     ...(options.callbackClock ? { callbackClock: options.callbackClock } : {}),
-    ...(options.maximumCallbackAgeMs
-      ? { maximumCallbackAgeMs: options.maximumCallbackAgeMs }
-      : {}),
+    ...(options.maximumCallbackAgeMs ? { maximumCallbackAgeMs: options.maximumCallbackAgeMs } : {}),
   });
 
   server.get("/health", async () => ({ status: "ok" }));
-  const driftConsumer = async (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) => {
-    const scoped = await requireAccess(
-      request,
-      reply,
-      "verification.drift.consume",
-    );
+  const driftConsumer = async (request: FastifyRequest, reply: FastifyReply) => {
+    const scoped = await requireAccess(request, reply, "verification.drift.consume");
     if (!scoped) return;
     const runtime = options.verificationDriftRevalidation;
     if (!runtime) {
       await reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Drift consumer unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Drift consumer unavailable", correlationId(request)));
       return undefined;
     }
     const actor = scoped.identity.actor;
     const explicitScope = scoped.identity.grants.some(
-      (grant) =>
-        grant.tenantId === scoped.tenant &&
-        grant.scopes.includes("verification.drift.consume"),
+      (grant) => grant.tenantId === scoped.tenant && grant.scopes.includes("verification.drift.consume"),
     );
-    if (
-      !explicitScope ||
-      actor.kind !== "service" ||
-      !runtime.serviceIdentities.includes(actor.serviceIdentity)
-    ) {
+    if (!explicitScope || actor.kind !== "service" || !runtime.serviceIdentities.includes(actor.serviceIdentity)) {
       await reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Service identity is not admitted",
-            correlationId(request),
-          ),
-        );
+        .send(problem(403, "FORBIDDEN", "Service identity is not admitted", correlationId(request)));
       return undefined;
     }
     return { tenant: scoped.tenant, owner: actor.serviceIdentity, runtime };
@@ -1023,13 +754,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const driftScanSchema = z.strictObject({
     limit: z.number().int().min(1).max(100),
   });
-  const driftDimensionSchema = z.enum([
-    "provider",
-    "model",
-    "parser",
-    "grader",
-    "policy",
-  ]);
+  const driftDimensionSchema = z.enum(["provider", "model", "parser", "grader", "policy"]);
   const driftReasonSchema = z.string().regex(/^[A-Z0-9_]{1,128}$/);
   const driftScanResponseSchema = z.strictObject({
     planned: z.number().int().min(0).max(100),
@@ -1052,96 +777,80 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     reviewReason: driftReasonSchema,
     publishedAt: z.string().datetime({ offset: true }),
   });
-  server.post(
-    "/v1/internal/verification/drift-revalidations/scan",
-    async (request, reply) => {
-      const scoped = await driftConsumer(request, reply);
-      if (!scoped) return;
-      const output = driftScanResponseSchema.parse(
-        await scoped.runtime.scan({
+  server.post("/v1/internal/verification/drift-revalidations/scan", async (request, reply) => {
+    const scoped = await driftConsumer(request, reply);
+    if (!scoped) return;
+    const output = driftScanResponseSchema.parse(
+      await scoped.runtime.scan({
+        tenantId: scoped.tenant,
+        ...driftScanSchema.parse(request.body),
+      }),
+    );
+    return { planned: output.planned, alreadyPlanned: output.alreadyPlanned };
+  });
+  server.post("/v1/internal/verification/drift-revalidations/claim", async (request, reply) => {
+    const scoped = await driftConsumer(request, reply);
+    if (!scoped) return;
+    const items = z
+      .array(driftClaimItemSchema)
+      .max(100)
+      .parse(
+        await scoped.runtime.claim({
           tenantId: scoped.tenant,
-          ...driftScanSchema.parse(request.body),
+          owner: scoped.owner,
+          ...driftClaimSchema.parse(request.body),
         }),
       );
-      return { planned: output.planned, alreadyPlanned: output.alreadyPlanned };
-    },
-  );
-  server.post(
-    "/v1/internal/verification/drift-revalidations/claim",
-    async (request, reply) => {
-      const scoped = await driftConsumer(request, reply);
-      if (!scoped) return;
-      const items = z
-        .array(driftClaimItemSchema)
-        .max(100)
-        .parse(
-          await scoped.runtime.claim({
-            tenantId: scoped.tenant,
-            owner: scoped.owner,
-            ...driftClaimSchema.parse(request.body),
-          }),
-        );
-      return {
-        items: items.map((item) => ({
-          id: item.id,
-          observationArtifactId: item.observationArtifactId,
-          sourceOperationId: item.sourceOperationId,
-          dimensions: item.dimensions,
-          disposition: item.disposition,
-          reviewReason: item.reviewReason,
-          claimToken: item.claimToken,
-        })),
-      };
-    },
-  );
-  server.post(
-    "/v1/internal/verification/drift-revalidations/ack",
-    async (request, reply) => {
-      const scoped = await driftConsumer(request, reply);
-      if (!scoped) return;
-      const body = driftAckSchema.parse(request.body);
-      await scoped.runtime.ack({
-        tenantId: scoped.tenant,
-        owner: scoped.owner,
-        ...body,
-      });
-      return { acknowledged: true };
-    },
-  );
-  server.get(
-    "/v1/internal/verification/drift-alerts",
-    async (request, reply) => {
-      const scoped = await driftConsumer(request, reply);
-      if (!scoped) return;
-      const query = z
-        .strictObject({ limit: z.coerce.number().int().min(1).max(100) })
-        .parse(request.query);
-      const items = z
-        .array(driftAlertItemSchema)
-        .max(100)
-        .parse(
-          await scoped.runtime.listAlerts({
-            tenantId: scoped.tenant,
-            ...query,
-          }),
-        );
-      return {
-        items: items.map((item) => ({
-          id: item.id,
-          observationArtifactId: item.observationArtifactId,
-          sourceOperationId: item.sourceOperationId,
-          dimensions: item.dimensions,
-          reviewReason: item.reviewReason,
-          publishedAt: item.publishedAt,
-        })),
-      };
-    },
-  );
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        observationArtifactId: item.observationArtifactId,
+        sourceOperationId: item.sourceOperationId,
+        dimensions: item.dimensions,
+        disposition: item.disposition,
+        reviewReason: item.reviewReason,
+        claimToken: item.claimToken,
+      })),
+    };
+  });
+  server.post("/v1/internal/verification/drift-revalidations/ack", async (request, reply) => {
+    const scoped = await driftConsumer(request, reply);
+    if (!scoped) return;
+    const body = driftAckSchema.parse(request.body);
+    await scoped.runtime.ack({
+      tenantId: scoped.tenant,
+      owner: scoped.owner,
+      ...body,
+    });
+    return { acknowledged: true };
+  });
+  server.get("/v1/internal/verification/drift-alerts", async (request, reply) => {
+    const scoped = await driftConsumer(request, reply);
+    if (!scoped) return;
+    const query = z.strictObject({ limit: z.coerce.number().int().min(1).max(100) }).parse(request.query);
+    const items = z
+      .array(driftAlertItemSchema)
+      .max(100)
+      .parse(
+        await scoped.runtime.listAlerts({
+          tenantId: scoped.tenant,
+          ...query,
+        }),
+      );
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        observationArtifactId: item.observationArtifactId,
+        sourceOperationId: item.sourceOperationId,
+        dimensions: item.dimensions,
+        reviewReason: item.reviewReason,
+        publishedAt: item.publishedAt,
+      })),
+    };
+  });
   server.get("/readiness", async () => application.getStatus());
   server.get("/v1/system", async (request, reply) =>
-    (await requireAccess(request, reply, "system.read"))
-      ? application.getStatus()
-      : undefined,
+    (await requireAccess(request, reply, "system.read")) ? application.getStatus() : undefined,
   );
   server.get("/v1/operations", async (request, reply) => {
     const access = await requireAccess(request, reply, "knowledge.read");
@@ -1159,11 +868,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         method,
         url: `/v1/verification/${host === "claims" ? "claims" : "reports"}/:operationId/provider-attempts/:providerAttemptId/reconciliation`,
         handler: async (request, reply) => {
-          const access = await requireAccess(
-            request,
-            reply,
-            method === "GET" ? "knowledge.read" : "operation.submit",
-          );
+          const access = await requireAccess(request, reply, method === "GET" ? "knowledge.read" : "operation.submit");
           if (!access) return;
           z.strictObject({}).parse(request.query);
           const scoped = {
@@ -1171,14 +876,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             actor: access.identity.actor,
             host,
             operationId: UuidSchema.parse(request.params.operationId),
-            providerAttemptId: UuidSchema.parse(
-              request.params.providerAttemptId,
-            ),
+            providerAttemptId: UuidSchema.parse(request.params.providerAttemptId),
           };
-          const body =
-            method === "POST"
-              ? ApplyProviderReconciliationRequestSchema.parse(request.body)
-              : undefined;
+          const body = method === "POST" ? ApplyProviderReconciliationRequestSchema.parse(request.body) : undefined;
           return sendVerificationRead(
             request,
             reply,
@@ -1198,11 +898,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       method,
       url: "/v1/verification/extractions/:operationId/provider-attempts/:providerAttemptId/reconciliation",
       handler: async (request, reply) => {
-        const access = await requireAccess(
-          request,
-          reply,
-          method === "GET" ? "knowledge.read" : "operation.submit",
-        );
+        const access = await requireAccess(request, reply, method === "GET" ? "knowledge.read" : "operation.submit");
         if (!access) return;
         z.strictObject({}).parse(request.query);
         const scoped = {
@@ -1211,10 +907,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           operationId: UuidSchema.parse(request.params.operationId),
           providerAttemptId: UuidSchema.parse(request.params.providerAttemptId),
         };
-        const body =
-          method === "POST"
-            ? ApplyProviderReconciliationRequestSchema.parse(request.body)
-            : undefined;
+        const body = method === "POST" ? ApplyProviderReconciliationRequestSchema.parse(request.body) : undefined;
         return sendVerificationRead(
           request,
           reply,
@@ -1325,31 +1018,28 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       );
     },
   );
-  server.get<{ Params: { operationId: string } }>(
-    "/v1/verification/captures/:operationId",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      z.strictObject({}).parse(request.query);
-      const operationId = UuidSchema.parse(request.params.operationId);
-      return sendVerificationRead(
-        request,
-        reply,
-        await verificationReads.capture({
-          tenantId: access.tenant,
-          operationId,
-          actor: access.identity.actor,
-        }),
-        {
-          unavailable: "Capture reads unavailable",
-          notFound: "Capture result not found",
-          pending: "Capture result is not terminal",
-          terminal: (state) => `Capture terminal state: ${state}`,
-          integrity: "Capture custody integrity unavailable",
-        },
-      );
-    },
-  );
+  server.get<{ Params: { operationId: string } }>("/v1/verification/captures/:operationId", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    z.strictObject({}).parse(request.query);
+    const operationId = UuidSchema.parse(request.params.operationId);
+    return sendVerificationRead(
+      request,
+      reply,
+      await verificationReads.capture({
+        tenantId: access.tenant,
+        operationId,
+        actor: access.identity.actor,
+      }),
+      {
+        unavailable: "Capture reads unavailable",
+        notFound: "Capture result not found",
+        pending: "Capture result is not terminal",
+        terminal: (state) => `Capture terminal state: ${state}`,
+        integrity: "Capture custody integrity unavailable",
+      },
+    );
+  });
   for (const family of ["claims", "reports"] as const) {
     server.get<{ Params: { operationId: string } }>(
       `/v1/verification/${family}/:operationId`,
@@ -1366,9 +1056,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return sendVerificationRead(
           request,
           reply,
-          family === "claims"
-            ? await verificationReads.claims(input)
-            : await verificationReads.report(input),
+          family === "claims" ? await verificationReads.claims(input) : await verificationReads.report(input),
           {
             unavailable: "Claims/report reads unavailable",
             notFound: "Verification result not found",
@@ -1416,9 +1104,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return sendVerificationRead(
           request,
           reply,
-          manifest
-            ? await verificationReads.benchmarkManifest(input)
-            : await verificationReads.benchmarkRun(input),
+          manifest ? await verificationReads.benchmarkManifest(input) : await verificationReads.benchmarkRun(input),
           {
             unavailable: "Benchmark reads unavailable",
             notFound: "Benchmark run not found",
@@ -1441,9 +1127,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return sendVerificationRead(
           request,
           reply,
-          manifest
-            ? await verificationReads.runManifest(input)
-            : await verificationReads.run(input),
+          manifest ? await verificationReads.runManifest(input) : await verificationReads.run(input),
           {
             unavailable: "Verification reads unavailable",
             notFound: "Verification run not found",
@@ -1458,38 +1142,35 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     { path: "/v1/verification/cases/:id", kind: "case" },
     { path: "/v1/verification/evidence/:id", kind: "evidence" },
   ] as const) {
-    server.get<{ Params: { id: string } }>(
-      route.path,
-      async (request, reply) => {
-        const access = await requireAccess(request, reply, "knowledge.read");
-        if (!access) return;
-        const id = UuidSchema.parse(request.params.id);
-        const page =
-          route.kind === "list"
-            ? z
-                .strictObject({
-                  pageSize: z.coerce.number().int().min(1).max(100).default(25),
-                  cursor: UuidSchema.optional(),
-                })
-                .parse(request.query)
-            : z.strictObject({}).parse(request.query);
-        const tenantId = access.tenant;
-        return sendVerificationRead(
-          request,
-          reply,
-          route.kind === "list"
-            ? await verificationReads.runCases({ tenantId, runId: id, ...page })
-            : route.kind === "case"
-              ? await verificationReads.case({ tenantId, caseRunId: id })
-              : await verificationReads.evidence({ tenantId, evidenceId: id }),
-          {
-            unavailable: "Verification case reads unavailable",
-            notFound: "Verification resource not found",
-            integrity: "Verification resource integrity unavailable",
-          },
-        );
-      },
-    );
+    server.get<{ Params: { id: string } }>(route.path, async (request, reply) => {
+      const access = await requireAccess(request, reply, "knowledge.read");
+      if (!access) return;
+      const id = UuidSchema.parse(request.params.id);
+      const page =
+        route.kind === "list"
+          ? z
+              .strictObject({
+                pageSize: z.coerce.number().int().min(1).max(100).default(25),
+                cursor: UuidSchema.optional(),
+              })
+              .parse(request.query)
+          : z.strictObject({}).parse(request.query);
+      const tenantId = access.tenant;
+      return sendVerificationRead(
+        request,
+        reply,
+        route.kind === "list"
+          ? await verificationReads.runCases({ tenantId, runId: id, ...page })
+          : route.kind === "case"
+            ? await verificationReads.case({ tenantId, caseRunId: id })
+            : await verificationReads.evidence({ tenantId, evidenceId: id }),
+        {
+          unavailable: "Verification case reads unavailable",
+          notFound: "Verification resource not found",
+          integrity: "Verification resource integrity unavailable",
+        },
+      );
+    });
   }
   server.post<{ Params: { profileName: string } }>(
     "/v1/verification/benchmark-capture-profiles/:profileName/captures",
@@ -1501,14 +1182,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return reply
           .status(401)
           .type("application/problem+json")
-          .send(
-            problem(
-              401,
-              "UNAUTHORIZED",
-              "Authentication required",
-              correlationId(request),
-            ),
-          );
+          .send(problem(401, "UNAUTHORIZED", "Authentication required", correlationId(request)));
       z.strictObject({}).parse(request.query);
       const profileName = z
         .string()
@@ -1527,32 +1201,14 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return reply
           .status(400)
           .type("application/problem+json")
-          .send(
-            problem(
-              400,
-              "INVALID_CONTRACT",
-              "Profile routing is server-owned",
-              correlationId(request),
-            ),
-          );
-      const idempotencyKey = z
-        .string()
-        .min(8)
-        .max(255)
-        .parse(request.headers["idempotency-key"]);
+          .send(problem(400, "INVALID_CONTRACT", "Profile routing is server-owned", correlationId(request)));
+      const idempotencyKey = z.string().min(8).max(255).parse(request.headers["idempotency-key"]);
       const input = CaptureSourceRequestSchema.parse(request.body);
       if (input.source.mode !== "acquire")
         return reply
           .status(400)
           .type("application/problem+json")
-          .send(
-            problem(
-              400,
-              "INVALID_CONTRACT",
-              "Profile capture requires acquisition",
-              correlationId(request),
-            ),
-          );
+          .send(problem(400, "INVALID_CONTRACT", "Profile capture requires acquisition", correlationId(request)));
       if (
         !options.resolveVerificationBenchmarkCaptureProfile ||
         !options.verificationOperationService ||
@@ -1561,34 +1217,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return reply
           .status(503)
           .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Profile capture unavailable",
-              correlationId(request),
-            ),
-          );
-      const resolved = await options.resolveVerificationBenchmarkCaptureProfile(
-        {
-          profileName,
-          identity,
-          correlationId: correlationId(request),
-          idempotencyKey,
-        },
-      );
+          .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Profile capture unavailable", correlationId(request)));
+      const resolved = await options.resolveVerificationBenchmarkCaptureProfile({
+        profileName,
+        identity,
+        correlationId: correlationId(request),
+        idempotencyKey,
+      });
       if (!resolved)
         return reply
           .status(404)
           .type("application/problem+json")
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Capture profile not found",
-              correlationId(request),
-            ),
-          );
+          .send(problem(404, "NOT_FOUND", "Capture profile not found", correlationId(request)));
       const context = OperationContextSchema.parse(resolved);
       if (
         !actorsMatch(context.actor, identity.actor) ||
@@ -1598,26 +1238,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       )
         throw new Error("VERIFICATION_PROFILE_CONTEXT_MISMATCH");
       try {
-        options.verificationCaptureCatalog.acquisition(
-          context.tenantId,
-          input.source.sourceUri,
-        );
+        options.verificationCaptureCatalog.acquisition(context.tenantId, input.source.sourceUri);
       } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === "VERIFICATION_ACQUISITION_GRANT_REQUIRED"
-        )
+        if (error instanceof Error && error.message === "VERIFICATION_ACQUISITION_GRANT_REQUIRED")
           return reply
             .status(403)
             .type("application/problem+json")
-            .send(
-              problem(
-                403,
-                "FORBIDDEN",
-                "Source acquisition grant required",
-                correlationId(request),
-              ),
-            );
+            .send(problem(403, "FORBIDDEN", "Source acquisition grant required", correlationId(request)));
         throw error;
       }
       const service = new VerificationOperationApplicationService(
@@ -1625,14 +1252,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         origin(request),
         options.verificationCaptureCatalog,
       );
-      return reply
-        .status(202)
-        .send(
-          VerificationProfileCaptureAcceptedSchema.parse({
-            tenantId: context.tenantId,
-            operation: await service.submitCaptureSource(input, context),
-          }),
-        );
+      return reply.status(202).send(
+        VerificationProfileCaptureAcceptedSchema.parse({
+          tenantId: context.tenantId,
+          operation: await service.submitCaptureSource(input, context),
+        }),
+      );
     },
   );
   server.post("/v1/verification/captures", async (request, reply) => {
@@ -1644,41 +1269,19 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         return reply
           .status(503)
           .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Source acquisition unavailable",
-              correlationId(request),
-            ),
-          );
+          .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Source acquisition unavailable", correlationId(request)));
       try {
-        options.verificationCaptureCatalog.acquisition(
-          trusted.context.tenantId,
-          input.source.sourceUri,
-        );
+        options.verificationCaptureCatalog.acquisition(trusted.context.tenantId, input.source.sourceUri);
       } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === "VERIFICATION_ACQUISITION_GRANT_REQUIRED"
-        )
+        if (error instanceof Error && error.message === "VERIFICATION_ACQUISITION_GRANT_REQUIRED")
           return reply
             .status(403)
             .type("application/problem+json")
-            .send(
-              problem(
-                403,
-                "FORBIDDEN",
-                "Source acquisition grant required",
-                correlationId(request),
-              ),
-            );
+            .send(problem(403, "FORBIDDEN", "Source acquisition grant required", correlationId(request)));
         throw error;
       }
     }
-    return reply
-      .status(202)
-      .send(await trusted.service.submitCaptureSource(input, trusted.context));
+    return reply.status(202).send(await trusted.service.submitCaptureSource(input, trusted.context));
   });
   server.post("/v1/verification/artifacts::parse", async (request, reply) => {
     const trusted = await verificationContext(request, reply, "parseArtifact");
@@ -1687,78 +1290,30 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Parse runtime unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Parse runtime unavailable", correlationId(request)));
     const input = ParseArtifactRequestSchema.parse(request.body);
-    if (
-      !options.isParseArtifactRequestAdmitted(trusted.context.tenantId, input)
-    )
+    if (!options.isParseArtifactRequestAdmitted(trusted.context.tenantId, input))
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Parse capture grant required",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(202)
-      .send(await trusted.service.submitParseArtifact(input, trusted.context));
+        .send(problem(403, "FORBIDDEN", "Parse capture grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitParseArtifact(input, trusted.context));
   });
   server.post("/v1/verification/extractions", async (request, reply) => {
-    const trusted = await verificationContext(
-      request,
-      reply,
-      "extractStructuredData",
-    );
+    const trusted = await verificationContext(request, reply, "extractStructuredData");
     if (!trusted) return;
     if (!options.isStructuredExtractionRequestAdmitted)
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Extraction runtime unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Extraction runtime unavailable", correlationId(request)));
     const input = ExtractStructuredDataRequestSchema.parse(request.body);
-    if (
-      !options.isStructuredExtractionRequestAdmitted(
-        trusted.context.tenantId,
-        input,
-      )
-    )
+    if (!options.isStructuredExtractionRequestAdmitted(trusted.context.tenantId, input))
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Extraction input grant required",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(202)
-      .send(
-        await trusted.service.submitExtractStructuredData(
-          input,
-          trusted.context,
-        ),
-      );
+        .send(problem(403, "FORBIDDEN", "Extraction input grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitExtractStructuredData(input, trusted.context));
   });
   server.post("/v1/verification/benchmarks::run", async (request, reply) => {
     const trusted = await verificationContext(request, reply, "runBenchmark");
@@ -1767,95 +1322,35 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Benchmark runtime unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Benchmark runtime unavailable", correlationId(request)));
     const input = RunBenchmarkRequestSchema.parse(request.body);
     if (!options.isBenchmarkRequestAdmitted(trusted.context.tenantId, input))
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Benchmark input grant required",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(202)
-      .send(await trusted.service.submitRunBenchmark(input, trusted.context));
+        .send(problem(403, "FORBIDDEN", "Benchmark input grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitRunBenchmark(input, trusted.context));
   });
-  server.post(
-    "/v1/verification/benchmarks::compare",
-    async (request, reply) => {
-      const trusted = await verificationContext(
-        request,
-        reply,
-        "compareBenchmarkRuns",
-      );
-      if (!trusted) return;
-      if (!options.isBenchmarkComparisonRequestAdmitted)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Comparison runtime unavailable",
-              correlationId(request),
-            ),
-          );
-      const input = CompareBenchmarkRunsRequestSchema.parse(request.body);
-      if (
-        !options.isBenchmarkComparisonRequestAdmitted(
-          trusted.context.tenantId,
-          input,
-        )
-      )
-        return reply
-          .status(403)
-          .type("application/problem+json")
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Comparison profile grant required",
-              correlationId(request),
-            ),
-          );
-      return reply
-        .status(202)
-        .send(
-          await trusted.service.submitCompareBenchmarkRuns(
-            input,
-            trusted.context,
-          ),
-        );
-    },
-  );
-  server.post("/v1/verification/metrics::verify", async (request, reply) => {
-    const trusted = await verificationContext(
-      request,
-      reply,
-      "verifyMetricObservation",
-    );
+  server.post("/v1/verification/benchmarks::compare", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "compareBenchmarkRuns");
     if (!trusted) return;
-    return reply
-      .status(202)
-      .send(
-        await trusted.service.submitVerifyMetricObservation(
-          request.body,
-          trusted.context,
-        ),
-      );
+    if (!options.isBenchmarkComparisonRequestAdmitted)
+      return reply
+        .status(503)
+        .type("application/problem+json")
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Comparison runtime unavailable", correlationId(request)));
+    const input = CompareBenchmarkRunsRequestSchema.parse(request.body);
+    if (!options.isBenchmarkComparisonRequestAdmitted(trusted.context.tenantId, input))
+      return reply
+        .status(403)
+        .type("application/problem+json")
+        .send(problem(403, "FORBIDDEN", "Comparison profile grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitCompareBenchmarkRuns(input, trusted.context));
+  });
+  server.post("/v1/verification/metrics::verify", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "verifyMetricObservation");
+    if (!trusted) return;
+    return reply.status(202).send(await trusted.service.submitVerifyMetricObservation(request.body, trusted.context));
   });
   server.post("/v1/verification/claims::verify", async (request, reply) => {
     const trusted = await verificationContext(request, reply, "verifyClaims");
@@ -1865,29 +1360,15 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         .status(503)
         .type("application/problem+json")
         .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Claims verification runtime unavailable",
-            correlationId(request),
-          ),
+          problem(503, "CAPABILITY_NOT_ADMITTED", "Claims verification runtime unavailable", correlationId(request)),
         );
     const input = VerifyClaimsRequestSchema.parse(request.body);
     if (!options.isClaimsRequestAdmitted(trusted.context.tenantId, input))
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Claims projection grant required",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(202)
-      .send(await trusted.service.submitVerifyClaims(input, trusted.context));
+        .send(problem(403, "FORBIDDEN", "Claims projection grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitVerifyClaims(input, trusted.context));
   });
   server.post("/v1/verification/reports::verify", async (request, reply) => {
     const trusted = await verificationContext(request, reply, "verifyReport");
@@ -1897,413 +1378,163 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         .status(503)
         .type("application/problem+json")
         .send(
-          problem(
-            503,
-            "CAPABILITY_NOT_ADMITTED",
-            "Report verification runtime unavailable",
-            correlationId(request),
-          ),
+          problem(503, "CAPABILITY_NOT_ADMITTED", "Report verification runtime unavailable", correlationId(request)),
         );
     const input = VerifyReportRequestSchema.parse(request.body);
     if (!options.isClaimsRequestAdmitted(trusted.context.tenantId, input))
       return reply
         .status(403)
         .type("application/problem+json")
+        .send(problem(403, "FORBIDDEN", "Report projection grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitVerifyReport(input, trusted.context));
+  });
+  server.post("/v1/verification/adjudications::record-decision", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "recordAdjudicationDecision");
+    if (!trusted) return;
+    if (!options.isAdjudicationDecisionAdmitted)
+      return reply
+        .status(503)
+        .type("application/problem+json")
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Decision runtime unavailable", correlationId(request)));
+    const input = VerificationAdjudicationDecisionRequestSchema.parse(request.body);
+    if (
+      !isAdjudicationDecisionReviewerActor(trusted.context.actor) ||
+      !(await options.isAdjudicationDecisionAdmitted({
+        request: input,
+        context: trusted.context,
+      }))
+    )
+      return reply
+        .status(403)
+        .type("application/problem+json")
+        .send(problem(403, "FORBIDDEN", "Reviewer grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitRecordAdjudicationDecision(input, trusted.context));
+  });
+  server.post("/v1/verification/adjudications::request", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "requestAdjudication");
+    if (!trusted) return;
+    if (!options.isAdjudicationRequestAdmitted)
+      return reply
+        .status(503)
+        .type("application/problem+json")
         .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Report projection grant required",
-            correlationId(request),
-          ),
+          problem(503, "CAPABILITY_NOT_ADMITTED", "Adjudication request runtime unavailable", correlationId(request)),
         );
+    const input = RequestAdjudicationRequestSchema.parse(request.body);
+    if (!(await options.isAdjudicationRequestAdmitted(trusted.context.tenantId, input)))
+      return reply
+        .status(403)
+        .type("application/problem+json")
+        .send(problem(403, "FORBIDDEN", "Adjudication request grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitRequestAdjudication(input, trusted.context));
+  });
+  server.post("/v1/verification/audit-bundles::inspect", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "inspectAuditBundle");
+    if (!trusted) return;
+    if (!options.isAuditInspectionRequestAdmitted)
+      return reply
+        .status(503)
+        .type("application/problem+json")
+        .send(problem(503, "CAPABILITY_NOT_ADMITTED", "Audit inspection runtime unavailable", correlationId(request)));
+    const input = InspectAuditBundleRequestSchema.parse(request.body);
+    if (!(await options.isAuditInspectionRequestAdmitted(trusted.context.tenantId, input)))
+      return reply
+        .status(403)
+        .type("application/problem+json")
+        .send(problem(403, "FORBIDDEN", "Exact claims/report audit artifact grant required", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitInspectAuditBundle(input, trusted.context));
+  });
+  server.post("/v1/verification/extractions::verify", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "verifyExtraction");
+    if (!trusted) return;
     return reply
       .status(202)
-      .send(await trusted.service.submitVerifyReport(input, trusted.context));
+      .send(
+        await trusted.service.submitVerifyExtraction(
+          VerifyExtractionRequestSchema.parse(request.body),
+          trusted.context,
+        ),
+      );
   });
-  server.post(
-    "/v1/verification/adjudications::record-decision",
-    async (request, reply) => {
-      const trusted = await verificationContext(
-        request,
-        reply,
-        "recordAdjudicationDecision",
-      );
-      if (!trusted) return;
-      if (!options.isAdjudicationDecisionAdmitted)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Decision runtime unavailable",
-              correlationId(request),
-            ),
-          );
-      const input = VerificationAdjudicationDecisionRequestSchema.parse(
-        request.body,
-      );
-      if (
-        !isAdjudicationDecisionReviewerActor(trusted.context.actor) ||
-        !(await options.isAdjudicationDecisionAdmitted({
-          request: input,
-          context: trusted.context,
-        }))
-      )
-        return reply
-          .status(403)
-          .type("application/problem+json")
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Reviewer grant required",
-              correlationId(request),
-            ),
-          );
+  server.post<{ Params: { runId: string } }>("/v1/verification/runs/:runId(^[^:]+)::replay", async (request, reply) => {
+    const trusted = await verificationContext(request, reply, "replayRun");
+    if (!trusted) return;
+    const parsed = ReplayRunRequestSchema.parse(request.body);
+    if (parsed.runId !== request.params.runId)
       return reply
-        .status(202)
-        .send(
-          await trusted.service.submitRecordAdjudicationDecision(
-            input,
-            trusted.context,
-          ),
-        );
-    },
-  );
-  server.post(
-    "/v1/verification/adjudications::request",
-    async (request, reply) => {
-      const trusted = await verificationContext(
-        request,
-        reply,
-        "requestAdjudication",
-      );
-      if (!trusted) return;
-      if (!options.isAdjudicationRequestAdmitted)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Adjudication request runtime unavailable",
-              correlationId(request),
-            ),
-          );
-      const input = RequestAdjudicationRequestSchema.parse(request.body);
-      if (
-        !(await options.isAdjudicationRequestAdmitted(
-          trusted.context.tenantId,
-          input,
-        ))
-      )
-        return reply
-          .status(403)
-          .type("application/problem+json")
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Adjudication request grant required",
-              correlationId(request),
-            ),
-          );
-      return reply
-        .status(202)
-        .send(
-          await trusted.service.submitRequestAdjudication(
-            input,
-            trusted.context,
-          ),
-        );
-    },
-  );
-  server.post(
-    "/v1/verification/audit-bundles::inspect",
-    async (request, reply) => {
-      const trusted = await verificationContext(
-        request,
-        reply,
-        "inspectAuditBundle",
-      );
-      if (!trusted) return;
-      if (!options.isAuditInspectionRequestAdmitted)
-        return reply
-          .status(503)
-          .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "CAPABILITY_NOT_ADMITTED",
-              "Audit inspection runtime unavailable",
-              correlationId(request),
-            ),
-          );
-      const input = InspectAuditBundleRequestSchema.parse(request.body);
-      if (
-        !(await options.isAuditInspectionRequestAdmitted(
-          trusted.context.tenantId,
-          input,
-        ))
-      )
-        return reply
-          .status(403)
-          .type("application/problem+json")
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Exact claims/report audit artifact grant required",
-              correlationId(request),
-            ),
-          );
-      return reply
-        .status(202)
-        .send(
-          await trusted.service.submitInspectAuditBundle(
-            input,
-            trusted.context,
-          ),
-        );
-    },
-  );
-  server.post(
-    "/v1/verification/extractions::verify",
-    async (request, reply) => {
-      const trusted = await verificationContext(
-        request,
-        reply,
-        "verifyExtraction",
-      );
-      if (!trusted) return;
-      return reply
-        .status(202)
-        .send(
-          await trusted.service.submitVerifyExtraction(
-            VerifyExtractionRequestSchema.parse(request.body),
-            trusted.context,
-          ),
-        );
-    },
-  );
-  server.post<{ Params: { runId: string } }>(
-    "/v1/verification/runs/:runId(^[^:]+)::replay",
-    async (request, reply) => {
-      const trusted = await verificationContext(request, reply, "replayRun");
-      if (!trusted) return;
-      const parsed = ReplayRunRequestSchema.parse(request.body);
-      if (parsed.runId !== request.params.runId)
-        return reply
-          .status(400)
-          .type("application/problem+json")
-          .send(
-            problem(
-              400,
-              "INVALID_CONTRACT",
-              "Path run does not match replay request",
-              correlationId(request),
-            ),
-          );
-      return reply
-        .status(202)
-        .send(await trusted.service.submitReplayRun(parsed, trusted.context));
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/verification/operations/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      const item = await (
-        options.verificationOperationService ?? operationService
-      ).get(request.params.id, access.tenant);
-      return (
-        item ??
-        reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Verification operation not found",
-              correlationId(request),
-            ),
-          )
-      );
-    },
-  );
+        .status(400)
+        .type("application/problem+json")
+        .send(problem(400, "INVALID_CONTRACT", "Path run does not match replay request", correlationId(request)));
+    return reply.status(202).send(await trusted.service.submitReplayRun(parsed, trusted.context));
+  });
+  server.get<{ Params: Params }>("/v1/verification/operations/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    const item = await (options.verificationOperationService ?? operationService).get(request.params.id, access.tenant);
+    return (
+      item ??
+      reply.status(404).send(problem(404, "NOT_FOUND", "Verification operation not found", correlationId(request)))
+    );
+  });
   server.post("/v1/operations", async (request, reply) => {
     const body = request.body as { kind?: unknown; envelope?: unknown };
     const kind = OperationKindSchema.parse(body?.kind);
-    const access = await requireAccess(
-      request,
-      reply,
-      requiredSubmissionAction(kind),
-    );
+    const access = await requireAccess(request, reply, requiredSubmissionAction(kind));
     if (!access) return;
     const envelope = MutationEnvelopeSchema.parse(body?.envelope);
     if (access.tenant !== envelope.context.tenantId)
-      return reply
-        .status(403)
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Tenant context mismatch",
-            correlationId(request),
-          ),
-        );
-    if (
-      requireEnvelopeActor(access.identity, envelope, request, reply) !== true
-    )
-      return;
+      return reply.status(403).send(problem(403, "FORBIDDEN", "Tenant context mismatch", correlationId(request)));
+    if (requireEnvelopeActor(access.identity, envelope, request, reply) !== true) return;
     if (correlationId(request) !== envelope.context.correlationId)
       return reply
         .status(400)
-        .send(
-          problem(
-            400,
-            "INVALID_CONTRACT",
-            "Correlation context mismatch",
-            correlationId(request),
-          ),
-        );
-    return reply
-      .status(202)
-      .send(await operationService.submit(kind, envelope, origin(request)));
+        .send(problem(400, "INVALID_CONTRACT", "Correlation context mismatch", correlationId(request)));
+    return reply.status(202).send(await operationService.submit(kind, envelope, origin(request)));
   });
-  server.get<{ Params: Params }>(
-    "/v1/operations/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      const item = await operationService.get(request.params.id, access.tenant);
-      return (
-        item ??
-        reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Operation not found",
-              correlationId(request),
-            ),
-          )
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/operations/:id/events",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      const after = Number((request.query as { after?: string }).after ?? 0);
-      const items = await operationService.events(
-        request.params.id,
-        access.tenant,
-        Number.isSafeInteger(after) && after >= 0 ? after : 0,
-      );
-      return items
-        ? { items, nextCursor: null }
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Operation not found",
-                correlationId(request),
-              ),
-            );
-    },
-  );
-  server.post<{ Params: { target: string } }>(
-    "/v1/operations/:target",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "operation.control");
-      if (!access) return;
-      const match = /^(.*):(cancel|retry|reconcile)$/.exec(
-        request.params.target,
-      );
-      if (!match)
-        return reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Operation action not found",
-              correlationId(request),
-            ),
-          );
-      const envelope = MutationEnvelopeSchema.parse(request.body);
-      if (access.tenant !== envelope.context.tenantId)
-        return reply
-          .status(403)
-          .send(
-            problem(
-              403,
-              "FORBIDDEN",
-              "Tenant context mismatch",
-              correlationId(request),
-            ),
-          );
-      if (
-        requireEnvelopeActor(access.identity, envelope, request, reply) !== true
-      )
-        return;
-      if (correlationId(request) !== envelope.context.correlationId)
-        return reply
-          .status(400)
-          .send(
-            problem(
-              400,
-              "INVALID_CONTRACT",
-              "Correlation context mismatch",
-              correlationId(request),
-            ),
-          );
-      if (match[1] !== envelope.context.operationId)
-        return reply
-          .status(400)
-          .type("application/problem+json")
-          .send(
-            problem(
-              400,
-              "INVALID_CONTRACT",
-              "Operation context mismatch",
-              correlationId(request),
-            ),
-          );
-      const action = match[2] as "cancel" | "retry" | "reconcile";
-      const result = await operationService[action](
-        match[1]!,
-        envelope.context.tenantId,
-        envelope.context,
-      );
-      return (
-        result ??
-        reply
-          .status(404)
-          .send(
-            problem(
-              404,
-              "NOT_FOUND",
-              "Operation not found",
-              correlationId(request),
-            ),
-          )
-      );
-    },
-  );
+  server.get<{ Params: Params }>("/v1/operations/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    const item = await operationService.get(request.params.id, access.tenant);
+    return item ?? reply.status(404).send(problem(404, "NOT_FOUND", "Operation not found", correlationId(request)));
+  });
+  server.get<{ Params: Params }>("/v1/operations/:id/events", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    const after = Number((request.query as { after?: string }).after ?? 0);
+    const items = await operationService.events(
+      request.params.id,
+      access.tenant,
+      Number.isSafeInteger(after) && after >= 0 ? after : 0,
+    );
+    return items
+      ? { items, nextCursor: null }
+      : reply.status(404).send(problem(404, "NOT_FOUND", "Operation not found", correlationId(request)));
+  });
+  server.post<{ Params: { target: string } }>("/v1/operations/:target", async (request, reply) => {
+    const access = await requireAccess(request, reply, "operation.control");
+    if (!access) return;
+    const match = /^(.*):(cancel|retry|reconcile)$/.exec(request.params.target);
+    if (!match)
+      return reply.status(404).send(problem(404, "NOT_FOUND", "Operation action not found", correlationId(request)));
+    const envelope = MutationEnvelopeSchema.parse(request.body);
+    if (access.tenant !== envelope.context.tenantId)
+      return reply.status(403).send(problem(403, "FORBIDDEN", "Tenant context mismatch", correlationId(request)));
+    if (requireEnvelopeActor(access.identity, envelope, request, reply) !== true) return;
+    if (correlationId(request) !== envelope.context.correlationId)
+      return reply
+        .status(400)
+        .send(problem(400, "INVALID_CONTRACT", "Correlation context mismatch", correlationId(request)));
+    if (match[1] !== envelope.context.operationId)
+      return reply
+        .status(400)
+        .type("application/problem+json")
+        .send(problem(400, "INVALID_CONTRACT", "Operation context mismatch", correlationId(request)));
+    const action = match[2] as "cancel" | "retry" | "reconcile";
+    const result = await operationService[action](match[1]!, envelope.context.tenantId, envelope.context);
+    return result ?? reply.status(404).send(problem(404, "NOT_FOUND", "Operation not found", correlationId(request)));
+  });
   server.post("/v1/retrieval-plans:validate", async (request, reply) => {
-    if (!(await requireAccess(request, reply, "retrieval.plan.validate")))
-      return;
+    if (!(await requireAccess(request, reply, "retrieval.plan.validate"))) return;
     const body = request.body as { plan?: unknown };
     return RetrievalPlanSchema.parse(body?.plan ?? request.body);
   });
@@ -2315,36 +1546,17 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(403)
         .type("application/problem+json")
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Tenant context mismatch",
-            correlationId(request),
-          ),
-        );
-    if (
-      requireEnvelopeActor(access.identity, envelope, request, reply) !== true
-    )
-      return;
+        .send(problem(403, "FORBIDDEN", "Tenant context mismatch", correlationId(request)));
+    if (requireEnvelopeActor(access.identity, envelope, request, reply) !== true) return;
     if (envelope.context.correlationId !== correlationId(request))
       return reply
         .status(400)
         .type("application/problem+json")
-        .send(
-          problem(
-            400,
-            "INVALID_CONTRACT",
-            "Correlation context mismatch",
-            correlationId(request),
-          ),
-        );
+        .send(problem(400, "INVALID_CONTRACT", "Correlation context mismatch", correlationId(request)));
     const submission = await submitCanonicalRetrievalRun(
       {
         operations: retrievalOperationService,
-        ...(options.canonicalRetrievalExecutor
-          ? { executor: options.canonicalRetrievalExecutor }
-          : {}),
+        ...(options.canonicalRetrievalExecutor ? { executor: options.canonicalRetrievalExecutor } : {}),
       },
       { envelope, identity: access.identity, origin: origin(request) },
     );
@@ -2352,49 +1564,29 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply
         .status(400)
         .type("application/problem+json")
-        .send(
-          problem(
-            400,
-            "INVALID_CONTRACT",
-            "Retrieval contract version v1 is required",
-            correlationId(request),
-          ),
-        );
+        .send(problem(400, "INVALID_CONTRACT", "Retrieval contract version v1 is required", correlationId(request)));
     if (!submission.ok)
       return reply
         .status(503)
         .type("application/problem+json")
-        .send(
-          problem(
-            503,
-            "INTERNAL_ERROR",
-            "Canonical retrieval executor unavailable",
-            correlationId(request),
-          ),
-        );
+        .send(problem(503, "INTERNAL_ERROR", "Canonical retrieval executor unavailable", correlationId(request)));
     return reply.status(202).send(submission.accepted);
   });
   server.get("/v1/retrieval-runs", async (request, reply) => {
     const access = await requireAccess(request, reply, "knowledge.read");
     if (!access) return;
     return {
-      items: (await operationService.list(access.tenant)).filter(
-        (operation) => operation.kind === "retrieval_run",
-      ),
+      items: (await operationService.list(access.tenant)).filter((operation) => operation.kind === "retrieval_run"),
       nextCursor: null,
     };
   });
   for (const [collection, kind] of Object.entries(collectionKinds)) {
-    server.post(`/v1/${collection}`, async (request, reply) =>
-      submit(request, reply, kind),
-    );
+    server.post(`/v1/${collection}`, async (request, reply) => submit(request, reply, kind));
     server.get(`/v1/${collection}`, async (request, reply) => {
       const access = await requireAccess(request, reply, "knowledge.read");
       if (!access) return;
       return {
-        items: (await operationService.list(access.tenant)).filter(
-          (operation) => operation.kind === kind,
-        ),
+        items: (await operationService.list(access.tenant)).filter((operation) => operation.kind === kind),
         nextCursor: null,
       };
     });
@@ -2405,39 +1597,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     ["/v1/chunk-comparisons", "chunk_comparison"],
     ["/v1/chunk-sets", "chunk_set"],
   ];
-  for (const [path, kind] of mutationRoutes)
-    server.post(path, async (request, reply) => submit(request, reply, kind));
-  server.post<{ Params: Params }>(
-    "/v1/vector-stores/:id/documents",
-    async (request, reply) =>
-      submit(request, reply, "vector_store_documents", request.params.id),
+  for (const [path, kind] of mutationRoutes) server.post(path, async (request, reply) => submit(request, reply, kind));
+  server.post<{ Params: Params }>("/v1/vector-stores/:id/documents", async (request, reply) =>
+    submit(request, reply, "vector_store_documents", request.params.id),
   );
-  server.post<{ Params: Params }>(
-    "/v1/vector-stores/:id/ingestion-jobs",
-    async (request, reply) =>
-      submit(request, reply, "vector_store_ingestion", request.params.id),
+  server.post<{ Params: Params }>("/v1/vector-stores/:id/ingestion-jobs", async (request, reply) =>
+    submit(request, reply, "vector_store_ingestion", request.params.id),
   );
-  server.post<{ Params: { sourceAction: string } }>(
-    "/v1/:sourceAction",
-    async (request, reply) => {
-      const kind = {
-        "sources:discover": "source_discovery",
-        "sources:resolve": "source_resolution",
-      }[request.params.sourceAction] as OperationKind | undefined;
-      return kind
-        ? submit(request, reply, kind)
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Action not found",
-                correlationId(request),
-              ),
-            );
-    },
-  );
+  server.post<{ Params: { sourceAction: string } }>("/v1/:sourceAction", async (request, reply) => {
+    const kind = {
+      "sources:discover": "source_discovery",
+      "sources:resolve": "source_resolution",
+    }[request.params.sourceAction] as OperationKind | undefined;
+    return kind
+      ? submit(request, reply, kind)
+      : reply.status(404).send(problem(404, "NOT_FOUND", "Action not found", correlationId(request)));
+  });
   const resourceActions: Record<string, Record<string, OperationKind>> = {
     "vector-stores": {
       search: "vector_store_search",
@@ -2460,74 +1635,30 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
   };
   for (const [resource, actions] of Object.entries(resourceActions))
-    server.post<{ Params: { target: string } }>(
-      `/v1/${resource}/:target`,
-      async (request, reply) => {
-        const match = /^(.*):([a-z-]+)$/.exec(request.params.target);
-        const kind = match ? actions[match[2]!] : undefined;
-        return kind
-          ? submit(request, reply, kind)
-          : reply
-              .status(404)
-              .send(
-                problem(
-                  404,
-                  "NOT_FOUND",
-                  "Resource action not found",
-                  correlationId(request),
-                ),
-              );
-      },
-    );
+    server.post<{ Params: { target: string } }>(`/v1/${resource}/:target`, async (request, reply) => {
+      const match = /^(.*):([a-z-]+)$/.exec(request.params.target);
+      const kind = match ? actions[match[2]!] : undefined;
+      return kind
+        ? submit(request, reply, kind)
+        : reply.status(404).send(problem(404, "NOT_FOUND", "Resource action not found", correlationId(request)));
+    });
   server.post("/v1/demo/evaluations", async (request, reply) => {
     const access = await requireAccess(request, reply, "demo.evaluate");
     if (!access) return;
     const envelope = MutationEnvelopeSchema.parse(request.body);
-    if (
-      access.tenant !== envelope.context.tenantId ||
-      correlationId(request) !== envelope.context.correlationId
-    )
-      return reply
-        .status(403)
-        .send(
-          problem(
-            403,
-            "FORBIDDEN",
-            "Execution context mismatch",
-            correlationId(request),
-          ),
-        );
-    if (
-      requireEnvelopeActor(access.identity, envelope, request, reply) !== true
-    )
-      return;
+    if (access.tenant !== envelope.context.tenantId || correlationId(request) !== envelope.context.correlationId)
+      return reply.status(403).send(problem(403, "FORBIDDEN", "Execution context mismatch", correlationId(request)));
+    if (requireEnvelopeActor(access.identity, envelope, request, reply) !== true) return;
     const input = ExploratoryEvaluationInputSchema.parse(envelope.input);
-    const loaded = options.loadDemoEvaluationBundles
-      ? await options.loadDemoEvaluationBundles()
-      : [];
+    const loaded = options.loadDemoEvaluationBundles ? await options.loadDemoEvaluationBundles() : [];
     const byVideoId = new Map(loaded.map((bundle) => [bundle.video_id, bundle]));
-    const bundles = input.bundles.map(
-      (descriptor) => byVideoId.get(descriptor.video_id)!,
-    );
+    const bundles = input.bundles.map((descriptor) => byVideoId.get(descriptor.video_id)!);
     if (bundles.some((bundle) => !bundle))
       return reply
         .status(503)
-        .send(
-          problem(
-            503,
-            "INTERNAL_ERROR",
-            "Allow-listed exploratory fixture unavailable",
-            correlationId(request),
-          ),
-        );
-    const accepted = service.submit(
-      "evaluation_run",
-      envelope,
-      origin(request),
-    );
-    const evaluator = new AgenticKnowledgeService(
-      new DeterministicFakeEmbeddingAdapter(),
-    );
+        .send(problem(503, "INTERNAL_ERROR", "Allow-listed exploratory fixture unavailable", correlationId(request)));
+    const accepted = service.submit("evaluation_run", envelope, origin(request));
+    const evaluator = new AgenticKnowledgeService(new DeterministicFakeEmbeddingAdapter());
     const index = await evaluator.buildExploratoryIndex(bundles);
     const report = await evaluator.evaluate(index);
     service.setResult(accepted.operationId, {
@@ -2537,198 +1668,116 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       videoIds: input.bundles.map((bundle) => bundle.video_id),
       evaluationScopes: input.bundles.map((bundle) => bundle.evaluation_scope),
       claimProjectionCount: index.records.length,
-      vectorCount: index.backend.count(
-        index.tenantId,
-        index.vectorSpaceVersionId,
-      ),
+      vectorCount: index.backend.count(index.tenantId, index.vectorSpaceVersionId),
       metrics: report.overall,
       evaluationManifestDigest: report.outputManifestDigest,
     } as unknown as import("@aiengineer/knowledge-contracts").JsonValue);
     let claim;
-    while (
-      (claim = service.claimOperation(accepted.operationId, "demo-evaluator"))
-    )
+    while ((claim = service.claimOperation(accepted.operationId, "demo-evaluator")))
       service.execute(claim, { stage: claim.step.name });
     return reply.status(202).send(accepted);
   });
-  server.get<{ Params: Params }>(
-    "/v1/evidence-packets/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      const packet = await knowledgeReads.evidencePacket(
-        access.tenant,
-        request.params.id,
-      );
-      return packet.ok
-        ? packet.value
-        : reply
-            .status(404)
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Evidence packet not found",
-                correlationId(request),
-              ),
-            );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/evidence-packets/:id/citations",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!options.replayEvidencePacketCitations)
-        return reply
-          .status(503)
+  server.get<{ Params: Params }>("/v1/evidence-packets/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    const packet = await knowledgeReads.evidencePacket(access.tenant, request.params.id);
+    return packet.ok
+      ? packet.value
+      : reply.status(404).send(problem(404, "NOT_FOUND", "Evidence packet not found", correlationId(request)));
+  });
+  server.get<{ Params: Params }>("/v1/evidence-packets/:id/citations", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!options.replayEvidencePacketCitations)
+      return reply
+        .status(503)
+        .type("application/problem+json")
+        .send(problem(503, "INTERNAL_ERROR", "Citation replay custody unavailable", correlationId(request)));
+    const replay = await knowledgeReads.citationReplay(access.tenant, UuidSchema.parse(request.params.id));
+    return replay.ok
+      ? replay.value
+      : reply
+          .status(404)
           .type("application/problem+json")
-          .send(
-            problem(
-              503,
-              "INTERNAL_ERROR",
-              "Citation replay custody unavailable",
-              correlationId(request),
-            ),
-          );
-      const replay = await knowledgeReads.citationReplay(
-        access.tenant,
-        UuidSchema.parse(request.params.id),
-      );
-      return replay.ok
-        ? replay.value
-        : reply
-            .status(404)
-            .type("application/problem+json")
-            .send(
-              problem(
-                404,
-                "NOT_FOUND",
-                "Evidence packet not found",
-                correlationId(request),
-              ),
-            );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/retrieval-runs/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.retrievalRun(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Retrieval run not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/vector-stores/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.vectorStore(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Vector store not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/retrieval-runs/:id/explanation",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.retrievalExplanation(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Retrieval explanation not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/eval-runs/:id/report",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.evaluationReport(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Evaluation report not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/eval-runs/:id/failures",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.evaluationFailures(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Evaluation run not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/artifacts/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.artifact(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Artifact not found",
-      );
-    },
-  );
-  server.get<{ Params: Params }>(
-    "/v1/receipts/:id",
-    async (request, reply) => {
-      const access = await requireAccess(request, reply, "knowledge.read");
-      if (!access) return;
-      if (!requireResourceReader(request, reply)) return;
-      return sendKnowledgeRead(
-        request,
-        reply,
-        await knowledgeReads.receipt(
-          access.tenant,
-          UuidSchema.parse(request.params.id),
-        ),
-        "Receipt not found",
-      );
-    },
-  );
+          .send(problem(404, "NOT_FOUND", "Evidence packet not found", correlationId(request)));
+  });
+  server.get<{ Params: Params }>("/v1/retrieval-runs/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.retrievalRun(access.tenant, UuidSchema.parse(request.params.id)),
+      "Retrieval run not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/vector-stores/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.vectorStore(access.tenant, UuidSchema.parse(request.params.id)),
+      "Vector store not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/retrieval-runs/:id/explanation", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.retrievalExplanation(access.tenant, UuidSchema.parse(request.params.id)),
+      "Retrieval explanation not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/eval-runs/:id/report", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.evaluationReport(access.tenant, UuidSchema.parse(request.params.id)),
+      "Evaluation report not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/eval-runs/:id/failures", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.evaluationFailures(access.tenant, UuidSchema.parse(request.params.id)),
+      "Evaluation run not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/artifacts/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.artifact(access.tenant, UuidSchema.parse(request.params.id)),
+      "Artifact not found",
+    );
+  });
+  server.get<{ Params: Params }>("/v1/receipts/:id", async (request, reply) => {
+    const access = await requireAccess(request, reply, "knowledge.read");
+    if (!access) return;
+    if (!requireResourceReader(request, reply)) return;
+    return sendKnowledgeRead(
+      request,
+      reply,
+      await knowledgeReads.receipt(access.tenant, UuidSchema.parse(request.params.id)),
+      "Receipt not found",
+    );
+  });
   server.get<{ Params: { id: string; operationId: string } }>(
     "/v1/vector-stores/:id/operations/:operationId",
     async (request, reply) => {

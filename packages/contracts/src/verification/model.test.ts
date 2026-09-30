@@ -13,6 +13,9 @@ describe("SourceFragment selector and display separation", () => {
     const parsed = SourceFragmentSchema.parse({ ...base, displayExcerpt: "Exact source …" });
     expect(parsed.selector).toEqual(base.selector);
     expect(parsed.displayExcerpt).toBe("Exact source …");
-    expect(SourceFragmentSchema.safeParse({ ...base, selector: undefined, displayExcerpt: "Exact source statement." }).success).toBe(false);
+    expect(
+      SourceFragmentSchema.safeParse({ ...base, selector: undefined, displayExcerpt: "Exact source statement." })
+        .success,
+    ).toBe(false);
   });
 });

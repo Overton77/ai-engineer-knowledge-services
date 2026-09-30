@@ -29,7 +29,12 @@ export interface VerificationRunAuditBundlePort {
 }
 
 export interface VerificationCaseReadPort extends VerificationRunAuditBundlePort {
-  listVerificationRunCases(input: { tenantId: string; runId: string; pageSize: number; cursor?: string }): Promise<unknown>;
+  listVerificationRunCases(input: {
+    tenantId: string;
+    runId: string;
+    pageSize: number;
+    cursor?: string;
+  }): Promise<unknown>;
   getVerificationCase(input: { tenantId: string; caseRunId: string }): Promise<unknown | undefined>;
   getVerificationEvidence(input: { tenantId: string; evidenceId: string }): Promise<unknown | undefined>;
 }
@@ -51,8 +56,19 @@ export class VerificationCaseReadService {
     return this.#safe(async () => {
       const manifest = await this.#manifest(parsed.data);
       const { tenantId, runId, pageSize, cursor } = parsed.data;
-      const result = VerificationRunCasesResourceSchema.parse(await this.repository.listVerificationRunCases({ tenantId, runId, pageSize, ...(cursor === undefined ? {} : { cursor }) }));
-      if (result.tenantId !== parsed.data.tenantId || result.runId !== parsed.data.runId || result.cases.length > parsed.data.pageSize) {
+      const result = VerificationRunCasesResourceSchema.parse(
+        await this.repository.listVerificationRunCases({
+          tenantId,
+          runId,
+          pageSize,
+          ...(cursor === undefined ? {} : { cursor }),
+        }),
+      );
+      if (
+        result.tenantId !== parsed.data.tenantId ||
+        result.runId !== parsed.data.runId ||
+        result.cases.length > parsed.data.pageSize
+      ) {
         throw new VerificationRunReadError("INTEGRITY");
       }
       for (const item of result.cases) this.#artifacts(manifest, [item.inputArtifact, item.resultArtifact]);
@@ -67,9 +83,14 @@ export class VerificationCaseReadService {
       const row = await this.repository.getVerificationCase(parsed.data);
       if (row === undefined) throw new VerificationRunReadError("NOT_FOUND");
       const result = VerificationCaseResourceSchema.parse(row);
-      if (result.tenantId !== parsed.data.tenantId || result.caseRunId !== parsed.data.caseRunId) throw new VerificationRunReadError("INTEGRITY");
+      if (result.tenantId !== parsed.data.tenantId || result.caseRunId !== parsed.data.caseRunId)
+        throw new VerificationRunReadError("INTEGRITY");
       const manifest = await this.#manifest({ tenantId: parsed.data.tenantId, runId: result.runId });
-      this.#artifacts(manifest, [result.inputArtifact, result.resultArtifact, ...result.evidence.map((item) => item.artifact)]);
+      this.#artifacts(manifest, [
+        result.inputArtifact,
+        result.resultArtifact,
+        ...result.evidence.map((item) => item.artifact),
+      ]);
       return result;
     });
   }
@@ -81,7 +102,8 @@ export class VerificationCaseReadService {
       const row = await this.repository.getVerificationEvidence(parsed.data);
       if (row === undefined) throw new VerificationRunReadError("NOT_FOUND");
       const result = VerificationEvidenceResourceSchema.parse(row);
-      if (result.tenantId !== parsed.data.tenantId || result.evidenceId !== parsed.data.evidenceId) throw new VerificationRunReadError("INTEGRITY");
+      if (result.tenantId !== parsed.data.tenantId || result.evidenceId !== parsed.data.evidenceId)
+        throw new VerificationRunReadError("INTEGRITY");
       const manifest = await this.#manifest({ tenantId: parsed.data.tenantId, runId: result.runId });
       this.#artifacts(manifest, [result.artifact]);
       return result;
@@ -92,24 +114,37 @@ export class VerificationCaseReadService {
     try {
       return parseManifest(await this.repository.loadAuditBundle(request.tenantId, request.runId), request);
     } catch (error) {
-      if (error instanceof Error && error.message === "VERIFICATION_RUN_NOT_FOUND") throw new VerificationRunReadError("NOT_FOUND");
+      if (error instanceof Error && error.message === "VERIFICATION_RUN_NOT_FOUND")
+        throw new VerificationRunReadError("NOT_FOUND");
       throw error;
     }
   }
 
-  #artifacts(manifest: VerificationRunManifest, references: Array<{ artifactId: string; digest: string; mediaType: string; sizeBytes: number }>): void {
+  #artifacts(
+    manifest: VerificationRunManifest,
+    references: Array<{ artifactId: string; digest: string; mediaType: string; sizeBytes: number }>,
+  ): void {
     const retained = [...manifest.inputArtifacts, ...manifest.outputArtifacts];
     for (const reference of references) {
       const matches = retained.filter((item) => item.artifactId === reference.artifactId);
-      if (matches.length === 0 || matches.some((item) => item.digest !== reference.digest || item.mediaType !== reference.mediaType || item.byteLength !== reference.sizeBytes)) {
+      if (
+        matches.length === 0 ||
+        matches.some(
+          (item) =>
+            item.digest !== reference.digest ||
+            item.mediaType !== reference.mediaType ||
+            item.byteLength !== reference.sizeBytes,
+        )
+      ) {
         throw new VerificationRunReadError("INTEGRITY");
       }
     }
   }
 
   async #safe<T>(read: () => Promise<T>): Promise<T> {
-    try { return await read(); }
-    catch (error) {
+    try {
+      return await read();
+    } catch (error) {
       if (error instanceof VerificationRunReadError) throw error;
       throw new VerificationRunReadError("INTEGRITY");
     }
@@ -149,17 +184,27 @@ function parseManifest(bundle: VerificationAuditBundle, request: ReadRequest): V
       throw new Error("REQUEST_BINDING");
     }
     const manifest = VerificationRunManifestSchema.parse(bundle.manifest);
-    if (manifest.runId !== request.runId || manifest.verificationContractVersion !== bundle.verificationContractVersion
-      || manifest.canonicalization.manifestDigest === undefined) {
+    if (
+      manifest.runId !== request.runId ||
+      manifest.verificationContractVersion !== bundle.verificationContractVersion ||
+      manifest.canonicalization.manifestDigest === undefined
+    ) {
       throw new Error("REQUEST_BINDING");
     }
-    const artifacts = [...manifest.inputArtifacts, ...manifest.outputArtifacts].map((value) => VerificationArtifactHandleSchema.parse(value));
+    const artifacts = [...manifest.inputArtifacts, ...manifest.outputArtifacts].map((value) =>
+      VerificationArtifactHandleSchema.parse(value),
+    );
     if (artifacts.some((artifact) => artifact.tenantId !== request.tenantId)) throw new Error("ARTIFACT_TENANT");
     const policyArtifact = VerificationArtifactHandleSchema.parse(bundle.policyBinding.policyArtifact);
-    const policyInputsArtifact = VerificationArtifactHandleSchema.parse(bundle.policyBinding.recordedPolicyInputsArtifact);
-    if (policyArtifact.tenantId !== request.tenantId || policyInputsArtifact.tenantId !== request.tenantId
-      || bundle.policyBinding.policyVersion !== manifest.versions.policy
-      || bundle.deterministicResultDigest !== manifest.resultDigest) {
+    const policyInputsArtifact = VerificationArtifactHandleSchema.parse(
+      bundle.policyBinding.recordedPolicyInputsArtifact,
+    );
+    if (
+      policyArtifact.tenantId !== request.tenantId ||
+      policyInputsArtifact.tenantId !== request.tenantId ||
+      bundle.policyBinding.policyVersion !== manifest.versions.policy ||
+      bundle.deterministicResultDigest !== manifest.resultDigest
+    ) {
       throw new Error("SEALED_BINDING");
     }
     return manifest;
@@ -188,12 +233,26 @@ function aggregateCalls(manifest: VerificationRunManifest) {
   if (![reservedCostMicros, estimatedCostMicros, actualCostMicros].every(Number.isSafeInteger)) {
     throw new VerificationRunReadError("INTEGRITY");
   }
-  return { count: manifest.calls.length, reservedCostMicros, estimatedCostMicros, actualCostMicros, actualCount, estimatedCount, reservedCount, unknownDispatchedCount };
+  return {
+    count: manifest.calls.length,
+    reservedCostMicros,
+    estimatedCostMicros,
+    actualCostMicros,
+    actualCount,
+    estimatedCount,
+    reservedCount,
+    unknownDispatchedCount,
+  };
 }
 
-function projectSummary(bundle: VerificationAuditBundle, manifest: VerificationRunManifest): VerificationRunSummaryResource {
+function projectSummary(
+  bundle: VerificationAuditBundle,
+  manifest: VerificationRunManifest,
+): VerificationRunSummaryResource {
   const policyArtifact = VerificationArtifactHandleSchema.parse(bundle.policyBinding.policyArtifact);
-  const recordedPolicyInputsArtifact = VerificationArtifactHandleSchema.parse(bundle.policyBinding.recordedPolicyInputsArtifact);
+  const recordedPolicyInputsArtifact = VerificationArtifactHandleSchema.parse(
+    bundle.policyBinding.recordedPolicyInputsArtifact,
+  );
   return VerificationRunSummaryResourceSchema.parse({
     verificationContractVersion: bundle.verificationContractVersion,
     tenantId: bundle.tenantId,
@@ -225,13 +284,21 @@ function findPricingArtifact(manifest: VerificationRunManifest, artifactId: stri
   return matches[0]!;
 }
 
-function projectManifest(bundle: VerificationAuditBundle, manifest: VerificationRunManifest): VerificationRunManifestResource {
+function projectManifest(
+  bundle: VerificationAuditBundle,
+  manifest: VerificationRunManifest,
+): VerificationRunManifestResource {
   const summary = projectSummary(bundle, manifest);
-  const provider = manifest.provider === undefined ? undefined : {
-    endpointIdentity: manifest.provider.endpointIdentity,
-    model: manifest.provider.model,
-    pricingSnapshotArtifact: compactArtifact(findPricingArtifact(manifest, manifest.provider.pricingSnapshotArtifactId)),
-  };
+  const provider =
+    manifest.provider === undefined
+      ? undefined
+      : {
+          endpointIdentity: manifest.provider.endpointIdentity,
+          model: manifest.provider.model,
+          pricingSnapshotArtifact: compactArtifact(
+            findPricingArtifact(manifest, manifest.provider.pricingSnapshotArtifactId),
+          ),
+        };
   return VerificationRunManifestResourceSchema.parse({
     ...summary,
     datasetId: manifest.datasetId,
@@ -240,10 +307,18 @@ function projectManifest(bundle: VerificationAuditBundle, manifest: Verification
     variantId: manifest.variantId,
     versions: manifest.versions,
     code: { gitSha: manifest.code.gitSha, dirty: manifest.code.dirty },
-    runtime: { container: manifest.runtime.container, platform: manifest.runtime.platform, deploymentId: manifest.runtime.deploymentId },
+    runtime: {
+      container: manifest.runtime.container,
+      platform: manifest.runtime.platform,
+      deploymentId: manifest.runtime.deploymentId,
+    },
     provider,
-    inputArtifacts: manifest.inputArtifacts.map((artifact) => compactArtifact(VerificationArtifactHandleSchema.parse(artifact))),
-    outputArtifacts: manifest.outputArtifacts.map((artifact) => compactArtifact(VerificationArtifactHandleSchema.parse(artifact))),
+    inputArtifacts: manifest.inputArtifacts.map((artifact) =>
+      compactArtifact(VerificationArtifactHandleSchema.parse(artifact)),
+    ),
+    outputArtifacts: manifest.outputArtifacts.map((artifact) =>
+      compactArtifact(VerificationArtifactHandleSchema.parse(artifact)),
+    ),
     stages: manifest.stages,
     randomSeed: manifest.randomSeed,
     toolPolicy: manifest.toolPolicy,
@@ -285,7 +360,8 @@ export class VerificationRunReadService {
     try {
       return await this.auditBundles.loadAuditBundle(request.tenantId, request.runId);
     } catch (error) {
-      if (error instanceof Error && error.message === "VERIFICATION_RUN_NOT_FOUND") throw new VerificationRunReadError("NOT_FOUND");
+      if (error instanceof Error && error.message === "VERIFICATION_RUN_NOT_FOUND")
+        throw new VerificationRunReadError("NOT_FOUND");
       throw new VerificationRunReadError("INTEGRITY");
     }
   }

@@ -19,14 +19,22 @@ export const KS_GROUPS: Readonly<Record<KsGroup, string>> = Object.freeze({
 });
 
 type RemoteResource = keyof typeof CLI_COMMANDS;
-export type KsUtility = "diagnostics-demo" | "benchmark-capture" | "benchmark-diff" | "attestation-export" | "attestation-inspect";
+export type KsUtility =
+  | "diagnostics-demo"
+  | "benchmark-capture"
+  | "benchmark-diff"
+  | "attestation-export"
+  | "attestation-inspect";
 export type KsCommand =
   | { readonly profile: "remote"; readonly resource: RemoteResource; readonly action: string }
   | { readonly profile: "local"; readonly operation: LocalOperation }
   | { readonly profile: "utility"; readonly utility: KsUtility };
 
-const remote = <R extends RemoteResource>(resource: R, action: keyof (typeof CLI_COMMANDS)[R] & string): KsCommand =>
-  ({ profile: "remote", resource, action });
+const remote = <R extends RemoteResource>(resource: R, action: keyof (typeof CLI_COMMANDS)[R] & string): KsCommand => ({
+  profile: "remote",
+  resource,
+  action,
+});
 const local = (operation: LocalOperation): KsCommand => ({ profile: "local", operation });
 const utility = (name: KsUtility): KsCommand => ({ profile: "utility", utility: name });
 
@@ -133,10 +141,13 @@ export const KS_COMMANDS = Object.freeze({
 export type KsCommandName = keyof typeof KS_COMMANDS;
 const MAX_WORDS = Math.max(...Object.keys(KS_COMMANDS).map((name) => name.split(" ").length));
 
-export const isKsGroup = (value: string | undefined): value is KsGroup => value !== undefined && Object.hasOwn(KS_GROUPS, value);
+export const isKsGroup = (value: string | undefined): value is KsGroup =>
+  value !== undefined && Object.hasOwn(KS_GROUPS, value);
 
 /** The longest command name the leading words of `argv` spell, and the arguments after it. */
-export function resolveKsCommand(argv: readonly string[]): { readonly name: KsCommandName; readonly command: KsCommand; readonly rest: readonly string[] } | undefined {
+export function resolveKsCommand(
+  argv: readonly string[],
+): { readonly name: KsCommandName; readonly command: KsCommand; readonly rest: readonly string[] } | undefined {
   const words: string[] = [];
   for (const token of argv) {
     if (token.startsWith("-") || words.length === MAX_WORDS) break;
@@ -144,7 +155,8 @@ export function resolveKsCommand(argv: readonly string[]): { readonly name: KsCo
   }
   for (let length = words.length; length > 0; length -= 1) {
     const name = words.slice(0, length).join(" ");
-    if (Object.hasOwn(KS_COMMANDS, name)) return { name: name as KsCommandName, command: KS_COMMANDS[name as KsCommandName], rest: argv.slice(length) };
+    if (Object.hasOwn(KS_COMMANDS, name))
+      return { name: name as KsCommandName, command: KS_COMMANDS[name as KsCommandName], rest: argv.slice(length) };
   }
   return undefined;
 }

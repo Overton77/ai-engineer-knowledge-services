@@ -3,7 +3,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import type { Assertion, VerificationArtifactHandle, VerificationBundle } from "../../../packages/contracts/src/index.ts";
+import type {
+  Assertion,
+  VerificationArtifactHandle,
+  VerificationBundle,
+} from "../../../packages/contracts/src/index.ts";
 import {
   admitExtractionSchema,
   authorizeSemanticCase,
@@ -57,7 +61,8 @@ function occurrences(haystack: string, needle: string): number {
 
 function bindQuote(page: string, metric: z.infer<typeof MetricSchema>): BoundMetric | undefined {
   if (occurrences(page, metric.quote) === 1) return { ...metric, boundQuote: metric.quote };
-  if (metric.value !== metric.quote && occurrences(page, metric.value) === 1) return { ...metric, boundQuote: metric.value };
+  if (metric.value !== metric.quote && occurrences(page, metric.value) === 1)
+    return { ...metric, boundQuote: metric.value };
   return undefined;
 }
 
@@ -90,7 +95,10 @@ async function capturePage(): Promise<{ markdown: string; method: "firecrawl" | 
       signal: AbortSignal.timeout(45_000),
     });
     if (!response.ok) throw new Error(`FIRECRAWL_SCRAPE_FAILED:${response.status}`);
-    const payload = await response.json() as { success?: boolean; data?: { markdown?: string; metadata?: { url?: string; sourceURL?: string } } };
+    const payload = (await response.json()) as {
+      success?: boolean;
+      data?: { markdown?: string; metadata?: { url?: string; sourceURL?: string } };
+    };
     const markdown = payload.data?.markdown?.trim();
     if (!markdown) throw new Error("FIRECRAWL_MARKDOWN_EMPTY");
     return { markdown, method: "firecrawl", finalUrl: payload.data?.metadata?.url ?? SOURCE_URL };
@@ -98,7 +106,12 @@ async function capturePage(): Promise<{ markdown: string; method: "firecrawl" | 
   const response = await fetch(SOURCE_URL, { redirect: "follow", signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`HTTPS_GET_FAILED:${response.status}`);
   const html = await response.text();
-  const markdown = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const markdown = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (markdown.length < 200) throw new Error("HTTPS_GET_TEXT_EMPTY");
   return { markdown, method: "https_get", finalUrl: response.url };
 }
@@ -128,15 +141,27 @@ async function produceMetrics(page: string) {
 }
 
 function memorySink() {
-  const dispatches: Array<{ requestDigest: string; requestBytes: number; responseBytes?: number; httpStatus?: number }> = [];
+  const dispatches: Array<{
+    requestDigest: string;
+    requestBytes: number;
+    responseBytes?: number;
+    httpStatus?: number;
+  }> = [];
   return {
     records: dispatches,
     sink: {
       async assertExternalProcessingAdmission() {},
-      async persistBeforeDispatch(input: { readonly requestDigest: `sha256:${string}`; readonly requestBytes: Uint8Array }) {
+      async persistBeforeDispatch(input: {
+        readonly requestDigest: `sha256:${string}`;
+        readonly requestBytes: Uint8Array;
+      }) {
         dispatches.push({ requestDigest: input.requestDigest, requestBytes: input.requestBytes.byteLength });
       },
-      async persistAfterResponse(input: { readonly requestDigest: `sha256:${string}`; readonly rawResponseBytes: Uint8Array; readonly httpStatus?: number }) {
+      async persistAfterResponse(input: {
+        readonly requestDigest: `sha256:${string}`;
+        readonly rawResponseBytes: Uint8Array;
+        readonly httpStatus?: number;
+      }) {
         const row = dispatches.find((item) => item.requestDigest === input.requestDigest);
         if (row) {
           row.responseBytes = input.rawResponseBytes.byteLength;
@@ -155,24 +180,36 @@ function claim(id: string, metric: BoundMetric, handle: VerificationArtifactHand
     claimType: "measurement",
     proposition: metric.proposition,
     value: metric.value,
-    producer: { deploymentId: "experiment-research-producer", attemptId: "producer-attempt-1", capabilityVersion: "experiment.v1" },
+    producer: {
+      deploymentId: "experiment-research-producer",
+      attemptId: "producer-attempt-1",
+      capabilityVersion: "experiment.v1",
+    },
     qualifiers: [],
     entityBindings: [{ role: "model", canonicalId: metric.modelId }],
     derivation: "direct",
-    evidence: [{
-      evidenceId: `${id}:e0`,
-      fragment: {
-        fragmentId: `${id}:f0`,
-        captureId: CAPTURE_ID,
-        representationArtifactId: handle.artifactId,
-        selector: { kind: "text_quote", quote: metric.boundQuote, normalization: "none" },
+    evidence: [
+      {
+        evidenceId: `${id}:e0`,
+        fragment: {
+          fragmentId: `${id}:f0`,
+          captureId: CAPTURE_ID,
+          representationArtifactId: handle.artifactId,
+          selector: { kind: "text_quote", quote: metric.boundQuote, normalization: "none" },
+        },
+        role: "supports",
+        origin: "declared",
+        expectedSelectedContentDigest: selectedDigest,
+        authority: {
+          authority: "primary",
+          independence: "self_reported",
+          directness: "direct",
+          freshness: "current",
+          applicability: "direct",
+        },
+        parserLineageArtifactIds: [],
       },
-      role: "supports",
-      origin: "declared",
-      expectedSelectedContentDigest: selectedDigest,
-      authority: { authority: "primary", independence: "self_reported", directness: "direct", freshness: "current", applicability: "direct" },
-      parserLineageArtifactIds: [],
-    }],
+    ],
     intent: {
       intentId: `${id}:intent`,
       operation: "verify_claim_support",
@@ -188,22 +225,43 @@ function claim(id: string, metric: BoundMetric, handle: VerificationArtifactHand
   };
 }
 
-function bundleFor(assertions: Assertion[], handle: VerificationArtifactHandle, capturedAt: string): VerificationBundle {
+function bundleFor(
+  assertions: Assertion[],
+  handle: VerificationArtifactHandle,
+  capturedAt: string,
+): VerificationBundle {
   return {
     verificationContractVersion: "verification.v1",
     bundleId: "experiment-model-card-v1",
     policyVersion: "experiment-policy.v1",
-    producer: { deploymentId: "experiment-research-producer", attemptId: "producer-attempt-1", capabilityVersion: "experiment.v1" },
-    verifier: { deploymentId: "experiment-verification-agent", attemptId: "verifier-attempt-1", capabilityVersion: "verification.v1" },
-    sources: [{ sourceId: "source-anthropic-models-overview", kind: "web_page", canonicalUri: SOURCE_URL, logicalIdentity: "anthropic:models-overview" }],
-    captures: [{
-      captureId: CAPTURE_ID,
-      sourceId: "source-anthropic-models-overview",
-      capturedAt,
-      captureMethod: "experiment_firecrawl_or_https",
-      captureMethodVersion: "1",
-      contentArtifact: handle,
-    }],
+    producer: {
+      deploymentId: "experiment-research-producer",
+      attemptId: "producer-attempt-1",
+      capabilityVersion: "experiment.v1",
+    },
+    verifier: {
+      deploymentId: "experiment-verification-agent",
+      attemptId: "verifier-attempt-1",
+      capabilityVersion: "verification.v1",
+    },
+    sources: [
+      {
+        sourceId: "source-anthropic-models-overview",
+        kind: "web_page",
+        canonicalUri: SOURCE_URL,
+        logicalIdentity: "anthropic:models-overview",
+      },
+    ],
+    captures: [
+      {
+        captureId: CAPTURE_ID,
+        sourceId: "source-anthropic-models-overview",
+        capturedAt,
+        captureMethod: "experiment_firecrawl_or_https",
+        captureMethodVersion: "1",
+        contentArtifact: handle,
+      },
+    ],
     assertions,
     metricObservations: [],
     lineage: [],
@@ -276,8 +334,21 @@ async function main() {
     selector: { kind: "text_quote" as const, quote: metric.boundQuote, normalization: "none" as const },
     expectedSelectedContentDigest: sha256Digest(metric.boundQuote),
   }));
-  const representations = [{ captureId: CAPTURE_ID, artifactId: handle.artifactId, digest: handle.digest, content: new TextEncoder().encode(page.markdown) }];
-  const extractionPass = verifyExtractionFields({ schema: schemaAdmission.schema, candidate, fields, evidence, representations });
+  const representations = [
+    {
+      captureId: CAPTURE_ID,
+      artifactId: handle.artifactId,
+      digest: handle.digest,
+      content: new TextEncoder().encode(page.markdown),
+    },
+  ];
+  const extractionPass = verifyExtractionFields({
+    schema: schemaAdmission.schema,
+    candidate,
+    fields,
+    evidence,
+    representations,
+  });
   const extractionFail = verifyExtractionFields({
     schema: schemaAdmission.schema,
     candidate: { ...candidate, metric_1_value: "99.9 invented" },
@@ -322,14 +393,24 @@ async function main() {
   let semantic: unknown = { skipped: true, reason: "no_mechanically_eligible_assertion" };
   if (firstPassed) {
     const assertion = passClaims.find((item) => item.assertionId === firstPassed.assertionId)!;
-    const quote = assertion.evidence[0]!.fragment.selector.kind === "text_quote" ? assertion.evidence[0]!.fragment.selector.quote : "";
-    const selectedFragments: MechanicallySelectedFragment[] = [{
-      evidenceId: assertion.evidence[0]!.evidenceId,
-      fragmentId: assertion.evidence[0]!.fragment.fragmentId,
-      exactText: quote,
-      selectedContentDigest: sha256Digest(quote),
-    }];
-    const authorized = authorizeSemanticCase({ bundle: passBundle, deterministicResult: mechanicalPass, assertionId: firstPassed.assertionId, selectedFragments });
+    const quote =
+      assertion.evidence[0]!.fragment.selector.kind === "text_quote"
+        ? assertion.evidence[0]!.fragment.selector.quote
+        : "";
+    const selectedFragments: MechanicallySelectedFragment[] = [
+      {
+        evidenceId: assertion.evidence[0]!.evidenceId,
+        fragmentId: assertion.evidence[0]!.fragment.fragmentId,
+        exactText: quote,
+        selectedContentDigest: sha256Digest(quote),
+      },
+    ];
+    const authorized = authorizeSemanticCase({
+      bundle: passBundle,
+      deterministicResult: mechanicalPass,
+      assertionId: firstPassed.assertionId,
+      selectedFragments,
+    });
     const apiKey = process.env.AI_GATEWAY_API_KEY!;
     const { sink, records } = memorySink();
     const adapter = new GatewaySemanticJudgeAdapter({
@@ -370,21 +451,44 @@ async function main() {
   const receipt = {
     experiment: "model-card-verification",
     ranAt: capturedAt,
-    source: { requestedUrl: SOURCE_URL, finalUrl: page.finalUrl, captureMethod: page.method, characters: page.markdown.length },
+    source: {
+      requestedUrl: SOURCE_URL,
+      finalUrl: page.finalUrl,
+      captureMethod: page.method,
+      characters: page.markdown.length,
+    },
     producer: { model: PRODUCER_MODEL, emitted: produced.metrics.length, bound: bound.length },
-    metrics: selected.map((item) => ({ fieldId: item.fieldId, modelId: item.modelId, metricName: item.metricName, value: item.value, quote: item.boundQuote, proposition: item.proposition })),
+    metrics: selected.map((item) => ({
+      fieldId: item.fieldId,
+      modelId: item.modelId,
+      metricName: item.metricName,
+      value: item.value,
+      quote: item.boundQuote,
+      proposition: item.proposition,
+    })),
     stages: {
       captureIntegrity,
       selectorIntegrity,
       mechanicalCorrectness: {
-        extractionPass: { valid: extractionPass.valid, candidateValid: extractionPass.candidateValid, checks: compactChecks(extractionPass.checks) },
-        extractionFailArm: { valid: extractionFail.valid, checks: compactChecks(extractionFail.checks).filter((item) => item.status === "failed") },
+        extractionPass: {
+          valid: extractionPass.valid,
+          candidateValid: extractionPass.candidateValid,
+          checks: compactChecks(extractionPass.checks),
+        },
+        extractionFailArm: {
+          valid: extractionFail.valid,
+          checks: compactChecks(extractionFail.checks).filter((item) => item.status === "failed"),
+        },
         claimsPass: {
           status: mechanicalPass.status,
           semanticEligibility: mechanicalPass.semanticEligibility,
           assertionsPassed: mechanicalPass.summary.assertionsPassed,
           captureChecks: compactChecks(mechanicalPass.captureChecks),
-          assertionStatuses: mechanicalPass.assertions.map((item) => ({ assertionId: item.assertionId, status: item.status, semanticEligibility: item.semanticEligibility })),
+          assertionStatuses: mechanicalPass.assertions.map((item) => ({
+            assertionId: item.assertionId,
+            status: item.status,
+            semanticEligibility: item.semanticEligibility,
+          })),
         },
         claimsFailArm: {
           status: mechanicalFail.status,
@@ -401,15 +505,29 @@ async function main() {
       extractionFailArmRejected: extractionFail.valid === false,
       claimsPass: mechanicalPass.status === "passed",
       claimsFailArmRejected: mechanicalFail.status === "failed",
-      semanticRan: semantic !== undefined && typeof semantic === "object" && semantic !== null && "skipped" in semantic && (semantic as { skipped: boolean }).skipped === false,
+      semanticRan:
+        semantic !== undefined &&
+        typeof semantic === "object" &&
+        semantic !== null &&
+        "skipped" in semantic &&
+        (semantic as { skipped: boolean }).skipped === false,
     },
   };
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   const latest = resolve(OUTPUT_DIR, "latest.json");
   await writeFile(latest, `${JSON.stringify(receipt, null, 2)}\n`);
-  process.stdout.write(`${JSON.stringify({ ok: Object.values(receipt.proved).every(Boolean), receiptPath: latest, proved: receipt.proved, metrics: receipt.metrics }, null, 2)}\n`);
-  if (!receipt.proved.captureIntegrity || !receipt.proved.selectorIntegrity || !receipt.proved.extractionPass || !receipt.proved.extractionFailArmRejected || !receipt.proved.claimsPass || !receipt.proved.claimsFailArmRejected) {
+  process.stdout.write(
+    `${JSON.stringify({ ok: Object.values(receipt.proved).every(Boolean), receiptPath: latest, proved: receipt.proved, metrics: receipt.metrics }, null, 2)}\n`,
+  );
+  if (
+    !receipt.proved.captureIntegrity ||
+    !receipt.proved.selectorIntegrity ||
+    !receipt.proved.extractionPass ||
+    !receipt.proved.extractionFailArmRejected ||
+    !receipt.proved.claimsPass ||
+    !receipt.proved.claimsFailArmRejected
+  ) {
     process.exitCode = 1;
   }
 }

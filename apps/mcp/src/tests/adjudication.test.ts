@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createVerificationMcpToolExecutor } from "../index.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1),
   actor = {
     kind: "service" as const,
@@ -37,15 +36,11 @@ const reviewer = {
 };
 const reviewerIdentity = {
   actor: reviewer,
-  grants: [
-    { tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] },
-  ],
+  grants: [{ tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] }],
 };
 const operatorIdentity = {
   actor,
-  grants: [
-    { tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] },
-  ],
+  grants: [{ tenantId: tenant, roles: ["knowledge_operator" as const], scopes: [] }],
 };
 
 describe("adjudication MCP adapter", () => {
@@ -63,9 +58,9 @@ describe("adjudication MCP adapter", () => {
       resolveVerificationContext: () => resolved,
       verificationAdmission: { isAdjudicationRequestAdmitted },
     });
-    await expect(
-      execute("knowledge_request_adjudication", { context, request }),
-    ).resolves.toMatchObject({ structuredContent: { operationId: id(4) } });
+    await expect(execute("knowledge_request_adjudication", { context, request })).resolves.toMatchObject({
+      structuredContent: { operationId: id(4) },
+    });
     expect(isAdjudicationRequestAdmitted).toHaveBeenCalledWith(tenant, request);
     expect(submitRequestAdjudication).toHaveBeenCalledWith(request, resolved);
     await expect(
@@ -107,10 +102,7 @@ describe("adjudication MCP adapter", () => {
       request: decision,
       context: reviewed,
     });
-    expect(submitRecordAdjudicationDecision).toHaveBeenCalledWith(
-      decision,
-      reviewed,
-    );
+    expect(submitRecordAdjudicationDecision).toHaveBeenCalledWith(decision, reviewed);
     // As on the API route, a non-reviewer service is rejected before decision admission.
     const nonReviewer = createVerificationMcpToolExecutor({
       operationService: {} as never,

@@ -37,9 +37,7 @@ export type ResolveVerificationContext = (
   input: VerificationContextResolutionInput,
 ) => OperationContext | undefined | Promise<OperationContext | undefined>;
 
-export interface VerificationOwnershipQueryResult<
-  T extends Record<string, unknown> = Record<string, unknown>,
-> {
+export interface VerificationOwnershipQueryResult<T extends Record<string, unknown> = Record<string, unknown>> {
   readonly rows: T[];
 }
 
@@ -51,10 +49,7 @@ export interface VerificationOwnershipQueryClient {
 }
 
 export interface VerificationOwnershipStore {
-  transaction<T>(
-    tenantId: string,
-    run: (client: VerificationOwnershipQueryClient) => Promise<T>,
-  ): Promise<T>;
+  transaction<T>(tenantId: string, run: (client: VerificationOwnershipQueryClient) => Promise<T>): Promise<T>;
 }
 
 export interface StaticVerificationContextBindings {
@@ -68,8 +63,7 @@ export interface StaticVerificationContextBindings {
 
 export type SucceededVerificationRunAdmissionStore = VerificationOwnershipStore;
 
-const SUCCEEDED_VERIFICATION_RUN_SQL =
-  `select o.operation_kind,o.status from evidence.verification_run r join knowledge_service.operation o on o.tenant_id=r.tenant_id and o.id=r.operation_id where r.tenant_id=$1 and r.run_manifest_artifact_id=$2 and r.manifest_sha256=$3`;
+const SUCCEEDED_VERIFICATION_RUN_SQL = `select o.operation_kind,o.status from evidence.verification_run r join knowledge_service.operation o on o.tenant_id=r.tenant_id and o.id=r.operation_id where r.tenant_id=$1 and r.run_manifest_artifact_id=$2 and r.manifest_sha256=$3`;
 
 function hintsConflictWithBindings(
   hints: VerificationOperationContextHints,
@@ -81,8 +75,7 @@ function hintsConflictWithBindings(
       (hints.missionId && hints.missionId !== bindings.missionId) ||
       (hints.causationId && hints.causationId !== bindings.causationId) ||
       (hints.externalExecution &&
-        JSON.stringify(hints.externalExecution) !==
-          JSON.stringify(bindings.externalExecution)),
+        JSON.stringify(hints.externalExecution) !== JSON.stringify(bindings.externalExecution)),
   );
 }
 
@@ -105,9 +98,7 @@ function parseStaticVerificationContext(input: {
     ...(bindings.workItemId ? { workItemId: bindings.workItemId } : {}),
     ...(bindings.missionId ? { missionId: bindings.missionId } : {}),
     ...(bindings.causationId ? { causationId: bindings.causationId } : {}),
-    ...(bindings.externalExecution
-      ? { externalExecution: bindings.externalExecution }
-      : {}),
+    ...(bindings.externalExecution ? { externalExecution: bindings.externalExecution } : {}),
     correlationId: input.correlationId,
     actor: input.identity.actor,
     capabilityVersion: bindings.capabilityVersion,
@@ -126,18 +117,12 @@ export function createStaticVerificationContextResolver(
   };
 }
 
-export function createParseArtifactRequestAdmission(
-  catalog: VerificationServiceCatalog,
-) {
+export function createParseArtifactRequestAdmission(catalog: VerificationServiceCatalog) {
   return (tenantId: string, request: ParseArtifactRequest) =>
-    request.sourceArtifact.tenantId === tenantId &&
-    catalog.admitsParseArtifact(request);
+    request.sourceArtifact.tenantId === tenantId && catalog.admitsParseArtifact(request);
 }
 
-function admitsWhenGrantResolves(
-  resolve: () => void,
-  requiredCode: string,
-): boolean {
+function admitsWhenGrantResolves(resolve: () => void, requiredCode: string): boolean {
   try {
     resolve();
     return true;
@@ -147,51 +132,32 @@ function admitsWhenGrantResolves(
   }
 }
 
-export function createBenchmarkRequestAdmission(
-  config: ReturnType<typeof parseVerificationBenchmarkRuntimeConfig>,
-) {
+export function createBenchmarkRequestAdmission(config: ReturnType<typeof parseVerificationBenchmarkRuntimeConfig>) {
   return (tenantId: string, request: RunBenchmarkRequest) =>
-    admitsWhenGrantResolves(
-      () => {
-        config.inputs.resolve(tenantId, request);
-      },
-      "BENCHMARK_INPUT_TRUSTED_GRANT_REQUIRED",
-    );
+    admitsWhenGrantResolves(() => {
+      config.inputs.resolve(tenantId, request);
+    }, "BENCHMARK_INPUT_TRUSTED_GRANT_REQUIRED");
 }
 
 export function createBenchmarkComparisonRequestAdmission(
   config: ReturnType<typeof parseVerificationBenchmarkComparisonRuntimeConfig>,
 ) {
   return (tenantId: string, request: CompareBenchmarkRunsRequest) =>
-    admitsWhenGrantResolves(
-      () => {
-        config.catalog.resolve(tenantId, request.comparisonProfile);
-      },
-      "BENCHMARK_COMPARISON_PROFILE_TRUSTED_GRANT_REQUIRED",
-    );
+    admitsWhenGrantResolves(() => {
+      config.catalog.resolve(tenantId, request.comparisonProfile);
+    }, "BENCHMARK_COMPARISON_PROFILE_TRUSTED_GRANT_REQUIRED");
 }
 
-export function createClaimsRequestAdmission(
-  projectionCatalog: VerificationClaimsProjectionGrantCatalog,
-) {
-  return (
-    tenantId: string,
-    request: VerifyClaimsRequest | VerifyReportRequest,
-  ) => {
-    const artifact =
-      "assertions" in request ? request.assertions : request.claimLedger;
-    return admitsWhenGrantResolves(
-      () => {
-        projectionCatalog.resolve(tenantId, artifact);
-      },
-      "VERIFICATION_CLAIMS_PROJECTION_GRANT_REQUIRED",
-    );
+export function createClaimsRequestAdmission(projectionCatalog: VerificationClaimsProjectionGrantCatalog) {
+  return (tenantId: string, request: VerifyClaimsRequest | VerifyReportRequest) => {
+    const artifact = "assertions" in request ? request.assertions : request.claimLedger;
+    return admitsWhenGrantResolves(() => {
+      projectionCatalog.resolve(tenantId, artifact);
+    }, "VERIFICATION_CLAIMS_PROJECTION_GRANT_REQUIRED");
   };
 }
 
-function runArtifactFromRequest(
-  request: InspectAuditBundleRequest | RequestAdjudicationRequest,
-) {
+function runArtifactFromRequest(request: InspectAuditBundleRequest | RequestAdjudicationRequest) {
   return "auditBundle" in request ? request.auditBundle : request.evidencePacket;
 }
 
@@ -216,10 +182,7 @@ export function createSucceededVerificationRunAdmission(
     request: InspectAuditBundleRequest | RequestAdjudicationRequest,
   ) => "verification_claims" | "verification_report" | undefined,
 ) {
-  return async (
-    tenantId: string,
-    request: InspectAuditBundleRequest | RequestAdjudicationRequest,
-  ) => {
+  return async (tenantId: string, request: InspectAuditBundleRequest | RequestAdjudicationRequest) => {
     const expectedKind = resolveExpectedKind(tenantId, request);
     if (!expectedKind) return false;
     const artifact = runArtifactFromRequest(request);
@@ -227,10 +190,11 @@ export function createSucceededVerificationRunAdmission(
       tenantId,
       async (client) =>
         (
-          await client.query<{ operation_kind: string; status: string }>(
-            SUCCEEDED_VERIFICATION_RUN_SQL,
-            [tenantId, artifact.artifactId, artifact.digest.slice(7)],
-          )
+          await client.query<{ operation_kind: string; status: string }>(SUCCEEDED_VERIFICATION_RUN_SQL, [
+            tenantId,
+            artifact.artifactId,
+            artifact.digest.slice(7),
+          ])
         ).rows,
     );
     return isSucceededExpectedKind({ rows, expectedKind });

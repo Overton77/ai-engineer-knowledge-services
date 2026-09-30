@@ -24,10 +24,7 @@ import {
 
 const createdAt = "2026-09-08T00:00:00.000Z";
 const policyBytes = new TextEncoder().encode('{"policy":"fixture"}');
-const runBuiltCli = (
-  args: readonly string[],
-  environment: NodeJS.ProcessEnv = {},
-) =>
+const runBuiltCli = (args: readonly string[], environment: NodeJS.ProcessEnv = {}) =>
   new Promise<{
     readonly code: number | null;
     readonly stdout: string;
@@ -38,11 +35,7 @@ const runBuiltCli = (
       [join(import.meta.dirname, "../../dist/index.js"), "verify", ...args],
       { env: environment },
       (error, stdout, stderr) => {
-        if (
-          error &&
-          (error as NodeJS.ErrnoException).code !== undefined &&
-          (error as { code?: unknown }).code !== 1
-        )
+        if (error && (error as NodeJS.ErrnoException).code !== undefined && (error as { code?: unknown }).code !== 1)
           return reject(error);
         resolve({
           code: (error as { code?: number } | null)?.code ?? 0,
@@ -166,8 +159,7 @@ async function signedAudit(privatePem: string) {
     startedAt: createdAt,
     completedAt: createdAt,
   };
-  manifest.canonicalization.manifestDigest =
-    verificationManifestDigest(manifest);
+  manifest.canonicalization.manifestDigest = verificationManifestDigest(manifest);
   return sealAuditBundle({
     tenantId: source.tenantId,
     verificationBundle: deterministicInput.bundle,
@@ -188,20 +180,12 @@ describe("offline verification attestation CLI", () => {
     const directory = await mkdtemp(join(tmpdir(), "attestation-cli-"));
     const auditKey = generateKeyPairSync("ed25519"),
       attestationKey = generateKeyPairSync("ed25519");
-    const auditPrivate = auditKey.privateKey
-      .export({ type: "pkcs8", format: "pem" })
-      .toString();
-    const attestationPrivate = attestationKey.privateKey
-      .export({ type: "pkcs8", format: "pem" })
-      .toString();
+    const auditPrivate = auditKey.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    const attestationPrivate = attestationKey.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
     const audit = await signedAudit(auditPrivate);
     const publicKeys = {
-      "audit-key": auditKey.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
-      "attestation-key": attestationKey.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
+      "audit-key": auditKey.publicKey.export({ type: "spki", format: "pem" }).toString(),
+      "attestation-key": attestationKey.publicKey.export({ type: "spki", format: "pem" }).toString(),
     };
     const auditPath = join(directory, "signed-audit.json"),
       keysPath = join(directory, "keys.json"),
@@ -215,8 +199,7 @@ describe("offline verification attestation CLI", () => {
           bindingPath,
           JSON.stringify({
             builderId:
-              "urn:aiengineer:verification:deployment:" +
-              encodeURIComponent(audit.manifest.runtime.deploymentId),
+              "urn:aiengineer:verification:deployment:" + encodeURIComponent(audit.manifest.runtime.deploymentId),
             keyId: "attestation-key",
           }),
         ),
@@ -295,9 +278,7 @@ describe("offline verification attestation CLI", () => {
       );
       expect(builtExport).toMatchObject({ code: 0, stderr: "" });
       expect(builtExport.stdout).not.toContain(attestationPrivate);
-      const wrongKey = generateKeyPairSync("ed25519")
-        .privateKey.export({ type: "pkcs8", format: "pem" })
-        .toString();
+      const wrongKey = generateKeyPairSync("ed25519").privateKey.export({ type: "pkcs8", format: "pem" }).toString();
       const wrongOutput = join(directory, "wrong-key.dsse.json");
       await expect(
         runVerificationAttestationExport(
@@ -340,10 +321,7 @@ describe("offline verification attestation CLI", () => {
         payload: string;
       };
       tampered.payload = tampered.payload.slice(0, -2) + "AA";
-      await writeFile(
-        join(directory, "tampered.json"),
-        JSON.stringify(tampered),
-      );
+      await writeFile(join(directory, "tampered.json"), JSON.stringify(tampered));
       const rejected = await runVerificationAttestationInspect([
         "attestation",
         "inspect",
@@ -381,30 +359,17 @@ describe("offline verification attestation CLI", () => {
     }
   });
   it("rejects missing, unknown, duplicate, and forbidden signing-key arguments with fixed codes", async () => {
+    await expect(runVerificationAttestationExport(["attestation", "export"])).rejects.toMatchObject({
+      code: "ATTESTATION_ARGUMENT_REQUIRED",
+    });
+    await expect(runVerificationAttestationInspect(["attestation", "inspect", "--unknown", "x"])).rejects.toMatchObject(
+      { code: "ATTESTATION_ARGUMENT_UNKNOWN" },
+    );
     await expect(
-      runVerificationAttestationExport(["attestation", "export"]),
-    ).rejects.toMatchObject({ code: "ATTESTATION_ARGUMENT_REQUIRED" });
-    await expect(
-      runVerificationAttestationInspect([
-        "attestation",
-        "inspect",
-        "--unknown",
-        "x",
-      ]),
-    ).rejects.toMatchObject({ code: "ATTESTATION_ARGUMENT_UNKNOWN" });
-    await expect(
-      runVerificationAttestationInspect([
-        "attestation",
-        "inspect",
-        "--audit-bundle",
-        "a",
-        "--audit-bundle",
-        "b",
-      ]),
+      runVerificationAttestationInspect(["attestation", "inspect", "--audit-bundle", "a", "--audit-bundle", "b"]),
     ).rejects.toMatchObject({ code: "ATTESTATION_ARGUMENT_DUPLICATE" });
-    expect(
-      new VerificationAttestationCliError("ATTESTATION_SIGNING_KEY_REQUIRED")
-        .code,
-    ).toBe("ATTESTATION_SIGNING_KEY_REQUIRED");
+    expect(new VerificationAttestationCliError("ATTESTATION_SIGNING_KEY_REQUIRED").code).toBe(
+      "ATTESTATION_SIGNING_KEY_REQUIRED",
+    );
   });
 });

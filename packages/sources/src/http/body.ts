@@ -16,10 +16,8 @@ export async function boundedBody(input: BoundedBodyInput): Promise<Uint8Array> 
     signal.throwIfAborted();
     const declared = declaredLength(response);
     const encoded = isCompressed(response);
-    if (encoded && (!Number.isFinite(declared) || declared <= 0))
-      throw new Error("ENCODED_LENGTH_REQUIRED");
-    if (Number.isFinite(declared) && declared > maximumBytes)
-      throw new Error("BYTE_LIMIT_EXCEEDED");
+    if (encoded && (!Number.isFinite(declared) || declared <= 0)) throw new Error("ENCODED_LENGTH_REQUIRED");
+    if (Number.isFinite(declared) && declared > maximumBytes) throw new Error("BYTE_LIMIT_EXCEEDED");
     if (!reader) return new Uint8Array();
     return await readBoundedChunks({
       reader,
@@ -39,10 +37,7 @@ export async function boundedBody(input: BoundedBodyInput): Promise<Uint8Array> 
 }
 
 function isCompressed(response: Response): boolean {
-  const contentEncoding = response.headers
-    .get("content-encoding")
-    ?.trim()
-    .toLowerCase();
+  const contentEncoding = response.headers.get("content-encoding")?.trim().toLowerCase();
   return Boolean(contentEncoding && contentEncoding !== "identity");
 }
 
@@ -60,9 +55,7 @@ interface ReadBoundedChunksInput {
   signal: AbortSignal;
 }
 
-async function readBoundedChunks(
-  input: ReadBoundedChunksInput,
-): Promise<Uint8Array> {
+async function readBoundedChunks(input: ReadBoundedChunksInput): Promise<Uint8Array> {
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (true) {

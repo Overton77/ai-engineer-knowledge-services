@@ -83,28 +83,14 @@ export class InMemoryOperationLedger {
     snapshot?: OperationLedgerSnapshot,
   ) {
     for (const operation of snapshot?.operations ?? []) {
-      this.#operations.set(
-        operation.context.operationId,
-        structuredClone(operation),
-      );
-      this.#idempotency.set(
-        `${operation.context.tenantId}:${operation.idempotencyKey}`,
-        operation.context.operationId,
-      );
+      this.#operations.set(operation.context.operationId, structuredClone(operation));
+      this.#idempotency.set(`${operation.context.tenantId}:${operation.idempotencyKey}`, operation.context.operationId);
     }
     for (const step of snapshot?.steps ?? [])
-      this.#steps.set(
-        `${step.operationId}:${step.ordinal}`,
-        structuredClone(step),
-      );
-    this.#events.push(
-      ...(snapshot?.events ?? []).map((event) => structuredClone(event)),
-    );
+      this.#steps.set(`${step.operationId}:${step.ordinal}`, structuredClone(step));
+    this.#events.push(...(snapshot?.events ?? []).map((event) => structuredClone(event)));
     for (const receipt of snapshot?.receipts ?? [])
-      this.#receipts.set(
-        `${receipt.operationId}:${receipt.stepId}:${receipt.inputDigest}`,
-        structuredClone(receipt),
-      );
+      this.#receipts.set(`${receipt.operationId}:${receipt.stepId}:${receipt.inputDigest}`, structuredClone(receipt));
   }
 
   create(
@@ -114,17 +100,13 @@ export class InMemoryOperationLedger {
     stepNames: readonly string[],
   ): OperationRecord {
     const inputDigest = sha256Digest(input);
-    const priorId = this.#idempotency.get(
-      `${context.tenantId}:${idempotencyKey}`,
-    );
+    const priorId = this.#idempotency.get(`${context.tenantId}:${idempotencyKey}`);
     if (priorId) {
       const prior = this.#operations.get(priorId)!;
-      if (prior.inputDigest !== inputDigest)
-        throw new Error("IDEMPOTENCY_CONFLICT");
+      if (prior.inputDigest !== inputDigest) throw new Error("IDEMPOTENCY_CONFLICT");
       return structuredClone(prior);
     }
-    if (this.#operations.has(context.operationId))
-      throw new Error("IDEMPOTENCY_CONFLICT");
+    if (this.#operations.has(context.operationId)) throw new Error("IDEMPOTENCY_CONFLICT");
     const now = this.clock.now().toISOString();
     const operation = {
       context: structuredClone(context),
@@ -136,16 +118,10 @@ export class InMemoryOperationLedger {
       updatedAt: now,
     } satisfies OperationRecord;
     this.#operations.set(context.operationId, operation);
-    this.#idempotency.set(
-      `${context.tenantId}:${idempotencyKey}`,
-      context.operationId,
-    );
+    this.#idempotency.set(`${context.tenantId}:${idempotencyKey}`, context.operationId);
     stepNames.forEach((name, ordinal) =>
       this.#steps.set(`${context.operationId}:${ordinal}`, {
-        id: deterministicUuid(
-          "step",
-          `${context.operationId}:${ordinal}:${name}`,
-        ),
+        id: deterministicUuid("step", `${context.operationId}:${ordinal}:${name}`),
         operationId: context.operationId,
         name,
         ordinal,
@@ -163,9 +139,7 @@ export class InMemoryOperationLedger {
     return value && structuredClone(value);
   }
   list() {
-    return [...this.#operations.values()].map((operation) =>
-      structuredClone(operation),
-    );
+    return [...this.#operations.values()].map((operation) => structuredClone(operation));
   }
   listSteps(operationId: string) {
     return [...this.#steps.values()]
@@ -174,9 +148,7 @@ export class InMemoryOperationLedger {
       .map((step) => structuredClone(step));
   }
   events(operationId: string) {
-    return this.#events
-      .filter((event) => event.operationId === operationId)
-      .map((event) => structuredClone(event));
+    return this.#events.filter((event) => event.operationId === operationId).map((event) => structuredClone(event));
   }
   receipts(operationId: string) {
     return [...this.#receipts.values()]
@@ -184,17 +156,12 @@ export class InMemoryOperationLedger {
       .map((receipt) => structuredClone(receipt));
   }
 
-  claim(
-    operationId: string,
-    owner: string,
-    leaseMs: number,
-  ): StepRecord | undefined {
+  claim(operationId: string, owner: string, leaseMs: number): StepRecord | undefined {
     const now = this.clock.now();
     const step = this.listSteps(operationId).find(
       (candidate) =>
         candidate.state === "pending" ||
-        (candidate.state === "leased" &&
-          Date.parse(candidate.leaseExpiresAt!) <= now.getTime()),
+        (candidate.state === "leased" && Date.parse(candidate.leaseExpiresAt!) <= now.getTime()),
     );
     if (!step) return undefined;
     const stored = this.#steps.get(`${operationId}:${step.ordinal}`)!;
@@ -225,17 +192,10 @@ export class InMemoryOperationLedger {
     } as JsonValue);
     return structuredClone(stored);
   }
-  heartbeat(
-    operationId: string,
-    stepId: string,
-    leaseToken: string,
-    leaseMs: number,
-  ): StepRecord {
+  heartbeat(operationId: string, stepId: string, leaseToken: string, leaseMs: number): StepRecord {
     const stored = this.#findStep(operationId, stepId);
     this.#assertLease(stored, leaseToken);
-    stored.leaseExpiresAt = new Date(
-      this.clock.now().getTime() + leaseMs,
-    ).toISOString();
+    stored.leaseExpiresAt = new Date(this.clock.now().getTime() + leaseMs).toISOString();
     return structuredClone(stored);
   }
   complete(
@@ -249,8 +209,7 @@ export class InMemoryOperationLedger {
     const previous = this.#receipts.get(key);
     const outputDigest = sha256Digest(output);
     if (previous) {
-      if (previous.outputDigest !== outputDigest)
-        throw new Error("IDEMPOTENCY_CONFLICT");
+      if (previous.outputDigest !== outputDigest) throw new Error("IDEMPOTENCY_CONFLICT");
       return structuredClone(previous);
     }
     const stored = this.#findStep(operationId, stepId);
@@ -279,12 +238,7 @@ export class InMemoryOperationLedger {
     this.reconcile(operationId);
     return structuredClone(receipt);
   }
-  fail(
-    operationId: string,
-    stepId: string,
-    leaseToken: string,
-    retryable: boolean,
-  ): void {
+  fail(operationId: string, stepId: string, leaseToken: string, retryable: boolean): void {
     const stored = this.#findStep(operationId, stepId);
     this.#assertLease(stored, leaseToken);
     stored.state = retryable ? "pending" : "failed";
@@ -297,10 +251,8 @@ export class InMemoryOperationLedger {
   cancel(operationId: string): OperationRecord {
     const operation = this.#operations.get(operationId);
     if (!operation) throw new Error("Operation not found");
-    if (["succeeded", "cancelled"].includes(operation.state))
-      return structuredClone(operation);
-    if (operation.state === "failed")
-      throw new Error("INVALID_STATE_TRANSITION");
+    if (["succeeded", "cancelled"].includes(operation.state)) return structuredClone(operation);
+    if (operation.state === "failed") throw new Error("INVALID_STATE_TRANSITION");
     operation.state = "cancelled";
     operation.rowVersion++;
     operation.updatedAt = this.clock.now().toISOString();
@@ -310,8 +262,7 @@ export class InMemoryOperationLedger {
   retry(operationId: string): OperationRecord {
     const operation = this.#operations.get(operationId);
     if (!operation) throw new Error("Operation not found");
-    if (operation.state !== "failed")
-      throw new Error("INVALID_STATE_TRANSITION");
+    if (operation.state !== "failed") throw new Error("INVALID_STATE_TRANSITION");
     for (const step of this.#steps.values())
       if (step.operationId === operationId && step.state === "failed") {
         step.state = "pending";
@@ -330,18 +281,14 @@ export class InMemoryOperationLedger {
       operations: this.list(),
       steps: [...this.#steps.values()].map((step) => structuredClone(step)),
       events: this.#events.map((event) => structuredClone(event)),
-      receipts: [...this.#receipts.values()].map((receipt) =>
-        structuredClone(receipt),
-      ),
+      receipts: [...this.#receipts.values()].map((receipt) => structuredClone(receipt)),
     };
   }
   reconcile(operationId: string): OperationRecord {
     const operation = this.#operations.get(operationId);
     if (!operation) throw new Error("Operation not found");
     const steps = this.listSteps(operationId);
-    const desired: OperationState = steps.some(
-      (step) => step.state === "failed",
-    )
+    const desired: OperationState = steps.some((step) => step.state === "failed")
       ? "failed"
       : steps.length > 0 && steps.every((step) => step.state === "succeeded")
         ? "succeeded"
@@ -361,9 +308,7 @@ export class InMemoryOperationLedger {
     return structuredClone(operation);
   }
   #findStep(operationId: string, stepId: string) {
-    const value = [...this.#steps.values()].find(
-      (step) => step.operationId === operationId && step.id === stepId,
-    );
+    const value = [...this.#steps.values()].find((step) => step.operationId === operationId && step.id === stepId);
     if (!value) throw new Error("Step not found");
     return value;
   }
@@ -376,9 +321,7 @@ export class InMemoryOperationLedger {
       throw new Error("STALE_LEASE");
   }
   #append(operationId: string, type: string, payload: JsonValue): LedgerEvent {
-    const sequence =
-      this.#events.filter((event) => event.operationId === operationId).length +
-      1;
+    const sequence = this.#events.filter((event) => event.operationId === operationId).length + 1;
     const event = {
       id: deterministicUuid("event", `${operationId}:${sequence}`),
       operationId,

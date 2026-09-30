@@ -6,11 +6,7 @@ const tenant = "11111111-1111-4111-8111-111111111111",
   token = "x".repeat(16),
   headers = { authorization: `Bearer ${token}`, "x-tenant-id": tenant };
 const resolve =
-  (
-    actor: unknown,
-    scopes: readonly string[] = ["verification.drift.consume"],
-    grantTenant = tenant,
-  ) =>
+  (actor: unknown, scopes: readonly string[] = ["verification.drift.consume"], grantTenant = tenant) =>
   (candidate: string) =>
     candidate === token
       ? ({
@@ -21,34 +17,30 @@ const resolve =
 const queue = (extra: Record<string, unknown> = {}) => ({
   serviceIdentities: ["mission_control_client"] as const,
   scan: vi.fn().mockResolvedValue({ planned: 1, alreadyPlanned: 0 }),
-  claim: vi
-    .fn()
-    .mockResolvedValue([
-      {
-        id,
-        observationArtifactId: id,
-        sourceOperationId: id,
-        dimensions: ["model"],
-        disposition: "review_required",
-        reviewReason: "MODEL_DRIFT_REVIEW_REQUIRED",
-        claimToken: id,
-        ...extra,
-      },
-    ]),
+  claim: vi.fn().mockResolvedValue([
+    {
+      id,
+      observationArtifactId: id,
+      sourceOperationId: id,
+      dimensions: ["model"],
+      disposition: "review_required",
+      reviewReason: "MODEL_DRIFT_REVIEW_REQUIRED",
+      claimToken: id,
+      ...extra,
+    },
+  ]),
   ack: vi.fn().mockResolvedValue(undefined),
-  listAlerts: vi
-    .fn()
-    .mockResolvedValue([
-      {
-        id,
-        observationArtifactId: id,
-        sourceOperationId: id,
-        dimensions: ["model"],
-        reviewReason: "MODEL_DRIFT_REVIEW_REQUIRED",
-        publishedAt: "2026-09-08T00:00:00.000Z",
-        ...extra,
-      },
-    ]),
+  listAlerts: vi.fn().mockResolvedValue([
+    {
+      id,
+      observationArtifactId: id,
+      sourceOperationId: id,
+      dimensions: ["model"],
+      reviewReason: "MODEL_DRIFT_REVIEW_REQUIRED",
+      publishedAt: "2026-09-08T00:00:00.000Z",
+      ...extra,
+    },
+  ]),
 });
 const service = {
   kind: "service",
@@ -161,42 +153,14 @@ describe("internal drift revalidation routes", () => {
     const q = queue();
     for (const [actor, scopes, requestHeaders, payload, status] of [
       [service, [], headers, { limit: 1 }, 403],
-      [
-        service,
-        ["verification.drift.consume"],
-        { ...headers, "x-tenant-id": otherTenant },
-        { limit: 1 },
-        403,
-      ],
-      [
-        { kind: "human", id },
-        ["verification.drift.consume"],
-        headers,
-        { limit: 1 },
-        403,
-      ],
+      [service, ["verification.drift.consume"], { ...headers, "x-tenant-id": otherTenant }, { limit: 1 }, 403],
+      [{ kind: "human", id }, ["verification.drift.consume"], headers, { limit: 1 }, 403],
       [service, ["verification.drift.consume"], headers, { limit: 101 }, 400],
-      [
-        service,
-        ["verification.drift.consume"],
-        headers,
-        { limit: 1, owner: "injected" },
-        400,
-      ],
-      [
-        service,
-        ["verification.drift.consume"],
-        headers,
-        { limit: 1, visibilityTimeoutMs: 1000, claimToken: id },
-        400,
-      ],
+      [service, ["verification.drift.consume"], headers, { limit: 1, owner: "injected" }, 400],
+      [service, ["verification.drift.consume"], headers, { limit: 1, visibilityTimeoutMs: 1000, claimToken: id }, 400],
     ] as const) {
       const api = buildServer({
-        resolveIdentity: resolve(
-          actor,
-          scopes,
-          requestHeaders["x-tenant-id"] === otherTenant ? tenant : tenant,
-        ),
+        resolveIdentity: resolve(actor, scopes, requestHeaders["x-tenant-id"] === otherTenant ? tenant : tenant),
         verificationDriftRevalidation: q,
       });
       const result = await api.inject({

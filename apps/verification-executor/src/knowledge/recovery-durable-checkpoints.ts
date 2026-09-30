@@ -1,4 +1,8 @@
-import { CheckpointScopeSchema, type CheckpointScope, type CheckpointProfilePins } from "@aiengineer/knowledge-contracts";
+import {
+  CheckpointScopeSchema,
+  type CheckpointScope,
+  type CheckpointProfilePins,
+} from "@aiengineer/knowledge-contracts";
 import type { CheckpointApplicationService, DurableRecoveryCheckpoints } from "@aiengineer/knowledge-application";
 
 export function createDurableRecoveryCheckpoints(input: {

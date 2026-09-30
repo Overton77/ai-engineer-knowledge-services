@@ -38,28 +38,20 @@ describe("provider JSON preflight failure precedence", () => {
 
   it("reports an aliased subtree as PROVIDER_RESPONSE_INVALID", () => {
     const shared = { v: 1 };
-    expect(failureCode({ a: shared, b: shared })).toBe(
-      "PROVIDER_RESPONSE_INVALID",
-    );
+    expect(failureCode({ a: shared, b: shared })).toBe("PROVIDER_RESPONSE_INVALID");
   });
 
   it("reports depth beyond the limit as PROVIDER_RESPONSE_INVALID", () => {
-    expect(failureCode(nestedArrays(limits.maximumDepth + 1))).toBe(
-      "PROVIDER_RESPONSE_INVALID",
-    );
+    expect(failureCode(nestedArrays(limits.maximumDepth + 1))).toBe("PROVIDER_RESPONSE_INVALID");
   });
 
   it("reports node count beyond the limit as PROVIDER_RESPONSE_INVALID", () => {
-    const wide = Array.from({ length: 8 }, () =>
-      Array.from({ length: 8 }, () => [1, 1]),
-    );
+    const wide = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => [1, 1]));
     expect(failureCode(wide)).toBe("PROVIDER_RESPONSE_INVALID");
   });
 
   it("reports an aggregate UTF-8 string budget overrun as PROVIDER_RESPONSE_TOO_LARGE", () => {
-    expect(failureCode({ text: "é".repeat(40) })).toBe(
-      "PROVIDER_RESPONSE_TOO_LARGE",
-    );
+    expect(failureCode({ text: "é".repeat(40) })).toBe("PROVIDER_RESPONSE_TOO_LARGE");
   });
 
   it("charges object keys to the same UTF-8 budget", () => {
@@ -69,9 +61,7 @@ describe("provider JSON preflight failure precedence", () => {
   });
 
   it("reports an oversized array as PROVIDER_RESPONSE_INVALID", () => {
-    expect(failureCode(Array.from({ length: 9 }, () => 1))).toBe(
-      "PROVIDER_RESPONSE_INVALID",
-    );
+    expect(failureCode(Array.from({ length: 9 }, () => 1))).toBe("PROVIDER_RESPONSE_INVALID");
   });
 
   it("checks object entry count before charging its keys", () => {

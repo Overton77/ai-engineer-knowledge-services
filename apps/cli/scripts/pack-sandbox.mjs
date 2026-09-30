@@ -24,18 +24,24 @@ const BIN = { ks: "index.js" };
 const BUILD_HINT = "run `pnpm --filter @aiengineer/knowledge-cli... build` first";
 const DISTRIBUTION = "platform-cli";
 
-const fail = (message) => { console.error(message); process.exit(2); };
+const fail = (message) => {
+  console.error(message);
+  process.exit(2);
+};
 
 const pkg = JSON.parse(readFileSync(join(appDir, "package.json"), "utf8"));
-const versionOf = (name) => JSON.parse(readFileSync(join(appDir, "node_modules", name, "package.json"), "utf8")).version;
+const versionOf = (name) =>
+  JSON.parse(readFileSync(join(appDir, "node_modules", name, "package.json"), "utf8")).version;
 const metafilePath = join(appDir, "dist", "metafile-esm.json");
-if (!existsSync(join(appDir, "dist", BIN.ks)) || !existsSync(metafilePath)) fail(`dist/${BIN.ks} or its metafile is missing — ${BUILD_HINT}`);
+if (!existsSync(join(appDir, "dist", BIN.ks)) || !existsSync(metafilePath))
+  fail(`dist/${BIN.ks} or its metafile is missing — ${BUILD_HINT}`);
 const metafile = JSON.parse(readFileSync(metafilePath, "utf8"));
 if (!metafile.outputs || typeof metafile.outputs !== "object") fail("esbuild metafile has no outputs");
 
 // Every JavaScript output ships: the entry and the chunks it imports statically or lazily.
 const outputs = Object.entries(metafile.outputs).filter(([path]) => path.endsWith(".js"));
-if (!outputs.some(([path]) => resolve(appDir, path) === join(appDir, "dist", BIN.ks))) fail(`esbuild metafile does not describe dist/${BIN.ks}`);
+if (!outputs.some(([path]) => resolve(appDir, path) === join(appDir, "dist", BIN.ks)))
+  fail(`esbuild metafile does not describe dist/${BIN.ks}`);
 const runtimeImportKinds = new Set(["import-statement", "dynamic-import", "require-call", "require-resolve"]);
 const runtimePackages = new Set();
 for (const [path, output] of outputs) {
@@ -56,19 +62,25 @@ for (const [path, output] of outputs) {
     const specifier = item.path;
     if (typeof specifier !== "string" || specifier.length === 0) fail(`invalid external import in ${path}`);
     if (specifier.startsWith("node:")) continue;
-    if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.startsWith("file:")) fail(`${path} imports unpacked local module ${specifier}`);
+    if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.startsWith("file:"))
+      fail(`${path} imports unpacked local module ${specifier}`);
     const name = specifier.startsWith("@") ? specifier.split("/").slice(0, 2).join("/") : specifier.split("/")[0];
-    if (name.startsWith("@aiengineer/")) fail(`${path} imports workspace package ${name}; workspace packages must be inlined`);
+    if (name.startsWith("@aiengineer/"))
+      fail(`${path} imports workspace package ${name}; workspace packages must be inlined`);
     if (!builtinModules.includes(name)) runtimePackages.add(name);
   }
 }
 const undeclared = [...runtimePackages].filter((name) => !pkg.dependencies?.[name]);
-if (undeclared.length > 0) fail(`the bundle imports ${undeclared.join(", ")} but package.json does not declare them as runtime dependencies`);
+if (undeclared.length > 0)
+  fail(`the bundle imports ${undeclared.join(", ")} but package.json does not declare them as runtime dependencies`);
 const dependencies = Object.fromEntries([...runtimePackages].sort().map((name) => [name, versionOf(name)]));
 
 // The skills this distribution serves; a silently thinner tarball is not acceptable.
 const manifest = JSON.parse(readFileSync(join(repository, "skills", "manifest.json"), "utf8"));
-const skills = manifest.skills.filter((skill) => (skill.surfaces ?? []).includes(DISTRIBUTION)).map((skill) => skill.id).sort();
+const skills = manifest.skills
+  .filter((skill) => (skill.surfaces ?? []).includes(DISTRIBUTION))
+  .map((skill) => skill.id)
+  .sort();
 if (skills.length === 0) fail(`skills/manifest.json declares no ${DISTRIBUTION} skill`);
 const missing = skills.filter((name) => !existsSync(join(repository, "skills", name, "SKILL.md")));
 if (missing.length > 0) fail(`required ks skills are missing: ${missing.join(", ")}`);
@@ -82,26 +94,48 @@ copyFileSync(join(appDir, "README.md"), join(stage, "README.md"));
 
 writeFileSync(
   join(stage, "package.json"),
-  `${JSON.stringify({
-    name: "ks",
-    version: pkg.version,
-    description: "Knowledge Services command line: remote commands through KnowledgeClient and the local file-store profile",
-    license: "UNLICENSED",
-    private: false,
-    type: "module",
-    bin: Object.fromEntries(Object.entries(BIN).map(([bin, file]) => [bin, `./dist/${file}`])),
-    files: ["dist", "skills", "README.md"],
-    engines: { node: ">=22" },
-    dependencies,
-  }, null, 2)}\n`,
+  `${JSON.stringify(
+    {
+      name: "ks",
+      version: pkg.version,
+      description:
+        "Knowledge Services command line: remote commands through KnowledgeClient and the local file-store profile",
+      license: "UNLICENSED",
+      private: false,
+      type: "module",
+      bin: Object.fromEntries(Object.entries(BIN).map(([bin, file]) => [bin, `./dist/${file}`])),
+      files: ["dist", "skills", "README.md"],
+      engines: { node: ">=22" },
+      dependencies,
+    },
+    null,
+    2,
+  )}\n`,
 );
 
-const packOutput = execFileSync(process.platform === "win32" ? "npm.cmd" : "npm", ["pack", "--json", "--pack-destination", process.platform === "win32" ? `"${stage}"` : stage],
-  { cwd: stage, encoding: "utf8", shell: process.platform === "win32" });
+const packOutput = execFileSync(
+  process.platform === "win32" ? "npm.cmd" : "npm",
+  ["pack", "--json", "--pack-destination", process.platform === "win32" ? `"${stage}"` : stage],
+  { cwd: stage, encoding: "utf8", shell: process.platform === "win32" },
+);
 const packed = JSON.parse(packOutput)[0];
 const tarball = join(stage, packed.filename);
 const digest = createHash("sha256").update(readFileSync(tarball)).digest("hex");
 writeFileSync(join(stage, "TARBALL"), `${tarball}\n`);
 writeFileSync(join(stage, "TARBALL.sha256"), `${digest}\n`);
 if (process.argv.includes("--print")) console.log(tarball);
-else console.log(JSON.stringify({ tarball, bytes: packed.size, files: packed.entryCount, sha256: digest, dependencies: Object.keys(dependencies), skills }, null, 2));
+else
+  console.log(
+    JSON.stringify(
+      {
+        tarball,
+        bytes: packed.size,
+        files: packed.entryCount,
+        sha256: digest,
+        dependencies: Object.keys(dependencies),
+        skills,
+      },
+      null,
+      2,
+    ),
+  );

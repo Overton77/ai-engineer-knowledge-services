@@ -17,19 +17,15 @@ function messageOf(fn: () => unknown): string {
  * retrieval stage runs, not after.
  */
 export function planAndAdmissionExample() {
-  const plan = buildRetrievalPlan(
-    "How to implement an API; compare tools?",
-    policy,
-    { hardFilters: [{ field: "language", op: "eq", value: "en" }] },
-  );
+  const plan = buildRetrievalPlan("How to implement an API; compare tools?", policy, {
+    hardFilters: [{ field: "language", op: "eq", value: "en" }],
+  });
 
   const restrictedPolicy: RetrievalPolicy = {
     ...policy,
     admittedSpaces: ["engineering_claims"],
   };
-  const spaceDenied = messageOf(() =>
-    buildRetrievalPlan("benchmark metrics", restrictedPolicy),
-  );
+  const spaceDenied = messageOf(() => buildRetrievalPlan("benchmark metrics", restrictedPolicy));
 
   const filterDenied = messageOf(() =>
     buildRetrievalPlan("agent-loop", policy, {
@@ -45,5 +41,4 @@ export function planAndAdmissionExample() {
   };
 }
 
-if (process.argv[1]?.includes("01-plan-and-admission"))
-  printJson(planAndAdmissionExample());
+if (process.argv[1]?.includes("01-plan-and-admission")) printJson(planAndAdmissionExample());

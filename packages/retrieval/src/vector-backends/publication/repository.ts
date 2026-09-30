@@ -15,9 +15,7 @@ export class InMemoryPublicationRepository implements PublicationRepository {
   #events: PublicationEvent[] = [];
   #tail: Promise<void> = Promise.resolve();
 
-  async transaction<T>(
-    operation: (transaction: PublicationTransaction) => T | Promise<T>,
-  ): Promise<T> {
+  async transaction<T>(operation: (transaction: PublicationTransaction) => T | Promise<T>): Promise<T> {
     let release!: () => void;
     const turn = new Promise<void>((resolve) => {
       release = resolve;
@@ -40,30 +38,17 @@ export class InMemoryPublicationRepository implements PublicationRepository {
     }
   }
 
-  async getPublication(
-    tenantId: string,
-    publicationId: string,
-  ): Promise<ExploratoryPublication | undefined> {
+  async getPublication(tenantId: string, publicationId: string): Promise<ExploratoryPublication | undefined> {
     return this.#publications.get(publicationKey(tenantId, publicationId));
   }
 
-  async getActivePointer(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): Promise<ActivePublicationPointer | undefined> {
+  async getActivePointer(tenantId: string, vectorStoreSpaceId: string): Promise<ActivePublicationPointer | undefined> {
     return this.#pointers.get(pointerKey(tenantId, vectorStoreSpaceId));
   }
 
-  async listEvents(
-    tenantId: string,
-    vectorStoreSpaceId: string,
-  ): Promise<readonly PublicationEvent[]> {
+  async listEvents(tenantId: string, vectorStoreSpaceId: string): Promise<readonly PublicationEvent[]> {
     return Object.freeze(
-      this.#events.filter(
-        (event) =>
-          event.tenantId === tenantId &&
-          event.vectorStoreSpaceId === vectorStoreSpaceId,
-      ),
+      this.#events.filter((event) => event.tenantId === tenantId && event.vectorStoreSpaceId === vectorStoreSpaceId),
     );
   }
 }
@@ -74,35 +59,18 @@ export function transactionView(
   events: PublicationEvent[],
 ): PublicationTransaction {
   return {
-    getPublication: (tenantId, publicationId) =>
-      publications.get(publicationKey(tenantId, publicationId)),
-    getActivePointer: (tenantId, vectorStoreSpaceId) =>
-      pointers.get(pointerKey(tenantId, vectorStoreSpaceId)),
+    getPublication: (tenantId, publicationId) => publications.get(publicationKey(tenantId, publicationId)),
+    getActivePointer: (tenantId, vectorStoreSpaceId) => pointers.get(pointerKey(tenantId, vectorStoreSpaceId)),
     insertPublication: (publication) => {
       const key = publicationKey(publication.tenantId, publication.id);
       if (publications.has(key))
-        throw new VectorBackendError(
-          "DUPLICATE_PUBLICATION",
-          `Publication ${publication.id} already exists`,
-        );
+        throw new VectorBackendError("DUPLICATE_PUBLICATION", `Publication ${publication.id} already exists`);
       publications.set(key, publication);
     },
-    setActivePointer: (pointer) =>
-      pointers.set(
-        pointerKey(pointer.tenantId, pointer.vectorStoreSpaceId),
-        pointer,
-      ),
+    setActivePointer: (pointer) => pointers.set(pointerKey(pointer.tenantId, pointer.vectorStoreSpaceId), pointer),
     appendEvent: (event) => {
-      if (
-        events.some(
-          (candidate) =>
-            candidate.tenantId === event.tenantId && candidate.id === event.id,
-        )
-      )
-        throw new VectorBackendError(
-          "DUPLICATE_EVENT",
-          `Event ${event.id} already exists`,
-        );
+      if (events.some((candidate) => candidate.tenantId === event.tenantId && candidate.id === event.id))
+        throw new VectorBackendError("DUPLICATE_EVENT", `Event ${event.id} already exists`);
       events.push(event);
     },
   };
@@ -114,9 +82,7 @@ export function publicationKey(tenantId: string, publicationId: string): string 
 export function pointerKey(tenantId: string, vectorStoreSpaceId: string): string {
   return `${tenantId}\u0000${vectorStoreSpaceId}`;
 }
-export function freezePublication(
-  publication: ExploratoryPublication,
-): ExploratoryPublication {
+export function freezePublication(publication: ExploratoryPublication): ExploratoryPublication {
   return Object.freeze({
     ...publication,
     manifests: Object.freeze({ ...publication.manifests }),

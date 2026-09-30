@@ -3,8 +3,7 @@ import { walkBoundedJson } from "../internal/bounded-json.js";
 import { ProviderFailure } from "./port.js";
 
 const encoder = new TextEncoder();
-const utf8ByteLength = (value: string): number =>
-  encoder.encode(value).byteLength;
+const utf8ByteLength = (value: string): number => encoder.encode(value).byteLength;
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 
@@ -32,10 +31,7 @@ const RESPONSE_BODY_LIMITS = {
 } as const;
 
 /** Strings and keys are measured in UTF-8 bytes; only the aggregate string budget is a size failure. */
-export function preflightJson(
-  value: unknown,
-  limits: JsonPreflightLimits,
-): void {
+export function preflightJson(value: unknown, limits: JsonPreflightLimits): void {
   const violation = walkBoundedJson(value, {
     limits: { ...limits, maximumStringBudget: limits.maximumStringBytes },
     measure: { string: utf8ByteLength, key: utf8ByteLength },
@@ -45,25 +41,19 @@ export function preflightJson(
   });
   if (!violation) return;
   throw new ProviderFailure(
-    violation.kind === "string_budget"
-      ? "PROVIDER_RESPONSE_TOO_LARGE"
-      : "PROVIDER_RESPONSE_INVALID",
+    violation.kind === "string_budget" ? "PROVIDER_RESPONSE_TOO_LARGE" : "PROVIDER_RESPONSE_INVALID",
     false,
   );
 }
 
 /** Canonical JSON bytes of an outbound body, rejected as input policy when they exceed the budget. */
-export function boundedJsonBytes(
-  value: unknown,
-  maximumBytes: number,
-): Uint8Array {
+export function boundedJsonBytes(value: unknown, maximumBytes: number): Uint8Array {
   preflightJson(value, {
     ...REQUEST_BODY_LIMITS,
     maximumStringBytes: maximumBytes,
   });
   const bytes = encoder.encode(canonicalizeJson(value));
-  if (bytes.byteLength > maximumBytes)
-    throw new ProviderFailure("PROVIDER_INPUT_POLICY_REJECTED", false);
+  if (bytes.byteLength > maximumBytes) throw new ProviderFailure("PROVIDER_INPUT_POLICY_REJECTED", false);
   return bytes;
 }
 
@@ -73,8 +63,7 @@ export async function boundedResponseBytes(
   maximumBytes: number,
   signal?: AbortSignal,
 ): Promise<Uint8Array> {
-  if (!response.body)
-    throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
+  if (!response.body) throw new ProviderFailure("PROVIDER_RESPONSE_INVALID", false);
   const reader = response.body.getReader();
   const pieces: Uint8Array[] = [];
   let length = 0;
@@ -90,8 +79,7 @@ export async function boundedResponseBytes(
       pieces.push(part.value);
     }
   } catch (error) {
-    if (signal?.aborted)
-      throw new ProviderFailure("PROVIDER_DEADLINE_EXCEEDED", false);
+    if (signal?.aborted) throw new ProviderFailure("PROVIDER_DEADLINE_EXCEEDED", false);
     if (error instanceof ProviderFailure) throw error;
     throw new ProviderFailure("PROVIDER_NETWORK_FAILURE", true);
   }
@@ -104,14 +92,9 @@ export async function boundedResponseBytes(
   return bytes;
 }
 
-export function parseBoundedResponseJson(
-  bytes: Uint8Array,
-  maximumBytes: number,
-): unknown {
+export function parseBoundedResponseJson(bytes: Uint8Array, maximumBytes: number): unknown {
   try {
-    const value: unknown = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(bytes),
-    );
+    const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     preflightJson(value, {
       ...RESPONSE_BODY_LIMITS,
       maximumStringBytes: maximumBytes,
@@ -139,39 +122,21 @@ export function requestSignal(execution: ProviderExecution): {
   readonly signal: AbortSignal;
   readonly release: () => void;
 } {
-  if (execution.signal?.aborted)
-    throw new ProviderFailure("PROVIDER_CANCELLED", false);
+  if (execution.signal?.aborted) throw new ProviderFailure("PROVIDER_CANCELLED", false);
   const remaining =
-    execution.deadlineEpochMs === undefined
-      ? DEFAULT_REQUEST_TIMEOUT_MS
-      : execution.deadlineEpochMs - Date.now();
-  if (!Number.isFinite(remaining) || remaining <= 0)
-    throw new ProviderFailure("PROVIDER_DEADLINE_EXCEEDED", false);
-  const timeout = AbortSignal.timeout(
-    Math.min(remaining, DEFAULT_REQUEST_TIMEOUT_MS),
-  );
-  const signal = execution.signal
-    ? AbortSignal.any([execution.signal, timeout])
-    : timeout;
+    execution.deadlineEpochMs === undefined ? DEFAULT_REQUEST_TIMEOUT_MS : execution.deadlineEpochMs - Date.now();
+  if (!Number.isFinite(remaining) || remaining <= 0) throw new ProviderFailure("PROVIDER_DEADLINE_EXCEEDED", false);
+  const timeout = AbortSignal.timeout(Math.min(remaining, DEFAULT_REQUEST_TIMEOUT_MS));
+  const signal = execution.signal ? AbortSignal.any([execution.signal, timeout]) : timeout;
   return { signal, release: () => undefined };
 }
 
 /** Maps an aborted signal to cancellation (caller's signal) or deadline (timeout). */
-export function requireActive(
-  signal: AbortSignal,
-  execution: { readonly signal?: AbortSignal },
-): void {
+export function requireActive(signal: AbortSignal, execution: { readonly signal?: AbortSignal }): void {
   if (!signal.aborted) return;
   throw abortFailure(execution);
 }
 
-export function abortFailure(execution: {
-  readonly signal?: AbortSignal;
-}): ProviderFailure {
-  return new ProviderFailure(
-    execution.signal?.aborted
-      ? "PROVIDER_CANCELLED"
-      : "PROVIDER_DEADLINE_EXCEEDED",
-    false,
-  );
+export function abortFailure(execution: { readonly signal?: AbortSignal }): ProviderFailure {
+  return new ProviderFailure(execution.signal?.aborted ? "PROVIDER_CANCELLED" : "PROVIDER_DEADLINE_EXCEEDED", false);
 }

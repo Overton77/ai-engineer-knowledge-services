@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildServer } from "../server.js";
-const id = (n: number) =>
-    `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
   tenant = id(1),
   operationId = id(2),
   actor = {
@@ -72,15 +71,11 @@ const options = (
   }),
 ) => ({
   resolveIdentity: identity,
-  ...(read
-    ? { verificationAdjudicationReadService: { getPendingSubject: read } }
-    : {}),
+  ...(read ? { verificationAdjudicationReadService: { getPendingSubject: read } } : {}),
 });
 describe("adjudication terminal read", () => {
   it("rejects a schema-valid foreign terminal projection", async () => {
-    const s = buildServer(
-      options(async () => ({ ...value, tenantId: id(99) })),
-    );
+    const s = buildServer(options(async () => ({ ...value, tenantId: id(99) })));
     try {
       const response = await s.inject({
         method: "GET",

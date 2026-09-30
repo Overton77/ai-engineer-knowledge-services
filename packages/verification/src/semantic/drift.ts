@@ -12,9 +12,7 @@ export function observeSemanticModelDrift(input: {
   readonly returnedModel?: string;
   readonly deploymentId: string;
 }): SemanticDriftObservation {
-  const drifted =
-    input.returnedModel !== undefined &&
-    input.returnedModel !== input.requestedModel;
+  const drifted = input.returnedModel !== undefined && input.returnedModel !== input.requestedModel;
   return Object.freeze({
     ...input,
     drifted,

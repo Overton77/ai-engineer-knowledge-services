@@ -4,10 +4,19 @@ import { assertAcyclic, convertStructuralDocument, normalizeDocumentText } from 
 
 const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 const input = {
-  tenantId: id(1), representationId: id(2), createdAt: "2026-09-03T12:00:00Z",
+  tenantId: id(1),
+  representationId: id(2),
+  createdAt: "2026-09-03T12:00:00Z",
   blocks: [
     { localKey: "h", ordinal: 0, kind: "heading" as const, text: "  Retrieval  " },
-    { localKey: "p", parentKey: "h", ordinal: 0, kind: "paragraph" as const, text: "Stable   spans.", locator: { page: 1, startOffset: 0, endOffset: 13 } },
+    {
+      localKey: "p",
+      parentKey: "h",
+      ordinal: 0,
+      kind: "paragraph" as const,
+      text: "Stable   spans.",
+      locator: { page: 1, startOffset: 0, endOffset: 13 },
+    },
   ],
 };
 
@@ -30,18 +39,35 @@ describe("convertStructuralDocument", () => {
 
   it("changes the document digest when any block changes", () => {
     const base = convertStructuralDocument(input).digest;
-    expect(convertStructuralDocument({ ...input, blocks: [input.blocks[0]!, { ...input.blocks[1]!, text: "Stable spans!" }] }).digest).not.toBe(base);
-    expect(convertStructuralDocument({ ...input, blocks: [input.blocks[0]!, { ...input.blocks[1]!, role: "note" }] }).digest).not.toBe(base);
+    expect(
+      convertStructuralDocument({
+        ...input,
+        blocks: [input.blocks[0]!, { ...input.blocks[1]!, text: "Stable spans!" }],
+      }).digest,
+    ).not.toBe(base);
+    expect(
+      convertStructuralDocument({ ...input, blocks: [input.blocks[0]!, { ...input.blocks[1]!, role: "note" }] }).digest,
+    ).not.toBe(base);
   });
 
   it("rejects an unknown parent, a self parent, a cycle, a duplicate key and a duplicate sibling ordinal", () => {
     const [heading, paragraph] = input.blocks;
-    expect(() => convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "missing" }] })).toThrow(/Unknown parent/);
-    expect(() => convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "h" }] })).toThrow(/cannot parent itself/);
-    expect(() => convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "p" }, paragraph!] })).toThrow(/parent cycle/);
-    expect(() => convertStructuralDocument({ ...input, blocks: [heading!, { ...paragraph!, localKey: "h" }] })).toThrow(/must be unique/);
+    expect(() => convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "missing" }] })).toThrow(
+      /Unknown parent/,
+    );
+    expect(() => convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "h" }] })).toThrow(
+      /cannot parent itself/,
+    );
+    expect(() =>
+      convertStructuralDocument({ ...input, blocks: [{ ...heading!, parentKey: "p" }, paragraph!] }),
+    ).toThrow(/parent cycle/);
+    expect(() => convertStructuralDocument({ ...input, blocks: [heading!, { ...paragraph!, localKey: "h" }] })).toThrow(
+      /must be unique/,
+    );
     const { parentKey: _parentKey, ...rootParagraph } = paragraph!;
-    expect(() => convertStructuralDocument({ ...input, blocks: [heading!, { ...rootParagraph, ordinal: 0 }] })).toThrow(/Duplicate sibling ordinal/);
+    expect(() => convertStructuralDocument({ ...input, blocks: [heading!, { ...rootParagraph, ordinal: 0 }] })).toThrow(
+      /Duplicate sibling ordinal/,
+    );
   });
 });
 
@@ -56,6 +82,11 @@ describe("normalizeDocumentText", () => {
 describe("assertAcyclic", () => {
   it("passes a tree and rejects a two-block cycle", () => {
     expect(() => assertAcyclic(input.blocks)).not.toThrow();
-    expect(() => assertAcyclic([{ localKey: "a", parentKey: "b", ordinal: 0, kind: "paragraph", text: "a" }, { localKey: "b", parentKey: "a", ordinal: 0, kind: "paragraph", text: "b" }])).toThrow(/Structural parent cycle at a/);
+    expect(() =>
+      assertAcyclic([
+        { localKey: "a", parentKey: "b", ordinal: 0, kind: "paragraph", text: "a" },
+        { localKey: "b", parentKey: "a", ordinal: 0, kind: "paragraph", text: "b" },
+      ]),
+    ).toThrow(/Structural parent cycle at a/);
   });
 });

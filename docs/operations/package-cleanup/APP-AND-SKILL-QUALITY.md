@@ -44,7 +44,7 @@ At review time local `main` (`f62cc3e`) does **not** contain 5C: its implementat
 
 ### Q0 — quality gates (new slice, after 5C merges, before 5P)
 
-Branch `chore/ks-q0-quality-gates`. Mechanical; no behavior change.
+Branch `chore/ks-q0-quality-gates`. Mechanical; no behavior change. **Delivered 2026-09-29** (see the ledger's Q0 entry and `tools/quality/README.md`).
 
 - Toolchain (decided): **Biome** for format + lint and **dependency-cruiser** for architecture rules, pinned as root devDependencies.
 - One formatting-only commit over the repository, recorded in `.git-blame-ignore-revs`. Exclude generated files, fixtures, sealed evidence, vendored and historical receipts — byte-sensitive files must not change (verify digests of sealed/fixture inputs before and after).

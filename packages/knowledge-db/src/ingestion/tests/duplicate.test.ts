@@ -5,7 +5,16 @@ import { awaitWinnerReceipt, isIdempotencyKeyCollision, type DuplicateWaitPolicy
 function fakeClockPolicy(timeoutMs: number, backoffMs: number): DuplicateWaitPolicy & { readonly sleeps: number[] } {
   let clock = 0;
   const sleeps: number[] = [];
-  return { timeoutMs, backoffMs, now: () => clock, sleep: async (ms) => { sleeps.push(ms); clock += ms; }, sleeps };
+  return {
+    timeoutMs,
+    backoffMs,
+    now: () => clock,
+    sleep: async (ms) => {
+      sleeps.push(ms);
+      clock += ms;
+    },
+    sleeps,
+  };
 }
 
 const identity = { intentId: "openai-products-2026-09-11", idempotencyKey: "sha256:abc" };
@@ -16,8 +25,12 @@ describe("isIdempotencyKeyCollision", () => {
   });
 
   it("ignores other unique violations, other SQLSTATEs, and non-object errors", () => {
-    expect(isIdempotencyKeyCollision({ code: "23505", constraint: "knowledge_batch_tenant_id_idempotency_key_key" })).toBe(false);
-    expect(isIdempotencyKeyCollision({ code: "23503", constraint: "operation_intent_idempotency_key_key" })).toBe(false);
+    expect(
+      isIdempotencyKeyCollision({ code: "23505", constraint: "knowledge_batch_tenant_id_idempotency_key_key" }),
+    ).toBe(false);
+    expect(isIdempotencyKeyCollision({ code: "23503", constraint: "operation_intent_idempotency_key_key" })).toBe(
+      false,
+    );
     expect(isIdempotencyKeyCollision("23505")).toBe(false);
     expect(isIdempotencyKeyCollision(null)).toBe(false);
   });
@@ -35,8 +48,20 @@ describe("awaitWinnerReceipt", () => {
   it("fails DUPLICATE_PENDING naming the intent once the timeout elapses without a receipt", async () => {
     const policy = fakeClockPolicy(1_000, 400);
     let lookups = 0;
-    const pending = awaitWinnerReceipt(async () => { lookups += 1; return undefined; }, identity, policy);
-    await expect(pending).rejects.toMatchObject({ code: "DUPLICATE_PENDING", exit: 1, message: expect.stringContaining(identity.intentId), details: { ...identity, attempts: 4 } });
+    const pending = awaitWinnerReceipt(
+      async () => {
+        lookups += 1;
+        return undefined;
+      },
+      identity,
+      policy,
+    );
+    await expect(pending).rejects.toMatchObject({
+      code: "DUPLICATE_PENDING",
+      exit: 1,
+      message: expect.stringContaining(identity.intentId),
+      details: { ...identity, attempts: 4 },
+    });
     expect(policy.sleeps).toEqual([400, 400, 200]);
     expect(lookups).toBe(4);
   });

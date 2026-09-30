@@ -1,13 +1,6 @@
-import type {
-  VerificationBundle,
-  VerificationCheck,
-  VerificationSourceCapture,
-} from "@aiengineer/knowledge-contracts";
+import type { VerificationBundle, VerificationCheck, VerificationSourceCapture } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "../canonical/index.js";
-import type {
-  DeterministicVerificationOptions,
-  HydratedVerificationArtifact,
-} from "./bundle-verification.js";
+import type { DeterministicVerificationOptions, HydratedVerificationArtifact } from "./bundle-verification.js";
 import { CHECK, Checks } from "./checks.js";
 
 /** Identifier indexes over the parsed bundle plus the checks that found duplicate ids. */
@@ -24,9 +17,7 @@ export interface VerifiedCaptures {
   readonly verifiedArtifacts: ReadonlyMap<string, Uint8Array>;
 }
 
-type LineageAdmission = NonNullable<
-  DeterministicVerificationOptions["isProjectionLineageAdmitted"]
->;
+type LineageAdmission = NonNullable<DeterministicVerificationOptions["isProjectionLineageAdmitted"]>;
 
 const bytes = (value: string | Uint8Array): Uint8Array =>
   typeof value === "string" ? new TextEncoder().encode(value) : value;
@@ -36,22 +27,13 @@ export function indexBundle(
   artifacts: readonly HydratedVerificationArtifact[],
 ): BundleIndex {
   const sources = new Set(bundle.sources.map((source) => source.sourceId));
-  const artifactPayloads = new Map(
-    artifacts.map((artifact) => [artifact.artifactId, bytes(artifact.content)]),
-  );
-  const captures = new Map(
-    bundle.captures.map((capture) => [capture.captureId, capture]),
-  );
+  const artifactPayloads = new Map(artifacts.map((artifact) => [artifact.artifactId, bytes(artifact.content)]));
+  const captures = new Map(bundle.captures.map((capture) => [capture.captureId, capture]));
   const checks = new Checks();
-  if (sources.size !== bundle.sources.length)
-    checks.fail(CHECK.SOURCE_IDS_UNIQUE, "Source IDs must be unique.");
+  if (sources.size !== bundle.sources.length) checks.fail(CHECK.SOURCE_IDS_UNIQUE, "Source IDs must be unique.");
   if (artifactPayloads.size !== artifacts.length)
-    checks.fail(
-      CHECK.ARTIFACT_IDS_UNIQUE,
-      "Hydrated artifact IDs must be unique.",
-    );
-  if (captures.size !== bundle.captures.length)
-    checks.fail(CHECK.CAPTURE_IDS_UNIQUE, "Capture IDs must be unique.");
+    checks.fail(CHECK.ARTIFACT_IDS_UNIQUE, "Hydrated artifact IDs must be unique.");
+  if (captures.size !== bundle.captures.length) checks.fail(CHECK.CAPTURE_IDS_UNIQUE, "Capture IDs must be unique.");
   return { sources, captures, artifactPayloads, duplicateChecks: checks.items };
 }
 
@@ -65,8 +47,7 @@ export function verifyCaptures(
   for (const capture of bundle.captures) {
     const verified = verifyCapture(capture, index, isProjectionLineageAdmitted);
     checks.push(...verified.checks);
-    for (const [artifactId, content] of verified.verifiedArtifacts)
-      verifiedArtifacts.set(artifactId, content);
+    for (const [artifactId, content] of verified.verifiedArtifacts) verifiedArtifacts.set(artifactId, content);
   }
   return { checks, verifiedArtifacts };
 }
@@ -81,14 +62,10 @@ function verifyCapture(
   const verifiedArtifacts = new Map<string, Uint8Array>();
   const artifact = capture.contentArtifact;
   const content = index.artifactPayloads.get(artifact.artifactId);
-  checks.require(
-    CHECK.CAPTURE_SOURCE_PRESENT,
-    index.sources.has(capture.sourceId),
-    {
-      pass: `Capture ${capture.captureId} is bound to source ${capture.sourceId}.`,
-      fail: `Source ${capture.sourceId} is absent.`,
-    },
-  );
+  checks.require(CHECK.CAPTURE_SOURCE_PRESENT, index.sources.has(capture.sourceId), {
+    pass: `Capture ${capture.captureId} is bound to source ${capture.sourceId}.`,
+    fail: `Source ${capture.sourceId} is absent.`,
+  });
   checks.require(CHECK.CAPTURE_ARTIFACT_PRESENT, content !== undefined, {
     pass: `Artifact ${artifact.artifactId} is hydrated.`,
     fail: `Artifact ${artifact.artifactId} is not hydrated.`,
@@ -96,9 +73,7 @@ function verifyCapture(
   if (!content) return { checks: checks.items, verifiedArtifacts };
 
   const digestMatches = sha256Digest(content) === artifact.digest;
-  const sizeMatches =
-    artifact.byteLength === undefined ||
-    artifact.byteLength === content.byteLength;
+  const sizeMatches = artifact.byteLength === undefined || artifact.byteLength === content.byteLength;
   checks.require(CHECK.CAPTURE_DIGEST_MATCH, digestMatches, {
     pass: "Capture bytes match the registered digest.",
     fail: "Capture bytes differ from the registered digest.",
@@ -107,21 +82,15 @@ function verifyCapture(
     pass: "Capture byte length matches.",
     fail: `Expected ${artifact.byteLength} bytes; hydrated ${content.byteLength}.`,
   });
-  if (digestMatches && sizeMatches)
-    verifiedArtifacts.set(artifact.artifactId, content);
+  if (digestMatches && sizeMatches) verifiedArtifacts.set(artifact.artifactId, content);
 
   const projection = capture.canonicalProjectionArtifact;
   if (projection) {
     const projectionContent = index.artifactPayloads.get(projection.artifactId);
-    const digestMatches =
-      projectionContent !== undefined &&
-      sha256Digest(projectionContent) === projection.digest;
-    const sizeMatches =
-      projectionContent !== undefined &&
-      projectionContent.byteLength === projection.byteLength;
+    const digestMatches = projectionContent !== undefined && sha256Digest(projectionContent) === projection.digest;
+    const sizeMatches = projectionContent !== undefined && projectionContent.byteLength === projection.byteLength;
     const directParentBound =
-      projection.parentArtifactIds.includes(artifact.artifactId) &&
-      projection.transformationSignature !== undefined;
+      projection.parentArtifactIds.includes(artifact.artifactId) && projection.transformationSignature !== undefined;
     const envelopeBound =
       isProjectionLineageAdmitted?.({
         captureId: capture.captureId,

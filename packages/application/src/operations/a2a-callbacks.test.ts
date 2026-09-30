@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { A2ACallbackHttpSender } from "../index.js";
 
-const id = (digit: number) =>
-  `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
+const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 const secret = "callback-signing-secret-is-at-least-32-bytes";
 const context = {
   tenantId: id(1),
@@ -47,8 +46,11 @@ const task = {
       subqueries: [{ id: "exact-evidence", text: "retrieve exact evidence", coverageRole: "required" }],
       spaces: ["engineering_claims"],
       anchors: { entities: [], concepts: [], useCases: [] },
-      hardFilters: [], softBoosts: [], temporalScope: {},
-      candidateK: 10, finalK: 5,
+      hardFilters: [],
+      softBoosts: [],
+      temporalScope: {},
+      candidateK: 10,
+      finalK: 5,
       graph: { maxDepth: 0, allowedEdges: [] },
       abstention: { minimumCoverage: 0.5 },
     },
@@ -130,12 +132,10 @@ describe("A2A adapter", () => {
       }),
       fetch,
     );
-    await expect(sender.sendResult(task, result)).rejects.toThrow(
-      "CALLBACK_TARGET_CONTRACT_MISMATCH",
+    await expect(sender.sendResult(task, result)).rejects.toThrow("CALLBACK_TARGET_CONTRACT_MISMATCH");
+    await expect(sender.sendResult(task, { ...result, operationId: id(99) })).rejects.toThrow(
+      "CALLBACK_RESULT_CONTEXT_MISMATCH",
     );
-    await expect(
-      sender.sendResult(task, { ...result, operationId: id(99) }),
-    ).rejects.toThrow("CALLBACK_RESULT_CONTEXT_MISMATCH");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

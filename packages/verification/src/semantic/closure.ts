@@ -3,15 +3,9 @@ import {
   type DeterministicVerificationResult,
   type SemanticAssessmentRecord,
 } from "@aiengineer/knowledge-contracts";
-import {
-  authorizeSemanticCase,
-  type SemanticCaseAuthorizationInput,
-} from "./authorize.js";
+import { authorizeSemanticCase, type SemanticCaseAuthorizationInput } from "./authorize.js";
 import type { SemanticJudgeExecution } from "./ports.js";
-import {
-  verifySemanticCase,
-  type SemanticJudgeAdapters,
-} from "./verify-case.js";
+import { verifySemanticCase, type SemanticJudgeAdapters } from "./verify-case.js";
 
 export interface AssertionSemanticsInput extends SemanticCaseAuthorizationInput {
   readonly adapters: SemanticJudgeAdapters;
@@ -23,19 +17,10 @@ export interface AssertionSemanticsInput extends SemanticCaseAuthorizationInput 
  * closed authorization → judging. When the mechanical gate is closed the judge
  * is never called and the record says so.
  */
-export async function verifyAssertionSemantics(
-  input: AssertionSemanticsInput,
-): Promise<SemanticAssessmentRecord> {
-  const closed = mechanicalSemanticClosure(
-    input.deterministicResult,
-    input.assertionId,
-  );
+export async function verifyAssertionSemantics(input: AssertionSemanticsInput): Promise<SemanticAssessmentRecord> {
+  const closed = mechanicalSemanticClosure(input.deterministicResult, input.assertionId);
   if (closed) return closed;
-  return verifySemanticCase(
-    authorizeSemanticCase(input),
-    input.adapters,
-    input.execution,
-  );
+  return verifySemanticCase(authorizeSemanticCase(input), input.adapters, input.execution);
 }
 
 /**
@@ -47,22 +32,16 @@ export function mechanicalSemanticClosure(
   deterministic: DeterministicVerificationResult,
   assertionId: string,
 ): SemanticAssessmentRecord | undefined {
-  const assertion = deterministic.assertions.find(
-    (item) => item.assertionId === assertionId,
-  );
+  const assertion = deterministic.assertions.find((item) => item.assertionId === assertionId);
   if (
     !assertion ||
-    (deterministic.status === "passed" &&
-      deterministic.semanticEligibility &&
-      assertion.semanticEligibility)
+    (deterministic.status === "passed" && deterministic.semanticEligibility && assertion.semanticEligibility)
   )
     return undefined;
   const unsupportedResolver = assertion.evidence.some((item) =>
     item.checks.some((check) => check.code === "SELECTOR_RESOLVER_ADMITTED"),
   );
-  const locatorFailed =
-    !unsupportedResolver &&
-    assertion.evidence.some((item) => item.status === "failed");
+  const locatorFailed = !unsupportedResolver && assertion.evidence.some((item) => item.status === "failed");
   return SemanticAssessmentRecordSchema.parse({
     assertionId,
     verdict: locatorFailed ? "locator_error" : "unverifiable",

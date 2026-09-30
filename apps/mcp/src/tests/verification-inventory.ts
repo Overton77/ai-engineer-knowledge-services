@@ -1,7 +1,6 @@
 // Every verification mutation surface: use case, durable kind/step, CLI route, MCP tool,
 // HTTP path and a strict request. Shared by the surface inventory and no-HTTP-shim tests.
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1);
 export const version = { verificationContractVersion: "verification.v1" as const };
 const ref = { artifactId: id(3), digest: `sha256:${"a".repeat(64)}` };

@@ -1,16 +1,8 @@
-import {
-  KnowledgeIntegrationService,
-  type WorkerClaim,
-} from "@aiengineer/knowledge-application";
+import { KnowledgeIntegrationService, type WorkerClaim } from "@aiengineer/knowledge-application";
 import type { JsonValue } from "@aiengineer/knowledge-contracts";
-import {
-  CanonicalActivityError,
-  retryableActivityFailure,
-} from "./activity-registry.js";
+import { CanonicalActivityError, retryableActivityFailure } from "./activity-registry.js";
 
-export type ActivityExecutor = (
-  claim: WorkerClaim,
-) => JsonValue | Promise<JsonValue>;
+export type ActivityExecutor = (claim: WorkerClaim) => JsonValue | Promise<JsonValue>;
 
 export class DurableKnowledgeWorker {
   constructor(

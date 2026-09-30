@@ -4,12 +4,8 @@ import { createVerificationAdjudicationDecisionRuntime as create } from "./verif
 describe("decision API runtime configuration", () => {
   it("requires explicit enablement and refuses dormant authority", () => {
     expect(create(undefined, {})).toBeUndefined();
-    expect(
-      create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "0" }),
-    ).toBeUndefined();
-    expect(() =>
-      create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "yes" }),
-    ).toThrow("ENABLED_INVALID");
+    expect(create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "0" })).toBeUndefined();
+    expect(() => create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "yes" })).toThrow("ENABLED_INVALID");
     expect(() =>
       create(undefined, {
         VERIFICATION_ADJUDICATION_SYNTHETIC_REVIEWER_GRANTS_JSON: "[]",
@@ -17,9 +13,7 @@ describe("decision API runtime configuration", () => {
     ).toThrow("DISABLED_WITH_GRANTS");
   });
   it("requires canonical ownership and signed packet verification", () => {
-    expect(() =>
-      create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "1" }),
-    ).toThrow("RUNTIME_REQUIRED");
+    expect(() => create(undefined, { VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "1" })).toThrow("RUNTIME_REQUIRED");
     expect(() =>
       create({} as never, {
         VERIFICATION_ADJUDICATION_DECISIONS_ENABLED: "1",
@@ -51,9 +45,7 @@ describe("decision API runtime configuration", () => {
     expect(() =>
       create({} as never, {
         ...base,
-        VERIFICATION_ADJUDICATION_SYNTHETIC_REVIEWER_GRANTS_JSON: "x".repeat(
-          262_145,
-        ),
+        VERIFICATION_ADJUDICATION_SYNTHETIC_REVIEWER_GRANTS_JSON: "x".repeat(262_145),
       }),
     ).toThrow("GRANTS_TOO_LARGE");
   });

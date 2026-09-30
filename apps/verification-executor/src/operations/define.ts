@@ -30,9 +30,13 @@ export type AnyOperation<TContext> = OperationDefinition<z.ZodObject, z.ZodType,
 
 const MAX_DESCRIPTION = 300;
 
-export function defineOperation<TInput extends z.ZodObject, TOutput extends z.ZodType, TContext>(definition: OperationDefinition<TInput, TOutput, TContext>): OperationDefinition<TInput, TOutput, TContext> {
-  if (!/^[a-z][a-z0-9_]*$/.test(definition.name)) throw new Error(`operation name must be snake_case: ${definition.name}`);
-  if (definition.description.length > MAX_DESCRIPTION) throw new Error(`${definition.name}: description exceeds ${MAX_DESCRIPTION} characters`);
+export function defineOperation<TInput extends z.ZodObject, TOutput extends z.ZodType, TContext>(
+  definition: OperationDefinition<TInput, TOutput, TContext>,
+): OperationDefinition<TInput, TOutput, TContext> {
+  if (!/^[a-z][a-z0-9_]*$/.test(definition.name))
+    throw new Error(`operation name must be snake_case: ${definition.name}`);
+  if (definition.description.length > MAX_DESCRIPTION)
+    throw new Error(`${definition.name}: description exceeds ${MAX_DESCRIPTION} characters`);
   return definition;
 }
 
@@ -46,17 +50,29 @@ export class OperationRegistry<TContext> {
     }
   }
 
-  list(): readonly AnyOperation<TContext>[] { return [...this.#byName.values()]; }
-  get(name: string): AnyOperation<TContext> | undefined { return this.#byName.get(name); }
+  list(): readonly AnyOperation<TContext>[] {
+    return [...this.#byName.values()];
+  }
+  get(name: string): AnyOperation<TContext> | undefined {
+    return this.#byName.get(name);
+  }
 
   byCommand(group: string, sub: string): AnyOperation<TContext> | undefined {
     return this.list().find((operation) => operation.cli.command[0] === group && operation.cli.command[1] === sub);
   }
 
   /** Validates input, runs, and validates output — the shared path for CLI, HTTP, and MCP. */
-  async invoke(name: string, rawInput: unknown, context: TContext): Promise<{ operation: AnyOperation<TContext>; output: unknown }> {
+  async invoke(
+    name: string,
+    rawInput: unknown,
+    context: TContext,
+  ): Promise<{ operation: AnyOperation<TContext>; output: unknown }> {
     const operation = this.#byName.get(name);
-    if (!operation) throw new UnknownOperationError(name, this.list().map((item) => item.name));
+    if (!operation)
+      throw new UnknownOperationError(
+        name,
+        this.list().map((item) => item.name),
+      );
     const input = operation.input.parse(rawInput ?? {});
     const output = operation.output.parse(await operation.run(input, context));
     return { operation, output };
@@ -65,7 +81,10 @@ export class OperationRegistry<TContext> {
 
 export class UnknownOperationError extends Error {
   override readonly name = "UnknownOperationError";
-  constructor(readonly operation: string, readonly known: readonly string[]) {
+  constructor(
+    readonly operation: string,
+    readonly known: readonly string[],
+  ) {
     super(`unknown operation ${operation}`);
   }
 }

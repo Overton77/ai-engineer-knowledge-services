@@ -14,21 +14,37 @@ function independentProducer(row: Row): boolean {
   if (summary && row.transformation_kind !== "summarize") return false;
   if (!summary && row.producer_actor === row.review_identity) return false;
   if (!summary && row.reviewer_attempt_id === null) return true;
-  if (!nonempty(row.producer_attempt_id) || row.producer_attempt_id !== row.transformation_attempt_id
-    || !nonempty(row.producer_deployment_id)) return false;
-  if (row.review_identity === row.producer_attempt_id || row.review_identity === row.producer_deployment_id) return false;
+  if (
+    !nonempty(row.producer_attempt_id) ||
+    row.producer_attempt_id !== row.transformation_attempt_id ||
+    !nonempty(row.producer_deployment_id)
+  )
+    return false;
+  if (row.review_identity === row.producer_attempt_id || row.review_identity === row.producer_deployment_id)
+    return false;
   // A standalone human review has no runtime attempt; its actor and eligible role remain authoritative.
   if (row.reviewer_attempt_id === null) return true;
-  return nonempty(row.reviewer_attempt_id) && row.reviewer_resolved_attempt_id === row.reviewer_attempt_id
-    && nonempty(row.reviewer_deployment_id) && row.reviewer_attempt_id !== row.producer_attempt_id
-    && row.reviewer_deployment_id !== row.producer_deployment_id;
+  return (
+    nonempty(row.reviewer_attempt_id) &&
+    row.reviewer_resolved_attempt_id === row.reviewer_attempt_id &&
+    nonempty(row.reviewer_deployment_id) &&
+    row.reviewer_attempt_id !== row.producer_attempt_id &&
+    row.reviewer_deployment_id !== row.producer_deployment_id
+  );
 }
 
 /** The immutable representation label predates review. Only its latest independent decision admits bytes. */
-export async function readContentRepresentationAdmission(client: TenantSqlClient, input: {
-  tenantId: string; representationId: string; guardedDigest: string;
-}): Promise<ContentRepresentationAdmission> {
-  const row = (await client.query<Row>(`with latest as (
+export async function readContentRepresentationAdmission(
+  client: TenantSqlClient,
+  input: {
+    tenantId: string;
+    representationId: string;
+    guardedDigest: string;
+  },
+): Promise<ContentRepresentationAdmission> {
+  const row = (
+    await client.query<Row>(
+      `with latest as (
       select * from content.representation_decision where tenant_id=$1 and representation_id=$2
       order by created_at desc,id desc limit 1
     ) select d.*,r.id review_id,r.legacy_provenance review_legacy,r.guarded_sha256 review_digest,
@@ -49,23 +65,40 @@ export async function readContentRepresentationAdmission(client: TenantSqlClient
     left join content.transformation_run t on t.tenant_id=v.tenant_id and t.id=v.transformation_run_id
     left join orchestration.attempt pa on pa.tenant_id=t.tenant_id and pa.id=t.attempt_id
     left join orchestration.attempt ra on ra.tenant_id=o.tenant_id and ra.id=o.attempt_id`,
-  [input.tenantId, input.representationId])).rows[0];
+      [input.tenantId, input.representationId],
+    )
+  ).rows[0];
   if (!row) return { accepted: false, decisionId: null, decision: null };
   const subject = row.subject_ref as Row | null;
   const guarded = input.guardedDigest.slice(7);
-  const accepted = /^sha256:[a-f0-9]{64}$/.test(input.guardedDigest)
-    && row.tenant_id === input.tenantId && row.representation_id === input.representationId
-    && row.decision === "accept" && row.legacy_provenance === false && row.review_legacy === false
-    && row.guarded_sha256 === guarded && row.review_digest === guarded && row.subject_digest === guarded && row.representation_digest === guarded
-    && row.review_id === row.knowledge_review_decision_id && row.review_decision === "approve"
-    && row.review_operation_id === row.decision_operation_id && row.operation_id === row.decision_operation_id
-    && row.operation_kind === "representation_decision" && row.operation_status === "succeeded"
-    && row.reviewer_identity === row.review_identity && row.operation_actor === row.review_identity
-    && independentProducer(row)
-    && (row.producing_operation_id === null || row.producing_operation_id === row.subject_operation_id)
-    && ["conversion", "representation"].includes(String(row.subject_kind)) && subject?.representationId === input.representationId
-    && subject.artifactDigest === input.guardedDigest && row.quorum_required === 1
-    && Array.isArray(row.eligible_roles) && row.eligible_roles.includes(row.reviewer_role)
-    && row.decision_current === true && row.subject_current === true;
+  const accepted =
+    /^sha256:[a-f0-9]{64}$/.test(input.guardedDigest) &&
+    row.tenant_id === input.tenantId &&
+    row.representation_id === input.representationId &&
+    row.decision === "accept" &&
+    row.legacy_provenance === false &&
+    row.review_legacy === false &&
+    row.guarded_sha256 === guarded &&
+    row.review_digest === guarded &&
+    row.subject_digest === guarded &&
+    row.representation_digest === guarded &&
+    row.review_id === row.knowledge_review_decision_id &&
+    row.review_decision === "approve" &&
+    row.review_operation_id === row.decision_operation_id &&
+    row.operation_id === row.decision_operation_id &&
+    row.operation_kind === "representation_decision" &&
+    row.operation_status === "succeeded" &&
+    row.reviewer_identity === row.review_identity &&
+    row.operation_actor === row.review_identity &&
+    independentProducer(row) &&
+    (row.producing_operation_id === null || row.producing_operation_id === row.subject_operation_id) &&
+    ["conversion", "representation"].includes(String(row.subject_kind)) &&
+    subject?.representationId === input.representationId &&
+    subject.artifactDigest === input.guardedDigest &&
+    row.quorum_required === 1 &&
+    Array.isArray(row.eligible_roles) &&
+    row.eligible_roles.includes(row.reviewer_role) &&
+    row.decision_current === true &&
+    row.subject_current === true;
   return { accepted, decisionId: String(row.id), decision: String(row.decision) };
 }

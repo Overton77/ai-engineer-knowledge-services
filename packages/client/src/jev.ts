@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  JevJobSchema, JevStatsSchema, JevTaskSchema,
-  type JevTask,
-} from "@aiengineer/knowledge-contracts/jev";
+import { JevJobSchema, JevStatsSchema, JevTaskSchema, type JevTask } from "@aiengineer/knowledge-contracts/jev";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 200;
@@ -10,8 +7,14 @@ const POLL_INTERVAL_MS = 200;
 function pollDelay(signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     signal.throwIfAborted();
-    const abort = () => { clearTimeout(timer); reject(signal.reason); };
-    const timer = setTimeout(() => { signal.removeEventListener("abort", abort); resolve(); }, POLL_INTERVAL_MS);
+    const abort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", abort);
+      resolve();
+    }, POLL_INTERVAL_MS);
     signal.addEventListener("abort", abort, { once: true });
   });
 }
@@ -38,7 +41,9 @@ export class KnowledgeJevClient {
   }
 
   submitBatch(tasks: JevTask[]) {
-    return this.#request("batches", z.array(JevJobSchema), { body: { tasks: z.array(JevTaskSchema).min(1).max(1000).parse(tasks) } });
+    return this.#request("batches", z.array(JevJobSchema), {
+      body: { tasks: z.array(JevTaskSchema).min(1).max(1000).parse(tasks) },
+    });
   }
 
   get(id: string) {
@@ -58,7 +63,12 @@ export class KnowledgeJevClient {
   }
 
   async wait(id: string, options: { timeoutMs?: number; signal?: AbortSignal } = {}) {
-    const timeoutMs = z.number().int().min(1).max(86_400_000).parse(options.timeoutMs ?? 120_000);
+    const timeoutMs = z
+      .number()
+      .int()
+      .min(1)
+      .max(86_400_000)
+      .parse(options.timeoutMs ?? 120_000);
     const deadline = AbortSignal.timeout(timeoutMs);
     const signal = options.signal ? AbortSignal.any([options.signal, deadline]) : deadline;
     try {
@@ -75,7 +85,11 @@ export class KnowledgeJevClient {
     }
   }
 
-  async #request<T>(path: string, schema: z.ZodType<T>, options: { body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+  async #request<T>(
+    path: string,
+    schema: z.ZodType<T>,
+    options: { body?: unknown; signal?: AbortSignal } = {},
+  ): Promise<T> {
     const { body } = options;
     const token = await this.#options.getAccessToken?.();
     const response = await (this.#options.fetch ?? fetch)(
@@ -84,7 +98,9 @@ export class KnowledgeJevClient {
         method: body === undefined ? "GET" : "POST",
         headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]) : AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: options.signal
+          ? AbortSignal.any([options.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
+          : AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         redirect: "error",
       },
     );
@@ -92,7 +108,10 @@ export class KnowledgeJevClient {
       await response.body?.cancel();
       throw new Error(`Jev service returned HTTP ${response.status}`);
     }
-    try { return schema.parse(await response.json()); }
-    catch { throw new Error("Jev service returned an invalid response"); }
+    try {
+      return schema.parse(await response.json());
+    } catch {
+      throw new Error("Jev service returned an invalid response");
+    }
   }
 }

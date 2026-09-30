@@ -9,14 +9,29 @@ import {
 const profiles: readonly ExecutionProfile[] = ["server", "local", "remote-cli"];
 const operations = Object.keys(localVerificationOperations) as LocalOperation[];
 // Database-backed executor registry operations (one per group) and platform operations.
-const serverBacked = ["schema_search", "db_read_intent", "ingest_apply", "artifact_get", "source_discover", "content_link_apply",
-  "checkpoint_commit", "report_register", "recovery_submit", "knowledge_get_verification_run", "retrieval.read_run"];
+const serverBacked = [
+  "schema_search",
+  "db_read_intent",
+  "ingest_apply",
+  "artifact_get",
+  "source_discover",
+  "content_link_apply",
+  "checkpoint_commit",
+  "report_register",
+  "recovery_submit",
+  "knowledge_get_verification_run",
+  "retrieval.read_run",
+];
 
 // The remote CLI's client-only enforcement is tested in apps/cli (src/tests/remote-profile.test.ts).
 describe("capability matrix", () => {
   it("classifies the verification intent pipeline for server, local and remote CLI", () => {
-    const matrix = Object.fromEntries(operations.map((operation) =>
-      [operation, Object.fromEntries(profiles.map((profile) => [profile, profileAvailability(profile, operation)]))]));
+    const matrix = Object.fromEntries(
+      operations.map((operation) => [
+        operation,
+        Object.fromEntries(profiles.map((profile) => [profile, profileAvailability(profile, operation)])),
+      ]),
+    );
     const offline = { server: "server", local: "offline", "remote-cli": "remote" };
     expect(matrix).toEqual({
       verify_supported_media_types: offline,

@@ -1,19 +1,12 @@
 import assert from "node:assert/strict";
 import { canonicalDigestExample } from "./01-canonical-digest.js";
 import { resolveExample, selectorExamples } from "./02-resolve-selectors.js";
-import {
-  deterministicBundleExample,
-  summarize,
-} from "./03-deterministic-bundle.js";
-import {
-  acceptedLeaves,
-  extractionFieldsExample,
-} from "./04-extraction-fields.js";
+import { deterministicBundleExample, summarize } from "./03-deterministic-bundle.js";
+import { acceptedLeaves, extractionFieldsExample } from "./04-extraction-fields.js";
 import { semanticRecordedJudgeExample } from "./05-semantic-recorded-judge.js";
 import { sealInspectReplayExample } from "./06-seal-inspect-replay.js";
 
-const print = (stage: string, value: unknown) =>
-  console.log(JSON.stringify({ stage, ...(value as object) }));
+const print = (stage: string, value: unknown) => console.log(JSON.stringify({ stage, ...(value as object) }));
 
 // 01 — canonical digest
 const digest = canonicalDigestExample();
@@ -27,12 +20,7 @@ print("01-canonical-digest", digest);
 for (const example of selectorExamples) {
   const result = resolveExample(example);
   assert.equal(result?.resolution.status, "resolved", example.name);
-  assert.ok(
-    new TextDecoder()
-      .decode(result?.selectedContent)
-      .includes(example.expectedText),
-    example.name,
-  );
+  assert.ok(new TextDecoder().decode(result?.selectedContent).includes(example.expectedText), example.name);
   print("02-resolve-selectors", {
     example: example.name,
     status: result.resolution.status,
@@ -61,9 +49,7 @@ print("02-resolve-selectors", {
 const bundles = deterministicBundleExample();
 assert.equal(bundles.passing.status, "passed");
 assert.equal(bundles.passing.semanticEligibility, true);
-assert.ok(
-  bundles.corrupted.summary.failedCheckCodes.includes("CAPTURE_DIGEST_MATCH"),
-);
+assert.ok(bundles.corrupted.summary.failedCheckCodes.includes("CAPTURE_DIGEST_MATCH"));
 assert.equal(bundles.corrupted.semanticEligibility, false);
 print("03-deterministic-bundle", {
   passing: summarize(bundles.passing),

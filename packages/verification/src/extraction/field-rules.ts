@@ -31,8 +31,7 @@ export interface ExtractionFieldRule {
   readonly identifierKind?: "uuid" | "sha256" | "cve" | "currency_code_token";
   readonly checksum?: "luhn" | "isbn13";
   /** Explicit scalar evidence extraction from structured selector results; locator metadata is never a field value. */
-  readonly sourceComponent?:
-    "table_cell_value" | "geometry_token_text" | "transcript_text";
+  readonly sourceComponent?: "table_cell_value" | "geometry_token_text" | "transcript_text";
   /** Required for multi-token/segment components, making source joining deterministic. */
   readonly sourceJoiner?: "space" | "none";
 }
@@ -62,8 +61,7 @@ export interface DuplicateRecordRule {
 export interface CrossFieldTotalRule {
   readonly resultPath: string;
   readonly operandPaths: readonly string[];
-  readonly operation:
-    "identity" | "sum" | "difference" | "product" | "ratio" | "percent_change";
+  readonly operation: "identity" | "sum" | "difference" | "product" | "ratio" | "percent_change";
   readonly tolerance?: string;
 }
 

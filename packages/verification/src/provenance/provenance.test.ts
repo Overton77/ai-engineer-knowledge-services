@@ -1,16 +1,10 @@
 import { validateRecordedPolicyInputsArtifact } from "./policy-inputs.js";
-import type {
-  VerificationArtifactHandle,
-  VerificationRunManifest,
-} from "@aiengineer/knowledge-contracts";
+import type { VerificationArtifactHandle, VerificationRunManifest } from "@aiengineer/knowledge-contracts";
 import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync } from "node:crypto";
 import { digestCanonicalJson, sha256Digest } from "../canonical/index.js";
 import { verifyDeterministicBundle } from "../deterministic/index.js";
-import {
-  prototypeClaimInput,
-  prototypeMetricInput,
-} from "../deterministic/engine-golden.fixture.js";
+import { prototypeClaimInput, prototypeMetricInput } from "../deterministic/engine-golden.fixture.js";
 import {
   createEd25519Signer,
   createEd25519Verifier,
@@ -24,9 +18,7 @@ import type { VerificationAuditBundle } from "./model.js";
 
 async function sealedFixture(
   judged = false,
-): Promise<
-  ReturnType<typeof auditBundleFixture> & { audit: VerificationAuditBundle }
-> {
+): Promise<ReturnType<typeof auditBundleFixture> & { audit: VerificationAuditBundle }> {
   const value = auditBundleFixture({ judged });
   const audit = await sealAuditBundle({
     tenantId: value.sourceHandle.tenantId,
@@ -49,23 +41,14 @@ describe("audit bundle sealing and replay", () => {
     expect((await inspectAuditBundle(value.audit)).valid).toBe(true);
     const content = value.deterministicInput.artifacts[0]!.content;
     const bytesById = new Map<string, Uint8Array>([
-      [
-        value.sourceHandle.artifactId,
-        new TextEncoder().encode(String(content)),
-      ],
+      [value.sourceHandle.artifactId, new TextEncoder().encode(String(content))],
       [value.policyArtifact.artifactId, policyBytes],
-      [
-        value.recordedPolicyInputsArtifact.artifactId,
-        value.recordedPolicyInputsBytes,
-      ],
+      [value.recordedPolicyInputsArtifact.artifactId, value.recordedPolicyInputsBytes],
     ]);
     const handlesById = new Map([
       [value.sourceHandle.artifactId, value.sourceHandle],
       [value.policyArtifact.artifactId, value.policyArtifact],
-      [
-        value.recordedPolicyInputsArtifact.artifactId,
-        value.recordedPolicyInputsArtifact,
-      ],
+      [value.recordedPolicyInputsArtifact.artifactId, value.recordedPolicyInputsArtifact],
     ]);
     const calls: string[] = [];
     const policyReplay = vi.fn(async (input) => {
@@ -73,9 +56,7 @@ describe("audit bundle sealing and replay", () => {
         schemaVersion: "verification-policy-inputs.v1",
         runId: "run-1",
       });
-      expect(input.recordedPolicyInputsBytes).toEqual(
-        value.recordedPolicyInputsBytes,
-      );
+      expect(input.recordedPolicyInputsBytes).toEqual(value.recordedPolicyInputsBytes);
       return { outcome: "pass" as const, decision: value.policyDecision };
     });
     const replay = await replayAuditBundle(value.audit, {
@@ -94,18 +75,12 @@ describe("audit bundle sealing and replay", () => {
       },
       policyReplay: { replay: policyReplay },
     });
-    expect(replay.deterministicResultDigest).toBe(
-      value.audit.deterministicResultDigest,
-    );
-    expect(replay.replayedArtifactIds).toContain(
-      value.recordedPolicyInputsArtifact.artifactId,
-    );
+    expect(replay.deterministicResultDigest).toBe(value.audit.deterministicResultDigest);
+    expect(replay.replayedArtifactIds).toContain(value.recordedPolicyInputsArtifact.artifactId);
     expect(policyReplay).toHaveBeenCalledTimes(1);
     expect(
       calls.every(
-        (entry, index) =>
-          !entry.startsWith("hydrate:") ||
-          calls[index - 1] === entry.replace("hydrate:", "authorize:"),
+        (entry, index) => !entry.startsWith("hydrate:") || calls[index - 1] === entry.replace("hydrate:", "authorize:"),
       ),
     ).toBe(true);
   });
@@ -126,8 +101,7 @@ describe("audit bundle sealing and replay", () => {
         tokenUsage: 6,
         nested: [{ [field]: "must-not-appear" }],
       };
-      value.manifest.canonicalization.manifestDigest =
-        verificationManifestDigest(value.manifest);
+      value.manifest.canonicalization.manifestDigest = verificationManifestDigest(value.manifest);
       await expect(
         sealAuditBundle({
           tenantId: value.sourceHandle.tenantId,
@@ -170,9 +144,7 @@ describe("audit bundle sealing and replay", () => {
         activityVersion: "1",
       },
     ];
-    value.manifest.canonicalization.manifestDigest = verificationManifestDigest(
-      value.manifest,
-    );
+    value.manifest.canonicalization.manifestDigest = verificationManifestDigest(value.manifest);
     await expect(
       sealAuditBundle({
         tenantId: value.sourceHandle.tenantId,
@@ -202,9 +174,7 @@ describe("audit bundle sealing and replay", () => {
             return input.artifactId === valid.sourceHandle.artifactId
               ? {
                   registration: resolverHandle,
-                  bytes: new TextEncoder().encode(
-                    String(valid.deterministicInput.artifacts[0]!.content),
-                  ),
+                  bytes: new TextEncoder().encode(String(valid.deterministicInput.artifacts[0]!.content)),
                 }
               : input.artifactId === valid.policyArtifact.artifactId
                 ? { registration: valid.policyArtifact, bytes: policyBytes }
@@ -247,9 +217,10 @@ describe("audit bundle sealing and replay", () => {
         throw new Error("verifier unavailable");
       }),
     };
-    await expect(
-      inspectAuditBundle(signedShape, verifier),
-    ).resolves.toMatchObject({ valid: false, signatureStatus: "invalid" });
+    await expect(inspectAuditBundle(signedShape, verifier)).resolves.toMatchObject({
+      valid: false,
+      signatureStatus: "invalid",
+    });
   });
 
   it("rejects recorded policy-input byte tampering before policy replay", async () => {
@@ -264,9 +235,7 @@ describe("audit bundle sealing and replay", () => {
             if (input.artifactId === value.sourceHandle.artifactId)
               return {
                 registration: value.sourceHandle,
-                bytes: new TextEncoder().encode(
-                  String(value.deterministicInput.artifacts[0]!.content),
-                ),
+                bytes: new TextEncoder().encode(String(value.deterministicInput.artifacts[0]!.content)),
               };
             if (input.artifactId === value.policyArtifact.artifactId)
               return { registration: value.policyArtifact, bytes: policyBytes };
@@ -285,12 +254,8 @@ describe("audit bundle sealing and replay", () => {
   it("verifies signed bundles and detects signed payload tampering", async () => {
     const value = auditBundleFixture();
     const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-    const privatePem = privateKey
-      .export({ type: "pkcs8", format: "pem" })
-      .toString();
-    const publicPem = publicKey
-      .export({ type: "spki", format: "pem" })
-      .toString();
+    const privatePem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    const publicPem = publicKey.export({ type: "spki", format: "pem" }).toString();
     const audit = await sealAuditBundle({
       tenantId: value.sourceHandle.tenantId,
       verificationBundle: value.deterministicInput.bundle,
@@ -310,11 +275,11 @@ describe("audit bundle sealing and replay", () => {
       signatureStatus: "verified",
     });
     const tampered = structuredClone(audit);
-    tampered.policyBinding.recordedPolicyInputsArtifact.objectKey =
-      "tampered/key";
-    await expect(inspectAuditBundle(tampered, verifier)).resolves.toMatchObject(
-      { valid: false, signatureStatus: "invalid" },
-    );
+    tampered.policyBinding.recordedPolicyInputsArtifact.objectKey = "tampered/key";
+    await expect(inspectAuditBundle(tampered, verifier)).resolves.toMatchObject({
+      valid: false,
+      signatureStatus: "invalid",
+    });
   });
 });
 
@@ -324,9 +289,7 @@ describe("recorded policy input coverage", () => {
     (kind) => {
       const value = auditBundleFixture(),
         bundle = structuredClone(value.deterministicInput.bundle),
-        body = JSON.parse(
-          new TextDecoder().decode(value.recordedPolicyInputsBytes),
-        );
+        body = JSON.parse(new TextDecoder().decode(value.recordedPolicyInputsBytes));
       let expected = "POLICY_INPUT_SEMANTIC_ASSERTION_MISMATCH";
       if (kind === "duplicate-assertion") {
         bundle.assertions.push({
@@ -339,10 +302,7 @@ describe("recorded policy input coverage", () => {
         body.assertions[0].semantic.assertionId = "claim-2";
       } else {
         const metric = prototypeMetricInput().bundle.metricObservations[0]!;
-        bundle.metricObservations = [
-          metric,
-          { ...structuredClone(metric), observationId: "metric-2" },
-        ];
+        bundle.metricObservations = [metric, { ...structuredClone(metric), observationId: "metric-2" }];
         const row = {
           observationId: metric.observationId,
           riskClass: "medium",
@@ -375,24 +335,15 @@ describe("recorded policy input coverage", () => {
 it("requires semantic reconstruction before policy evaluation for judged inputs", async () => {
   const value = await sealedFixture(true),
     bytes = new Map([
-      [
-        value.sourceHandle.artifactId,
-        new TextEncoder().encode(
-          String(value.deterministicInput.artifacts[0]!.content),
-        ),
-      ],
+      [value.sourceHandle.artifactId, new TextEncoder().encode(String(value.deterministicInput.artifacts[0]!.content))],
       [value.policyArtifact.artifactId, policyBytes],
-      [
-        value.recordedPolicyInputsArtifact.artifactId,
-        value.recordedPolicyInputsBytes,
-      ],
+      [value.recordedPolicyInputsArtifact.artifactId, value.recordedPolicyInputsBytes],
     ]);
   const handles = new Map(
-    [
-      value.sourceHandle,
-      value.policyArtifact,
-      value.recordedPolicyInputsArtifact,
-    ].map((handle) => [handle.artifactId, handle]),
+    [value.sourceHandle, value.policyArtifact, value.recordedPolicyInputsArtifact].map((handle) => [
+      handle.artifactId,
+      handle,
+    ]),
   );
   const policy = vi.fn(async () => ({
     outcome: "pass" as const,
@@ -411,13 +362,9 @@ it("requires semantic reconstruction before policy evaluation for judged inputs"
     },
     policyReplay: { replay: policy },
   };
-  await expect(replayAuditBundle(value.audit, options)).rejects.toThrow(
-    "SEMANTIC_AUDIT_REPLAY_REQUIRED",
-  );
+  await expect(replayAuditBundle(value.audit, options)).rejects.toThrow("SEMANTIC_AUDIT_REPLAY_REQUIRED");
   expect(policy).not.toHaveBeenCalled();
-  const assessment = JSON.parse(
-    new TextDecoder().decode(value.recordedPolicyInputsBytes),
-  ).assertions[0].semantic;
+  const assessment = JSON.parse(new TextDecoder().decode(value.recordedPolicyInputsBytes)).assertions[0].semantic;
   await expect(
     replayAuditBundle(value.audit, {
       ...options,
@@ -450,9 +397,9 @@ it("requires semantic reconstruction before policy evaluation for judged inputs"
     ...options,
     semanticReplay: {
       async replay(input) {
-        expect(
-          input.verifiedRepresentationBytes.get(value.sourceHandle.artifactId),
-        ).toEqual(bytes.get(value.sourceHandle.artifactId));
+        expect(input.verifiedRepresentationBytes.get(value.sourceHandle.artifactId)).toEqual(
+          bytes.get(value.sourceHandle.artifactId),
+        );
         return {
           assessments: [assessment],
           replayedArtifactIds: [value.sourceHandle.artifactId],

@@ -13,9 +13,7 @@ const policy = {
   maximumBytes: 100,
   maximumDecompressionRatio: 10,
 };
-const request = (
-  target: AcquisitionRequest["target"],
-): AcquisitionRequest => ({
+const request = (target: AcquisitionRequest["target"]): AcquisitionRequest => ({
   tenantId: "tenant",
   purpose: "capture",
   target,
@@ -61,14 +59,14 @@ describe("RoutedAcquisitionAdapter", () => {
 
   it("routes HTTP and upload targets to the matching adapter", async () => {
     expect(router.supports(request({ kind: "http", url: "https://example.com/a" })).supported).toBe(true);
-    expect(router.supports(request({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" })).supported).toBe(true);
+    expect(router.supports(request({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" })).supported).toBe(
+      true,
+    );
     const httpPlan = await router.plan(request({ kind: "http", url: "https://example.com/a" }));
     const httpResult = await router.execute({ ...httpPlan, admissionId: "http" });
     expect(httpResult.artifacts).toHaveLength(1);
     expect((await router.verify(httpResult)).accepted).toBe(true);
-    const uploadPlan = await router.plan(
-      request({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" }),
-    );
+    const uploadPlan = await router.plan(request({ kind: "upload", uploadId: "notes", declaredOrigin: "operator" }));
     const uploadResult = await router.execute({ ...uploadPlan, admissionId: "upload" });
     expect(uploadResult.artifacts).toHaveLength(1);
     expect((await router.verify(uploadResult)).accepted).toBe(true);

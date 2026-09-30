@@ -2,17 +2,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { digestBytes } from "@aiengineer/knowledge-core";
-import {
-  observeSealedCapture,
-  readSealedCapture,
-  searchSealedCapture,
-} from "../src/index.js";
+import { observeSealedCapture, readSealedCapture, searchSealedCapture } from "../src/index.js";
 import { printJson } from "./helpers.js";
 
 export async function runInspectBytesExample() {
-  const bytes = await readFile(
-    join(dirname(fileURLToPath(import.meta.url)), "fixtures", "notes.txt"),
-  );
+  const bytes = await readFile(join(dirname(fileURLToPath(import.meta.url)), "fixtures", "notes.txt"));
   const digest = digestBytes(bytes);
   const excerpt = readSealedCapture({ bytes, digest, offset: 0, length: 40 });
   const search = searchSealedCapture({ bytes, digest, query: "Public operator note" });

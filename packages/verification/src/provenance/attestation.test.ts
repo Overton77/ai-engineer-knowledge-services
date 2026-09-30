@@ -1,22 +1,10 @@
 import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import type {
-  VerificationArtifactHandle,
-  VerificationRunManifest,
-} from "@aiengineer/knowledge-contracts";
-import {
-  canonicalizeJson,
-  digestCanonicalJson,
-  sha256Digest,
-} from "../canonical/index.js";
+import type { VerificationArtifactHandle, VerificationRunManifest } from "@aiengineer/knowledge-contracts";
+import { canonicalizeJson, digestCanonicalJson, sha256Digest } from "../canonical/index.js";
 import { verifyDeterministicBundle } from "../deterministic/index.js";
 import { prototypeClaimInput } from "../deterministic/engine-golden.fixture.js";
-import {
-  createEd25519Signer,
-  createEd25519Verifier,
-  sealAuditBundle,
-  verificationManifestDigest,
-} from "./seal.js";
+import { createEd25519Signer, createEd25519Verifier, sealAuditBundle, verificationManifestDigest } from "./seal.js";
 import {
   createVerificationDsseSlsaAttestation,
   inspectVerificationDsseSlsaAttestation,
@@ -154,15 +142,10 @@ function fixture(): {
     startedAt: createdAt,
     completedAt: createdAt,
   };
-  manifest.canonicalization.manifestDigest =
-    verificationManifestDigest(manifest);
+  manifest.canonicalization.manifestDigest = verificationManifestDigest(manifest);
   const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-  const privatePem = privateKey
-    .export({ type: "pkcs8", format: "pem" })
-    .toString();
-  const publicPem = publicKey
-    .export({ type: "spki", format: "pem" })
-    .toString();
+  const privatePem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const publicPem = publicKey.export({ type: "spki", format: "pem" }).toString();
   const signer = createEd25519Signer(privatePem, "audit-key");
   const pending = sealAuditBundle({
     tenantId: sourceHandle.tenantId,
@@ -195,9 +178,7 @@ async function signedEnvelope(
     signatures: [
       {
         keyid: signer.keyId,
-        sig: await signer.sign(
-          verificationDssePae(VERIFICATION_DSSE_PAYLOAD_TYPE, payload),
-        ),
+        sig: await signer.sign(verificationDssePae(VERIFICATION_DSSE_PAYLOAD_TYPE, payload)),
       },
     ],
   };
@@ -208,12 +189,8 @@ async function signedFixture() {
   const audit = (await raw.audit) as unknown as VerificationAuditBundle;
   const auditVerifier = createEd25519Verifier({ "audit-key": raw.publicPem });
   const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-  const attestationPrivatePem = privateKey
-    .export({ type: "pkcs8", format: "pem" })
-    .toString();
-  const attestationPublicPem = publicKey
-    .export({ type: "spki", format: "pem" })
-    .toString();
+  const attestationPrivatePem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const attestationPublicPem = publicKey.export({ type: "spki", format: "pem" }).toString();
   const signer = createEd25519Signer(attestationPrivatePem, "attestation-key");
   const builderId = `urn:aiengineer:verification:deployment:${encodeURIComponent(audit.manifest.runtime.deploymentId)}`;
   return {
@@ -261,19 +238,14 @@ describe("optional DSSE/SLSA audit-bundle attestation", () => {
       trustedBinding: value.binding,
     });
     expect(created.envelope.payloadType).toBe(VERIFICATION_DSSE_PAYLOAD_TYPE);
-    expect(created.statement.subject[0]!.digest.sha256).toBe(
-      value.audit.seal.payloadDigest.slice(7),
+    expect(created.statement.subject[0]!.digest.sha256).toBe(value.audit.seal.payloadDigest.slice(7));
+    expect(created.statement.predicate.buildDefinition.resolvedDependencies).toHaveLength(
+      value.audit.manifest.inputArtifacts.length,
     );
-    expect(
-      created.statement.predicate.buildDefinition.resolvedDependencies,
-    ).toHaveLength(value.audit.manifest.inputArtifacts.length);
     expect(
       await value.attestationVerifier.verify({
         keyId: "attestation-key",
-        payload: verificationDssePae(
-          created.envelope.payloadType,
-          Buffer.from(created.envelope.payload, "base64"),
-        ),
+        payload: verificationDssePae(created.envelope.payloadType, Buffer.from(created.envelope.payload, "base64")),
         signatureBase64: created.envelope.signatures[0]!.sig,
       }),
     ).toBe(true);
@@ -302,9 +274,7 @@ describe("optional DSSE/SLSA audit-bundle attestation", () => {
     });
     const urlSafe: VerificationDsseEnvelope = {
       ...created.envelope,
-      payload: Buffer.from(created.envelope.payload, "base64").toString(
-        "base64url",
-      ),
+      payload: Buffer.from(created.envelope.payload, "base64").toString("base64url"),
     };
     await expect(
       inspectVerificationDsseSlsaAttestation({
@@ -343,13 +313,9 @@ describe("optional DSSE/SLSA audit-bundle attestation", () => {
       verified: false,
       reason: "DSSE_ENVELOPE_SIZE_INVALID",
     });
-    const statement = JSON.parse(
-      Buffer.from(created.envelope.payload, "base64").toString("utf8"),
-    );
+    const statement = JSON.parse(Buffer.from(created.envelope.payload, "base64").toString("utf8"));
     statement.subject[0].digest.sha256 = "0".repeat(64);
-    const tamperedPayload = Buffer.from(JSON.stringify(statement)).toString(
-      "base64",
-    );
+    const tamperedPayload = Buffer.from(JSON.stringify(statement)).toString("base64");
     const tampered = { ...created.envelope, payload: tamperedPayload };
     await expect(
       inspectVerificationDsseSlsaAttestation({
@@ -360,10 +326,8 @@ describe("optional DSSE/SLSA audit-bundle attestation", () => {
         expectedBinding: value.binding,
       }),
     ).resolves.toMatchObject({ verified: false });
-    statement.subject[0].digest.sha256 =
-      value.audit.seal.payloadDigest.slice(7);
-    statement.predicate.buildDefinition.resolvedDependencies[0].digest.sha256 =
-      "1".repeat(64);
+    statement.subject[0].digest.sha256 = value.audit.seal.payloadDigest.slice(7);
+    statement.predicate.buildDefinition.resolvedDependencies[0].digest.sha256 = "1".repeat(64);
     const dependencyTamper = {
       ...created.envelope,
       payload: Buffer.from(JSON.stringify(statement)).toString("base64"),
@@ -411,8 +375,7 @@ describe("optional DSSE/SLSA audit-bundle attestation", () => {
     const builderTamperStatement = structuredClone(created.statement) as {
       predicate: { runDetails: { builder: { id: string } } };
     };
-    builderTamperStatement.predicate.runDetails.builder.id =
-      "urn:aiengineer:verification:deployment:forged";
+    builderTamperStatement.predicate.runDetails.builder.id = "urn:aiengineer:verification:deployment:forged";
     await expect(
       inspectVerificationDsseSlsaAttestation({
         auditBundle: value.audit,

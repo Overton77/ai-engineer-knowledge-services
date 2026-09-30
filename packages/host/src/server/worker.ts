@@ -124,7 +124,11 @@ function composePostgresAdapters(
   const persistence = resources.own("canonical-persistence", createCanonicalPersistence(persistenceConfig), (owned) =>
     owned.close(),
   );
-  const maximumArtifactBytes = positiveIntegerSetting(environment.MAXIMUM_ARTIFACT_BYTES, 67_108_864, "MAXIMUM_ARTIFACT_BYTES");
+  const maximumArtifactBytes = positiveIntegerSetting(
+    environment.MAXIMUM_ARTIFACT_BYTES,
+    67_108_864,
+    "MAXIMUM_ARTIFACT_BYTES",
+  );
   const sourceArtifacts = new SupabaseArtifactStore({
     projectUrl: persistenceConfig.supabaseUrl,
     serviceRoleKey: persistenceConfig.supabaseSecretKey,
@@ -148,7 +152,11 @@ function composePostgresAdapters(
   const httpAcquisition = new ExactHttpAcquisitionAdapter(sourceArtifacts, {
     allowedProtocols: ["https:", ...(insecureHttp ? ["http:" as const] : [])],
     allowedPorts: [443, ...(insecureHttp ? [80] : [])],
-    maximumRedirects: positiveIntegerSetting(environment.ACQUISITION_MAXIMUM_REDIRECTS, 5, "ACQUISITION_MAXIMUM_REDIRECTS"),
+    maximumRedirects: positiveIntegerSetting(
+      environment.ACQUISITION_MAXIMUM_REDIRECTS,
+      5,
+      "ACQUISITION_MAXIMUM_REDIRECTS",
+    ),
     timeoutMs: positiveIntegerSetting(environment.ACQUISITION_TIMEOUT_MS, 30_000, "ACQUISITION_TIMEOUT_MS"),
     maximumBytes: maximumArtifactBytes,
     maximumDecompressionRatio: positiveIntegerSetting(

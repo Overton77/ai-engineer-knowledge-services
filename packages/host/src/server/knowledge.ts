@@ -1,5 +1,9 @@
 import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
-import { EvidencePacketSchema, type EvidencePacket, type RetrievalCitationReplay } from "@aiengineer/knowledge-contracts";
+import {
+  EvidencePacketSchema,
+  type EvidencePacket,
+  type RetrievalCitationReplay,
+} from "@aiengineer/knowledge-contracts";
 import {
   createRemoteRetrievalArtifactReader,
   type PostgresCanonicalRepository,
@@ -42,7 +46,10 @@ export function composeKnowledgeServices(
   // Construction order matches the previous API bootstrap: executor, then citation replay.
   const gatewayConfigured = Boolean(environment.AI_GATEWAY_API_KEY?.trim() || environment.VERCEL_OIDC_TOKEN?.trim());
   const canonicalRetrievalExecutor = gatewayConfigured
-    ? new CanonicalRetrievalExecutor(database, createGatewayEmbeddingAdapterFromEnvironment(environment as NodeJS.ProcessEnv))
+    ? new CanonicalRetrievalExecutor(
+        database,
+        createGatewayEmbeddingAdapterFromEnvironment(environment as NodeJS.ProcessEnv),
+      )
     : undefined;
   const replayEvidencePacketCitations = composeCitationReplay(database, environment);
   return {

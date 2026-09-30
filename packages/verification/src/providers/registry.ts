@@ -3,8 +3,7 @@ import { providerDigest } from "./port.js";
 import { INTERFAZE_MODEL, interfazeConfigurationDigest } from "./interfaze.js";
 import { deepFreeze } from "../internal/deep-freeze.js";
 
-export type ProviderPromotionState =
-  "lab" | "offline" | "shadow" | "admitted" | "suspended" | "retired";
+export type ProviderPromotionState = "lab" | "offline" | "shadow" | "admitted" | "suspended" | "retired";
 export interface ProviderModalityRegistration {
   readonly capability: string;
   readonly modality: "text" | "image" | "audio";
@@ -29,34 +28,21 @@ export interface ProviderRegistration {
   readonly configurationDigest: `sha256:${string}`;
 }
 
-const testedLab = (
-  capability: string,
-  modality: "text" | "image" | "audio",
-): ProviderModalityRegistration =>
+const testedLab = (capability: string, modality: "text" | "image" | "audio"): ProviderModalityRegistration =>
   deepFreeze({
     capability,
     modality,
     promotionState: "lab",
     evidence: "ws06_live_synthetic",
-    remainingPromotionGates: [
-      "persisted cost reconciliation",
-      "human-controlled promotion review",
-    ],
+    remainingPromotionGates: ["persisted cost reconciliation", "human-controlled promotion review"],
   });
-const lab = (
-  capability: string,
-  modality: "text" | "image" | "audio",
-): ProviderModalityRegistration =>
+const lab = (capability: string, modality: "text" | "image" | "audio"): ProviderModalityRegistration =>
   deepFreeze({
     capability,
     modality,
     promotionState: "lab",
     evidence: "unadmitted",
-    remainingPromotionGates: [
-      "synthetic live conformance",
-      "persisted cost reconciliation",
-      "promotion review",
-    ],
+    remainingPromotionGates: ["synthetic live conformance", "persisted cost reconciliation", "promotion review"],
   });
 
 export const providerRegistry: readonly ProviderRegistration[] = deepFreeze([
@@ -97,9 +83,7 @@ export const providerRegistry: readonly ProviderRegistration[] = deepFreeze([
     toolPolicy: ["no_tools", "no_search", "no_gui"],
     promotionState: "lab",
     schemaPolicy: "bounded_object_json_schema",
-    configurationDigest: gatewaySemanticConfigurationDigest(
-      "anthropic/claude-haiku-4.5",
-    ),
+    configurationDigest: gatewaySemanticConfigurationDigest("anthropic/claude-haiku-4.5"),
   },
   {
     providerId: "nli-semantic-judge.v1",

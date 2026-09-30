@@ -1,15 +1,11 @@
 import { A2AKnowledgeAdapter } from "../a2a-adapter.js";
-import {
-  CallbackReplayGuard,
-  KnowledgeIntegrationService,
-} from "@aiengineer/knowledge-application";
+import { CallbackReplayGuard, KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { buildServer } from "../server.js";
 import type { CanonicalRetrievalExecutorPort } from "@aiengineer/knowledge-application";
 
-const id = (digit: number) =>
-  `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
+const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 const tenantId = id(1);
 const token = "a2a-test-token-at-least-16-characters";
 const secret = "callback-signing-secret-is-at-least-32-bytes";
@@ -88,11 +84,7 @@ const server = buildServer({
   publicOrigin: "https://knowledge.example",
   resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
   resolveCallbackSigningSecret: (tenant, reference) =>
-    tenant === tenantId &&
-    [
-      task.callback.signingKeyReference,
-      "secret://alternate-valid-key",
-    ].includes(reference)
+    tenant === tenantId && [task.callback.signingKeyReference, "secret://alternate-valid-key"].includes(reference)
       ? secret
       : undefined,
   callbackReplayStore: new CallbackReplayGuard(),
@@ -105,15 +97,13 @@ describe("authenticated HTTP A2A transport", () => {
   it("routes retrieval through the retrieval-only port and canonical executor exactly once", async () => {
     const generic = new KnowledgeIntegrationService(),
       retrieval = new KnowledgeIntegrationService();
-    const execute = vi.fn<CanonicalRetrievalExecutorPort["execute"]>(
-      async () => ({
-        retrievalRunId: id(30),
-        evidencePacketId: id(34),
-        resultCount: 0,
-        abstained: true,
-        replayed: false,
-      }),
-    );
+    const execute = vi.fn<CanonicalRetrievalExecutorPort["execute"]>(async () => ({
+      retrievalRunId: id(30),
+      evidencePacketId: id(34),
+      resultCount: 0,
+      abstained: true,
+      replayed: false,
+    }));
     const retrievalContext = {
       ...context,
       operationId: id(30),
@@ -132,9 +122,7 @@ describe("authenticated HTTP A2A transport", () => {
           policyVersion: id(33),
           query: "canonical retrieval",
           intents: ["knowledge_evidence"],
-          subqueries: [
-            { id: "q", text: "canonical retrieval", coverageRole: "required" },
-          ],
+          subqueries: [{ id: "q", text: "canonical retrieval", coverageRole: "required" }],
           spaces: ["engineering_claims"],
           anchors: { entities: [], concepts: [], useCases: [] },
           hardFilters: [],
@@ -153,8 +141,7 @@ describe("authenticated HTTP A2A transport", () => {
       retrievalOperationService: retrieval,
       canonicalRetrievalExecutor: { execute },
       publicOrigin: "https://knowledge.example",
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const response = await api.inject({
       method: "POST",
@@ -172,9 +159,7 @@ describe("authenticated HTTP A2A transport", () => {
     expect(replay.json().operationId).toBe(response.json().operationId);
     expect(generic.get(retrievalContext.operationId)).toBeUndefined();
     expect(retrieval.list(tenantId)).toHaveLength(1);
-    expect(retrieval.get(retrievalContext.operationId)?.kind).toBe(
-      "retrieval_run",
-    );
+    expect(retrieval.get(retrievalContext.operationId)?.kind).toBe("retrieval_run");
     expect(execute).toHaveBeenCalledTimes(2);
     expect(execute.mock.calls[0]?.[0]).toMatchObject({
       input: {
@@ -209,10 +194,7 @@ describe("authenticated HTTP A2A transport", () => {
   });
 
   it("records a valid signed callback once and rejects replay and tamper", async () => {
-    const callback = new A2AKnowledgeAdapter(
-      service,
-      "https://knowledge.example",
-    ).callback(
+    const callback = new A2AKnowledgeAdapter(service, "https://knowledge.example").callback(
       task,
       { outcome: "succeeded", nestedRunId: "nested-eve-run" },
       secret,
@@ -224,8 +206,7 @@ describe("authenticated HTTP A2A transport", () => {
         url: "/v1/a2a/callbacks",
         headers: {
           ...headers,
-          "x-knowledge-callback-signing-key-reference":
-            task.callback.signingKeyReference,
+          "x-knowledge-callback-signing-key-reference": task.callback.signingKeyReference,
         },
         payload,
       });
@@ -276,10 +257,7 @@ describe("authenticated HTTP A2A transport", () => {
       headers,
       payload: freshTask,
     });
-    const callback = new A2AKnowledgeAdapter(
-      service,
-      "https://knowledge.example",
-    ).callback(
+    const callback = new A2AKnowledgeAdapter(service, "https://knowledge.example").callback(
       freshTask,
       { outcome: "succeeded" },
       secret,
@@ -295,10 +273,7 @@ describe("authenticated HTTP A2A transport", () => {
       payload: callback,
     });
     expect(unknownKey.statusCode).toBe(401);
-    const forgedTaskCallback = new A2AKnowledgeAdapter(
-      service,
-      "https://knowledge.example",
-    ).callback(
+    const forgedTaskCallback = new A2AKnowledgeAdapter(service, "https://knowledge.example").callback(
       { ...freshTask, taskId: id(97) },
       { outcome: "succeeded" },
       secret,
@@ -309,8 +284,7 @@ describe("authenticated HTTP A2A transport", () => {
       url: "/v1/a2a/callbacks",
       headers: {
         ...headers,
-        "x-knowledge-callback-signing-key-reference":
-          task.callback.signingKeyReference,
+        "x-knowledge-callback-signing-key-reference": task.callback.signingKeyReference,
       },
       payload: forgedTaskCallback,
     });
@@ -321,8 +295,7 @@ describe("authenticated HTTP A2A transport", () => {
       url: "/v1/a2a/callbacks",
       headers: {
         ...headers,
-        "x-knowledge-callback-signing-key-reference":
-          "secret://alternate-valid-key",
+        "x-knowledge-callback-signing-key-reference": "secret://alternate-valid-key",
       },
       payload: callback,
     });
@@ -333,8 +306,7 @@ describe("authenticated HTTP A2A transport", () => {
       headers: {
         ...headers,
         "x-tenant-id": id(98),
-        "x-knowledge-callback-signing-key-reference":
-          task.callback.signingKeyReference,
+        "x-knowledge-callback-signing-key-reference": task.callback.signingKeyReference,
       },
       payload: callback,
     });
@@ -345,8 +317,7 @@ describe("authenticated HTTP A2A transport", () => {
       headers: {
         ...headers,
         "x-correlation-id": "attacker-correlation",
-        "x-knowledge-callback-signing-key-reference":
-          task.callback.signingKeyReference,
+        "x-knowledge-callback-signing-key-reference": task.callback.signingKeyReference,
       },
       payload: callback,
     });

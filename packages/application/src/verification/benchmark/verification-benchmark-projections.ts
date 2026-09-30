@@ -1,4 +1,10 @@
-import { UuidSchema, type VerificationArtifactHandle, type VerificationSource, type VerificationSourceCapture, type VerificationBenchmarkDataset } from "@aiengineer/knowledge-contracts";
+import {
+  UuidSchema,
+  type VerificationArtifactHandle,
+  type VerificationSource,
+  type VerificationSourceCapture,
+  type VerificationBenchmarkDataset,
+} from "@aiengineer/knowledge-contracts";
 import { deepFreeze } from "@aiengineer/knowledge-core";
 import { assertFrozenVerificationBenchmarkDataset } from "@aiengineer/knowledge-evaluation";
 import { projectionSelectorResolver, sha256Digest } from "@aiengineer/knowledge-verification";
@@ -84,18 +90,26 @@ export async function prepareBenchmarkProjectionDataset(
   assertActive(context.signal);
   assertFrozenVerificationBenchmarkDataset(dataset);
   const maximumSelectedTextBytes = selectedTextLimit(ports.maximumSelectedTextBytes);
-  const byCaseId: Record<string, PreparedBenchmarkCaseProjections> = Object.create(null) as Record<string, PreparedBenchmarkCaseProjections>;
+  const byCaseId: Record<string, PreparedBenchmarkCaseProjections> = Object.create(null) as Record<
+    string,
+    PreparedBenchmarkCaseProjections
+  >;
 
   for (const benchmarkCase of dataset.cases) {
     assertActive(context.signal);
-    const byFragmentId: Record<string, BenchmarkFragmentProjectionResolution> = Object.create(null) as Record<string, BenchmarkFragmentProjectionResolution>;
+    const byFragmentId: Record<string, BenchmarkFragmentProjectionResolution> = Object.create(null) as Record<
+      string,
+      BenchmarkFragmentProjectionResolution
+    >;
     for (const evidence of benchmarkCase.evidence) {
       if (byFragmentId[evidence.fragmentId] !== undefined) throw new Error("BENCHMARK_PROJECTION_FRAGMENT_DUPLICATE");
       const binding = await ports.captures.getRegisteredCapture({ tenantId, captureId: evidence.captureId });
       assertActive(context.signal);
-      if (binding.capture.captureId !== evidence.captureId
-        || binding.source.sourceId !== binding.capture.sourceId
-        || binding.capture.contentArtifact.tenantId !== tenantId) {
+      if (
+        binding.capture.captureId !== evidence.captureId ||
+        binding.source.sourceId !== binding.capture.sourceId ||
+        binding.capture.contentArtifact.tenantId !== tenantId
+      ) {
         throw new Error("BENCHMARK_PROJECTION_CAPTURE_BINDING_MISMATCH");
       }
       const sourceArtifact = binding.capture.contentArtifact;
@@ -107,19 +121,25 @@ export async function prepareBenchmarkProjectionDataset(
         projectionArtifactId: evidence.projectionArtifactId,
       });
       assertActive(context.signal);
-      if (hydrated.receipt.captureId !== evidence.captureId
-        || hydrated.receipt.sourceArtifact.tenantId !== tenantId
-        || hydrated.receipt.sourceArtifact.artifactId !== sourceArtifact.artifactId
-        || hydrated.receipt.sourceArtifact.digest !== sourceArtifact.digest
-        || hydrated.receipt.projectionArtifact.tenantId !== tenantId
-        || hydrated.receipt.projectionArtifact.artifactId !== evidence.projectionArtifactId
-        || hydrated.receipt.projectionArtifact.digest !== evidence.projectionDigest
-        || hydrated.receipt.projectionArtifact.byteLength !== hydrated.content.byteLength
-        || sha256Digest(hydrated.content) !== hydrated.receipt.projectionArtifact.digest) {
+      if (
+        hydrated.receipt.captureId !== evidence.captureId ||
+        hydrated.receipt.sourceArtifact.tenantId !== tenantId ||
+        hydrated.receipt.sourceArtifact.artifactId !== sourceArtifact.artifactId ||
+        hydrated.receipt.sourceArtifact.digest !== sourceArtifact.digest ||
+        hydrated.receipt.projectionArtifact.tenantId !== tenantId ||
+        hydrated.receipt.projectionArtifact.artifactId !== evidence.projectionArtifactId ||
+        hydrated.receipt.projectionArtifact.digest !== evidence.projectionDigest ||
+        hydrated.receipt.projectionArtifact.byteLength !== hydrated.content.byteLength ||
+        sha256Digest(hydrated.content) !== hydrated.receipt.projectionArtifact.digest
+      ) {
         throw new Error("BENCHMARK_PROJECTION_CUSTODY_BINDING_MISMATCH");
       }
       byFragmentId[evidence.fragmentId] = resolveMechanically({
-        evidence: { ...evidence, projectionDigest: evidence.projectionDigest as Digest, selectedContentDigest: evidence.selectedContentDigest as Digest },
+        evidence: {
+          ...evidence,
+          projectionDigest: evidence.projectionDigest as Digest,
+          selectedContentDigest: evidence.selectedContentDigest as Digest,
+        },
         content: hydrated.content,
         maximumSelectedTextBytes,
       });
@@ -131,19 +151,28 @@ export async function prepareBenchmarkProjectionDataset(
 }
 
 function assertAdmittedBinding(admitted: AdmittedOfflineBenchmarkInputs, tenantId: string): void {
-  if (admitted.grant.tenantId !== tenantId
-    || admitted.datasetArtifact.tenantId !== tenantId
-    || admitted.experimentArtifact.tenantId !== tenantId
-    || admitted.request.dataset.artifactId !== admitted.datasetArtifact.artifactId
-    || admitted.request.dataset.digest !== admitted.datasetArtifact.digest
-    || admitted.request.experimentDefinition.artifactId !== admitted.experimentArtifact.artifactId
-    || admitted.request.experimentDefinition.digest !== admitted.experimentArtifact.digest) {
+  if (
+    admitted.grant.tenantId !== tenantId ||
+    admitted.datasetArtifact.tenantId !== tenantId ||
+    admitted.experimentArtifact.tenantId !== tenantId ||
+    admitted.request.dataset.artifactId !== admitted.datasetArtifact.artifactId ||
+    admitted.request.dataset.digest !== admitted.datasetArtifact.digest ||
+    admitted.request.experimentDefinition.artifactId !== admitted.experimentArtifact.artifactId ||
+    admitted.request.experimentDefinition.digest !== admitted.experimentArtifact.digest
+  ) {
     throw new Error("BENCHMARK_PROJECTION_ADMITTED_BINDING_MISMATCH");
   }
 }
 
 function resolveMechanically(input: {
-  readonly evidence: { readonly fragmentId: string; readonly captureId: string; readonly projectionArtifactId: string; readonly projectionDigest: Digest; readonly selector: Parameters<typeof projectionSelectorResolver.resolve>[0]["selector"]; readonly selectedContentDigest: Digest };
+  readonly evidence: {
+    readonly fragmentId: string;
+    readonly captureId: string;
+    readonly projectionArtifactId: string;
+    readonly projectionDigest: Digest;
+    readonly selector: Parameters<typeof projectionSelectorResolver.resolve>[0]["selector"];
+    readonly selectedContentDigest: Digest;
+  };
   readonly content: Uint8Array;
   readonly maximumSelectedTextBytes: number;
 }): BenchmarkFragmentProjectionResolution {
@@ -157,10 +186,21 @@ function resolveMechanically(input: {
       content: input.content,
     });
   } catch {
-    return { fragmentId: input.evidence.fragmentId, captureId: input.evidence.captureId, projectionArtifactId: input.evidence.projectionArtifactId, projectionDigest: input.evidence.projectionDigest, locatorValid: false, selectorStatus: "parse_error" };
+    return {
+      fragmentId: input.evidence.fragmentId,
+      captureId: input.evidence.captureId,
+      projectionArtifactId: input.evidence.projectionArtifactId,
+      projectionDigest: input.evidence.projectionDigest,
+      locatorValid: false,
+      selectorStatus: "parse_error",
+    };
   }
-  const locatorValid = resolution.resolution.status === "resolved" && resolution.resolution.selectedContentDigest === input.evidence.selectedContentDigest;
-  const selectedText = locatorValid ? boundedText(resolution.selectedContent, input.maximumSelectedTextBytes) : undefined;
+  const locatorValid =
+    resolution.resolution.status === "resolved" &&
+    resolution.resolution.selectedContentDigest === input.evidence.selectedContentDigest;
+  const selectedText = locatorValid
+    ? boundedText(resolution.selectedContent, input.maximumSelectedTextBytes)
+    : undefined;
   return {
     fragmentId: input.evidence.fragmentId,
     captureId: input.evidence.captureId,
@@ -174,8 +214,11 @@ function resolveMechanically(input: {
 
 function boundedText(bytes: Uint8Array, maximumBytes: number): string | undefined {
   if (bytes.byteLength > maximumBytes) return undefined;
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
-  catch { return undefined; }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return undefined;
+  }
 }
 
 function tenant(value: unknown): string {
@@ -186,7 +229,8 @@ function tenant(value: unknown): string {
 
 function selectedTextLimit(value: number | undefined): number {
   const limit = value ?? MAX_SELECTED_TEXT_BYTES;
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 64 * 1024) throw new Error("BENCHMARK_PROJECTION_TEXT_LIMIT_INVALID");
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 64 * 1024)
+    throw new Error("BENCHMARK_PROJECTION_TEXT_LIMIT_INVALID");
   return limit;
 }
 

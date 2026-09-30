@@ -1,8 +1,5 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolvedValue, unresolved } from "./report.js";
 import {
   boundedArray,
@@ -42,13 +39,7 @@ export function parseDataset(input: UnknownRecord): DatasetProjection {
 }
 
 function parseRow(item: unknown): DatasetRow {
-  if (
-    !isRecord(item) ||
-    !boundedString(item.key) ||
-    item.key.length === 0 ||
-    !("value" in item)
-  )
-    fail("DATASET_ROW");
+  if (!isRecord(item) || !boundedString(item.key) || item.key.length === 0 || !("value" in item)) fail("DATASET_ROW");
   only(item, ["key", "value"], "DATASET_ROW");
   return { key: item.key, value: json(item.value, "DATASET_VALUE") };
 }
@@ -59,25 +50,14 @@ export function resolveDataset(
   projection: DatasetProjection,
   selector: DatasetSelector,
 ): EvidenceSelection {
-  if (projection.datasetVersionId !== selector.datasetVersionId)
-    return unresolved(request, "invalid");
+  if (projection.datasetVersionId !== selector.datasetVersionId) return unresolved(request, "invalid");
   const matches = projection.rows.filter((row) => row.key === selector.rowKey);
-  if (matches.length !== 1)
-    return unresolved(
-      request,
-      matches.length > 1 ? "ambiguous" : "not_found",
-      matches.length,
-    );
+  if (matches.length !== 1) return unresolved(request, matches.length > 1 ? "ambiguous" : "not_found", matches.length);
   const row = matches[0]!;
   const rowSpace = `dataset:${selector.datasetVersionId}:key:${selector.rowKey}`;
   if (selector.column === undefined)
-    return resolvedValue(request, row, [
-      { start: 0, end: 1, coordinateSpace: rowSpace },
-    ]);
-  if (
-    !isRecord(row.value) ||
-    !Object.prototype.hasOwnProperty.call(row.value, selector.column)
-  )
+    return resolvedValue(request, row, [{ start: 0, end: 1, coordinateSpace: rowSpace }]);
+  if (!isRecord(row.value) || !Object.prototype.hasOwnProperty.call(row.value, selector.column))
     return unresolved(request, "not_found");
   return resolvedValue(request, row.value[selector.column], [
     {

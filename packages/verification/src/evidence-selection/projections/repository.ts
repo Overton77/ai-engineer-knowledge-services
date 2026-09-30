@@ -1,21 +1,9 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { isSafeRepositoryPath } from "../repository-path.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolveTextOffsetRange } from "../text-offsets.js";
 import { resolvedText, unresolved } from "./report.js";
-import {
-  boundedArray,
-  boundedString,
-  fail,
-  isRecord,
-  only,
-  string,
-  unique,
-  type UnknownRecord,
-} from "./shared.js";
+import { boundedArray, boundedString, fail, isRecord, only, string, unique, type UnknownRecord } from "./shared.js";
 
 export interface RepositoryFile {
   readonly path: string;
@@ -36,11 +24,7 @@ const COMMIT_HASH = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
 export function parseRepository(input: UnknownRecord): RepositoryProjection {
   only(input, ["kind", "commit", "lineRangeConvention", "files"], "REPOSITORY");
   const { commit } = input;
-  if (
-    !string(commit) ||
-    !COMMIT_HASH.test(commit) ||
-    input.lineRangeConvention !== "zero_based_half_open"
-  )
+  if (!string(commit) || !COMMIT_HASH.test(commit) || input.lineRangeConvention !== "zero_based_half_open")
     fail("REPOSITORY_METADATA");
   const files = boundedArray(input.files, "REPOSITORY_FILES").map(parseFile);
   unique(
@@ -56,12 +40,7 @@ export function parseRepository(input: UnknownRecord): RepositoryProjection {
 }
 
 function parseFile(item: unknown): RepositoryFile {
-  if (
-    !isRecord(item) ||
-    !boundedString(item.path) ||
-    !isSafeRepositoryPath(item.path) ||
-    !boundedString(item.content)
-  )
+  if (!isRecord(item) || !boundedString(item.path) || !isSafeRepositoryPath(item.path) || !boundedString(item.content))
     fail("REPOSITORY_FILE");
   only(item, ["path", "content"], "REPOSITORY_FILE");
   return { path: item.path, content: item.content };
@@ -73,18 +52,10 @@ export function resolveRepository(
   projection: RepositoryProjection,
   selector: RepositorySelector,
 ): EvidenceSelection {
-  if (
-    projection.commit !== selector.commit ||
-    !isSafeRepositoryPath(selector.path)
-  )
+  if (projection.commit !== selector.commit || !isSafeRepositoryPath(selector.path))
     return unresolved(request, "invalid");
   const files = projection.files.filter((file) => file.path === selector.path);
-  if (files.length !== 1)
-    return unresolved(
-      request,
-      files.length > 1 ? "ambiguous" : "not_found",
-      files.length,
-    );
+  if (files.length !== 1) return unresolved(request, files.length > 1 ? "ambiguous" : "not_found", files.length);
   const content = files[0]!.content;
   return selector.rangeKind === "bytes"
     ? resolveByteRange(request, content, selector)
@@ -125,15 +96,11 @@ function resolveLineRange(
     selector.end > lines.length
   )
     return unresolved(request, "invalid");
-  return resolvedText(
-    request,
-    lines.slice(selector.start, selector.end).join("\n"),
-    [
-      {
-        start: selector.start,
-        end: selector.end,
-        coordinateSpace: "repository_lines_zero_based_half_open",
-      },
-    ],
-  );
+  return resolvedText(request, lines.slice(selector.start, selector.end).join("\n"), [
+    {
+      start: selector.start,
+      end: selector.end,
+      coordinateSpace: "repository_lines_zero_based_half_open",
+    },
+  ]);
 }

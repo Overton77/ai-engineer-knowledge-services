@@ -52,10 +52,7 @@ describe("claim decomposition acceptance", () => {
     expect(() =>
       acceptClaimDecomposition(report, {
         ...proposal,
-        segments: [
-          { ...proposal.segments[0]!, qualifiers: ["missing qualifier"] },
-          proposal.segments[1]!,
-        ],
+        segments: [{ ...proposal.segments[0]!, qualifiers: ["missing qualifier"] }, proposal.segments[1]!],
       }),
     ).toThrow("DECOMPOSITION_QUALIFIER_NOT_PRESERVED");
   });

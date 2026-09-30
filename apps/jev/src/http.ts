@@ -14,7 +14,12 @@ const BatchSchema = z.strictObject({ tasks: z.array(JevTaskSchema).min(1).max(10
 type Application = ReturnType<typeof createJevService>;
 
 class HttpError extends Error {
-  constructor(readonly status: number, message: string) { super(message); }
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 async function readJson(request: IncomingMessage): Promise<unknown> {
@@ -26,12 +31,19 @@ async function readJson(request: IncomingMessage): Promise<unknown> {
     if (bytes > MAX_BODY_BYTES) throw new HttpError(413, "REQUEST_TOO_LARGE");
     chunks.push(buffer);
   }
-  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); }
-  catch { throw new HttpError(400, "INVALID_JSON"); }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new HttpError(400, "INVALID_JSON");
+  }
 }
 
 function json(response: ServerResponse, status: number, value: unknown): void {
-  response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", "x-content-type-options": "nosniff" });
+  response.writeHead(status, {
+    "content-type": "application/json",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+  });
   response.end(JSON.stringify(value));
 }
 
@@ -51,7 +63,10 @@ async function handleMcp(application: Application, request: IncomingMessage, res
   const server = createJevMcpServer(application);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
-  response.on("close", () => { void transport.close(); void server.close(); });
+  response.on("close", () => {
+    void transport.close();
+    void server.close();
+  });
   await transport.handleRequest(request, response, request.method === "POST" ? await readJson(request) : undefined);
 }
 
@@ -61,7 +76,12 @@ async function handleApi(application: Application, request: IncomingMessage, res
   if (path === "/mcp") return handleMcp(application, request, response);
   if (request.method === "GET" && path === "/v1/jev/health") return json(response, 200, await application.stats());
   if (request.method === "GET" && path === "/v1/jev/jobs") {
-    const limit = z.coerce.number().int().min(1).max(1000).parse(url.searchParams.get("limit") ?? 100);
+    const limit = z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .parse(url.searchParams.get("limit") ?? 100);
     return json(response, 200, await application.list({ limit }));
   }
   if (request.method === "POST" && path === "/v1/jev/jobs") {
@@ -79,7 +99,10 @@ async function handleApi(application: Application, request: IncomingMessage, res
   json(response, 404, { error: "NOT_FOUND" });
 }
 
-export function createJevHttpServer(application: Application, options: { token?: string; reportPath?: string; experimentReadmePath?: string } = {}) {
+export function createJevHttpServer(
+  application: Application,
+  options: { token?: string; reportPath?: string; experimentReadmePath?: string } = {},
+) {
   const server = createServer((request, response) => {
     void (async () => {
       // Reports contain public experiment data only; all operations share authorization.
@@ -92,11 +115,19 @@ export function createJevHttpServer(application: Application, options: { token?:
       }
       if (request.method === "GET" && request.url === "/receipts.json" && options.reportPath) {
         const receipts = await readFile(join(dirname(options.reportPath), "receipts.json"));
-        response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store", "x-content-type-options": "nosniff" });
+        response.writeHead(200, {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+        });
         response.end(receipts);
         return;
       }
-      if (request.method === "GET" && request.url === "/scripts/experiments/jev/README.md" && options.experimentReadmePath) {
+      if (
+        request.method === "GET" &&
+        request.url === "/scripts/experiments/jev/README.md" &&
+        options.experimentReadmePath
+      ) {
         const readme = await readFile(options.experimentReadmePath);
         response.writeHead(200, { "content-type": "text/plain; charset=utf-8", "x-content-type-options": "nosniff" });
         response.end(readme);
@@ -104,9 +135,21 @@ export function createJevHttpServer(application: Application, options: { token?:
       }
       await handleApi(application, request, response);
     })().catch((error: unknown) => {
-      if (response.headersSent) { response.end(); return; }
-      if (error instanceof HttpError) { json(response, error.status, { error: error.message }); return; }
-      if (error instanceof z.ZodError) { json(response, 400, { error: "INVALID_REQUEST", issues: error.issues.map(issue => ({ path: issue.path, code: issue.code })) }); return; }
+      if (response.headersSent) {
+        response.end();
+        return;
+      }
+      if (error instanceof HttpError) {
+        json(response, error.status, { error: error.message });
+        return;
+      }
+      if (error instanceof z.ZodError) {
+        json(response, 400, {
+          error: "INVALID_REQUEST",
+          issues: error.issues.map((issue) => ({ path: issue.path, code: issue.code })),
+        });
+        return;
+      }
       const code = publicErrorCode(error);
       json(response, code === "IDEMPOTENCY_CONFLICT" ? 409 : 400, { error: code });
     });

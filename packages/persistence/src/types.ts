@@ -1,6 +1,15 @@
 import type { JsonValue } from "@aiengineer/knowledge-contracts";
 
-export type OperationStatus = "proposed" | "queued" | "running" | "needs_review" | "succeeded" | "failed" | "cancelled" | "quarantined" | "superseded";
+export type OperationStatus =
+  | "proposed"
+  | "queued"
+  | "running"
+  | "needs_review"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "quarantined"
+  | "superseded";
 
 export interface CanonicalOperation {
   readonly id: string;
@@ -53,7 +62,13 @@ export interface CreateCanonicalOperation {
   readonly actorIdentity: string;
   readonly capabilityVersionId?: string;
   readonly request: unknown;
-  readonly steps: readonly { readonly id: string; readonly key: string; readonly kind: string; readonly input: unknown; readonly maxAttempts?: number }[];
+  readonly steps: readonly {
+    readonly id: string;
+    readonly key: string;
+    readonly kind: string;
+    readonly input: unknown;
+    readonly maxAttempts?: number;
+  }[];
 }
 
 export interface CanonicalStep {
@@ -105,77 +120,111 @@ export interface CanonicalArtifactResource {
 }
 
 export interface CanonicalVectorStoreResource {
-  readonly id:string; readonly tenantId:string; readonly ownerIdentity:string;
-  readonly storeClass:"official_canonical"|"internal_exploratory"|"user_managed";
-  readonly slug:string; readonly name:string; readonly purpose:string;
-  readonly visibility:"private"|"tenant"|"public"; readonly lifecycle:"active"|"suspended"|"superseded"|"deleted";
-  readonly quotaProfile:unknown; readonly retentionPolicy:unknown; readonly deletionPolicy:unknown;
-  readonly createdByAttemptId?:string; readonly supersedesId?:string; readonly createdAt:string;
-  readonly documentCount:number; readonly spaces:readonly {readonly id:string;readonly vectorSpaceId:string;readonly activeSpaceVersionId?:string;readonly authorityClass:"official"|"exploratory"|"user_managed";readonly createdAt:string}[];
-  readonly spacesTruncated:boolean;
+  readonly id: string;
+  readonly tenantId: string;
+  readonly ownerIdentity: string;
+  readonly storeClass: "official_canonical" | "internal_exploratory" | "user_managed";
+  readonly slug: string;
+  readonly name: string;
+  readonly purpose: string;
+  readonly visibility: "private" | "tenant" | "public";
+  readonly lifecycle: "active" | "suspended" | "superseded" | "deleted";
+  readonly quotaProfile: unknown;
+  readonly retentionPolicy: unknown;
+  readonly deletionPolicy: unknown;
+  readonly createdByAttemptId?: string;
+  readonly supersedesId?: string;
+  readonly createdAt: string;
+  readonly documentCount: number;
+  readonly spaces: readonly {
+    readonly id: string;
+    readonly vectorSpaceId: string;
+    readonly activeSpaceVersionId?: string;
+    readonly authorityClass: "official" | "exploratory" | "user_managed";
+    readonly createdAt: string;
+  }[];
+  readonly spacesTruncated: boolean;
 }
 
 export interface PersistVectorStoreInput {
-  readonly operationId:string;
-  readonly vectorStoreId:string;
-  readonly ownerIdentity:string;
-  readonly storeClass:"official_canonical"|"internal_exploratory"|"user_managed";
-  readonly slug:string;
-  readonly name:string;
-  readonly purpose:string;
-  readonly visibility:"private"|"tenant"|"public";
-  readonly quotaProfile:JsonValue;
-  readonly retentionPolicy:JsonValue;
-  readonly deletionPolicy:JsonValue;
-  readonly supersedesId?:string;
+  readonly operationId: string;
+  readonly vectorStoreId: string;
+  readonly ownerIdentity: string;
+  readonly storeClass: "official_canonical" | "internal_exploratory" | "user_managed";
+  readonly slug: string;
+  readonly name: string;
+  readonly purpose: string;
+  readonly visibility: "private" | "tenant" | "public";
+  readonly quotaProfile: JsonValue;
+  readonly retentionPolicy: JsonValue;
+  readonly deletionPolicy: JsonValue;
+  readonly supersedesId?: string;
 }
 
 export interface VectorStoreLifecycleRepository {
-  persistVectorStore(tenantId:string,input:PersistVectorStoreInput):Promise<CanonicalVectorStoreResource>;
-  attachDocuments(tenantId:string,input:AttachVectorStoreDocumentsInput):Promise<AttachedVectorStoreDocuments>;
-  verifyIngestionStage(tenantId:string,input:VerifyVectorStoreIngestionInput,stage:VectorStoreIngestionStage):Promise<VectorStoreIngestionStageResult>;
+  persistVectorStore(tenantId: string, input: PersistVectorStoreInput): Promise<CanonicalVectorStoreResource>;
+  attachDocuments(tenantId: string, input: AttachVectorStoreDocumentsInput): Promise<AttachedVectorStoreDocuments>;
+  verifyIngestionStage(
+    tenantId: string,
+    input: VerifyVectorStoreIngestionInput,
+    stage: VectorStoreIngestionStage,
+  ): Promise<VectorStoreIngestionStageResult>;
 }
 
 export interface AttachVectorStoreDocumentsInput {
-  readonly operationId:string;readonly vectorStoreId:string;readonly actorIdentity:string;readonly controlPlaneOverride:boolean;
-  readonly documents:readonly {readonly id:string;readonly documentId:string;readonly documentVersionId:string;readonly representationId:string;readonly requestedProfile:JsonValue}[];
+  readonly operationId: string;
+  readonly vectorStoreId: string;
+  readonly actorIdentity: string;
+  readonly controlPlaneOverride: boolean;
+  readonly documents: readonly {
+    readonly id: string;
+    readonly documentId: string;
+    readonly documentVersionId: string;
+    readonly representationId: string;
+    readonly requestedProfile: JsonValue;
+  }[];
 }
 export interface AttachedVectorStoreDocuments {
-  readonly vectorStoreId:string;readonly storeClass:"official_canonical"|"internal_exploratory"|"user_managed";readonly ownerIdentity:string;
-  readonly documentIds:readonly string[];readonly attachmentIds:readonly string[];readonly attachmentCount:number;readonly state:"requested";
+  readonly vectorStoreId: string;
+  readonly storeClass: "official_canonical" | "internal_exploratory" | "user_managed";
+  readonly ownerIdentity: string;
+  readonly documentIds: readonly string[];
+  readonly attachmentIds: readonly string[];
+  readonly attachmentCount: number;
+  readonly state: "requested";
 }
 
-export type VectorStoreIngestionStage="prepared"|"embedded"|"indexed";
+export type VectorStoreIngestionStage = "prepared" | "embedded" | "indexed";
 export interface VectorStoreIngestionChain {
-  readonly attachmentId:string;
-  readonly transformationOperationId:string;
-  readonly chunkSetId:string;
-  readonly chunkSetOperationId:string;
-  readonly promotionProposalId:string;
-  readonly promotionProposalOperationId:string;
-  readonly promotionDecisionId:string;
-  readonly promotionDecisionOperationId:string;
-  readonly embeddingRunId:string;
-  readonly embeddingOperationId:string;
-  readonly publicationId:string;
-  readonly publicationOperationId:string;
+  readonly attachmentId: string;
+  readonly transformationOperationId: string;
+  readonly chunkSetId: string;
+  readonly chunkSetOperationId: string;
+  readonly promotionProposalId: string;
+  readonly promotionProposalOperationId: string;
+  readonly promotionDecisionId: string;
+  readonly promotionDecisionOperationId: string;
+  readonly embeddingRunId: string;
+  readonly embeddingOperationId: string;
+  readonly publicationId: string;
+  readonly publicationOperationId: string;
 }
 export interface VerifyVectorStoreIngestionInput {
-  readonly operationId:string;
-  readonly ingestionRunId:string;
-  readonly vectorStoreId:string;
-  readonly actorIdentity:string;
-  readonly controlPlaneOverride:boolean;
-  readonly requestDigest:`sha256:${string}`;
-  readonly chains:readonly VectorStoreIngestionChain[];
+  readonly operationId: string;
+  readonly ingestionRunId: string;
+  readonly vectorStoreId: string;
+  readonly actorIdentity: string;
+  readonly controlPlaneOverride: boolean;
+  readonly requestDigest: `sha256:${string}`;
+  readonly chains: readonly VectorStoreIngestionChain[];
 }
 export interface VectorStoreIngestionStageResult {
-  readonly schemaVersion:"knowledge.vector-store-ingestion-stage/v1";
-  readonly ingestionRunId:string;
-  readonly vectorStoreId:string;
-  readonly stage:VectorStoreIngestionStage;
-  readonly attachmentCount:number;
-  readonly evidenceDigest:`sha256:${string}`;
+  readonly schemaVersion: "knowledge.vector-store-ingestion-stage/v1";
+  readonly ingestionRunId: string;
+  readonly vectorStoreId: string;
+  readonly stage: VectorStoreIngestionStage;
+  readonly attachmentCount: number;
+  readonly evidenceDigest: `sha256:${string}`;
 }
 
 /** A receipt addressed by its own immutable identity, never by operation id. */
@@ -239,13 +288,34 @@ export interface CanonicalEvaluationReportResource {
   readonly configuration: unknown;
   readonly codeReference?: string;
   readonly executedAt: string;
-  readonly metrics: readonly { readonly id: string; readonly metricDefinitionId: string; readonly caseId?: string; readonly value?: number; readonly details: unknown; readonly createdAt: string }[];
-  readonly gates: readonly { readonly id: string; readonly gateVersionId: string; readonly passed: boolean; readonly falseAcceptanceCount: number; readonly observations: unknown; readonly resultDigest: string; readonly createdAt: string }[];
+  readonly metrics: readonly {
+    readonly id: string;
+    readonly metricDefinitionId: string;
+    readonly caseId?: string;
+    readonly value?: number;
+    readonly details: unknown;
+    readonly createdAt: string;
+  }[];
+  readonly gates: readonly {
+    readonly id: string;
+    readonly gateVersionId: string;
+    readonly passed: boolean;
+    readonly falseAcceptanceCount: number;
+    readonly observations: unknown;
+    readonly resultDigest: string;
+    readonly createdAt: string;
+  }[];
 }
 
 export interface CanonicalEvaluationFailuresResource {
   readonly evaluationRunId: string;
-  readonly failures: readonly { readonly caseId: string; readonly metrics: unknown; readonly falseAcceptance: boolean; readonly falseRejection: boolean; readonly output?: unknown }[];
+  readonly failures: readonly {
+    readonly caseId: string;
+    readonly metrics: unknown;
+    readonly falseAcceptance: boolean;
+    readonly falseRejection: boolean;
+    readonly output?: unknown;
+  }[];
   readonly truncated: boolean;
 }
 
@@ -272,7 +342,18 @@ export interface OutboxClaim {
 export interface ReviewSubjectInput {
   readonly id: string;
   readonly operationId: string;
-  readonly subjectKind: "source_vetting" | "conversion" | "representation" | "domain_mapping" | "chunking" | "projection" | "content_promotion" | "publication" | "regression_waiver" | "injection_security" | "retrieval_anomaly";
+  readonly subjectKind:
+    | "source_vetting"
+    | "conversion"
+    | "representation"
+    | "domain_mapping"
+    | "chunking"
+    | "projection"
+    | "content_promotion"
+    | "publication"
+    | "regression_waiver"
+    | "injection_security"
+    | "retrieval_anomaly";
   readonly subjectRef: unknown;
   readonly guardedSha256: string;
   readonly eligibleRoles: readonly string[];
@@ -369,7 +450,13 @@ export interface PersistGovernedEmbeddingRunInput {
     readonly costUsd: number;
     readonly latencyMs: number;
     readonly retryHistory: unknown;
-    readonly items: readonly { readonly projectionId: string; readonly inputDigest: `sha256:${string}`; readonly outputDigest: `sha256:${string}`; readonly cacheKey: string; readonly embedding: readonly number[] }[];
+    readonly items: readonly {
+      readonly projectionId: string;
+      readonly inputDigest: `sha256:${string}`;
+      readonly outputDigest: `sha256:${string}`;
+      readonly cacheKey: string;
+      readonly embedding: readonly number[];
+    }[];
   };
 }
 
@@ -479,22 +566,86 @@ export interface GovernedPublication {
 }
 
 export interface GovernedIndexRepository {
-  verifySelectedCandidate(tenantId:string,input:import("@aiengineer/knowledge-contracts").SelectedCandidateIndexInput):Promise<GovernedSelectedCandidateResult>;
-  evaluateSelectedCandidate(tenantId:string,input:import("@aiengineer/knowledge-contracts").SelectedCandidateEvaluationInput):Promise<GovernedCandidateEvaluation>;
-  queryPublishedSpace(tenantId:string,input:{vectorStoreSpaceId:string;queryEmbedding:readonly number[];resultLimit?:number;mode:PublishedQueryMode}):Promise<GovernedPublishedAnswer>;
-  verifyPublicationBaseline(tenantId:string,input:{vectorStoreSpaceId:string;queries:readonly {queryId:string;embedding:readonly number[]}[]}):Promise<GovernedPublicationBaselineComparison>;
-  persistRepresentationDecision(tenantId:string,input:{operationId:string;representationId:string;guardedDigest:`sha256:${string}`;knowledgeReviewDecisionId:string;reviewerIdentity:string;decision:"accept"|"reject"|"quarantine"|"defer"|"request_changes";policyVersion:string;rationale:string;expiresAt?:string}):Promise<string>;
-  persistProjectionProposal(tenantId:string,input:GovernedProjectionProposalInput):Promise<GovernedProjectionProposal>;
-  getProjectionProposal(tenantId:string,proposalId:string):Promise<GovernedProjectionProposal|undefined>;
-  persistPromotionDecision(tenantId:string,input:GovernedPromotionDecisionInput):Promise<string>;
-  loadEmbeddingContext(tenantId:string,vectorSpaceVersionId:string,promotionDecisionId:string,projectionIds:readonly string[]):Promise<GovernedEmbeddingContext>;
-  persistEmbeddingRun(tenantId:string,input:PersistGovernedEmbeddingRunInput):Promise<GovernedEmbeddingRun>;
-  getEmbeddingRunByOperation(tenantId:string,operationId:string):Promise<GovernedEmbeddingRun|undefined>;
-  stagePublication(tenantId:string,input:GovernedPublicationInput):Promise<GovernedPublication>;
-  publishStaged(tenantId:string,publicationId:string,operationId:string,expectedGuardedDigest:`sha256:${string}`,reason:string,publisherIdentity:string,idempotencyKey:string):Promise<GovernedPublication>;
-  verifyPublication(tenantId:string,publicationId:string):Promise<GovernedPublication>;
-  planRollback(tenantId:string,currentPublicationId:string,targetPublicationId:string,publisherIdentity:string):Promise<{guardedDigest:`sha256:${string}`;vectorStoreSpaceId:string;frozenBaseline?:readonly {queryId:string;embeddingDigest:string}[]}>;
-  executeRollback(tenantId:string,operationId:string,currentPublicationId:string,targetPublicationId:string,expectedGuardedDigest:`sha256:${string}`,reason:string,publisherIdentity:string,idempotencyKey:string):Promise<string>;
+  verifySelectedCandidate(
+    tenantId: string,
+    input: import("@aiengineer/knowledge-contracts").SelectedCandidateIndexInput,
+  ): Promise<GovernedSelectedCandidateResult>;
+  evaluateSelectedCandidate(
+    tenantId: string,
+    input: import("@aiengineer/knowledge-contracts").SelectedCandidateEvaluationInput,
+  ): Promise<GovernedCandidateEvaluation>;
+  queryPublishedSpace(
+    tenantId: string,
+    input: {
+      vectorStoreSpaceId: string;
+      queryEmbedding: readonly number[];
+      resultLimit?: number;
+      mode: PublishedQueryMode;
+    },
+  ): Promise<GovernedPublishedAnswer>;
+  verifyPublicationBaseline(
+    tenantId: string,
+    input: { vectorStoreSpaceId: string; queries: readonly { queryId: string; embedding: readonly number[] }[] },
+  ): Promise<GovernedPublicationBaselineComparison>;
+  persistRepresentationDecision(
+    tenantId: string,
+    input: {
+      operationId: string;
+      representationId: string;
+      guardedDigest: `sha256:${string}`;
+      knowledgeReviewDecisionId: string;
+      reviewerIdentity: string;
+      decision: "accept" | "reject" | "quarantine" | "defer" | "request_changes";
+      policyVersion: string;
+      rationale: string;
+      expiresAt?: string;
+    },
+  ): Promise<string>;
+  persistProjectionProposal(
+    tenantId: string,
+    input: GovernedProjectionProposalInput,
+  ): Promise<GovernedProjectionProposal>;
+  getProjectionProposal(tenantId: string, proposalId: string): Promise<GovernedProjectionProposal | undefined>;
+  persistPromotionDecision(tenantId: string, input: GovernedPromotionDecisionInput): Promise<string>;
+  loadEmbeddingContext(
+    tenantId: string,
+    vectorSpaceVersionId: string,
+    promotionDecisionId: string,
+    projectionIds: readonly string[],
+  ): Promise<GovernedEmbeddingContext>;
+  persistEmbeddingRun(tenantId: string, input: PersistGovernedEmbeddingRunInput): Promise<GovernedEmbeddingRun>;
+  getEmbeddingRunByOperation(tenantId: string, operationId: string): Promise<GovernedEmbeddingRun | undefined>;
+  stagePublication(tenantId: string, input: GovernedPublicationInput): Promise<GovernedPublication>;
+  publishStaged(
+    tenantId: string,
+    publicationId: string,
+    operationId: string,
+    expectedGuardedDigest: `sha256:${string}`,
+    reason: string,
+    publisherIdentity: string,
+    idempotencyKey: string,
+  ): Promise<GovernedPublication>;
+  verifyPublication(tenantId: string, publicationId: string): Promise<GovernedPublication>;
+  planRollback(
+    tenantId: string,
+    currentPublicationId: string,
+    targetPublicationId: string,
+    publisherIdentity: string,
+  ): Promise<{
+    guardedDigest: `sha256:${string}`;
+    vectorStoreSpaceId: string;
+    frozenBaseline?: readonly { queryId: string; embeddingDigest: string }[];
+  }>;
+  executeRollback(
+    tenantId: string,
+    operationId: string,
+    currentPublicationId: string,
+    targetPublicationId: string,
+    expectedGuardedDigest: `sha256:${string}`,
+    reason: string,
+    publisherIdentity: string,
+    idempotencyKey: string,
+  ): Promise<string>;
 }
 
 // Retrieval repository port shapes are owned by application; re-exported under their historical names.
@@ -519,25 +670,78 @@ export interface OperationsRepository {
   getOperation(tenantId: string, operationId: string): Promise<CanonicalOperation | undefined>;
   getOperationRecord(tenantId: string, operationId: string): Promise<CanonicalOperationRecord | undefined>;
   listOperations(tenantId: string, limit?: number): Promise<readonly CanonicalOperationRecord[]>;
-  listOperationEvents(tenantId: string, operationId: string, afterSequence?: number, limit?: number): Promise<readonly CanonicalOperationEvent[] | undefined>;
+  listOperationEvents(
+    tenantId: string,
+    operationId: string,
+    afterSequence?: number,
+    limit?: number,
+  ): Promise<readonly CanonicalOperationEvent[] | undefined>;
   listSteps(tenantId: string, operationId: string): Promise<readonly CanonicalStep[]>;
-  cancelOperation(tenantId: string, operationId: string, control: CanonicalOperationControl): Promise<CanonicalOperationRecord | undefined>;
-  retryOperation(tenantId: string, operationId: string, control: CanonicalOperationControl): Promise<CanonicalOperationRecord | undefined>;
+  cancelOperation(
+    tenantId: string,
+    operationId: string,
+    control: CanonicalOperationControl,
+  ): Promise<CanonicalOperationRecord | undefined>;
+  retryOperation(
+    tenantId: string,
+    operationId: string,
+    control: CanonicalOperationControl,
+  ): Promise<CanonicalOperationRecord | undefined>;
   reconcileOperation(tenantId: string, operationId: string): Promise<CanonicalOperationRecord | undefined>;
   reconcileOperations(tenantId: string, limit?: number): Promise<number>;
 }
 
 export interface LeaseRepository {
-  claimNext(tenantId: string, holderIdentity: string, leaseMs?: number, eligibleOperationKinds?: readonly string[]): Promise<LeasedStep | undefined>;
-  claimOperation(tenantId: string, operationId: string, holderIdentity: string, leaseMs?: number): Promise<LeasedStep | undefined>;
-  heartbeat(tenantId: string, lease: Pick<LeasedStep, "id" | "leaseToken" | "fencingToken">, leaseMs?: number): Promise<LeasedStep>;
-  completeStep(tenantId: string, lease: LeasedStep, receipt: { id: string; idempotencyKey: string; receiptKind: string; executorIdentity: string; output: unknown }): Promise<CanonicalReceipt>;
-  failStep(tenantId: string, lease: LeasedStep, failure: { id: string; idempotencyKey: string; executorIdentity: string; errorClass: string; retryable: boolean; retryDelayMs?: number }): Promise<CanonicalReceipt>;
+  claimNext(
+    tenantId: string,
+    holderIdentity: string,
+    leaseMs?: number,
+    eligibleOperationKinds?: readonly string[],
+  ): Promise<LeasedStep | undefined>;
+  claimOperation(
+    tenantId: string,
+    operationId: string,
+    holderIdentity: string,
+    leaseMs?: number,
+  ): Promise<LeasedStep | undefined>;
+  heartbeat(
+    tenantId: string,
+    lease: Pick<LeasedStep, "id" | "leaseToken" | "fencingToken">,
+    leaseMs?: number,
+  ): Promise<LeasedStep>;
+  completeStep(
+    tenantId: string,
+    lease: LeasedStep,
+    receipt: { id: string; idempotencyKey: string; receiptKind: string; executorIdentity: string; output: unknown },
+  ): Promise<CanonicalReceipt>;
+  failStep(
+    tenantId: string,
+    lease: LeasedStep,
+    failure: {
+      id: string;
+      idempotencyKey: string;
+      executorIdentity: string;
+      errorClass: string;
+      retryable: boolean;
+      retryDelayMs?: number;
+    },
+  ): Promise<CanonicalReceipt>;
 }
 
 export interface OutboxRepository {
-  claimOutbox(tenantId: string, claimOwner: string, limit?: number, visibilityTimeoutMs?: number): Promise<readonly PendingOutboxMessage[]>;
-  claimOperationOutbox(tenantId: string, operationId: string, claimOwner: string, limit?: number, visibilityTimeoutMs?: number): Promise<readonly PendingOutboxMessage[]>;
+  claimOutbox(
+    tenantId: string,
+    claimOwner: string,
+    limit?: number,
+    visibilityTimeoutMs?: number,
+  ): Promise<readonly PendingOutboxMessage[]>;
+  claimOperationOutbox(
+    tenantId: string,
+    operationId: string,
+    claimOwner: string,
+    limit?: number,
+    visibilityTimeoutMs?: number,
+  ): Promise<readonly PendingOutboxMessage[]>;
   extendOutboxClaim(tenantId: string, claim: OutboxClaim, visibilityTimeoutMs?: number): Promise<string>;
   ackOutbox(tenantId: string, claim: OutboxClaim): Promise<void>;
   nackOutbox(tenantId: string, claim: OutboxClaim, errorClass: string, retryDelayMs?: number): Promise<void>;
@@ -554,9 +758,15 @@ export interface ResourceReadRepository {
   getArtifactResource(tenantId: string, artifactId: string): Promise<CanonicalArtifactResource | undefined>;
   getReceiptResource(tenantId: string, receiptId: string): Promise<CanonicalReceiptResource | undefined>;
   getRetrievalRunResource(tenantId: string, runId: string): Promise<CanonicalRetrievalRunResource | undefined>;
-  getRetrievalExplanationResource(tenantId: string, runId: string): Promise<CanonicalRetrievalExplanationResource | undefined>;
+  getRetrievalExplanationResource(
+    tenantId: string,
+    runId: string,
+  ): Promise<CanonicalRetrievalExplanationResource | undefined>;
   getEvaluationReportResource(tenantId: string, runId: string): Promise<CanonicalEvaluationReportResource | undefined>;
-  getEvaluationFailuresResource(tenantId: string, runId: string): Promise<CanonicalEvaluationFailuresResource | undefined>;
+  getEvaluationFailuresResource(
+    tenantId: string,
+    runId: string,
+  ): Promise<CanonicalEvaluationFailuresResource | undefined>;
   operationBelongsToVectorStore(tenantId: string, vectorStoreId: string, operationId: string): Promise<boolean>;
 }
 
@@ -566,18 +776,52 @@ export interface ReviewRepository {
 }
 
 export interface VectorPublicationRepository {
-  publishVectorSpace(tenantId: string, input: { publicationId: string; expectedGuardedSha256: string; reason: string; actorIdentity: string; idempotencyKey: string }): Promise<string>;
-  rollbackVectorSpace(tenantId: string, input: { currentPublicationId: string; targetPublicationId: string; expectedGuardedSha256: string; reason: string; actorIdentity: string; idempotencyKey: string; operationId: string }): Promise<string>;
+  publishVectorSpace(
+    tenantId: string,
+    input: {
+      publicationId: string;
+      expectedGuardedSha256: string;
+      reason: string;
+      actorIdentity: string;
+      idempotencyKey: string;
+    },
+  ): Promise<string>;
+  rollbackVectorSpace(
+    tenantId: string,
+    input: {
+      currentPublicationId: string;
+      targetPublicationId: string;
+      expectedGuardedSha256: string;
+      reason: string;
+      actorIdentity: string;
+      idempotencyKey: string;
+      operationId: string;
+    },
+  ): Promise<string>;
 }
 
 export interface RetrievalRepository {
-  resolveRetrievalPolicy(tenantId: string, policyVersionId: string, requestedSpaces: readonly string[]): Promise<RetrievalPolicySnapshot>;
+  resolveRetrievalPolicy(
+    tenantId: string,
+    policyVersionId: string,
+    requestedSpaces: readonly string[],
+  ): Promise<RetrievalPolicySnapshot>;
   hybridSearch(request: HybridSearchRequest): Promise<readonly HybridSearchResult[]>;
-  getRetrievalEvidenceRecords(tenantId: string, vectorItemIds: readonly string[]): Promise<readonly RetrievalEvidenceRecord[]>;
+  getRetrievalEvidenceRecords(
+    tenantId: string,
+    vectorItemIds: readonly string[],
+  ): Promise<readonly RetrievalEvidenceRecord[]>;
   storeRetrievalExecution(tenantId: string, input: PersistRetrievalExecutionInput): Promise<string>;
-  annNearest(request: Omit<HybridSearchRequest, "queryText" | "filters" | "candidateLimit" | "rrfK">): Promise<readonly { vectorItemId: string; score: number }[]>;
-  exactNearest(request: Omit<HybridSearchRequest, "queryText" | "filters" | "candidateLimit" | "rrfK">): Promise<readonly { vectorItemId: string; score: number }[]>;
-  storeEvidencePacket(tenantId: string, input: { planId: string; runId: string; packetId: string; packet: unknown }): Promise<string>;
+  annNearest(
+    request: Omit<HybridSearchRequest, "queryText" | "filters" | "candidateLimit" | "rrfK">,
+  ): Promise<readonly { vectorItemId: string; score: number }[]>;
+  exactNearest(
+    request: Omit<HybridSearchRequest, "queryText" | "filters" | "candidateLimit" | "rrfK">,
+  ): Promise<readonly { vectorItemId: string; score: number }[]>;
+  storeEvidencePacket(
+    tenantId: string,
+    input: { planId: string; runId: string; packetId: string; packet: unknown },
+  ): Promise<string>;
   getEvidencePacket(tenantId: string, packetId: string): Promise<unknown | undefined>;
 }
 
@@ -620,7 +864,11 @@ export interface PersistRepresentationInput {
   readonly documentKind: string;
   readonly canonicalTitle: string;
   readonly canonicalSourceId: string;
-  readonly identifier?: { readonly type: "url" | "doi" | "arxiv" | "openreview" | "isbn" | "repository" | "media_id" | "other"; readonly value: string; readonly authority?: string };
+  readonly identifier?: {
+    readonly type: "url" | "doi" | "arxiv" | "openreview" | "isbn" | "repository" | "media_id" | "other";
+    readonly value: string;
+    readonly authority?: string;
+  };
   readonly documentVersionId: string;
   readonly versionLabel: string;
   readonly manifestDigest: `sha256:${string}`;
@@ -695,7 +943,12 @@ export interface PersistChunkSetInput {
     readonly sourceTokenCount: number;
     readonly embeddingTokenCount: number;
     readonly role: string;
-    readonly spans: readonly { readonly nodeId: string; readonly startOffset: number; readonly endOffset: number; readonly selectedTextDigest: `sha256:${string}` }[];
+    readonly spans: readonly {
+      readonly nodeId: string;
+      readonly startOffset: number;
+      readonly endOffset: number;
+      readonly selectedTextDigest: `sha256:${string}`;
+    }[];
   }[];
 }
 
@@ -715,7 +968,10 @@ export interface PreparationRepository {
   getCaptureByOperation(tenantId: string, operationId: string): Promise<PersistedCapture | undefined>;
   persistRepresentation(tenantId: string, input: PersistRepresentationInput): Promise<PersistedRepresentation>;
   getRepresentationByOperation(tenantId: string, operationId: string): Promise<PersistedRepresentation | undefined>;
-  getRepresentationNodes(tenantId: string, representationId: string): Promise<readonly PersistRepresentationInput["nodes"][number][]>;
+  getRepresentationNodes(
+    tenantId: string,
+    representationId: string,
+  ): Promise<readonly PersistRepresentationInput["nodes"][number][]>;
   persistChunkSet(tenantId: string, input: PersistChunkSetInput): Promise<PersistedChunkSet>;
   getChunkSetByOperation(tenantId: string, operationId: string): Promise<PersistedChunkSet | undefined>;
 }

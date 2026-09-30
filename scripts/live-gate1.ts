@@ -20,9 +20,7 @@ const tenantId = "00000000-0000-7000-8000-000000000001";
 const artifacts = new InMemoryArtifactStore();
 const resolver: DnsResolver = {
   async resolve(hostname) {
-    return (await lookup(hostname, { all: true, verbatim: true })).map(
-      (entry) => entry.address,
-    );
+    return (await lookup(hostname, { all: true, verbatim: true })).map((entry) => entry.address);
   },
 };
 const targetPolicy = {
@@ -55,19 +53,13 @@ function typedFailure(error: unknown): {
   const message = error instanceof Error ? error.message : String(error);
   const failureClass =
     message.match(/^[A-Z][A-Z0-9_]*(?=:|$)/)?.[0] ??
-    (message.includes("fetch failed")
-      ? "PROVIDER_UNAVAILABLE"
-      : "UNCLASSIFIED_PROVIDER_FAILURE");
+    (message.includes("fetch failed") ? "PROVIDER_UNAVAILABLE" : "UNCLASSIFIED_PROVIDER_FAILURE");
   return { status: "failed", failureClass };
 }
 
 async function exactEvidence() {
   try {
-    const adapter = new ExactHttpAcquisitionAdapter(
-      artifacts,
-      targetPolicy,
-      resolver,
-    );
+    const adapter = new ExactHttpAcquisitionAdapter(artifacts, targetPolicy, resolver);
     const plan = await adapter.plan(request);
     const result = await adapter.execute({
       ...plan,
@@ -80,8 +72,7 @@ async function exactEvidence() {
       officialUrl,
       artifactDigest: result.artifacts[0]?.digest,
       byteLength: result.artifacts[0]?.byteLength,
-      finalUrl: result.observations.find((item) => item.key === "final_url")
-        ?.value,
+      finalUrl: result.observations.find((item) => item.key === "final_url")?.value,
       checks: verification.checks,
       findings: verification.findings,
     };
@@ -105,9 +96,7 @@ async function firecrawlEvidence() {
     const adapter = new FirecrawlAcquisitionAdapter(
       artifacts,
       {
-        endpoint:
-          process.env.FIRECRAWL_API_URL?.trim() ||
-          "https://api.firecrawl.dev/v1/scrape",
+        endpoint: process.env.FIRECRAWL_API_URL?.trim() || "https://api.firecrawl.dev/v1/scrape",
         authenticationReference: "env:FIRECRAWL_API_KEY",
         apiVersion: "v1",
         timeoutMs: 30_000,
@@ -118,8 +107,7 @@ async function firecrawlEvidence() {
       },
       {
         async resolve(reference) {
-          if (reference !== "env:FIRECRAWL_API_KEY")
-            throw new Error("AUTHENTICATION_REFERENCE_DENIED");
+          if (reference !== "env:FIRECRAWL_API_KEY") throw new Error("AUTHENTICATION_REFERENCE_DENIED");
           return apiKey;
         },
       },
@@ -142,12 +130,8 @@ async function firecrawlEvidence() {
       byteLengths: result.artifacts.map((item) => item.byteLength),
       checks: verification.checks,
       findings: verification.findings,
-      providerStatus: result.observations.find(
-        (item) => item.key === "provider_status",
-      )?.value,
-      representations: result.observations.find(
-        (item) => item.key === "representations",
-      )?.value,
+      providerStatus: result.observations.find((item) => item.key === "provider_status")?.value,
+      representations: result.observations.find((item) => item.key === "representations")?.value,
     };
   } catch (error) {
     return {
@@ -160,8 +144,8 @@ async function firecrawlEvidence() {
 async function conversionEvidence() {
   const unstructuredConfigured = Boolean(
     process.env.UNSTRUCTURED_API_URL?.trim() &&
-    process.env.UNSTRUCTURED_API_KEY?.trim() &&
-    process.env.UNSTRUCTURED_TEMPLATE_ID?.trim(),
+      process.env.UNSTRUCTURED_API_KEY?.trim() &&
+      process.env.UNSTRUCTURED_TEMPLATE_ID?.trim(),
   );
   const bytes = new TextEncoder().encode(
     "Bounded bundle-derived conversion fixture: reliable agents combine planning, tool use, and evaluation.",
@@ -281,11 +265,7 @@ const receipt = {
   receiptDigest: sha256Digest(JSON.parse(JSON.stringify(core))),
 };
 const path = resolve("catalog/gate1-live-evidence.json");
-await writeFile(
-  path,
-  `${canonicalJson(JSON.parse(JSON.stringify(receipt)))}\n`,
-  "utf8",
-);
+await writeFile(path, `${canonicalJson(JSON.parse(JSON.stringify(receipt)))}\n`, "utf8");
 process.stdout.write(
   `${JSON.stringify({ receipt: path, receiptDigest: receipt.receiptDigest, exact: exact.status, firecrawl: firecrawl.status, unstructured: conversion.unstructured.status, fallback: conversion.fallback.status })}\n`,
 );

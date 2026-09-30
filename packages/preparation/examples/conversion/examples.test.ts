@@ -9,9 +9,7 @@ import { runManagedDeniedExample } from "./06-managed-denied.js";
 describe("conversion examples", () => {
   it("covers text, Docling, inspect, fallback, import, and managed denial", async () => {
     const text = await runTextConvertExample();
-    expect(text.routed.receipt.selectedProviderKey).toBe(
-      "deterministic-structural-text",
-    );
+    expect(text.routed.receipt.selectedProviderKey).toBe("deterministic-structural-text");
     expect(text.calls).toEqual([]);
     const pdf = await runPdfDoclingExample();
     expect(pdf.routed.receipt.selectedProviderKey).toBe("docling-serve");
@@ -20,9 +18,7 @@ describe("conversion examples", () => {
     expect(inspect.output.fidelity.grade).toBe("high");
     const fallback = await runDoclingThenUnstructuredExample();
     expect(fallback.routed.receipt.fallbackUsed).toBe(true);
-    expect(JSON.stringify(fallback.routed.receipt)).not.toContain(
-      "secret-must-not-escape",
-    );
+    expect(JSON.stringify(fallback.routed.receipt)).not.toContain("secret-must-not-escape");
     const imported = await runImportStoredMarkdownExample();
     expect(imported.output.nodes.length).toBeGreaterThan(1);
     const denied = await runManagedDeniedExample();

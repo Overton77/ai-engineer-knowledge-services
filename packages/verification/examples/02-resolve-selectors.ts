@@ -227,9 +227,7 @@ export const selectorExamples: readonly SelectorExample[] = [
   },
 ];
 
-export function resolveExample(
-  example: SelectorExample,
-): EvidenceSelection | undefined {
+export function resolveExample(example: SelectorExample): EvidenceSelection | undefined {
   const content = new TextEncoder().encode(example.content);
   return resolveEvidenceSelector(
     {

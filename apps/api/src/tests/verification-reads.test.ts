@@ -14,41 +14,35 @@ describe("verification run HTTP read admission", () => {
       }),
       createdAt = "2026-09-08T00:00:00.000Z";
     const reads = {
-      listRunCases: vi
-        .fn()
-        .mockResolvedValue({
-          verificationContractVersion: "verification.v1",
-          tenantId,
-          runId: id,
-          cases: [],
-        }),
-      getCase: vi
-        .fn()
-        .mockResolvedValue({
-          verificationContractVersion: "verification.v1",
-          tenantId,
-          runId: id,
-          caseRunId: id,
-          caseKey: "case",
-          inputArtifact: artifact(1),
-          resultArtifact: artifact(2),
-          createdAt,
-          evidence: [],
-        }),
-      getEvidence: vi
-        .fn()
-        .mockResolvedValue({
-          verificationContractVersion: "verification.v1",
-          tenantId,
-          runId: id,
-          caseRunId: id,
-          evidenceId: id,
-          evidenceKey: "evidence",
-          kind: "artifact",
-          ordinal: 0,
-          artifact: artifact(3),
-          createdAt,
-        }),
+      listRunCases: vi.fn().mockResolvedValue({
+        verificationContractVersion: "verification.v1",
+        tenantId,
+        runId: id,
+        cases: [],
+      }),
+      getCase: vi.fn().mockResolvedValue({
+        verificationContractVersion: "verification.v1",
+        tenantId,
+        runId: id,
+        caseRunId: id,
+        caseKey: "case",
+        inputArtifact: artifact(1),
+        resultArtifact: artifact(2),
+        createdAt,
+        evidence: [],
+      }),
+      getEvidence: vi.fn().mockResolvedValue({
+        verificationContractVersion: "verification.v1",
+        tenantId,
+        runId: id,
+        caseRunId: id,
+        evidenceId: id,
+        evidenceKey: "evidence",
+        kind: "artifact",
+        ordinal: 0,
+        artifact: artifact(3),
+        createdAt,
+      }),
     };
     const server = buildServer({
       resolveIdentity: (token) =>
@@ -95,13 +89,7 @@ describe("verification run HTTP read admission", () => {
         pageSize: 2,
         cursor,
       });
-      for (const query of [
-        "pageSize=101",
-        "pageSize=0",
-        "pageSize=1.5",
-        "cursor=locator-alias",
-        "tenantId=forged",
-      ]) {
+      for (const query of ["pageSize=101", "pageSize=0", "pageSize=1.5", "cursor=locator-alias", "tenantId=forged"]) {
         expect(
           (
             await server.inject({
@@ -112,10 +100,7 @@ describe("verification run HTTP read admission", () => {
         ).toBe(400);
       }
       expect(reads.listRunCases).toHaveBeenCalledTimes(1);
-      expect(
-        (await server.inject({ url: `/v1/verification/cases/${id}`, headers }))
-          .statusCode,
-      ).toBe(200);
+      expect((await server.inject({ url: `/v1/verification/cases/${id}`, headers })).statusCode).toBe(200);
       expect(reads.getCase).toHaveBeenCalledWith({ tenantId, caseRunId: id });
       expect(
         (
@@ -151,42 +136,36 @@ describe("verification run HTTP read admission", () => {
         grants: [{ tenantId, roles: ["knowledge_reader"], scopes: [] }],
       }),
       verificationCaseReads: {
-        listRunCases: vi
-          .fn()
-          .mockResolvedValue({
-            verificationContractVersion: "verification.v1",
-            tenantId,
-            runId: id,
-            cases: [],
-            objectKey: "private",
-          }),
-        getCase: vi
-          .fn()
-          .mockResolvedValue({
-            verificationContractVersion: "verification.v1",
-            tenantId: foreign,
-            runId: id,
-            caseRunId: id,
-            caseKey: "case",
-            inputArtifact: artifact,
-            resultArtifact: artifact,
-            createdAt,
-            evidence: [],
-          }),
-        getEvidence: vi
-          .fn()
-          .mockResolvedValue({
-            verificationContractVersion: "verification.v1",
-            tenantId,
-            runId: id,
-            caseRunId: id,
-            evidenceId: foreign,
-            evidenceKey: "evidence",
-            kind: "artifact",
-            ordinal: 0,
-            artifact,
-            createdAt,
-          }),
+        listRunCases: vi.fn().mockResolvedValue({
+          verificationContractVersion: "verification.v1",
+          tenantId,
+          runId: id,
+          cases: [],
+          objectKey: "private",
+        }),
+        getCase: vi.fn().mockResolvedValue({
+          verificationContractVersion: "verification.v1",
+          tenantId: foreign,
+          runId: id,
+          caseRunId: id,
+          caseKey: "case",
+          inputArtifact: artifact,
+          resultArtifact: artifact,
+          createdAt,
+          evidence: [],
+        }),
+        getEvidence: vi.fn().mockResolvedValue({
+          verificationContractVersion: "verification.v1",
+          tenantId,
+          runId: id,
+          caseRunId: id,
+          evidenceId: foreign,
+          evidenceKey: "evidence",
+          kind: "artifact",
+          ordinal: 0,
+          artifact,
+          createdAt,
+        }),
       },
     });
     const headers = {
@@ -217,14 +196,8 @@ describe("verification run HTTP read admission", () => {
         grants: [{ tenantId, roles: ["knowledge_reader"], scopes: [] }],
       }),
       verificationCaseReads: {
-        listRunCases: vi
-          .fn()
-          .mockRejectedValue(new Error("private storage detail")),
-        getCase: vi
-          .fn()
-          .mockRejectedValue(
-            Object.assign(new Error("private case"), { code: "NOT_FOUND" }),
-          ),
+        listRunCases: vi.fn().mockRejectedValue(new Error("private storage detail")),
+        getCase: vi.fn().mockRejectedValue(Object.assign(new Error("private case"), { code: "NOT_FOUND" })),
         getEvidence: vi.fn().mockRejectedValue(new Error("private evidence")),
       },
     });
@@ -333,10 +306,8 @@ describe("verification run HTTP read admission", () => {
           grants: [{ tenantId, roles: ["knowledge_reader"], scopes: [] }],
         }),
         verificationReads: {
-          getRun: async () =>
-            ({ objectKey: "private-storage-coordinate" }) as any,
-          getRunManifest: async () =>
-            ({ objectKey: "private-storage-coordinate" }) as any,
+          getRun: async () => ({ objectKey: "private-storage-coordinate" }) as any,
+          getRunManifest: async () => ({ objectKey: "private-storage-coordinate" }) as any,
         },
       });
     const headers = { authorization: "Bearer valid", "x-tenant-id": tenantId };

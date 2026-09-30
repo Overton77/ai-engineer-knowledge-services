@@ -33,7 +33,10 @@ export const VerificationParseArtifactResultSchema = z.strictObject({
   useCase: z.literal("parseArtifact"),
   requestDigest: Sha256DigestSchema,
   sourceArtifact: VerificationArtifactHandleSchema,
-  output: z.strictObject({ status: z.literal("canonical_projection_admitted"), projections: z.array(projection).min(1).max(2) }),
+  output: z.strictObject({
+    status: z.literal("canonical_projection_admitted"),
+    projections: z.array(projection).min(1).max(2),
+  }),
   resultArtifact: VerificationArtifactHandleSchema,
 });
 export type VerificationParseArtifactResult = z.infer<typeof VerificationParseArtifactResultSchema>;

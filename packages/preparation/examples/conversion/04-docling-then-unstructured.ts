@@ -1,12 +1,5 @@
 import { ConversionRouter } from "../../src/index.js";
-import {
-  countingProvider,
-  exampleStore,
-  pdfRequest,
-  printJson,
-  stubOutput,
-  unusedTextProvider,
-} from "./helpers.js";
+import { countingProvider, exampleStore, pdfRequest, printJson, stubOutput, unusedTextProvider } from "./helpers.js";
 
 export async function runDoclingThenUnstructuredExample() {
   const store = exampleStore();
@@ -16,9 +9,7 @@ export async function runDoclingThenUnstructuredExample() {
     countingProvider("docling-serve", calls, async () => {
       throw new Error("PROVIDER_UNAVAILABLE:secret-must-not-escape");
     }),
-    countingProvider("unstructured-transform", calls, async () =>
-      stubOutput("unstructured-transform"),
-    ),
+    countingProvider("unstructured-transform", calls, async () => stubOutput("unstructured-transform")),
   );
   const routed = await router.convertWithReceipt(await pdfRequest(store, true));
   printJson({

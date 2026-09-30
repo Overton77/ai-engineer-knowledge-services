@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VerificationArtifactHandle } from "@aiengineer/knowledge-contracts";
-import {
-  InterfazeStructuredExtractionProvider,
-  sha256Digest,
-} from "@aiengineer/knowledge-verification";
+import { InterfazeStructuredExtractionProvider, sha256Digest } from "@aiengineer/knowledge-verification";
 import {
   VerificationProviderArtifactComposer,
   type VerificationProviderArtifactRegistrationPort,
@@ -15,7 +12,9 @@ const decoder = new TextDecoder();
 
 describe("synthetic Interfaze precontext retention boundary", () => {
   it("retains full raw/precontext artifacts while returning only a compact canonical record", async () => {
-    const registrations: Array<Parameters<VerificationProviderArtifactRegistrationPort["registerContentAddressedArtifact"]>[0]> = [];
+    const registrations: Array<
+      Parameters<VerificationProviderArtifactRegistrationPort["registerContentAddressedArtifact"]>[0]
+    > = [];
     const identities = new Map<string, VerificationArtifactHandle>();
     const repository: VerificationProviderArtifactRegistrationPort = {
       async registerContentAddressedArtifact(input) {
@@ -51,7 +50,12 @@ describe("synthetic Interfaze precontext retention boundary", () => {
       encryptionClass: "managed",
       retentionClass: "verification-audit",
       now: () => "2026-09-08T00:00:00.000Z",
-      externalProcessingGrant: { providerId: "interfaze", dataClassification: "synthetic", modalities: ["text"], zdrPolicy: "required" },
+      externalProcessingGrant: {
+        providerId: "interfaze",
+        dataClassification: "synthetic",
+        modalities: ["text"],
+        zdrPolicy: "required",
+      },
     });
     await composer.registerInput(encoder.encode("selected source fragment"), "text/plain");
     const privatePrecontext = "precontext-canary:" + "x".repeat(8_192);
@@ -92,7 +96,9 @@ describe("synthetic Interfaze precontext retention boundary", () => {
     const raw = registrations.find((item) => item.artifactType === "verification_provider_raw_response");
     const envelope = registrations.find((item) => item.artifactType === "verification_provider_response_envelope");
     const precontext = registrations.find((item) => item.artifactType === "verification_provider_precontext");
-    const precontextEnvelope = registrations.find((item) => item.artifactType === "verification_provider_precontext_envelope");
+    const precontextEnvelope = registrations.find(
+      (item) => item.artifactType === "verification_provider_precontext_envelope",
+    );
     for (const item of [request, raw, envelope, precontext, precontextEnvelope]) expect(item).toBeDefined();
     expect(raw!.dataClassification).toBe("restricted");
     expect(precontext!.dataClassification).toBe("restricted");
@@ -100,8 +106,14 @@ describe("synthetic Interfaze precontext retention boundary", () => {
     expect(decoder.decode(precontext!.bytes)).toContain(privatePrecontext);
     expect(precontext!.bytes.byteLength).toBeLessThanOrEqual(64_000);
     expect(raw!.bytes.byteLength).toBeLessThanOrEqual(160_000);
-    expect(envelope!.parentArtifactIds).toEqual(["00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000003"]);
-    expect(precontextEnvelope!.parentArtifactIds).toEqual(["00000000-0000-4000-8000-000000000004", "00000000-0000-4000-8000-000000000005"]);
+    expect(envelope!.parentArtifactIds).toEqual([
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000003",
+    ]);
+    expect(precontextEnvelope!.parentArtifactIds).toEqual([
+      "00000000-0000-4000-8000-000000000004",
+      "00000000-0000-4000-8000-000000000005",
+    ]);
 
     const compact = JSON.stringify(result);
     expect(result).toMatchObject({ output: { value: "selected source fragment" }, precontext: [{ name: "scraper" }] });
@@ -111,4 +123,3 @@ describe("synthetic Interfaze precontext retention boundary", () => {
     expect(encoder.encode(compact).byteLength).toBeLessThan(1_024);
   });
 });
-

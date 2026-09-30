@@ -46,9 +46,7 @@ export async function runManagedDeniedExample() {
       },
     })
     .then(() => undefined)
-    .catch((error: unknown) =>
-      error instanceof Error ? error.message : String(error),
-    );
+    .catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
   printJson({
     selectedProviderKey: routed.receipt.selectedProviderKey,
     candidateRoute: routed.receipt.candidateRoute,

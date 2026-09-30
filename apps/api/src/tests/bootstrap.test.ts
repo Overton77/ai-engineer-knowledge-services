@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createServer } from "node:http";
-import handler, {
-  createApiRequestHandler,
-  createApiRuntime,
-  validateApiPublicOrigin,
-} from "../index.js";
+import handler, { createApiRequestHandler, createApiRuntime, validateApiPublicOrigin } from "../index.js";
 
 it("requires trusted ownership configuration before metric admission", async () => {
-  await expect(
-    createApiRuntime({ NODE_ENV: "test", VERIFICATION_METRIC_ENABLED: "1" }),
-  ).rejects.toThrow("VERIFICATION_METRIC_OWNERSHIP_GRANTS_REQUIRED");
-  await expect(
-    createApiRuntime({ NODE_ENV: "test", VERIFICATION_METRIC_ENABLED: "true" }),
-  ).rejects.toThrow("INVALID_VERIFICATION_METRIC_ENABLED");
+  await expect(createApiRuntime({ NODE_ENV: "test", VERIFICATION_METRIC_ENABLED: "1" })).rejects.toThrow(
+    "VERIFICATION_METRIC_OWNERSHIP_GRANTS_REQUIRED",
+  );
+  await expect(createApiRuntime({ NODE_ENV: "test", VERIFICATION_METRIC_ENABLED: "true" })).rejects.toThrow(
+    "INVALID_VERIFICATION_METRIC_ENABLED",
+  );
 });
 
 it("keeps adjudication unavailable unless its separate complete configuration is supplied", async () => {
@@ -57,23 +53,16 @@ describe("API deployment bootstrap", () => {
     const nodeServer = createServer((request, response) => {
       void bridge(request, response).catch((error) => {
         response.statusCode = 500;
-        response.end(
-          error instanceof Error ? error.message : "handler failure",
-        );
+        response.end(error instanceof Error ? error.message : "handler failure");
       });
     });
-    await new Promise<void>((resolve) =>
-      nodeServer.listen(0, "127.0.0.1", resolve),
-    );
+    await new Promise<void>((resolve) => nodeServer.listen(0, "127.0.0.1", resolve));
     const address = nodeServer.address();
-    if (!address || typeof address === "string")
-      throw new Error("TEST_SERVER_ADDRESS_MISSING");
+    if (!address || typeof address === "string") throw new Error("TEST_SERVER_ADDRESS_MISSING");
     const response = await fetch(`http://127.0.0.1:${address.port}/health`);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "ok" });
-    await new Promise<void>((resolve, reject) =>
-      nodeServer.close((error) => (error ? reject(error) : resolve())),
-    );
+    await new Promise<void>((resolve, reject) => nodeServer.close((error) => (error ? reject(error) : resolve())));
     await runtime.server.close();
   });
 
@@ -84,11 +73,7 @@ describe("API deployment bootstrap", () => {
         KNOWLEDGE_API_URL: "https://knowledge.example",
       }),
     ).rejects.toThrow("POSTGRES_URL_REQUIRED");
-    expect(() =>
-      validateApiPublicOrigin("http://knowledge.example", true),
-    ).toThrow("INVALID_KNOWLEDGE_API_URL");
-    expect(validateApiPublicOrigin("https://knowledge.example/", true)).toBe(
-      "https://knowledge.example",
-    );
+    expect(() => validateApiPublicOrigin("http://knowledge.example", true)).toThrow("INVALID_KNOWLEDGE_API_URL");
+    expect(validateApiPublicOrigin("https://knowledge.example/", true)).toBe("https://knowledge.example");
   });
 });

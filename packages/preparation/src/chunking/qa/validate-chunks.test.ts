@@ -5,10 +5,15 @@ import { defaultChunkProfileRegistry } from "../profiles/index.js";
 import { reconstructChunk, validateChunks } from "./validate-chunks.js";
 
 const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
-const document = convertStructuralDocument({ tenantId: id(1), representationId: id(2), createdAt: "2026-09-03T12:00:00Z", blocks: [
-  { localKey: "h", ordinal: 0, kind: "heading", text: "Retries" },
-  { localKey: "p", parentKey: "h", ordinal: 0, kind: "paragraph", text: "Workers renew a lease before each retry." },
-] });
+const document = convertStructuralDocument({
+  tenantId: id(1),
+  representationId: id(2),
+  createdAt: "2026-09-03T12:00:00Z",
+  blocks: [
+    { localKey: "h", ordinal: 0, kind: "heading", text: "Retries" },
+    { localKey: "p", parentKey: "h", ordinal: 0, kind: "paragraph", text: "Workers renew a lease before each retry." },
+  ],
+});
 const profile = defaultChunkProfileRegistry.get("heading-sections-v1");
 const { chunks } = chunkDocument(document.nodes, profile);
 const chunk = chunks[0]!;
@@ -16,7 +21,12 @@ const chunk = chunks[0]!;
 describe("validateChunks", () => {
   it("accepts chunks that replay from their spans inside the bounds", () => {
     const qa = validateChunks(chunks, document.nodes, profile);
-    expect(qa).toMatchObject({ valid: true, issues: [], duplicateTokenRatio: 0, reconstructedChunkCount: chunks.length });
+    expect(qa).toMatchObject({
+      valid: true,
+      issues: [],
+      duplicateTokenRatio: 0,
+      reconstructedChunkCount: chunks.length,
+    });
   });
 
   it("reports a reconstruction mismatch", () => {
@@ -27,20 +37,31 @@ describe("validateChunks", () => {
   });
 
   it("reports token-bound violations in both directions", () => {
-    expect(validateChunks(chunks, document.nodes, { ...profile, maximumTokens: 2 }).issues).toContain(`${chunk.id}: exceeds maximum source tokens`);
-    expect(validateChunks(chunks, document.nodes, { ...profile, minimumTokens: 1000 }).issues).toContain(`${chunk.id}: below minimum source tokens`);
+    expect(validateChunks(chunks, document.nodes, { ...profile, maximumTokens: 2 }).issues).toContain(
+      `${chunk.id}: exceeds maximum source tokens`,
+    );
+    expect(validateChunks(chunks, document.nodes, { ...profile, minimumTokens: 1000 }).issues).toContain(
+      `${chunk.id}: below minimum source tokens`,
+    );
   });
 
   it("reports spans that point outside the sealed nodes", () => {
-    expect(validateChunks(chunks, [], profile).issues).toEqual([`${chunk.id}: Missing span node ${chunk.spans[0]!.nodeId}`]);
+    expect(validateChunks(chunks, [], profile).issues).toEqual([
+      `${chunk.id}: Missing span node ${chunk.spans[0]!.nodeId}`,
+    ]);
     const broken = { ...chunk, spans: [{ ...chunk.spans[0]!, endOffset: 10_000 }] };
-    expect(validateChunks([broken], document.nodes, profile).issues).toEqual([`${chunk.id}: Invalid span for ${chunk.spans[0]!.nodeId}`]);
+    expect(validateChunks([broken], document.nodes, profile).issues).toEqual([
+      `${chunk.id}: Invalid span for ${chunk.spans[0]!.nodeId}`,
+    ]);
   });
 
   it("reports adjacent chunks that duplicate each other", () => {
-    const single = convertStructuralDocument({ tenantId: id(1), representationId: id(3), createdAt: "2026-09-03T12:00:00Z", blocks: [
-      { localKey: "p", ordinal: 0, kind: "paragraph", text: "Workers renew a lease before each retry." },
-    ] });
+    const single = convertStructuralDocument({
+      tenantId: id(1),
+      representationId: id(3),
+      createdAt: "2026-09-03T12:00:00Z",
+      blocks: [{ localKey: "p", ordinal: 0, kind: "paragraph", text: "Workers renew a lease before each retry." }],
+    });
     const [only] = chunkDocument(single.nodes, profile).chunks;
     const repeated = { ...only!, id: id(7), ordinal: 1 };
     const qa = validateChunks([only!, repeated], single.nodes, profile);

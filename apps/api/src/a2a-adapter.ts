@@ -1,10 +1,7 @@
 // A2A task binding for the HTTP API, its only transport: maps an A2A task onto a durable
 // operation submission. Callback signing, verification and replay protection stay in
 // application (persistence implements CallbackReplayStore; host composes it).
-import {
-  callbackEnvelopeForA2ATask,
-  type KnowledgeOperationPort,
-} from "@aiengineer/knowledge-application";
+import { callbackEnvelopeForA2ATask, type KnowledgeOperationPort } from "@aiengineer/knowledge-application";
 import {
   A2ATaskSchema,
   type A2AStatus,

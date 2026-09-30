@@ -14,7 +14,9 @@ function packageRootOf(entryUrl: string): string | undefined {
       try {
         const name = (JSON.parse(readFileSync(manifest, "utf8")) as { name?: string }).name;
         if (name === CONTRACT_PACKAGE) return dir;
-      } catch { /* keep walking */ }
+      } catch {
+        /* keep walking */
+      }
     }
     const parent = dirname(dir);
     if (parent === dir) break;
@@ -48,6 +50,7 @@ export function resolveWorkspaceDir(options: LocateOptions = {}): string {
     .filter((item): item is string => Boolean(item))
     .map((item) => resolve(item));
   const found = candidates.find((dir) => existsSync(join(dir, MANIFEST)));
-  if (!found) throw infrastructureError("WORKSPACE_MISSING", "no schema workspace with manifest.json found", { candidates });
+  if (!found)
+    throw infrastructureError("WORKSPACE_MISSING", "no schema workspace with manifest.json found", { candidates });
   return found;
 }

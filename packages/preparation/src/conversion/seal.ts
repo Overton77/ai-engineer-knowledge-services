@@ -1,9 +1,5 @@
 import type { ArtifactStore } from "@aiengineer/knowledge-core";
-import {
-  conversionOutputReceiptDigest,
-  conversionRequestDigests,
-  putConversionArtifacts,
-} from "./artifacts.js";
+import { conversionOutputReceiptDigest, conversionRequestDigests, putConversionArtifacts } from "./artifacts.js";
 import { inspectConversion } from "./deterministic/inspect.js";
 import { convertTextToNodes } from "./deterministic/nodes.js";
 import type { ConversionOutput, ConversionRequest } from "./types.js";
@@ -23,12 +19,8 @@ export interface SealProviderOutputInput {
   readonly result: SealedProviderResult;
 }
 
-export async function sealProviderOutput(
-  input: SealProviderOutputInput,
-): Promise<ConversionOutput> {
-  const { profileDigest, requestDigest } = conversionRequestDigests(
-    input.request,
-  );
+export async function sealProviderOutput(input: SealProviderOutputInput): Promise<ConversionOutput> {
+  const { profileDigest, requestDigest } = conversionRequestDigests(input.request);
   const stored = await putConversionArtifacts({
     artifacts: input.artifacts,
     tenantId: input.request.tenantId,
@@ -39,16 +31,8 @@ export async function sealProviderOutput(
     markdown: input.result.markdown,
     plainText: input.result.plainText,
   });
-  const nodes = convertTextToNodes(
-    input.result.markdown,
-    "text/markdown",
-    requestDigest,
-  ).nodes;
-  const inspected = inspectConversion(
-    input.result.plainText,
-    input.result.markdown,
-    nodes,
-  );
+  const nodes = convertTextToNodes(input.result.markdown, "text/markdown", requestDigest).nodes;
+  const inspected = inspectConversion(input.result.plainText, input.result.markdown, nodes);
   const output: ConversionOutput = {
     providerKey: input.providerKey,
     providerVersion: input.version,
@@ -64,11 +48,7 @@ export async function sealProviderOutput(
       providerKey: input.providerKey,
       version: input.version,
       requestDigest,
-      outputDigests: [
-        stored.native.digest,
-        stored.markdown.digest,
-        stored.plain.digest,
-      ],
+      outputDigests: [stored.native.digest, stored.markdown.digest, stored.plain.digest],
     }),
     observations: {},
   };

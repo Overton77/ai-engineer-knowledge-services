@@ -26,9 +26,7 @@ export class RoutedAcquisitionAdapter implements AcquisitionAdapter {
     return this.require(this.matching(request)).plan(request);
   }
   async execute(plan: AdmittedAcquisitionPlan): Promise<AcquisitionResult> {
-    return this.require(
-      this.byKey(plan.adapterKey) ?? this.matching(plan.request),
-    ).execute(plan);
+    return this.require(this.byKey(plan.adapterKey) ?? this.matching(plan.request)).execute(plan);
   }
   async verify(result: AcquisitionResult): Promise<AcquisitionVerification> {
     return this.require(this.byKey(result.plan.adapterKey)).verify(result);
@@ -39,9 +37,7 @@ export class RoutedAcquisitionAdapter implements AcquisitionAdapter {
   private byKey(adapterKey: string): AcquisitionAdapter | undefined {
     return this.adapters.find((adapter) => adapter.adapterKey === adapterKey);
   }
-  private require(
-    adapter: AcquisitionAdapter | undefined,
-  ): AcquisitionAdapter {
+  private require(adapter: AcquisitionAdapter | undefined): AcquisitionAdapter {
     if (!adapter) throw new Error("UNSUPPORTED_TARGET");
     return adapter;
   }

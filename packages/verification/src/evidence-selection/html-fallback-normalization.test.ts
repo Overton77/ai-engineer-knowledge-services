@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 
-const bytes = (value: unknown): Uint8Array =>
-  new TextEncoder().encode(canonicalizeJson(value));
+const bytes = (value: unknown): Uint8Array => new TextEncoder().encode(canonicalizeJson(value));
 
 function htmlProjection(canonicalText: string, nodeText: string): Uint8Array {
   return bytes({
@@ -16,10 +15,7 @@ function htmlProjection(canonicalText: string, nodeText: string): Uint8Array {
   });
 }
 
-function resolve(
-  content: Uint8Array,
-  fallback: Record<string, unknown>,
-): { status: string; occurrenceCount: number } {
+function resolve(content: Uint8Array, fallback: Record<string, unknown>): { status: string; occurrenceCount: number } {
   const { resolution } = projectionSelectorResolver.resolve({
     captureId: "capture-01",
     representationArtifactId: "11111111-1111-4111-8111-111111111111",
@@ -40,16 +36,18 @@ function resolve(
 describe("HTML canonical text fallback normalization", () => {
   it("treats CRLF and LF as the same line break under lf", () => {
     const html = htmlProjection("Total:\r\n42", "Total:\n42");
-    expect(resolve(html, { quote: "Total:\n42", normalization: "lf" })).toEqual(
-      { status: "resolved", occurrenceCount: 1 },
-    );
+    expect(resolve(html, { quote: "Total:\n42", normalization: "lf" })).toEqual({
+      status: "resolved",
+      occurrenceCount: 1,
+    });
   });
 
   it("treats a lone CR as a line break under lf", () => {
     const html = htmlProjection("Total:\r42", "Total:\n42");
-    expect(resolve(html, { quote: "Total:\n42", normalization: "lf" })).toEqual(
-      { status: "resolved", occurrenceCount: 1 },
-    );
+    expect(resolve(html, { quote: "Total:\n42", normalization: "lf" })).toEqual({
+      status: "resolved",
+      occurrenceCount: 1,
+    });
   });
 
   it("does not collapse spaces under lf", () => {
@@ -62,9 +60,10 @@ describe("HTML canonical text fallback normalization", () => {
 
   it("does not touch line endings under none", () => {
     const html = htmlProjection("Total:\r\n42", "Total:\r\n42");
-    expect(
-      resolve(html, { quote: "Total:\n42", normalization: "none" }),
-    ).toEqual({ status: "invalid", occurrenceCount: 0 });
+    expect(resolve(html, { quote: "Total:\n42", normalization: "none" })).toEqual({
+      status: "invalid",
+      occurrenceCount: 0,
+    });
   });
 
   it("collapses internal whitespace runs, tabs and line breaks under lf_whitespace_collapsed", () => {
@@ -109,9 +108,10 @@ describe("HTML canonical text fallback normalization", () => {
 
   it("counts overlapping occurrences of the normalized quote as ambiguous", () => {
     const html = htmlProjection("aaa", "aa");
-    expect(
-      resolve(html, { quote: "aa", normalization: "lf_whitespace_collapsed" }),
-    ).toEqual({ status: "ambiguous", occurrenceCount: 2 });
+    expect(resolve(html, { quote: "aa", normalization: "lf_whitespace_collapsed" })).toEqual({
+      status: "ambiguous",
+      occurrenceCount: 2,
+    });
   });
 
   it("disambiguates with a normalized prefix", () => {

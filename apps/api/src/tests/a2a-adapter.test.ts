@@ -1,14 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { A2ATaskSchema } from "@aiengineer/knowledge-contracts";
-import {
-  CallbackReplayGuard,
-  KnowledgeIntegrationService,
-  verifyCallback,
-} from "@aiengineer/knowledge-application";
+import { CallbackReplayGuard, KnowledgeIntegrationService, verifyCallback } from "@aiengineer/knowledge-application";
 import { A2AKnowledgeAdapter, operationInputForA2ATask } from "../a2a-adapter.js";
 
-const id = (digit: number) =>
-  `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
+const id = (digit: number) => `00000000-0000-4000-8000-${String(digit).padStart(12, "0")}`;
 const secret = "callback-signing-secret-is-at-least-32-bytes";
 const context = {
   tenantId: id(1),
@@ -53,8 +48,11 @@ const task = {
       subqueries: [{ id: "exact-evidence", text: "retrieve exact evidence", coverageRole: "required" }],
       spaces: ["engineering_claims"],
       anchors: { entities: [], concepts: [], useCases: [] },
-      hardFilters: [], softBoosts: [], temporalScope: {},
-      candidateK: 10, finalK: 5,
+      hardFilters: [],
+      softBoosts: [],
+      temporalScope: {},
+      candidateK: 10,
+      finalK: 5,
       graph: { maxDepth: 0, allowedEdges: [] },
       abstention: { minimumCoverage: 0.5 },
     },
@@ -79,10 +77,7 @@ describe("A2A adapter", () => {
 
   it("preserves nested Mission Control and Eve correlation in canonical admission", async () => {
     const service = new KnowledgeIntegrationService();
-    const status = await new A2AKnowledgeAdapter(
-      service,
-      "https://knowledge.example",
-    ).dispatch(task);
+    const status = await new A2AKnowledgeAdapter(service, "https://knowledge.example").dispatch(task);
     expect(status.operationId).toBe(context.operationId);
     expect(service.get(status.operationId)?.context).toMatchObject({
       workItemId: context.workItemId,
@@ -101,16 +96,8 @@ describe("A2A adapter", () => {
   });
 
   it("signs tenant-bound callbacks and rejects replay, tamper, stale, and future input", () => {
-    const adapter = new A2AKnowledgeAdapter(
-      new KnowledgeIntegrationService(),
-      "https://knowledge.example",
-    );
-    const callback = adapter.callback(
-      task,
-      { outcome: "succeeded" },
-      secret,
-      "2026-09-03T12:00:00Z",
-    );
+    const adapter = new A2AKnowledgeAdapter(new KnowledgeIntegrationService(), "https://knowledge.example");
+    const callback = adapter.callback(task, { outcome: "succeeded" }, secret, "2026-09-03T12:00:00Z");
     const clock = { now: () => new Date("2026-09-03T12:01:00Z") };
     const guard = new CallbackReplayGuard();
     expect(callback).toMatchObject({
@@ -121,33 +108,16 @@ describe("A2A adapter", () => {
     expect(verifyCallback(callback, secret, guard, clock)).toBe(true);
     expect(verifyCallback(callback, secret, guard, clock)).toBe(false);
     expect(
-      verifyCallback(
-        { ...callback, payload: { outcome: "failed" } },
-        secret,
-        new CallbackReplayGuard(),
-        clock,
-      ),
+      verifyCallback({ ...callback, payload: { outcome: "failed" } }, secret, new CallbackReplayGuard(), clock),
     ).toBe(false);
-    expect(
-      verifyCallback(
-        { ...callback, tenantId: id(99) },
-        secret,
-        new CallbackReplayGuard(),
-        clock,
-      ),
-    ).toBe(false);
+    expect(verifyCallback({ ...callback, tenantId: id(99) }, secret, new CallbackReplayGuard(), clock)).toBe(false);
     expect(
       verifyCallback(callback, secret, new CallbackReplayGuard(), {
         now: () => new Date("2026-09-03T12:10:00Z"),
       }),
     ).toBe(false);
     expect(
-      verifyCallback(
-        { ...callback, occurredAt: "2026-09-03T12:02:00Z" },
-        secret,
-        new CallbackReplayGuard(),
-        clock,
-      ),
+      verifyCallback({ ...callback, occurredAt: "2026-09-03T12:02:00Z" }, secret, new CallbackReplayGuard(), clock),
     ).toBe(false);
   });
 });

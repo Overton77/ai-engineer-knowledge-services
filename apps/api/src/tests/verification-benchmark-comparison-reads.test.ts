@@ -8,9 +8,7 @@ describe("comparison statistics public reads", () => {
       comparisonId = randomUUID(),
       getComparison = vi
         .fn()
-        .mockRejectedValueOnce(
-          Object.assign(new Error("private locator"), { code: "NOT_FOUND" }),
-        )
+        .mockRejectedValueOnce(Object.assign(new Error("private locator"), { code: "NOT_FOUND" }))
         .mockRejectedValueOnce(new Error("private signing detail"));
     const server = buildServer({
       resolveIdentity: (token) =>
@@ -34,10 +32,7 @@ describe("comparison statistics public reads", () => {
           })
         ).statusCode,
       ).toBe(403);
-      expect(
-        (await server.inject({ url: `${url}?publicKeyPem=caller`, headers }))
-          .statusCode,
-      ).toBe(400);
+      expect((await server.inject({ url: `${url}?publicKeyPem=caller`, headers })).statusCode).toBe(400);
       expect(
         (
           await server.inject({
@@ -85,8 +80,7 @@ describe("comparison statistics public reads", () => {
           grants: [{ tenantId, roles: ["knowledge_reader"], scopes: [] }],
         }),
         verificationBenchmarkComparisonReads: {
-          getComparison: async () =>
-            ({ objectKey: "private-storage-coordinate" }) as any,
+          getComparison: async () => ({ objectKey: "private-storage-coordinate" }) as any,
         },
       });
     try {

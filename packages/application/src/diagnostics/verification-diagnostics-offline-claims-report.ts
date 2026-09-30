@@ -35,7 +35,9 @@ export interface DiagnosticsOfflineClaimsReportClosureInput {
    * invoked once for execution and once for replay so authorization tickets and
    * other resolver state cannot leak between passes.
    */
-  readonly createDependencies: () => VerificationClaimsServiceDependencies | Promise<VerificationClaimsServiceDependencies>;
+  readonly createDependencies: () =>
+    | VerificationClaimsServiceDependencies
+    | Promise<VerificationClaimsServiceDependencies>;
   readonly claims?: readonly DiagnosticsOfflineClaimsRequest[];
   readonly reports?: readonly DiagnosticsOfflineReportRequest[];
 }
@@ -87,7 +89,8 @@ function frozenClone<T>(value: T): T {
 }
 
 function validateIds(kind: "case" | "report", values: readonly string[]): void {
-  if (values.some((value) => !idPattern.test(value))) throw new Error(`DIAGNOSTICS_OFFLINE_${kind.toUpperCase()}_ID_INVALID`);
+  if (values.some((value) => !idPattern.test(value)))
+    throw new Error(`DIAGNOSTICS_OFFLINE_${kind.toUpperCase()}_ID_INVALID`);
   if (new Set(values).size !== values.length) throw new Error(`DIAGNOSTICS_OFFLINE_${kind.toUpperCase()}_ID_DUPLICATE`);
 }
 
@@ -119,15 +122,28 @@ export async function verifyDiagnosticsOfflineClaimsReportClosure(
   input: DiagnosticsOfflineClaimsReportClosureInput,
 ): Promise<DiagnosticsOfflineClaimsReportClosureResult> {
   const context = OperationContextSchema.parse(input.context);
-  const claims = (input.claims ?? []).map((item) => ({ caseId: item.caseId, request: VerifyClaimsRequestSchema.parse(item.request) }));
-  const reports = (input.reports ?? []).map((item) => ({ reportId: item.reportId, request: VerifyReportRequestSchema.parse(item.request) }));
+  const claims = (input.claims ?? []).map((item) => ({
+    caseId: item.caseId,
+    request: VerifyClaimsRequestSchema.parse(item.request),
+  }));
+  const reports = (input.reports ?? []).map((item) => ({
+    reportId: item.reportId,
+    request: VerifyReportRequestSchema.parse(item.request),
+  }));
   if (claims.length === 0 && reports.length === 0) throw new Error("DIAGNOSTICS_OFFLINE_CLAIMS_REPORT_EMPTY");
   if (claims.length > 100 || reports.length > 20) throw new Error("DIAGNOSTICS_OFFLINE_CLAIMS_REPORT_BOUND_EXCEEDED");
-  validateIds("case", claims.map((item) => item.caseId));
-  validateIds("report", reports.map((item) => item.reportId));
+  validateIds(
+    "case",
+    claims.map((item) => item.caseId),
+  );
+  validateIds(
+    "report",
+    reports.map((item) => item.reportId),
+  );
 
   for (const item of [...claims, ...reports]) {
-    if (item.request.captureIds.length !== new Set(item.request.captureIds).size) throw new Error("DIAGNOSTICS_OFFLINE_CAPTURE_ID_DUPLICATE");
+    if (item.request.captureIds.length !== new Set(item.request.captureIds).size)
+      throw new Error("DIAGNOSTICS_OFFLINE_CAPTURE_ID_DUPLICATE");
   }
 
   const executeService = new VerificationClaimsApplicationService(await input.createDependencies());
@@ -136,18 +152,38 @@ export async function verifyDiagnosticsOfflineClaimsReportClosure(
   for (const item of claims) {
     const primary = serializableClaims(await executeService.verifyClaims(item.request, context));
     const replay = serializableClaims(await replayService.verifyClaims(item.request, context));
-    const primaryDigest = digestCanonicalJson(primary), replayDigest = digestCanonicalJson(replay);
+    const primaryDigest = digestCanonicalJson(primary),
+      replayDigest = digestCanonicalJson(replay);
     if (primaryDigest !== replayDigest) throw new Error(`DIAGNOSTICS_OFFLINE_CLAIMS_REPLAY_MISMATCH:${item.caseId}`);
-    claimResults.push(frozenClone({ caseId: item.caseId, requestDigest: digestCanonicalJson(item.request), ...primary, executionDigest: primaryDigest, replayDigest, replayMatched: true as const }));
+    claimResults.push(
+      frozenClone({
+        caseId: item.caseId,
+        requestDigest: digestCanonicalJson(item.request),
+        ...primary,
+        executionDigest: primaryDigest,
+        replayDigest,
+        replayMatched: true as const,
+      }),
+    );
   }
 
   const reportResults: DiagnosticsOfflineReportResult[] = [];
   for (const item of reports) {
     const primary = serializableReport(await executeService.verifyReport(item.request, context));
     const replay = serializableReport(await replayService.verifyReport(item.request, context));
-    const primaryDigest = digestCanonicalJson(primary), replayDigest = digestCanonicalJson(replay);
+    const primaryDigest = digestCanonicalJson(primary),
+      replayDigest = digestCanonicalJson(replay);
     if (primaryDigest !== replayDigest) throw new Error(`DIAGNOSTICS_OFFLINE_REPORT_REPLAY_MISMATCH:${item.reportId}`);
-    reportResults.push(frozenClone({ reportId: item.reportId, requestDigest: digestCanonicalJson(item.request), ...primary, executionDigest: primaryDigest, replayDigest, replayMatched: true as const }));
+    reportResults.push(
+      frozenClone({
+        reportId: item.reportId,
+        requestDigest: digestCanonicalJson(item.request),
+        ...primary,
+        executionDigest: primaryDigest,
+        replayDigest,
+        replayMatched: true as const,
+      }),
+    );
   }
 
   return frozenClone({

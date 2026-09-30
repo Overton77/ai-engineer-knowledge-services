@@ -17,7 +17,13 @@ export type ResourceReadFailureReason =
 export interface ResourceReadFailure {
   readonly reason: ResourceReadFailureReason;
   readonly status: 404 | 409 | 413 | 422 | 503;
-  readonly code: "NOT_FOUND" | "CONFLICT" | "INVALID_STATE_TRANSITION" | "LIMIT_EXCEEDED" | "INTERNAL_ERROR" | "CAPABILITY_NOT_ADMITTED";
+  readonly code:
+    | "NOT_FOUND"
+    | "CONFLICT"
+    | "INVALID_STATE_TRANSITION"
+    | "LIMIT_EXCEEDED"
+    | "INTERNAL_ERROR"
+    | "CAPABILITY_NOT_ADMITTED";
   /** Lower-case terminal state (`failed`, `cancelled`) for `terminal` failures. */
   readonly state?: string;
 }
@@ -43,7 +49,10 @@ export function resourceReadFailure<T>(reason: ResourceReadFailureReason, state?
 export const DEFAULT_MAXIMUM_RESOURCE_RESPONSE_BYTES = 1_048_576;
 
 /** Applies the serialized response bound every transport shares. */
-export function boundedResourceResult<T>(value: T, maximumBytes = DEFAULT_MAXIMUM_RESOURCE_RESPONSE_BYTES): ResourceReadResult<T> {
+export function boundedResourceResult<T>(
+  value: T,
+  maximumBytes = DEFAULT_MAXIMUM_RESOURCE_RESPONSE_BYTES,
+): ResourceReadResult<T> {
   if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1) throw new Error("INVALID_RESOURCE_RESPONSE_LIMIT");
   if (Buffer.byteLength(JSON.stringify(value), "utf8") > maximumBytes) return resourceReadFailure("too_large");
   return { ok: true, value };
@@ -65,6 +74,7 @@ export function classifyResourceReadError<T>(error: unknown, mode: "missing" | "
   const code = error instanceof Error && "code" in error ? String(error.code) : "INTEGRITY";
   if (code === "NOT_FOUND") return resourceReadFailure("not_found");
   if (mode === "terminal" && code === "PENDING") return resourceReadFailure("pending");
-  if (mode === "terminal" && (code === "FAILED" || code === "CANCELLED")) return resourceReadFailure("terminal", code.toLowerCase());
+  if (mode === "terminal" && (code === "FAILED" || code === "CANCELLED"))
+    return resourceReadFailure("terminal", code.toLowerCase());
   return resourceReadFailure("integrity");
 }

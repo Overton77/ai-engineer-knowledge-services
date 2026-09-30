@@ -1,14 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
-import {
-  dispatchCliCommand,
-  resolveCommand,
-  type CliKnowledgeClient,
-} from "../commands.js";
+import { dispatchCliCommand, resolveCommand, type CliKnowledgeClient } from "../commands.js";
 import { waitForVerification } from "../verification-completion.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const context: OperationContext = {
   tenantId: id(1),
   operationId: id(2),
@@ -72,32 +67,17 @@ describe("benchmark CLI", () => {
         body: { output },
       })),
     };
-    const completed = await waitForVerification(
-      client as never,
-      context.operationId,
-      context,
-      1000,
-    );
+    const completed = await waitForVerification(client as never, context.operationId, context, 1000);
     expect(completed).toMatchObject({ exitCode: 1, comparison: output });
     expect(completed).not.toHaveProperty("qualityPassed");
   });
   it("uses the dedicated typed method and rejects caller results", async () => {
     const runBenchmark = vi.fn(),
       client = { runBenchmark } as unknown as CliKnowledgeClient;
-    await dispatchCliCommand(
-      client,
-      resolveCommand("benchmark", "run")!,
-      request,
-      context,
-    );
+    await dispatchCliCommand(client, resolveCommand("benchmark", "run")!, request, context);
     expect(runBenchmark).toHaveBeenCalledWith(request, context);
     await expect(
-      dispatchCliCommand(
-        client,
-        resolveCommand("benchmark", "run")!,
-        { ...request, results: [] },
-        context,
-      ),
+      dispatchCliCommand(client, resolveCommand("benchmark", "run")!, { ...request, results: [] }, context),
     ).rejects.toThrow();
     expect(runBenchmark).toHaveBeenCalledTimes(1);
   });
@@ -125,18 +105,11 @@ describe("benchmark CLI", () => {
         body: { output },
       })),
     };
-    const result = await waitForVerification(
-      client as never,
-      context.operationId,
-      context,
-      1000,
-    );
+    const result = await waitForVerification(client as never, context.operationId, context, 1000);
     expect(result).toMatchObject({ exitCode: 0, benchmark: output });
     expect(result).not.toHaveProperty("qualityPassed");
     output.qualityClaims.humanGoldValidated = true;
-    await expect(
-      waitForVerification(client as never, context.operationId, context, 1000),
-    ).rejects.toThrow();
+    await expect(waitForVerification(client as never, context.operationId, context, 1000)).rejects.toThrow();
   });
 });
 
@@ -162,11 +135,7 @@ describe("claims/report --wait completion", () => {
     policyOutcome,
     manifestArtifact,
   });
-  const clientFor = (
-    kind: "verification_claims" | "verification_report",
-    status: string,
-    policyOutcome: string,
-  ) => ({
+  const clientFor = (kind: "verification_claims" | "verification_report", status: string, policyOutcome: string) => ({
     getVerificationOperation: vi.fn(async () => ({
       kind,
       state: "succeeded",
@@ -249,9 +218,7 @@ describe("claims/report --wait completion", () => {
       })),
       getReceipt: vi.fn(),
     };
-    await expect(
-      waitForVerification(client as never, context.operationId, context, 1000),
-    ).rejects.toThrow(
+    await expect(waitForVerification(client as never, context.operationId, context, 1000)).rejects.toThrow(
       /^VERIFICATION_WAIT_UNSUPPORTED_KIND:verification_parse_artifact/,
     );
     expect(client.getReceipt).not.toHaveBeenCalled();
@@ -259,11 +226,7 @@ describe("claims/report --wait completion", () => {
   it("rejects malformed sealed results instead of guessing", async () => {
     await expect(
       waitForVerification(
-        clientFor(
-          "verification_claims",
-          "passed",
-          "not_a_policy_outcome",
-        ) as never,
+        clientFor("verification_claims", "passed", "not_a_policy_outcome") as never,
         context.operationId,
         context,
         1000,

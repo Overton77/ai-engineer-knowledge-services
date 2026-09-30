@@ -50,9 +50,16 @@ export function verificationSealedReplayActivityHandler(dependencies: {
     async execute(invocation): Promise<JsonValue> {
       const { activity } = invocation;
       const active = async () => {
-        const operation = await dependencies.operations.getOperationRecord(activity.context.tenantId, activity.context.operationId);
+        const operation = await dependencies.operations.getOperationRecord(
+          activity.context.tenantId,
+          activity.context.operationId,
+        );
         if (!operation || operation.status !== "running") {
-          throw new CanonicalActivityError("VERIFICATION_OPERATION_NOT_ACTIVE", "VERIFICATION_OPERATION_NOT_ACTIVE", false);
+          throw new CanonicalActivityError(
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            "VERIFICATION_OPERATION_NOT_ACTIVE",
+            false,
+          );
         }
       };
       try {
@@ -60,13 +67,16 @@ export function verificationSealedReplayActivityHandler(dependencies: {
         await active();
         let replayed: SealedReplayResult;
         try {
-          replayed = replayResultSchema.parse(await dependencies.replay({
-            tenantId: activity.context.tenantId,
-            runId: input.request.runId,
-            context: activity.context,
-          }));
+          replayed = replayResultSchema.parse(
+            await dependencies.replay({
+              tenantId: activity.context.tenantId,
+              runId: input.request.runId,
+              context: activity.context,
+            }),
+          );
         } catch (error) {
-          if (isSealedRunNotFound(error) && dependencies.fallback) return await dependencies.fallback.execute(invocation) as JsonValue;
+          if (isSealedRunNotFound(error) && dependencies.fallback)
+            return (await dependencies.fallback.execute(invocation)) as JsonValue;
           throw error;
         }
         if (replayed.runId !== input.request.runId) throw new Error("SEALED_REPLAY_RUN_BINDING_MISMATCH");
@@ -119,10 +129,18 @@ export function verificationSealedReplayActivityHandler(dependencies: {
         return { ...body, resultArtifact } as unknown as JsonValue;
       } catch (error) {
         if (error instanceof CanonicalActivityError) throw error;
-        if (error instanceof z.ZodError) throw new CanonicalActivityError("INVALID_VERIFICATION_REPLAY_INPUT", "INVALID_VERIFICATION_REPLAY_INPUT", false);
+        if (error instanceof z.ZodError)
+          throw new CanonicalActivityError(
+            "INVALID_VERIFICATION_REPLAY_INPUT",
+            "INVALID_VERIFICATION_REPLAY_INPUT",
+            false,
+          );
         const message = error instanceof Error ? error.message : "";
         const code = /^[A-Z][A-Z0-9_]{2,127}$/u.test(message) ? message : "VERIFICATION_REPLAY_INFRASTRUCTURE_FAILURE";
-        const retryable = code === "VERIFICATION_REPLAY_INFRASTRUCTURE_FAILURE" || code.startsWith("OBJECT_STORE_") || code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
+        const retryable =
+          code === "VERIFICATION_REPLAY_INFRASTRUCTURE_FAILURE" ||
+          code.startsWith("OBJECT_STORE_") ||
+          code === "REGISTERED_ARTIFACT_BYTES_UNAVAILABLE";
         throw new CanonicalActivityError(code, code, retryable, { cause: error });
       }
     },

@@ -7,7 +7,13 @@ import type { TenantSqlClient } from "./postgres.js";
  * the configured login user; role separation never leaks across transactions.
  */
 
-export const BOUNDED_ROLES = ["app_reader", "pipeline_agent", "executor_service", "verifier_agent", "control_plane"] as const;
+export const BOUNDED_ROLES = [
+  "app_reader",
+  "pipeline_agent",
+  "executor_service",
+  "verifier_agent",
+  "control_plane",
+] as const;
 export type BoundedRole = (typeof BOUNDED_ROLES)[number];
 
 export interface TransactionScope {
@@ -44,7 +50,8 @@ function assertStatementTimeout(ms: number): void {
 async function enterScope(client: TenantSqlClient, scope: TransactionScope): Promise<void> {
   await client.query("begin");
   if (scope.isolationLevel) {
-    if (scope.isolationLevel !== "read committed" && scope.isolationLevel !== "repeatable read") throw new Error("INVALID_TRANSACTION_ISOLATION");
+    if (scope.isolationLevel !== "read committed" && scope.isolationLevel !== "repeatable read")
+      throw new Error("INVALID_TRANSACTION_ISOLATION");
     await client.query(`set transaction isolation level ${scope.isolationLevel}`);
   }
   if (scope.readOnly) await client.query("set transaction read only");
@@ -74,7 +81,9 @@ export class TenantPostgres {
     this.#pool = new Pool(poolConfig);
   }
 
-  async close(): Promise<void> { await this.#pool.end(); }
+  async close(): Promise<void> {
+    await this.#pool.end();
+  }
 
   /** Runs `work` in one transaction under the scope's tenant, role, and read-only/timeout settings. */
   async transaction<T>(scope: TransactionScope, work: (client: TenantSqlClient) => Promise<T>): Promise<T> {
@@ -95,7 +104,9 @@ export class TenantPostgres {
 
   /** Superuser-free probe that needs no tenant: the applied migration head. */
   async migrationHead(): Promise<string | undefined> {
-    const result = await this.#pool.query<{ version: string }>("select max(version)::text version from supabase_migrations.schema_migrations");
+    const result = await this.#pool.query<{ version: string }>(
+      "select max(version)::text version from supabase_migrations.schema_migrations",
+    );
     return result.rows[0]?.version ?? undefined;
   }
 }

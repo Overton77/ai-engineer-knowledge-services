@@ -71,17 +71,21 @@ function checkedPositiveInteger(value: number, minimum: number, maximum: number,
 }
 
 function mediaType(value: string | null): string {
-  return (value?.split(";", 1)[0]?.trim().toLowerCase() || "application/octet-stream");
+  return value?.split(";", 1)[0]?.trim().toLowerCase() || "application/octet-stream";
 }
 
 async function readBoundedBody(response: Response, maximumBytes: number, signal: AbortSignal): Promise<Uint8Array> {
   const declaredText = response.headers.get("content-length");
   const declared = declaredText === null ? undefined : Number(declaredText);
-  if (declared !== undefined && (!Number.isSafeInteger(declared) || declared < 0 || declared > maximumBytes)) throw new Error("SOURCE_ACQUISITION_BYTE_LIMIT_EXCEEDED");
-  if ((response.headers.get("content-encoding") ?? "identity").trim().toLowerCase() !== "identity") throw new Error("SOURCE_ACQUISITION_CONTENT_ENCODING_DENIED");
+  if (declared !== undefined && (!Number.isSafeInteger(declared) || declared < 0 || declared > maximumBytes))
+    throw new Error("SOURCE_ACQUISITION_BYTE_LIMIT_EXCEEDED");
+  if ((response.headers.get("content-encoding") ?? "identity").trim().toLowerCase() !== "identity")
+    throw new Error("SOURCE_ACQUISITION_CONTENT_ENCODING_DENIED");
   const reader = response.body?.getReader();
   if (!reader) return new Uint8Array();
-  const cancel = () => { void reader.cancel(signal.reason).catch(() => {}); };
+  const cancel = () => {
+    void reader.cancel(signal.reason).catch(() => {});
+  };
   signal.addEventListener("abort", cancel, { once: true });
   try {
     const chunks: Uint8Array[] = [];
@@ -119,20 +123,52 @@ export class VerificationSourceAcquisitionCatalog {
     const entries = new Map<string, TrustedGrant>();
     const hosts = new Set<string>();
     for (const raw of grants) {
-      if (!/^[a-z][a-z0-9_-]{0,127}$/.test(raw.sourceKey) || entries.has(raw.sourceKey)) throw new Error("SOURCE_ACQUISITION_GRANT_KEY_INVALID");
+      if (!/^[a-z][a-z0-9_-]{0,127}$/.test(raw.sourceKey) || entries.has(raw.sourceKey))
+        throw new Error("SOURCE_ACQUISITION_GRANT_KEY_INVALID");
       const sourceUri = canonicalHttpsUri(raw.sourceUri, "SOURCE_ACQUISITION_GRANT_URI_INVALID");
-      const redirects = (raw.redirectUris ?? []).map((item) => canonicalHttpsUri(item, "SOURCE_ACQUISITION_GRANT_REDIRECT_INVALID"));
-      if (new Set(redirects).size !== redirects.length || redirects.includes(sourceUri)) throw new Error("SOURCE_ACQUISITION_GRANT_REDIRECT_DUPLICATES_SOURCE");
+      const redirects = (raw.redirectUris ?? []).map((item) =>
+        canonicalHttpsUri(item, "SOURCE_ACQUISITION_GRANT_REDIRECT_INVALID"),
+      );
+      if (new Set(redirects).size !== redirects.length || redirects.includes(sourceUri))
+        throw new Error("SOURCE_ACQUISITION_GRANT_REDIRECT_DUPLICATES_SOURCE");
       const acceptedMediaTypes = raw.acceptedMediaTypes.map((item) => item.trim().toLowerCase());
-      if (acceptedMediaTypes.length === 0 || new Set(acceptedMediaTypes).size !== acceptedMediaTypes.length || acceptedMediaTypes.some((item) => !/^[a-z]+\/[a-z0-9.+-]+$/.test(item))) throw new Error("SOURCE_ACQUISITION_GRANT_MEDIA_TYPE_INVALID");
-      const maximumBytes = checkedPositiveInteger(raw.maximumBytes, 1, 50 * 1024 * 1024, "SOURCE_ACQUISITION_GRANT_BYTE_LIMIT_INVALID");
+      if (
+        acceptedMediaTypes.length === 0 ||
+        new Set(acceptedMediaTypes).size !== acceptedMediaTypes.length ||
+        acceptedMediaTypes.some((item) => !/^[a-z]+\/[a-z0-9.+-]+$/.test(item))
+      )
+        throw new Error("SOURCE_ACQUISITION_GRANT_MEDIA_TYPE_INVALID");
+      const maximumBytes = checkedPositiveInteger(
+        raw.maximumBytes,
+        1,
+        50 * 1024 * 1024,
+        "SOURCE_ACQUISITION_GRANT_BYTE_LIMIT_INVALID",
+      );
       const timeoutMs = checkedPositiveInteger(raw.timeoutMs, 100, 60_000, "SOURCE_ACQUISITION_GRANT_TIMEOUT_INVALID");
       for (const uri of [sourceUri, ...redirects]) hosts.add(new URL(uri).hostname.toLowerCase());
-      entries.set(raw.sourceKey, Object.freeze({ sourceKey: raw.sourceKey, sourceUri, redirectUris: Object.freeze([...redirects]), acceptedMediaTypes: Object.freeze([...acceptedMediaTypes]), maximumBytes, timeoutMs }));
+      entries.set(
+        raw.sourceKey,
+        Object.freeze({
+          sourceKey: raw.sourceKey,
+          sourceUri,
+          redirectUris: Object.freeze([...redirects]),
+          acceptedMediaTypes: Object.freeze([...acceptedMediaTypes]),
+          maximumBytes,
+          timeoutMs,
+        }),
+      );
     }
     if (entries.size === 0) throw new Error("SOURCE_ACQUISITION_GRANTS_REQUIRED");
     this.#grants = entries;
-    this.#policy = Object.freeze({ allowedProtocols: Object.freeze(["https:"] as const), allowedPorts: Object.freeze([443]), maximumRedirects: MAX_REDIRECTS, timeoutMs: 60_000, maximumBytes: 50 * 1024 * 1024, maximumDecompressionRatio: 1, allowedHosts: Object.freeze([...hosts]) });
+    this.#policy = Object.freeze({
+      allowedProtocols: Object.freeze(["https:"] as const),
+      allowedPorts: Object.freeze([443]),
+      maximumRedirects: MAX_REDIRECTS,
+      timeoutMs: 60_000,
+      maximumBytes: 50 * 1024 * 1024,
+      maximumDecompressionRatio: 1,
+      allowedHosts: Object.freeze([...hosts]),
+    });
   }
 
   resolve(sourceKey: string): TrustedGrant {
@@ -142,7 +178,9 @@ export class VerificationSourceAcquisitionCatalog {
   }
 
   /** Exposes immutable network constraints to the acquisition implementation only. */
-  get safeHttpPolicy(): HttpPolicy { return this.#policy; }
+  get safeHttpPolicy(): HttpPolicy {
+    return this.#policy;
+  }
 }
 
 /**
@@ -158,8 +196,13 @@ export class TrustedVerificationSourceAcquirer implements VerificationSourceAcqu
   ) {}
 
   async acquire(input: VerificationSourceAcquisitionRequest): Promise<AcquiredVerificationSource> {
-    if (!input || typeof input !== "object" || typeof input.sourceKey !== "string" || input.sourceKey.length === 0 ||
-      Object.keys(input as unknown as Record<string, unknown>).some(key => key !== "sourceKey" && key !== "signal")) {
+    if (
+      !input ||
+      typeof input !== "object" ||
+      typeof input.sourceKey !== "string" ||
+      input.sourceKey.length === 0 ||
+      Object.keys(input as unknown as Record<string, unknown>).some((key) => key !== "sourceKey" && key !== "signal")
+    ) {
       throw new Error("SOURCE_ACQUISITION_REQUEST_INVALID");
     }
     const grant = this.catalog.resolve(input.sourceKey);
@@ -171,12 +214,20 @@ export class TrustedVerificationSourceAcquirer implements VerificationSourceAcqu
       for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
         signal.throwIfAborted();
         const target = await resolveSafeHttpTarget(current, this.catalog.safeHttpPolicy, this.resolver);
-        const response = await this.transport.fetch(target.url, {
-          method: "GET",
-          redirect: "manual",
-          signal,
-          headers: { accept: grant.acceptedMediaTypes.join(", "), "accept-encoding": "identity", "user-agent": "ai-engineer-knowledge-services/verification-source-acquisition" },
-        }, target.addresses);
+        const response = await this.transport.fetch(
+          target.url,
+          {
+            method: "GET",
+            redirect: "manual",
+            signal,
+            headers: {
+              accept: grant.acceptedMediaTypes.join(", "),
+              "accept-encoding": "identity",
+              "user-agent": "ai-engineer-knowledge-services/verification-source-acquisition",
+            },
+          },
+          target.addresses,
+        );
         signal.throwIfAborted();
         if (!REDIRECT_STATUSES.has(response.status)) {
           if (!response.ok) {
@@ -203,7 +254,9 @@ export class TrustedVerificationSourceAcquirer implements VerificationSourceAcqu
             responseMetadata: Object.freeze({
               ...(parsedLength === undefined ? {} : { contentLength: parsedLength }),
               ...(response.headers.get("etag") ? { etag: response.headers.get("etag")! } : {}),
-              ...(response.headers.get("last-modified") ? { lastModified: response.headers.get("last-modified")! } : {}),
+              ...(response.headers.get("last-modified")
+                ? { lastModified: response.headers.get("last-modified")! }
+                : {}),
             }),
           });
         }
@@ -212,7 +265,8 @@ export class TrustedVerificationSourceAcquirer implements VerificationSourceAcqu
         if (!location) throw new Error("SOURCE_ACQUISITION_REDIRECT_WITHOUT_LOCATION");
         if (hop === MAX_REDIRECTS) throw new Error("SOURCE_ACQUISITION_REDIRECT_LIMIT_EXCEEDED");
         const next = new URL(location, current).href;
-        if (!grant.redirectUris.includes(next) || redirects.includes(next)) throw new Error("SOURCE_ACQUISITION_REDIRECT_NOT_ADMITTED");
+        if (!grant.redirectUris.includes(next) || redirects.includes(next))
+          throw new Error("SOURCE_ACQUISITION_REDIRECT_NOT_ADMITTED");
         redirects.push(next);
         current = next;
       }

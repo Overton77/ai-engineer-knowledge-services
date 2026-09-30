@@ -59,7 +59,5 @@ export function providerDigest(value: unknown): `sha256:${string}` {
 
 /** Sink failures surface as one non-retryable code unless the sink itself raised a `ProviderFailure`. */
 export function artifactFailure(error: unknown): ProviderFailure {
-  return error instanceof ProviderFailure
-    ? error
-    : new ProviderFailure("PROVIDER_ARTIFACT_PERSISTENCE_FAILURE", false);
+  return error instanceof ProviderFailure ? error : new ProviderFailure("PROVIDER_ARTIFACT_PERSISTENCE_FAILURE", false);
 }

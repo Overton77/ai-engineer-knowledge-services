@@ -1,9 +1,5 @@
 import { InMemoryArtifactStore } from "@aiengineer/knowledge-core";
-import type {
-  ConversionOutput,
-  ConversionRequest,
-  DocumentConversionProvider,
-} from "../../src/index.js";
+import type { ConversionOutput, ConversionRequest, DocumentConversionProvider } from "../../src/index.js";
 
 export const EXAMPLE_TENANT = "11111111-1111-4111-8111-111111111111";
 

@@ -20,7 +20,9 @@ describe("loadWorkspace", () => {
   });
 
   it("fails with WORKSPACE_MISSING for an empty directory", () => {
-    expect(() => loadWorkspace(join(FIXTURE_WORKSPACE, "domains"))).toThrowError(expect.objectContaining({ code: "WORKSPACE_MISSING", exit: 2 }));
+    expect(() => loadWorkspace(join(FIXTURE_WORKSPACE, "domains"))).toThrowError(
+      expect.objectContaining({ code: "WORKSPACE_MISSING", exit: 2 }),
+    );
   });
 });
 
@@ -32,7 +34,9 @@ describe("resolveWorkspaceDir", () => {
   it("finds the pinned contract workspace or the explicit fallback, whichever exists first", () => {
     const resolved = resolveWorkspaceDir({ env: {}, fallbackDir: FIXTURE_WORKSPACE });
     expect(existsSync(join(resolved, "manifest.json"))).toBe(true);
-    expect(() => resolveWorkspaceDir({ env: { SCHEMA_WORKSPACE_DIR: join(FIXTURE_WORKSPACE, "domains") } })).not.toThrow();
+    expect(() =>
+      resolveWorkspaceDir({ env: { SCHEMA_WORKSPACE_DIR: join(FIXTURE_WORKSPACE, "domains") } }),
+    ).not.toThrow();
   });
 });
 
@@ -44,7 +48,10 @@ describe("searchWorkspace", () => {
   });
 
   it("matches a qualified name exactly", () => {
-    expect(searchWorkspace(workspace, "corpus.entity").hits[0]).toMatchObject({ id: "rel:corpus.entity", matchedOn: "name" });
+    expect(searchWorkspace(workspace, "corpus.entity").hits[0]).toMatchObject({
+      id: "rel:corpus.entity",
+      matchedOn: "name",
+    });
   });
 
   it("finds terminology and token overlap", () => {
@@ -54,7 +61,9 @@ describe("searchWorkspace", () => {
   });
 
   it("filters by kind and domain and offers suggestions when nothing matches", () => {
-    expect(searchWorkspace(workspace, "entity", { kinds: ["domain"] }).hits.every((hit) => hit.kind === "domain")).toBe(true);
+    expect(searchWorkspace(workspace, "entity", { kinds: ["domain"] }).hits.every((hit) => hit.kind === "domain")).toBe(
+      true,
+    );
     expect(searchWorkspace(workspace, "segment", { domain: "identity" }).hits).toHaveLength(0);
     expect(searchWorkspace(workspace, "zzzz-nothing").suggestions).toEqual([]);
   });
@@ -70,15 +79,21 @@ describe("getPage", () => {
   });
 
   it("rejects unknown pages and path escapes", () => {
-    expect(() => getPage(workspace, "rel:nope.missing")).toThrowError(expect.objectContaining({ code: "PAGE_NOT_FOUND", exit: 1 }));
-    expect(() => getPage(workspace, "../../package.json")).toThrowError(expect.objectContaining({ code: "PAGE_PATH_INVALID" }));
+    expect(() => getPage(workspace, "rel:nope.missing")).toThrowError(
+      expect.objectContaining({ code: "PAGE_NOT_FOUND", exit: 1 }),
+    );
+    expect(() => getPage(workspace, "../../package.json")).toThrowError(
+      expect.objectContaining({ code: "PAGE_PATH_INVALID" }),
+    );
   });
 });
 
 describe("head check", () => {
   it("reports HEAD_MISMATCH unless stale is allowed", () => {
     expect(compareHeads(workspace, "20260912020000").matches).toBe(true);
-    expect(() => assertHeadMatches(workspace, "20260912019999")).toThrowError(expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }));
+    expect(() => assertHeadMatches(workspace, "20260912019999")).toThrowError(
+      expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }),
+    );
     expect(assertHeadMatches(workspace, undefined, true).matches).toBe(false);
   });
 
@@ -86,13 +101,17 @@ describe("head check", () => {
     const pinned = loadWorkspace(resolveWorkspaceDir({ env: {} }));
     expect(pinned.migrationHead).toBe("20260916020200");
     expect(assertHeadMatches(pinned, "20260916020200").matches).toBe(true);
-    expect(() => assertHeadMatches(pinned, "20260914011100")).toThrowError(expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }));
+    expect(() => assertHeadMatches(pinned, "20260914011100")).toThrowError(
+      expect.objectContaining({ code: "HEAD_MISMATCH", exit: 2 }),
+    );
   });
 });
 
 describe("materializeScope", () => {
   const outDirs: string[] = [];
-  afterEach(() => { for (const dir of outDirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
+  afterEach(() => {
+    for (const dir of outDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
 
   it("filters the full workspace by scope when no db-contract CLI is present", () => {
     const outDir = join(mkdtempSync(join(tmpdir(), "ks-scope-")), "bundle");
@@ -102,13 +121,21 @@ describe("materializeScope", () => {
     const scoped = loadWorkspace(outDir);
     expect(scoped.index.map((entry) => entry.id)).not.toContain("rel:temporal.knowledge_head");
     expect(scoped.index.map((entry) => entry.id)).toContain("rel:temporal.segment");
-    expect(scoped.catalog?.entries.map((entry) => entry.name)).toEqual(["entity.resolve", "entity.card", "entity.at", "entity.what_changed", "knowledge.head"]);
+    expect(scoped.catalog?.entries.map((entry) => entry.name)).toEqual([
+      "entity.resolve",
+      "entity.card",
+      "entity.at",
+      "entity.what_changed",
+      "knowledge.head",
+    ]);
     expect(scoped.manifest.scope).toMatchObject({ id: "db-aware-research" });
   });
 
   it("refuses unknown scopes", () => {
     const outDir = join(mkdtempSync(join(tmpdir(), "ks-scope-")), "bundle");
     outDirs.push(resolve(outDir, ".."));
-    expect(() => materializeScope(workspace, { scope: "no-such-scope", outDir })).toThrowError(expect.objectContaining({ code: "SCOPE_UNKNOWN" }));
+    expect(() => materializeScope(workspace, { scope: "no-such-scope", outDir })).toThrowError(
+      expect.objectContaining({ code: "SCOPE_UNKNOWN" }),
+    );
   });
 });

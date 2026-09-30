@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const digest = (value: string) => `sha256:${value.repeat(64)}` as const;
 const tenant = id(1),
   operationId = id(2),
@@ -79,8 +78,7 @@ const report = {
   },
 };
 const base = {
-  resolveIdentity: (candidate: string) =>
-    candidate === token ? identity : undefined,
+  resolveIdentity: (candidate: string) => (candidate === token ? identity : undefined),
 };
 
 describe("claims/report terminal HTTP reads", () => {
@@ -115,9 +113,7 @@ describe("claims/report terminal HTTP reads", () => {
           headers,
         });
         expect(response.statusCode, response.body).toBe(200);
-        expect(response.json().sealedRun.policy).toEqual(
-          completed.sealedRun.policy,
-        );
+        expect(response.json().sealedRun.policy).toEqual(completed.sealedRun.policy);
         expect(response.json()).not.toHaveProperty("failure");
       } finally {
         await server.close();
@@ -127,35 +123,32 @@ describe("claims/report terminal HTTP reads", () => {
   it.each([
     { outcome: "review", reasonCodes: ["INVENTED_SEMANTIC_FAILURE"] },
     { outcome: "fail", reasonCodes: ["SEMANTIC_DISPOSITION_FAIL"] },
-  ])(
-    "rejects invalid or contradictory policy evidence at the public boundary: %j",
-    async (policy) => {
-      const malformed = {
-        ...claims,
-        sealedRun: {
-          ...claims.sealedRun,
-          policy: { availability: "verified", ...policy },
-        },
-      };
-      const server = buildServer({
-        ...base,
-        verificationClaimsReportReads: {
-          getClaims: async () => malformed as never,
-          getReport: async () => report,
-        },
+  ])("rejects invalid or contradictory policy evidence at the public boundary: %j", async (policy) => {
+    const malformed = {
+      ...claims,
+      sealedRun: {
+        ...claims.sealedRun,
+        policy: { availability: "verified", ...policy },
+      },
+    };
+    const server = buildServer({
+      ...base,
+      verificationClaimsReportReads: {
+        getClaims: async () => malformed as never,
+        getReport: async () => report,
+      },
+    });
+    try {
+      const response = await server.inject({
+        url: `/v1/verification/claims/${operationId}`,
+        headers,
       });
-      try {
-        const response = await server.inject({
-          url: `/v1/verification/claims/${operationId}`,
-          headers,
-        });
-        expect(response.statusCode).toBe(503);
-        expect(response.body).not.toContain("INVENTED_SEMANTIC_FAILURE");
-      } finally {
-        await server.close();
-      }
-    },
-  );
+      expect(response.statusCode).toBe(503);
+      expect(response.body).not.toContain("INVENTED_SEMANTIC_FAILURE");
+    } finally {
+      await server.close();
+    }
+  });
   it("returns only strict family-specific resources under read authority", async () => {
     const server = buildServer({
       ...base,
@@ -184,8 +177,7 @@ describe("claims/report terminal HTTP reads", () => {
       const malformed = buildServer({
         ...base,
         verificationClaimsReportReads: {
-          getClaims: async () =>
-            ({ ...claims, rawBundle: { secret: true } }) as never,
+          getClaims: async () => ({ ...claims, rawBundle: { secret: true } }) as never,
           getReport: async () => report,
         },
       });
@@ -205,32 +197,29 @@ describe("claims/report terminal HTTP reads", () => {
       await server.close();
     }
   });
-  it.each(["claims", "reports"] as const)(
-    "rejects a schema-valid foreign %s terminal resource",
-    async (family) => {
-      const foreign = {
-        ...(family === "claims" ? claims : report),
-        tenantId: id(99),
-      };
-      const server = buildServer({
-        ...base,
-        verificationClaimsReportReads: {
-          getClaims: async () => foreign as never,
-          getReport: async () => foreign as never,
-        },
+  it.each(["claims", "reports"] as const)("rejects a schema-valid foreign %s terminal resource", async (family) => {
+    const foreign = {
+      ...(family === "claims" ? claims : report),
+      tenantId: id(99),
+    };
+    const server = buildServer({
+      ...base,
+      verificationClaimsReportReads: {
+        getClaims: async () => foreign as never,
+        getReport: async () => foreign as never,
+      },
+    });
+    try {
+      const response = await server.inject({
+        url: `/v1/verification/${family}/${operationId}`,
+        headers,
       });
-      try {
-        const response = await server.inject({
-          url: `/v1/verification/${family}/${operationId}`,
-          headers,
-        });
-        expect(response.statusCode).toBe(503);
-        expect(response.body).not.toContain(id(99));
-      } finally {
-        await server.close();
-      }
-    },
-  );
+      expect(response.statusCode).toBe(503);
+      expect(response.body).not.toContain(id(99));
+    } finally {
+      await server.close();
+    }
+  });
   it("maps unavailable and durable nonterminal states without returning an unverified body", async () => {
     const unavailable = buildServer(base);
     try {

@@ -106,11 +106,19 @@ export class VercelAiGatewayEmbeddingAdapter implements EmbeddingAdapter {
       return actual;
     });
     const inputManifestDigest = sha256Digest(
-      JSON.stringify(request.inputs.map((input, index) => ({ index, projectionId: input.projectionId, inputDigest: digests[index] }))),
+      JSON.stringify(
+        request.inputs.map((input, index) => ({
+          index,
+          projectionId: input.projectionId,
+          inputDigest: digests[index],
+        })),
+      ),
     );
     const routeDigest = sha256Digest(JSON.stringify(route));
     const modelDigest = sha256Digest(JSON.stringify({ modelSlug, dimensions }));
-    const cached = request.inputs.map((_, index) => this.#cache.get(cacheKey(request.vectorSpaceVersionId, digests[index]!)));
+    const cached = request.inputs.map((_, index) =>
+      this.#cache.get(cacheKey(request.vectorSpaceVersionId, digests[index]!)),
+    );
     const missingIndexes = cached.flatMap((value, index) => (value === undefined ? [index] : []));
     const retryHistory: RetryAttempt[] = [];
     let response: GatewayResponse = {};
@@ -152,7 +160,12 @@ export class VercelAiGatewayEmbeddingAdapter implements EmbeddingAdapter {
     });
     const outputManifestDigest = sha256Digest(
       JSON.stringify(
-        items.map(({ projectionId, index, inputDigest, outputDigest }) => ({ projectionId, index, inputDigest, outputDigest })),
+        items.map(({ projectionId, index, inputDigest, outputDigest }) => ({
+          projectionId,
+          index,
+          inputDigest,
+          outputDigest,
+        })),
       ),
     );
     const metadata = response.providerMetadata?.gateway ?? response.provider_metadata?.gateway;
@@ -165,7 +178,8 @@ export class VercelAiGatewayEmbeddingAdapter implements EmbeddingAdapter {
       modelSlug,
       expectedDimensions: dimensions,
       requestedProviderRoute: route,
-      observedProviderRoute: metadata?.provider ?? response.model ?? (missingIndexes.length ? "gateway:unreported" : "cache"),
+      observedProviderRoute:
+        metadata?.provider ?? response.model ?? (missingIndexes.length ? "gateway:unreported" : "cache"),
       inputManifestDigest,
       outputManifestDigest,
       routeDigest,
@@ -205,7 +219,13 @@ export class VercelAiGatewayEmbeddingAdapter implements EmbeddingAdapter {
           throw gatewayError(response.status, `AI_GATEWAY_EMBED_${response.status}`);
         }
         const delay = retryDelay(attempt, response.headers.get("retry-after"));
-        history.push({ attempt: attempt + 1, status: response.status, retryable: true, delayMs: delay, errorClass: `HTTP_${response.status}` });
+        history.push({
+          attempt: attempt + 1,
+          status: response.status,
+          retryable: true,
+          delayMs: delay,
+          errorClass: `HTTP_${response.status}`,
+        });
         await this.#sleep(delay);
       } catch (error) {
         const typed = error as GatewayError;
@@ -216,7 +236,12 @@ export class VercelAiGatewayEmbeddingAdapter implements EmbeddingAdapter {
           throw error;
         }
         const delay = retryDelay(attempt);
-        history.push({ attempt: attempt + 1, retryable: true, delayMs: delay, errorClass: error instanceof Error ? error.name : "UNKNOWN" });
+        history.push({
+          attempt: attempt + 1,
+          retryable: true,
+          delayMs: delay,
+          errorClass: error instanceof Error ? error.name : "UNKNOWN",
+        });
         await this.#sleep(delay);
       }
     }

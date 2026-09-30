@@ -1,8 +1,5 @@
 import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
-import {
-  createHost,
-  createLocalIdentityResolver,
-} from "@aiengineer/knowledge-host";
+import { createHost, createLocalIdentityResolver } from "@aiengineer/knowledge-host";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
 import { buildServer } from "./server.js";
@@ -15,10 +12,7 @@ export { buildServer, CanonicalRetrievalExecutor };
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
-export function validateApiPublicOrigin(
-  value: string | undefined,
-  production: boolean,
-): string | undefined {
+export function validateApiPublicOrigin(value: string | undefined, production: boolean): string | undefined {
   if (!value?.trim()) {
     if (production) throw new Error("KNOWLEDGE_API_URL_REQUIRED");
     return undefined;
@@ -42,20 +36,13 @@ export async function createApiRuntime(environment: Environment = process.env) {
     role: "api",
     environment,
     resolvePublicOrigin: (config) =>
-      validateApiPublicOrigin(
-        environment.KNOWLEDGE_API_URL,
-        config.NODE_ENV === "production",
-      ),
+      validateApiPublicOrigin(environment.KNOWLEDGE_API_URL, config.NODE_ENV === "production"),
   });
   try {
     const server = buildServer({
       ...apiServerOptions(host),
-      resolveIdentity: createLocalIdentityResolver(
-        environment.KNOWLEDGE_API_IDENTITIES,
-      ),
-      resolveCallbackSigningSecret: createCallbackSigningSecretResolver(
-        environment.KNOWLEDGE_CALLBACK_SIGNING_KEYS,
-      ),
+      resolveIdentity: createLocalIdentityResolver(environment.KNOWLEDGE_API_IDENTITIES),
+      resolveCallbackSigningSecret: createCallbackSigningSecretResolver(environment.KNOWLEDGE_CALLBACK_SIGNING_KEYS),
       loadDemoEvaluationBundles: loadRepositoryDemoEvaluationBundles,
     });
     let closing: Promise<void> | undefined;
@@ -85,14 +72,9 @@ let serverlessRuntime: ReturnType<typeof createApiRuntime> | undefined;
 const getServerlessRuntime = () => (serverlessRuntime ??= createApiRuntime());
 
 export function createApiRequestHandler(
-  runtime: () => Promise<
-    Pick<Awaited<ReturnType<typeof createApiRuntime>>, "server">
-  >,
+  runtime: () => Promise<Pick<Awaited<ReturnType<typeof createApiRuntime>>, "server">>,
 ) {
-  return async (
-    request: IncomingMessage,
-    response: ServerResponse,
-  ): Promise<void> => {
+  return async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     const { server } = await runtime();
     await server.ready();
     await new Promise<void>((resolve, reject) => {
@@ -117,14 +99,12 @@ async function main() {
     throw error;
   }
   const shutdown = (signal: string) => {
-    void runtime
-      .close()
-      .catch((error) => {
-        process.stderr.write(
-          `${JSON.stringify({ event: "knowledge.api.shutdown_failed", signal, error: error instanceof Error ? error.message : "unknown" })}\n`,
-        );
-        process.exitCode = 1;
-      });
+    void runtime.close().catch((error) => {
+      process.stderr.write(
+        `${JSON.stringify({ event: "knowledge.api.shutdown_failed", signal, error: error instanceof Error ? error.message : "unknown" })}\n`,
+      );
+      process.exitCode = 1;
+    });
   };
   process.once("SIGINT", () => shutdown("SIGINT"));
   process.once("SIGTERM", () => shutdown("SIGTERM"));

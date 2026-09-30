@@ -45,7 +45,12 @@ export class DeterministicFakeEmbeddingAdapter implements EmbeddingAdapter {
     );
     const outputManifestDigest = sha256Digest(
       JSON.stringify(
-        items.map(({ projectionId, index, inputDigest, outputDigest }) => ({ projectionId, index, inputDigest, outputDigest })),
+        items.map(({ projectionId, index, inputDigest, outputDigest }) => ({
+          projectionId,
+          index,
+          inputDigest,
+          outputDigest,
+        })),
       ),
     );
     return deepFreeze({

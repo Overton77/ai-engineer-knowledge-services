@@ -53,33 +53,41 @@ describe("MCP issues no HTTP request to the API", () => {
         expectedVersions: { api: "v1" },
       }),
     );
-    expect(outcome).toEqual(configured ? { value: expect.objectContaining({ state: "queued" }) } : { code: "CAPABILITY_NOT_ADMITTED" });
+    expect(outcome).toEqual(
+      configured ? { value: expect.objectContaining({ state: "queued" }) } : { code: "CAPABILITY_NOT_ADMITTED" },
+    );
     expect(transports.execute).toHaveBeenCalledTimes(configured ? 1 : 0);
     expect(fetchTrap).not.toHaveBeenCalled();
   });
 
-  it.each([true, false])("submits every verification mutation in process or not at all (composed: %s)", async (configured) => {
-    for (const entry of [
-      ...verificationMutationInventory,
-      { tool: "knowledge_record_adjudication_decision", request: {
-        subjectId: KNOWN,
-        packetArtifact: { artifactId: KNOWN, digest: `sha256:${"b".repeat(64)}` },
-        decision: "affirm",
-        rationale: "Synthetic engineering review record.",
-      } },
-    ]) {
-      const outcome = answered(
-        await viaMcp(mutationTransports(configured, () => true).mcp, tokens.owner, entry.tool, {
-          context: { tenantId: tenant, correlationId: CORRELATION, idempotencyKey: IDEMPOTENCY },
-          request: { ...version, ...entry.request },
-        }),
-      );
-      expect(outcome, entry.tool).toEqual(
-        configured ? { value: expect.objectContaining({ state: "queued" }) } : { code: "CAPABILITY_NOT_ADMITTED" },
-      );
-    }
-    expect(fetchTrap).not.toHaveBeenCalled();
-  });
+  it.each([true, false])(
+    "submits every verification mutation in process or not at all (composed: %s)",
+    async (configured) => {
+      for (const entry of [
+        ...verificationMutationInventory,
+        {
+          tool: "knowledge_record_adjudication_decision",
+          request: {
+            subjectId: KNOWN,
+            packetArtifact: { artifactId: KNOWN, digest: `sha256:${"b".repeat(64)}` },
+            decision: "affirm",
+            rationale: "Synthetic engineering review record.",
+          },
+        },
+      ]) {
+        const outcome = answered(
+          await viaMcp(mutationTransports(configured, () => true).mcp, tokens.owner, entry.tool, {
+            context: { tenantId: tenant, correlationId: CORRELATION, idempotencyKey: IDEMPOTENCY },
+            request: { ...version, ...entry.request },
+          }),
+        );
+        expect(outcome, entry.tool).toEqual(
+          configured ? { value: expect.objectContaining({ state: "queued" }) } : { code: "CAPABILITY_NOT_ADMITTED" },
+        );
+      }
+      expect(fetchTrap).not.toHaveBeenCalled();
+    },
+  );
 
   it("MCP runtime source and manifest no longer reference the KnowledgeClient", () => {
     const source = readFileSync(new URL("../index.ts", import.meta.url), "utf8");

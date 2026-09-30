@@ -20,10 +20,7 @@ export interface BoundedRequest {
   readonly digest: `sha256:${string}`;
 }
 
-export function boundedRequest(
-  body: unknown,
-  maximumBytes: number,
-): BoundedRequest {
+export function boundedRequest(body: unknown, maximumBytes: number): BoundedRequest {
   return {
     bytes: boundedJsonBytes(body, maximumBytes),
     digest: providerDigest(body),
@@ -52,9 +49,7 @@ export interface BoundedCompletionDispatch<Result> {
   readonly maxResponseBytes: number;
   readonly execution: ProviderExecution;
   readonly fetch: typeof fetch;
-  readonly interpret: (
-    captured: CapturedCompletion,
-  ) => Promise<Result> | Result;
+  readonly interpret: (captured: CapturedCompletion) => Promise<Result> | Result;
 }
 
 /**
@@ -65,9 +60,7 @@ export interface BoundedCompletionDispatch<Result> {
  * audit can always replay what was sent and what came back. Cancellation and
  * deadline are mapped to `ProviderFailure` in one place.
  */
-export async function dispatchBoundedCompletion<Result>(
-  dispatch: BoundedCompletionDispatch<Result>,
-): Promise<Result> {
+export async function dispatchBoundedCompletion<Result>(dispatch: BoundedCompletionDispatch<Result>): Promise<Result> {
   const { sink, request, execution } = dispatch;
   const active = requestSignal(execution);
   const startedEpochMs = Date.now();
@@ -81,22 +74,14 @@ export async function dispatchBoundedCompletion<Result>(
       body: request.bytes,
       signal: active.signal,
     });
-    const rawResponseBytes = await boundedResponseBytes(
-      response,
-      dispatch.maxResponseBytes,
-      active.signal,
-    );
+    const rawResponseBytes = await boundedResponseBytes(response, dispatch.maxResponseBytes, active.signal);
     const httpStatus = response.status;
     await retain(sink, assertActive, {
       requestDigest: request.digest,
       rawResponseBytes,
       httpStatus,
     });
-    if (!response.ok)
-      throw new ProviderFailure(
-        "PROVIDER_HTTP_FAILURE",
-        isRetryableHttpStatus(httpStatus),
-      );
+    if (!response.ok) throw new ProviderFailure("PROVIDER_HTTP_FAILURE", isRetryableHttpStatus(httpStatus));
     return await dispatch.interpret({
       request,
       rawResponseBytes,
@@ -120,14 +105,10 @@ export async function dispatchBoundedCompletion<Result>(
   }
 }
 
-export const isRetryableHttpStatus = (status: number): boolean =>
-  status === 408 || status === 429 || status >= 500;
+export const isRetryableHttpStatus = (status: number): boolean => status === 408 || status === 429 || status >= 500;
 
 /** External processing must be admitted and the request retained before the network is touched. */
-async function admit(
-  dispatch: BoundedCompletionDispatch<unknown>,
-  assertActive: () => void,
-): Promise<void> {
+async function admit(dispatch: BoundedCompletionDispatch<unknown>, assertActive: () => void): Promise<void> {
   try {
     await dispatch.sink.assertExternalProcessingAdmission({
       providerId: dispatch.providerId,

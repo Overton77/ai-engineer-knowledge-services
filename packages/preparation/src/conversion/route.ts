@@ -1,9 +1,5 @@
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import {
-  DETERMINISTIC_PROVIDER_KEY,
-  DOCLING_PROVIDER_KEY,
-  UNSTRUCTURED_PROVIDER_KEY,
-} from "./constants.js";
+import { DETERMINISTIC_PROVIDER_KEY, DOCLING_PROVIDER_KEY, UNSTRUCTURED_PROVIDER_KEY } from "./constants.js";
 import { requiresAlternateConversion } from "./deterministic/inspect.js";
 import { isExclusiveTextMediaType } from "./media-type.js";
 import type {
@@ -33,10 +29,7 @@ type RoutingReceiptCore = Omit<ConversionRoutingReceipt, "receiptDigest">;
 
 function classifyConversionFailure(error: unknown): ConversionFailureClass {
   const message = error instanceof Error ? error.message : String(error);
-  return (
-    FAILURE_CLASS_PATTERNS.find((entry) => entry.pattern.test(message))
-      ?.failureClass ?? "provider_failed"
-  );
+  return FAILURE_CLASS_PATTERNS.find((entry) => entry.pattern.test(message))?.failureClass ?? "provider_failed";
 }
 
 function providerRef(provider: DocumentConversionProvider): string {
@@ -79,21 +72,15 @@ function resolveRouterProviders(
   return {
     deterministic: bundle.deterministic,
     docling: bundle.docling ?? absentProvider(DOCLING_PROVIDER_KEY),
-    unstructured:
-      bundle.unstructured ?? absentProvider(UNSTRUCTURED_PROVIDER_KEY),
+    unstructured: bundle.unstructured ?? absentProvider(UNSTRUCTURED_PROVIDER_KEY),
   };
 }
 
-function admittedKeySet(
-  options: ConversionRouteOptions,
-): ReadonlySet<string> | undefined {
+function admittedKeySet(options: ConversionRouteOptions): ReadonlySet<string> | undefined {
   return options.admittedKeys ? new Set(options.admittedKeys) : undefined;
 }
 
-function isAdmitted(
-  provider: DocumentConversionProvider,
-  admitted: ReadonlySet<string> | undefined,
-): boolean {
+function isAdmitted(provider: DocumentConversionProvider, admitted: ReadonlySet<string> | undefined): boolean {
   return admitted === undefined || admitted.has(provider.providerKey);
 }
 
@@ -162,12 +149,8 @@ async function tryProviderConversion(
   }
 }
 
-export function conversionRouterFromProviders(
-  providers: readonly DocumentConversionProvider[],
-): ConversionRouter {
-  const byKey = new Map(
-    providers.map((provider) => [provider.providerKey, provider]),
-  );
+export function conversionRouterFromProviders(providers: readonly DocumentConversionProvider[]): ConversionRouter {
+  const byKey = new Map(providers.map((provider) => [provider.providerKey, provider]));
   const deterministic = byKey.get(DETERMINISTIC_PROVIDER_KEY);
   if (!deterministic) {
     throw new Error("CONVERSION_ROUTER_MISSING_DETERMINISTIC");
@@ -187,31 +170,20 @@ export class ConversionRouter {
   private readonly unstructured: DocumentConversionProvider;
 
   constructor(
-    deterministicOrProviders:
-      | DocumentConversionProvider
-      | ConversionRouterProviders,
+    deterministicOrProviders: DocumentConversionProvider | ConversionRouterProviders,
     docling?: DocumentConversionProvider,
     unstructured?: DocumentConversionProvider,
   ) {
-    const providers = resolveRouterProviders(
-      deterministicOrProviders,
-      docling,
-      unstructured,
-    );
+    const providers = resolveRouterProviders(deterministicOrProviders, docling, unstructured);
     this.deterministic = providers.deterministic;
     this.docling = providers.docling;
     this.unstructured = providers.unstructured;
   }
 
-  candidates(
-    request: ConversionRequest,
-    options: ConversionRouteOptions = {},
-  ): readonly DocumentConversionProvider[] {
+  candidates(request: ConversionRequest, options: ConversionRouteOptions = {}): readonly DocumentConversionProvider[] {
     const admitted = admittedKeySet(options);
     if (isExclusiveTextMediaType(request.profile.mediaType)) {
-      return isAdmitted(this.deterministic, admitted)
-        ? [this.deterministic]
-        : [];
+      return isAdmitted(this.deterministic, admitted) ? [this.deterministic] : [];
     }
     return this.structuredCandidates(request, admitted);
   }
@@ -255,10 +227,7 @@ export class ConversionRouter {
     const route: DocumentConversionProvider[] = [];
     if (eligible(this.deterministic)) route.push(this.deterministic);
     if (eligible(this.docling)) route.push(this.docling);
-    if (
-      request.profile.managedProcessingAllowed &&
-      eligible(this.unstructured)
-    ) {
+    if (request.profile.managedProcessingAllowed && eligible(this.unstructured)) {
       route.push(this.unstructured);
     }
     return route;

@@ -5,8 +5,7 @@ import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
 import { parseCanonicalProjection } from "./projections/index.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 
-const bytes = (value: unknown): Uint8Array =>
-  new TextEncoder().encode(canonicalizeJson(value));
+const bytes = (value: unknown): Uint8Array => new TextEncoder().encode(canonicalizeJson(value));
 const request = (content: Uint8Array, selector: any) => ({
   captureId: "capture-01",
   representationArtifactId: "11111111-1111-4111-8111-111111111111",
@@ -15,8 +14,7 @@ const request = (content: Uint8Array, selector: any) => ({
   content,
 });
 const status = (content: Uint8Array, selector: any) =>
-  projectionSelectorResolver.resolve(request(content, selector)).resolution
-    .status;
+  projectionSelectorResolver.resolve(request(content, selector)).resolution.status;
 
 describe("synthetic canonical selector projections", () => {
   it("selects exact HTML field ranges without weakening DOM uniqueness, fallback, or Unicode boundaries", () => {
@@ -41,9 +39,7 @@ describe("synthetic canonical selector projections", () => {
     const result = projectionSelectorResolver.resolve(request(html, selector));
     expect(result.resolution.status).toBe("resolved");
     expect(new TextDecoder().decode(result.selectedContent)).toBe("75+");
-    expect(result.resolution.resolvedRanges).toEqual([
-      { start: 4, end: 7, coordinateSpace: "html_dom_text_utf16" },
-    ]);
+    expect(result.resolution.resolvedRanges).toEqual([{ start: 4, end: 7, coordinateSpace: "html_dom_text_utf16" }]);
     expect(status(html, { ...selector, css: "p" })).toBe("ambiguous");
     for (const textRange of [
       { start: -1, end: 2 },
@@ -82,9 +78,7 @@ describe("synthetic canonical selector projections", () => {
     ).toBe("invalid");
     expect(
       new TextDecoder().decode(
-        projectionSelectorResolver.resolve(
-          request(html, { kind: "html", css: "#metrics" }),
-        ).selectedContent,
+        projectionSelectorResolver.resolve(request(html, { kind: "html", css: "#metrics" })).selectedContent,
       ),
     ).toBe(text);
   });
@@ -120,9 +114,7 @@ describe("synthetic canonical selector projections", () => {
       }),
     );
     expect(result.resolution.status).toBe("resolved");
-    expect(new TextDecoder().decode(result.selectedContent)).toBe(
-      "Native summary",
-    );
+    expect(new TextDecoder().decode(result.selectedContent)).toBe("Native summary");
     expect(status(html, { kind: "html", css: "p" })).toBe("ambiguous");
     expect(
       status(html, {
@@ -150,9 +142,7 @@ describe("synthetic canonical selector projections", () => {
         ],
       },
     });
-    expect(status(hiddenAncestor, { kind: "html", domPath: "0/0" })).toBe(
-      "invalid",
-    );
+    expect(status(hiddenAncestor, { kind: "html", domPath: "0/0" })).toBe("invalid");
     const duplicateId = bytes({
       kind: "html_dom",
       document: {
@@ -162,9 +152,7 @@ describe("synthetic canonical selector projections", () => {
         text: "bad",
       },
     });
-    expect(status(duplicateId, { kind: "html", css: "#visible" })).toBe(
-      "parse_error",
-    );
+    expect(status(duplicateId, { kind: "html", css: "#visible" })).toBe("parse_error");
     expect(
       status(html, {
         kind: "html",
@@ -194,9 +182,7 @@ describe("synthetic canonical selector projections", () => {
     });
     expect(
       new TextDecoder().decode(
-        projectionSelectorResolver.resolve(
-          request(inline, { kind: "html", css: "p" }),
-        ).selectedContent,
+        projectionSelectorResolver.resolve(request(inline, { kind: "html", css: "p" })).selectedContent,
       ),
     ).toBe("ABC");
     const spacedInline = bytes({
@@ -212,9 +198,7 @@ describe("synthetic canonical selector projections", () => {
     });
     expect(
       new TextDecoder().decode(
-        projectionSelectorResolver.resolve(
-          request(spacedInline, { kind: "html", xpath: "//p" }),
-        ).selectedContent,
+        projectionSelectorResolver.resolve(request(spacedInline, { kind: "html", xpath: "//p" })).selectedContent,
       ),
     ).toBe("A B C");
   });
@@ -258,13 +242,9 @@ describe("synthetic canonical selector projections", () => {
     };
     const result = projectionSelectorResolver.resolve(request(pdf, selector));
     expect(result.resolution.status).toBe("resolved");
-    expect(result.resolution.resolvedRanges[0]?.coordinateSpace).toContain(
-      "pdf_physical_page_2",
-    );
+    expect(result.resolution.resolvedRanges[0]?.coordinateSpace).toContain("pdf_physical_page_2");
     expect(status(pdf, { ...selector, page: 1 })).toBe("invalid");
-    expect(
-      status(pdf, { ...selector, textLayerDigest: sha256Digest("wrong") }),
-    ).toBe("invalid");
+    expect(status(pdf, { ...selector, textLayerDigest: sha256Digest("wrong") })).toBe("invalid");
     expect(status(pdf, { ...selector, start: 0, end: 99 })).toBe("invalid");
     const astral = "A😀B";
     const astralPdf = bytes({
@@ -335,9 +315,7 @@ describe("synthetic canonical selector projections", () => {
       }),
     );
     expect(selected.resolution.status).toBe("resolved");
-    expect(new TextDecoder().decode(selected.selectedContent)).toContain(
-      '"text":"42"',
-    );
+    expect(new TextDecoder().decode(selected.selectedContent)).toContain('"text":"42"');
     expect(
       status(geometry, {
         kind: "bounding_box",
@@ -384,9 +362,7 @@ describe("synthetic canonical selector projections", () => {
       }),
     );
     expect(imageSelection.resolution.status).toBe("resolved");
-    expect(new TextDecoder().decode(imageSelection.selectedContent)).toContain(
-      '"text":"pixel-bound"',
-    );
+    expect(new TextDecoder().decode(imageSelection.selectedContent)).toContain('"text":"pixel-bound"');
     expect(
       status(image, {
         kind: "bounding_box",
@@ -503,9 +479,7 @@ describe("synthetic canonical selector projections", () => {
         channel: "left",
       }),
     ).toBe("resolved");
-    expect(
-      status(transcript, { kind: "media_timecode", startMs: 0, endMs: 2000 }),
-    ).toBe("ambiguous");
+    expect(status(transcript, { kind: "media_timecode", startMs: 0, endMs: 2000 })).toBe("ambiguous");
     expect(
       status(transcript, {
         kind: "media_timecode",
@@ -522,9 +496,7 @@ describe("synthetic canonical selector projections", () => {
         { segmentId: "a", startMs: 0, endMs: 1500, text: "first" },
       ],
     });
-    expect(
-      status(reversed, { kind: "media_timecode", startMs: 0, endMs: 2000 }),
-    ).toBe("parse_error");
+    expect(status(reversed, { kind: "media_timecode", startMs: 0, endMs: 2000 })).toBe("parse_error");
   });
 
   it("reads repository projection bytes only after full commit and safe-path binding", () => {
@@ -533,9 +505,7 @@ describe("synthetic canonical selector projections", () => {
       kind: "repository",
       commit,
       lineRangeConvention: "zero_based_half_open",
-      files: [
-        { path: "src/emoji.ts", content: "const x = '😀';\nexport { x };" },
-      ],
+      files: [{ path: "src/emoji.ts", content: "const x = '😀';\nexport { x };" }],
     });
     expect(
       status(repository, {
@@ -623,9 +593,7 @@ describe("synthetic canonical selector projections", () => {
         { pageKey: "p2", records: [{ recordKey: "same", value: { id: 2 } }] },
       ],
     });
-    expect(status(api, { kind: "api_record", recordKey: "same" })).toBe(
-      "ambiguous",
-    );
+    expect(status(api, { kind: "api_record", recordKey: "same" })).toBe("ambiguous");
     expect(
       status(api, {
         kind: "api_record",
@@ -660,18 +628,14 @@ describe("synthetic canonical selector projections", () => {
         representationDigest: sha256Digest("different"),
       }).resolution.status,
     ).toBe("invalid");
-    const nonCanonical = new TextEncoder().encode(
-      '{"rows":[],"datasetVersionId":"dataset-v1","kind":"dataset"}',
-    );
+    const nonCanonical = new TextEncoder().encode('{"rows":[],"datasetVersionId":"dataset-v1","kind":"dataset"}');
     expect(status(nonCanonical, selector)).toBe("parse_error");
     const bomb = bytes({
       kind: "table",
       tables: [
         {
           tableId: "table-01",
-          cells: [
-            { row: 0, column: 0, value: "x", headerPath: ["x"], rowSpan: 1001 },
-          ],
+          cells: [{ row: 0, column: 0, value: "x", headerPath: ["x"], rowSpan: 1001 }],
         },
       ],
     });
@@ -721,9 +685,7 @@ describe("synthetic canonical selector projections", () => {
         })),
       })),
     });
-    expect(() => parseCanonicalProjection(crossTableBudgetBomb)).toThrow(
-      /TABLE_EXPANDED_CELL_BUDGET/,
-    );
+    expect(() => parseCanonicalProjection(crossTableBudgetBomb)).toThrow(/TABLE_EXPANDED_CELL_BUDGET/);
     const coordinateOverflow = bytes({
       kind: "table",
       tables: [
@@ -740,9 +702,7 @@ describe("synthetic canonical selector projections", () => {
         },
       ],
     });
-    expect(() => parseCanonicalProjection(coordinateOverflow)).toThrow(
-      /TABLE_COORDINATE_OVERFLOW/,
-    );
+    expect(() => parseCanonicalProjection(coordinateOverflow)).toThrow(/TABLE_COORDINATE_OVERFLOW/);
   });
 
   it("accepts a bounded geometry projection up to the native parser output cap only", () => {
@@ -770,9 +730,7 @@ describe("synthetic canonical selector projections", () => {
     expect(admitted.byteLength).toBeGreaterThan(1_000_000);
     expect(admitted.byteLength).toBeLessThanOrEqual(4_000_000);
     expect(parseCanonicalProjection(admitted).kind).toBe("geometry");
-    expect(() => parseCanonicalProjection(geometry(70))).toThrow(
-      /PROJECTION_INVALID:BYTES/,
-    );
+    expect(() => parseCanonicalProjection(geometry(70))).toThrow(/PROJECTION_INVALID:BYTES/);
   });
 
   it("accepts native DOM output within 4MB while retaining string and other projection bounds", () => {
@@ -789,12 +747,8 @@ describe("synthetic canonical selector projections", () => {
       });
     expect(dom(20).byteLength).toBeGreaterThan(1_000_000);
     expect(parseCanonicalProjection(dom(20)).kind).toBe("html_dom");
-    expect(() => parseCanonicalProjection(dom(70))).toThrow(
-      /PROJECTION_INVALID:BYTES/,
-    );
-    expect(() => parseCanonicalProjection(dom(11, 100_001))).toThrow(
-      /PROJECTION_INVALID:DOM_TEXT/,
-    );
+    expect(() => parseCanonicalProjection(dom(70))).toThrow(/PROJECTION_INVALID:BYTES/);
+    expect(() => parseCanonicalProjection(dom(11, 100_001))).toThrow(/PROJECTION_INVALID:DOM_TEXT/);
     const dataset = bytes({
       kind: "dataset",
       datasetVersionId: "v1",
@@ -803,9 +757,7 @@ describe("synthetic canonical selector projections", () => {
         value: "x".repeat(60_000),
       })),
     });
-    expect(() => parseCanonicalProjection(dataset)).toThrow(
-      /PROJECTION_INVALID:BYTES/,
-    );
+    expect(() => parseCanonicalProjection(dataset)).toThrow(/PROJECTION_INVALID:BYTES/);
   });
 
   it("is admitted by the core port only when its canonical selected bytes replay", () => {
@@ -824,8 +776,6 @@ describe("synthetic canonical selector projections", () => {
       [projectionSelectorResolver],
     );
     expect(selection?.resolution.status).toBe("resolved");
-    expect(sha256Digest(selection!.selectedContent)).toBe(
-      selection!.resolution.selectedContentDigest,
-    );
+    expect(sha256Digest(selection!.selectedContent)).toBe(selection!.resolution.selectedContentDigest);
   });
 });

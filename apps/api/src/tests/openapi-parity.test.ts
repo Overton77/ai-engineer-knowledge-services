@@ -20,13 +20,8 @@ describe("OpenAPI route parity", () => {
     });
     await server.ready();
 
-    const contractPath = resolve(
-      import.meta.dirname,
-      "../../../../packages/contracts/generated/openapi.json",
-    );
-    const document = JSON.parse(
-      await readFile(contractPath, "utf8"),
-    ) as OpenApiDocument;
+    const contractPath = resolve(import.meta.dirname, "../../../../packages/contracts/generated/openapi.json");
+    const document = JSON.parse(await readFile(contractPath, "utf8")) as OpenApiDocument;
     const documentedRegistrations = new Set<string>();
     const operationIds: string[] = [];
     for (const pathItem of Object.values(document.paths))
@@ -35,9 +30,7 @@ describe("OpenAPI route parity", () => {
         expect(operation.operationId).toBeTruthy();
         expect(operation["x-fastify-route"]).toBeTruthy();
         operationIds.push(operation.operationId!);
-        documentedRegistrations.add(
-          `${method.toUpperCase()} ${operation["x-fastify-route"]}`,
-        );
+        documentedRegistrations.add(`${method.toUpperCase()} ${operation["x-fastify-route"]}`);
       }
 
     expect([...registered].sort()).toEqual([...documentedRegistrations].sort());

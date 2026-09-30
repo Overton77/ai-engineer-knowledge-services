@@ -3,11 +3,7 @@ import type { ResolvedSelector } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, sha256Digest } from "../canonical/index.js";
 import { projectionSelectorResolver } from "./projection-resolver.js";
 import { resolveEvidenceSelector } from "./resolve-evidence-selector.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-  EvidenceSelectorResolver,
-} from "./selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest, EvidenceSelectorResolver } from "./selection.js";
 
 const projectionBytes = new TextEncoder().encode(
   canonicalizeJson({
@@ -30,9 +26,7 @@ const datasetRequest: EvidenceSelectionRequest = {
 };
 
 /** Wraps a real resolver and lets a test tamper with what it claims. */
-function tampered(
-  edit: (honest: EvidenceSelection) => EvidenceSelection,
-): EvidenceSelectorResolver {
+function tampered(edit: (honest: EvidenceSelection) => EvidenceSelection): EvidenceSelectorResolver {
   return {
     resolverVersion: projectionSelectorResolver.resolverVersion,
     supportedKinds: projectionSelectorResolver.supportedKinds,
@@ -40,10 +34,7 @@ function tampered(
   };
 }
 
-const withReport = (
-  selection: EvidenceSelection,
-  patch: Partial<ResolvedSelector>,
-): EvidenceSelection => ({
+const withReport = (selection: EvidenceSelection, patch: Partial<ResolvedSelector>): EvidenceSelection => ({
   ...selection,
   resolution: { ...selection.resolution, ...patch } as ResolvedSelector,
 });
@@ -55,66 +46,39 @@ describe("resolveEvidenceSelector", () => {
   });
 
   it("accepts an honest resolver and attaches the decoded text", () => {
-    const selection = resolveEvidenceSelector(datasetRequest, [
-      projectionSelectorResolver,
-    ]);
+    const selection = resolveEvidenceSelector(datasetRequest, [projectionSelectorResolver]);
     expect(selection?.resolution.status).toBe("resolved");
-    expect(selection?.resolution.resolverVersion).toBe(
-      "verification-projections.v1",
-    );
+    expect(selection?.resolution.resolverVersion).toBe("verification-projections.v1");
     expect(selection?.selectedText).toBe("42");
-    expect(sha256Digest(selection!.selectedContent)).toBe(
-      selection!.resolution.selectedContentDigest,
-    );
+    expect(sha256Digest(selection!.selectedContent)).toBe(selection!.resolution.selectedContentDigest);
   });
 
   it.each([
     ["captureId", { captureId: "another-capture" }],
-    [
-      "representationArtifactId",
-      { representationArtifactId: "22222222-2222-4222-8222-222222222222" },
-    ],
+    ["representationArtifactId", { representationArtifactId: "22222222-2222-4222-8222-222222222222" }],
     ["representationDigest", { representationDigest: sha256Digest("other") }],
     ["selectorDigest", { selectorDigest: sha256Digest("other") }],
     ["selectorKind", { selectorKind: "table" }],
     ["resolverVersion", { resolverVersion: "somebody-else.v9" }],
-  ] as const)(
-    "rejects a claim whose %s does not bind to the request",
-    (_field, patch) => {
-      const selection = resolveEvidenceSelector(datasetRequest, [
-        tampered((honest) => withReport(honest, patch)),
-      ]);
-      expect(selection?.resolution.status).toBe("invalid");
-      expect(selection?.selectedContent).toHaveLength(0);
-    },
-  );
+  ] as const)("rejects a claim whose %s does not bind to the request", (_field, patch) => {
+    const selection = resolveEvidenceSelector(datasetRequest, [tampered((honest) => withReport(honest, patch))]);
+    expect(selection?.resolution.status).toBe("invalid");
+    expect(selection?.selectedContent).toHaveLength(0);
+  });
 
   it("rejects a claim whose selected bytes do not replay to the reported digest", () => {
     const swappedBytes = tampered((honest) => ({
       ...honest,
       selectedContent: new TextEncoder().encode("41"),
     }));
-    expect(
-      resolveEvidenceSelector(datasetRequest, [swappedBytes])?.resolution
-        .status,
-    ).toBe("invalid");
-    const swappedValue = tampered((honest) =>
-      withReport(honest, { selectedValue: 41 as never }),
-    );
-    expect(
-      resolveEvidenceSelector(datasetRequest, [swappedValue])?.resolution
-        .status,
-    ).toBe("invalid");
+    expect(resolveEvidenceSelector(datasetRequest, [swappedBytes])?.resolution.status).toBe("invalid");
+    const swappedValue = tampered((honest) => withReport(honest, { selectedValue: 41 as never }));
+    expect(resolveEvidenceSelector(datasetRequest, [swappedValue])?.resolution.status).toBe("invalid");
   });
 
   it("rejects a claim whose selectedContentDigest disagrees with the bytes it returned", () => {
-    const forgedDigest = tampered((honest) =>
-      withReport(honest, { selectedContentDigest: sha256Digest("other") }),
-    );
-    expect(
-      resolveEvidenceSelector(datasetRequest, [forgedDigest])?.resolution
-        .status,
-    ).toBe("invalid");
+    const forgedDigest = tampered((honest) => withReport(honest, { selectedContentDigest: sha256Digest("other") }));
+    expect(resolveEvidenceSelector(datasetRequest, [forgedDigest])?.resolution.status).toBe("invalid");
   });
 
   it("resolves core kinds itself even when a resolver claims to support them", () => {

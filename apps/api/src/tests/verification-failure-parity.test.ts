@@ -4,8 +4,7 @@ import { PostgresKnowledgeOperationService } from "../../../../packages/persiste
 import type { PostgresCanonicalRepository } from "../../../../packages/persistence/src/postgres.js";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1),
   operationId = id(2),
   receiptId = id(3);
@@ -76,16 +75,12 @@ describe("canonical failure receipt to public verification HTTP", () => {
           },
         ]),
       };
-      const operations = new PostgresKnowledgeOperationService(
-        repository as unknown as PostgresCanonicalRepository,
-      );
+      const operations = new PostgresKnowledgeOperationService(repository as unknown as PostgresCanonicalRepository);
       const api = buildServer({
         verificationOperationService: operations,
         resolveIdentity: () => ({
           actor,
-          grants: [
-            { tenantId: tenant, roles: ["knowledge_operator"], scopes: [] },
-          ],
+          grants: [{ tenantId: tenant, roles: ["knowledge_operator"], scopes: [] }],
         }),
       });
       const headers = {
@@ -108,9 +103,7 @@ describe("canonical failure receipt to public verification HTTP", () => {
           qualityFailure,
         };
         expect(status.failure).toEqual(expected);
-        expect(JSON.stringify(status)).not.toMatch(
-          /PRIVATE_CANARY|rawProviderBody|apiKey|forged_category/,
-        );
+        expect(JSON.stringify(status)).not.toMatch(/PRIVATE_CANARY|rawProviderBody|apiKey|forged_category/);
         state = "succeeded";
         const recovered = await api.inject({
           method: "GET",

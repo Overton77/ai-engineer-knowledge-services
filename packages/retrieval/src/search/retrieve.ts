@@ -18,10 +18,7 @@ import type {
 // omitted, timings, eligible, plan) so the stage primitives in the sibling folders
 // can stay pure functions or Map-free walks; they report back through rankChannel
 // or a return value instead of owning their own state.
-export async function retrieve(
-  query: string,
-  options: RetrieveOptions,
-): Promise<ImmutableEvidencePacket> {
+export async function retrieve(query: string, options: RetrieveOptions): Promise<ImmutableEvidencePacket> {
   const now = options.now ?? new Date().toISOString();
   const plan = buildRetrievalPlan(query, options.policy, options);
   const stages: RetrievalStages = {
@@ -51,9 +48,7 @@ export async function retrieve(
       }
       if (
         options.policy.allowedVisibilities &&
-        !options.policy.allowedVisibilities.includes(
-          String(record.fields.visibility),
-        )
+        !options.policy.allowedVisibilities.includes(String(record.fields.visibility))
       ) {
         omitted.push({
           recordId: record.id,
@@ -98,19 +93,11 @@ export async function retrieve(
         channel,
         rank,
         rawScore: item.score,
-        rrfContribution: rrfContribution(
-          options.policy.channelWeights,
-          options.policy.rrfK,
-          channel,
-          rank,
-        ),
+        rrfContribution: rrfContribution(options.policy.channelWeights, options.policy.rrfK, channel, rank),
         explanation: item.explanation,
         ...(item.graphPath ? { graphPath: item.graphPath } : {}),
       };
-      channelRanks.set(item.record.id, [
-        ...(channelRanks.get(item.record.id) ?? []),
-        entry,
-      ]);
+      channelRanks.set(item.record.id, [...(channelRanks.get(item.record.id) ?? []), entry]);
     });
   };
   time("lexical", () => {
@@ -119,29 +106,17 @@ export async function retrieve(
       if (stages.exact)
         rankChannel(
           "exact",
-          score(
-            eligible,
-            (r) => exactScore(r, subquery.text),
-            "exact identifier/phrase match",
-          ),
+          score(eligible, (r) => exactScore(r, subquery.text), "exact identifier/phrase match"),
         );
       if (stages.trigram)
         rankChannel(
           "trigram",
-          score(
-            eligible,
-            (r) => trigramScore(r.text, subquery.text),
-            "trigram similarity",
-          ),
+          score(eligible, (r) => trigramScore(r.text, subquery.text), "trigram similarity"),
         );
       if (stages.fts)
         rankChannel(
           "fts",
-          score(
-            eligible,
-            (r) => ftsScore(r.text, tokens),
-            "full-text token coverage",
-          ),
+          score(eligible, (r) => ftsScore(r.text, tokens), "full-text token coverage"),
         );
     }
   });
@@ -149,11 +124,7 @@ export async function retrieve(
     time("semantic", () =>
       rankChannel(
         "semantic",
-        score(
-          eligible,
-          (r) => (r.vector ? cosine(options.queryVector!, r.vector) : 0),
-          "cosine semantic similarity",
-        ),
+        score(eligible, (r) => (r.vector ? cosine(options.queryVector!, r.vector) : 0), "cosine semantic similarity"),
       ),
     );
   if (stages.graph)
@@ -162,14 +133,7 @@ export async function retrieve(
         .sort((a, b) => sum(b[1]) - sum(a[1]))
         .slice(0, Math.min(10, plan.candidateK))
         .map(([id]) => id);
-      expandVerifiedGraph(
-        plan,
-        eligible,
-        options.graphEdges ?? [],
-        options.policy,
-        seeds,
-        rankChannel,
-      );
+      expandVerifiedGraph(plan, eligible, options.graphEdges ?? [], options.policy, seeds, rankChannel);
     });
   let degradedMode = false;
   if (options.reranker && stages.rerank) {
@@ -204,11 +168,7 @@ export async function retrieve(
     .map(([id, contributions]) => {
       const record = eligible.find((x) => x.id === id)!;
       const covered = plan.subqueries
-        .filter(
-          (q) =>
-            exactScore(record, q.text) > 0 ||
-            ftsScore(record.text, tokenize(q.text)) > 0,
-        )
+        .filter((q) => exactScore(record, q.text) > 0 || ftsScore(record.text, tokenize(q.text)) > 0)
         .map((q) => q.id);
       const penalties: string[] = [];
       let penalty = 0;
@@ -224,10 +184,7 @@ export async function retrieve(
         penalties.push("contradicted");
         penalty += 0.15;
       }
-      const ageDays = Math.max(
-        0,
-        (Date.parse(now) - Date.parse(record.freshnessAt)) / 86_400_000,
-      );
+      const ageDays = Math.max(0, (Date.parse(now) - Date.parse(record.freshnessAt)) / 86_400_000);
       if (ageDays > 730) {
         penalties.push("stale_over_730_days");
         penalty += 0.02;
@@ -278,8 +235,7 @@ export async function retrieve(
           context.sourceId !== item.record.sourceId ||
           context.ordinal === undefined ||
           item.record.ordinal === undefined ||
-          Math.abs(context.ordinal - item.record.ordinal) >
-            options.policy.contextRadius
+          Math.abs(context.ordinal - item.record.ordinal) > options.policy.contextRadius
         )
           continue;
         selectedIds.add(context.id);
@@ -297,25 +253,15 @@ export async function retrieve(
   }
   const coverage = plan.subqueries.map((q) => ({
     subqueryId: q.id,
-    coverage: ranked.some(
-      (item) => !item.contextOnly && item.coveredSubqueryIds.includes(q.id),
-    )
-      ? 1
-      : 0,
+    coverage: ranked.some((item) => !item.contextOnly && item.coveredSubqueryIds.includes(q.id)) ? 1 : 0,
   }));
-  const required = coverage.filter(
-    (_, i) => plan.subqueries[i]!.coverageRole === "required",
-  );
-  const coverageScore =
-    required.reduce((n, x) => n + x.coverage, 0) / Math.max(1, required.length);
+  const required = coverage.filter((_, i) => plan.subqueries[i]!.coverageRole === "required");
+  const coverageScore = required.reduce((n, x) => n + x.coverage, 0) / Math.max(1, required.length);
   const evidenceScore = Math.max(
     0,
     ...selected.flatMap((item) =>
       item.contributions
-        .filter(
-          ({ channel }) =>
-            channel === "exact" || channel === "fts" || channel === "semantic",
-        )
+        .filter(({ channel }) => channel === "exact" || channel === "fts" || channel === "semantic")
         .map(({ rawScore }) => rawScore),
     ),
   );
@@ -328,12 +274,9 @@ export async function retrieve(
     }),
   );
   const exactIdentifierHit = selected.some((item) =>
-    item.contributions.some(
-      ({ channel, rawScore }) => channel === "exact" && rawScore === 1,
-    ),
+    item.contributions.some(({ channel, rawScore }) => channel === "exact" && rawScore === 1),
   );
-  const insufficientTerms =
-    !exactIdentifierHit && evidenceTerms < plan.minimumEvidenceTerms;
+  const insufficientTerms = !exactIdentifierHit && evidenceTerms < plan.minimumEvidenceTerms;
   const policyBypassAttempt =
     /\b(?:ignore|bypass|disable|override)\b.{0,48}\b(?:tenant|authorization|access|policy|filter)s?\b|\b(?:reveal|exfiltrate|leak)\b.{0,48}\b(?:private|secret|other (?:tenant|customer))\b/i.test(
       plan.normalizedQuery,
@@ -352,9 +295,7 @@ export async function retrieve(
       space: item.record.space,
       locators: item.record.locators,
       contributions: item.contributions,
-      graphPaths: item.contributions.flatMap((c) =>
-        c.graphPath ? [c.graphPath] : [],
-      ),
+      graphPaths: item.contributions.flatMap((c) => (c.graphPath ? [c.graphPath] : [])),
       matchedConstraints: item.matchedConstraints,
       penalties: item.penalties,
       authority: item.record.authority,
@@ -369,8 +310,7 @@ export async function retrieve(
     }),
   );
   const retrievalRunId =
-    options.retrievalRunId ??
-    stableId(`run:${options.tenantId}:${sha256Digest(JSON.stringify(plan))}`);
+    options.retrievalRunId ?? stableId(`run:${options.tenantId}:${sha256Digest(JSON.stringify(plan))}`);
   const receiptId = stableId(`receipt:${retrievalRunId}`);
   const immutableCore = {
     tenantId: options.tenantId,
@@ -421,9 +361,7 @@ function matches(record: RetrievalRecord, filter: RetrievalFilter) {
     case "in":
       return Array.isArray(expected) && expected.includes(actual as never);
     case "contains":
-      return Array.isArray(actual)
-        ? actual.includes(expected as never)
-        : String(actual).includes(String(expected));
+      return Array.isArray(actual) ? actual.includes(expected as never) : String(actual).includes(String(expected));
     case "gte":
       return actual >= expected;
     case "lte":

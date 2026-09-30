@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  KnowledgeIntegrationService,
-  VerificationServiceCatalog,
-} from "@aiengineer/knowledge-application";
+import { KnowledgeIntegrationService, VerificationServiceCatalog } from "@aiengineer/knowledge-application";
 import type { LocalApiIdentity } from "@aiengineer/knowledge-host";
 import { buildServer } from "../server.js";
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenantId = id(1),
   operationId = id(2),
   attemptId = id(3),
@@ -36,13 +32,7 @@ const headers = {
   "x-correlation-id": "profile-route-correlation",
   "idempotency-key": "profile-route-key",
 };
-const profileContext = ({
-  correlationId,
-  idempotencyKey,
-}: {
-  correlationId: string;
-  idempotencyKey: string;
-}) => ({
+const profileContext = ({ correlationId, idempotencyKey }: { correlationId: string; idempotencyKey: string }) => ({
   tenantId,
   operationId,
   attemptId,
@@ -81,13 +71,11 @@ function options(
   return {
     verificationOperationService: operations,
     verificationCaptureCatalog: catalog(),
-    resolveIdentity: (value: string) =>
-      value === token ? identity : undefined,
+    resolveIdentity: (value: string) => (value === token ? identity : undefined),
     resolveVerificationBenchmarkCaptureProfile: resolver,
   };
 }
-const url =
-  "/v1/verification/benchmark-capture-profiles/diagnostics-companies/captures";
+const url = "/v1/verification/benchmark-capture-profiles/diagnostics-companies/captures";
 describe("benchmark capture profile HTTP route", () => {
   it("submits acquired source under server-owned profile", async () => {
     const operations = new KnowledgeIntegrationService(),
@@ -202,8 +190,7 @@ describe("benchmark capture profile HTTP route", () => {
       await denied.close();
     }
     const unavailable = buildServer({
-      resolveIdentity: (value: string) =>
-        value === token ? identity : undefined,
+      resolveIdentity: (value: string) => (value === token ? identity : undefined),
     });
     try {
       expect(

@@ -20,10 +20,17 @@ export function createCheckpointCustody(store: FilesystemStore, custody: Artifac
       requireTenant(tenantId);
       if (manifest.scope.tenantId !== tenantId) throw new Error("CHECKPOINT_TENANT_DENIED");
       return store.put({
-        bytes, mediaType: "application/vnd.aiengineer.scoped-checkpoint+json",
-        producerActivityId: `knowledge:checkpoint:${checkpointScopeId(manifest.scope)}`, producerVersion: "scoped-checkpoint.v1",
-        dataClassification: "internal", parentArtifactIds,
-        transformation: { kind: "scoped-checkpoint", scope: manifest.scope, parentCheckpointId: manifest.parentCheckpointId },
+        bytes,
+        mediaType: "application/vnd.aiengineer.scoped-checkpoint+json",
+        producerActivityId: `knowledge:checkpoint:${checkpointScopeId(manifest.scope)}`,
+        producerVersion: "scoped-checkpoint.v1",
+        dataClassification: "internal",
+        parentArtifactIds,
+        transformation: {
+          kind: "scoped-checkpoint",
+          scope: manifest.scope,
+          parentCheckpointId: manifest.parentCheckpointId,
+        },
       });
     },
     async validateExecutorState({ tenantId, scope, artifact }) {
@@ -36,12 +43,16 @@ export function createCheckpointCustody(store: FilesystemStore, custody: Artifac
       if (!stored) throw new Error("CHECKPOINT_HANDOFF_UNAVAILABLE");
       assertSameArtifact(artifact, stored.handle);
       validateStoredArtifact(tenantId, stored.handle, stored.bytes);
-      const handoff = CheckpointSemanticHandoffSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(stored.bytes)));
-      if (canonicalizeJson(handoff.scope) !== canonicalizeJson(scope)
-        || canonicalizeJson(handoff.pendingOperations) !== canonicalizeJson(pendingOperations)
-        || handoff.status !== (pendingOperations.length ? "partial" : "ready_for_continuation")
-        || artifact.mediaType !== "application/vnd.aiengineer.checkpoint-handoff+json"
-        || canonicalizeJson(artifact.parentArtifactIds) !== canonicalizeJson([handoff.notesArtifact.artifactId])) {
+      const handoff = CheckpointSemanticHandoffSchema.parse(
+        JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(stored.bytes)),
+      );
+      if (
+        canonicalizeJson(handoff.scope) !== canonicalizeJson(scope) ||
+        canonicalizeJson(handoff.pendingOperations) !== canonicalizeJson(pendingOperations) ||
+        handoff.status !== (pendingOperations.length ? "partial" : "ready_for_continuation") ||
+        artifact.mediaType !== "application/vnd.aiengineer.checkpoint-handoff+json" ||
+        canonicalizeJson(artifact.parentArtifactIds) !== canonicalizeJson([handoff.notesArtifact.artifactId])
+      ) {
         throw new Error("CHECKPOINT_HANDOFF_BINDING");
       }
       const notes = await custody.resolve(handoff.notesArtifact.artifactId);

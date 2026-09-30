@@ -44,12 +44,8 @@ describe("exact HTTP acquisition", () => {
       "2002:7f00:1::",
     ])
       expect(isForbiddenAddress(address)).toBe(true);
-    await expect(
-      assertSafeHttpUrl("https://localhost/a", policy, resolver),
-    ).rejects.toThrow("HOST_DENIED");
-    await expect(
-      assertSafeHttpUrl("https://[::ffff:7f00:1]/a", policy, resolver),
-    ).rejects.toThrow("ADDRESS_DENIED");
+    await expect(assertSafeHttpUrl("https://localhost/a", policy, resolver)).rejects.toThrow("HOST_DENIED");
+    await expect(assertSafeHttpUrl("https://[::ffff:7f00:1]/a", policy, resolver)).rejects.toThrow("ADDRESS_DENIED");
   });
   it("revalidates redirects and hashes exact bytes", async () => {
     const calls: string[] = [];
@@ -66,25 +62,15 @@ describe("exact HTTP acquisition", () => {
             },
           });
     };
-    const adapter = new ExactHttpAcquisitionAdapter(
-      new InMemoryArtifactStore(),
-      policy,
-      resolver,
-      fetcher,
-    );
+    const adapter = new ExactHttpAcquisitionAdapter(new InMemoryArtifactStore(), policy, resolver, fetcher);
     const plan = await adapter.plan(request);
     const result = await adapter.execute({
       ...plan,
       admissionId: "admitted-http-v1",
     });
-    expect(calls).toEqual([
-      "https://example.com/a",
-      "https://example.com/final",
-    ]);
+    expect(calls).toEqual(["https://example.com/a", "https://example.com/final"]);
     expect(result.artifacts[0]?.byteLength).toBe(8);
-    expect(
-      result.observations.find((item) => item.key === "headers")?.value,
-    ).not.toContain("secret");
+    expect(result.observations.find((item) => item.key === "headers")?.value).not.toContain("secret");
     expect((await adapter.verify(result)).accepted).toBe(true);
   });
   it("enforces byte limits", async () => {
@@ -95,9 +81,7 @@ describe("exact HTTP acquisition", () => {
       async () => new Response("x".repeat(101)),
     );
     const plan = await adapter.plan(request);
-    await expect(
-      adapter.execute({ ...plan, admissionId: "admitted-http-v1" }),
-    ).rejects.toThrow("BYTE_LIMIT_EXCEEDED");
+    await expect(adapter.execute({ ...plan, admissionId: "admitted-http-v1" })).rejects.toThrow("BYTE_LIMIT_EXCEEDED");
   });
   it("enforces decompression ratio limits", async () => {
     const adapter = new ExactHttpAcquisitionAdapter(
@@ -110,28 +94,26 @@ describe("exact HTTP acquisition", () => {
         }),
     );
     const plan = await adapter.plan(request);
-    await expect(
-      adapter.execute({ ...plan, admissionId: "admitted-http-v1" }),
-    ).rejects.toThrow("DECOMPRESSION_RATIO_EXCEEDED");
+    await expect(adapter.execute({ ...plan, admissionId: "admitted-http-v1" })).rejects.toThrow(
+      "DECOMPRESSION_RATIO_EXCEEDED",
+    );
   });
   it("fails closed when an encoded response has no compressed length", async () => {
     const adapter = new ExactHttpAcquisitionAdapter(
       new InMemoryArtifactStore(),
       policy,
       resolver,
-      async () =>
-        new Response("encoded", { headers: { "content-encoding": "gzip" } }),
+      async () => new Response("encoded", { headers: { "content-encoding": "gzip" } }),
     );
     const plan = await adapter.plan(request);
-    await expect(
-      adapter.execute({ ...plan, admissionId: "admitted-http-v1" }),
-    ).rejects.toThrow("ENCODED_LENGTH_REQUIRED");
+    await expect(adapter.execute({ ...plan, admissionId: "admitted-http-v1" })).rejects.toThrow(
+      "ENCODED_LENGTH_REQUIRED",
+    );
   });
   it("re-resolves redirects and blocks a private destination before fetching it", async () => {
     const calls: string[] = [];
     const redirectResolver = {
-      resolve: async (host: string) =>
-        host === "internal.example" ? ["10.0.0.4"] : ["93.184.216.34"],
+      resolve: async (host: string) => (host === "internal.example" ? ["10.0.0.4"] : ["93.184.216.34"]),
     };
     const adapter = new ExactHttpAcquisitionAdapter(
       new InMemoryArtifactStore(),
@@ -146,24 +128,17 @@ describe("exact HTTP acquisition", () => {
       },
     );
     const plan = await adapter.plan(request);
-    await expect(
-      adapter.execute({ ...plan, admissionId: "redirect-private" }),
-    ).rejects.toThrow("ADDRESS_DENIED");
+    await expect(adapter.execute({ ...plan, admissionId: "redirect-private" })).rejects.toThrow("ADDRESS_DENIED");
     expect(calls).toEqual(["https://example.com/a"]);
   });
   it("passes the validated address to the socket transport without a second DNS lookup", async () => {
     let resolutions = 0;
     const rebindingResolver = {
-      resolve: async () =>
-        ++resolutions <= 2 ? ["93.184.216.34"] : ["127.0.0.1"],
+      resolve: async () => (++resolutions <= 2 ? ["93.184.216.34"] : ["127.0.0.1"]),
     };
     const pins: string[][] = [];
     const transport = {
-      fetch: async (
-        _url: URL,
-        _init: RequestInit,
-        addresses: readonly string[],
-      ) => {
+      fetch: async (_url: URL, _init: RequestInit, addresses: readonly string[]) => {
         pins.push([...addresses]);
         return new Response("pinned", {
           status: 200,
@@ -203,15 +178,11 @@ describe("exact HTTP acquisition", () => {
     }
   });
   it("rejects forbidden addresses at the transport boundary as defense in depth", () => {
-    expect(() =>
-      buildPinnedRequestOptions(
-        new URL("https://example.com"),
-        {},
-        "127.0.0.1",
-      ),
-    ).toThrow("PINNED_ADDRESS_INVALID");
-    expect(() =>
-      buildPinnedRequestOptions(new URL("https://example.com"), {}, "::1"),
-    ).toThrow("PINNED_ADDRESS_INVALID");
+    expect(() => buildPinnedRequestOptions(new URL("https://example.com"), {}, "127.0.0.1")).toThrow(
+      "PINNED_ADDRESS_INVALID",
+    );
+    expect(() => buildPinnedRequestOptions(new URL("https://example.com"), {}, "::1")).toThrow(
+      "PINNED_ADDRESS_INVALID",
+    );
   });
 });

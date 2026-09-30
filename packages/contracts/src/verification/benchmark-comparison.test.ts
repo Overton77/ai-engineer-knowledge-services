@@ -22,13 +22,25 @@ const profile = (profileId: "paired_default" | "regression_gate" = "paired_defau
 
 describe("verification benchmark comparison profile", () => {
   it("admits same-ID cross-run arm pairs and both fixed profile modes", () => {
-    expect(VerificationBenchmarkComparisonProfileSchema.parse(profile()).armPairs[0]).toMatchObject({ baselineArmId: "baseline", candidateArmId: "baseline" });
-    expect(VerificationBenchmarkComparisonProfileSchema.parse(profile("regression_gate")).regressionGate).toEqual({ maximumAllowedObservedDecrease: 0.01 });
+    expect(VerificationBenchmarkComparisonProfileSchema.parse(profile()).armPairs[0]).toMatchObject({
+      baselineArmId: "baseline",
+      candidateArmId: "baseline",
+    });
+    expect(VerificationBenchmarkComparisonProfileSchema.parse(profile("regression_gate")).regressionGate).toEqual({
+      maximumAllowedObservedDecrease: 0.01,
+    });
   });
 
   it("binds gate presence to the registered profile ID", () => {
-    expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile(), regressionGate: { maximumAllowedObservedDecrease: 0 } })).toThrow();
-    expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile("regression_gate"), regressionGate: null })).toThrow();
+    expect(() =>
+      VerificationBenchmarkComparisonProfileSchema.parse({
+        ...profile(),
+        regressionGate: { maximumAllowedObservedDecrease: 0 },
+      }),
+    ).toThrow();
+    expect(() =>
+      VerificationBenchmarkComparisonProfileSchema.parse({ ...profile("regression_gate"), regressionGate: null }),
+    ).toThrow();
   });
 
   it("rejects duplicate IDs, duplicate ordered pairs and unknown profile fields", () => {
@@ -37,13 +49,22 @@ describe("verification benchmark comparison profile", () => {
     expect(() => VerificationBenchmarkComparisonProfileSchema.parse(duplicateId)).toThrow(/pair IDs must be unique/);
     const duplicatePair = profile();
     duplicatePair.armPairs[1] = { ...duplicatePair.armPairs[0]!, pairId: "other" };
-    expect(() => VerificationBenchmarkComparisonProfileSchema.parse(duplicatePair)).toThrow(/ordered arm pairs must be unique/);
+    expect(() => VerificationBenchmarkComparisonProfileSchema.parse(duplicatePair)).toThrow(
+      /ordered arm pairs must be unique/,
+    );
     expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile(), callerThreshold: 1 })).toThrow();
   });
 
   it("enforces bounded deterministic statistics settings", () => {
     expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile(), seed: 0x1_0000_0000 })).toThrow();
-    expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile(), bootstrapReplicates: 99 })).toThrow();
-    expect(() => VerificationBenchmarkComparisonProfileSchema.parse({ ...profile("regression_gate"), regressionGate: { maximumAllowedObservedDecrease: 1.01 } })).toThrow();
+    expect(() =>
+      VerificationBenchmarkComparisonProfileSchema.parse({ ...profile(), bootstrapReplicates: 99 }),
+    ).toThrow();
+    expect(() =>
+      VerificationBenchmarkComparisonProfileSchema.parse({
+        ...profile("regression_gate"),
+        regressionGate: { maximumAllowedObservedDecrease: 1.01 },
+      }),
+    ).toThrow();
   });
 });

@@ -8,7 +8,9 @@ vi.mock("@aiengineer/knowledge-host", async (importOriginal) => {
   return {
     ...original,
     createHost: async (options: Parameters<typeof original.createHost>[0]) => {
-      const host = await (original.createHost as (value: typeof options) => Promise<{ close(): Promise<void> }>)(options);
+      const host = await (original.createHost as (value: typeof options) => Promise<{ close(): Promise<void> }>)(
+        options,
+      );
       const release = host.close.bind(host);
       return Object.assign(host, {
         close: async () => {

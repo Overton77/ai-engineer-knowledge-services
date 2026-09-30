@@ -39,10 +39,7 @@ const uncertain = new Set<Verdict>([
   "context_only",
   "insufficient_evidence",
 ]);
-const supported = new Set<Verdict>([
-  "directly_supported",
-  "supported_with_qualification",
-]);
+const supported = new Set<Verdict>(["directly_supported", "supported_with_qualification"]);
 
 /**
  * Judges an authorized case: snapshot the adapters → primary judgment → a
@@ -55,24 +52,16 @@ export async function verifySemanticCase(
   adapters: SemanticJudgeAdapters,
   execution: SemanticJudgeExecution = {},
 ): Promise<SemanticAssessmentRecord> {
-  if (!isRuntimeAuthorizedSemanticCase(semanticCase))
-    throw new Error("SEMANTIC_CASE_NOT_RUNTIME_AUTHORIZED");
+  if (!isRuntimeAuthorizedSemanticCase(semanticCase)) throw new Error("SEMANTIC_CASE_NOT_RUNTIME_AUTHORIZED");
   const primarySnapshot = snapshotAdapter(adapters.primary);
-  const crossFamilySnapshot = adapters.crossFamily
-    ? snapshotAdapter(adapters.crossFamily)
-    : undefined;
+  const crossFamilySnapshot = adapters.crossFamily ? snapshotAdapter(adapters.crossFamily) : undefined;
   const primary = await runJudge(primarySnapshot, semanticCase, execution);
-  const secondRequired =
-    ["high", "critical"].includes(semanticCase.riskClass) ||
-    uncertain.has(primary.output.verdict);
+  const secondRequired = ["high", "critical"].includes(semanticCase.riskClass) || uncertain.has(primary.output.verdict);
   const judgments: Judgment[] = [primary];
   let crossFamily = false;
   if (secondRequired && crossFamilySnapshot) {
     crossFamily = isCrossFamily(primary.identity, crossFamilySnapshot.identity);
-    if (crossFamily)
-      judgments.push(
-        await runJudge(crossFamilySnapshot, semanticCase, execution),
-      );
+    if (crossFamily) judgments.push(await runJudge(crossFamilySnapshot, semanticCase, execution));
   }
   return reconcileJudgments({
     semanticCase,
@@ -83,18 +72,12 @@ export async function verifySemanticCase(
 }
 
 /** A second judge only counts when it is a different model family on a different deployment. */
-const isCrossFamily = (
-  primary: SemanticJudgeIdentity,
-  second: SemanticJudgeIdentity,
-): boolean =>
-  second.family !== primary.family &&
-  second.deploymentId !== primary.deploymentId;
+const isCrossFamily = (primary: SemanticJudgeIdentity, second: SemanticJudgeIdentity): boolean =>
+  second.family !== primary.family && second.deploymentId !== primary.deploymentId;
 
 /** Adapter identity and capacity are read once, before any judgment, so a misbehaving adapter cannot change them mid-run. */
 function snapshotAdapter(adapter: SemanticJudgeAdapter): AdapterSnapshot {
-  const identity = Object.freeze(
-    SemanticJudgeIdentitySchema.parse(adapter.identity),
-  );
+  const identity = Object.freeze(SemanticJudgeIdentitySchema.parse(adapter.identity));
   if (
     !Number.isInteger(adapter.maximumInputCharacters) ||
     adapter.maximumInputCharacters < 1 ||
@@ -134,31 +117,19 @@ function inputCharacterCount(semanticCase: AuthorizedSemanticCase): number {
   return (
     semanticCase.assertionId.length +
     semanticCase.proposition.length +
-    (semanticCase.value === undefined
-      ? 0
-      : canonicalizeJson(semanticCase.value).length) +
+    (semanticCase.value === undefined ? 0 : canonicalizeJson(semanticCase.value).length) +
     semanticCase.qualifiers.reduce((sum, item) => sum + item.length, 0) +
-    semanticCase.entityBindings.reduce(
-      (sum, item) => sum + item.role.length + item.canonicalId.length,
-      0,
-    ) +
-    semanticCase.fragments.reduce(
-      (sum, item) => sum + item.fragmentId.length + item.exactText.length,
-      0,
-    )
+    semanticCase.entityBindings.reduce((sum, item) => sum + item.role.length + item.canonicalId.length, 0) +
+    semanticCase.fragments.reduce((sum, item) => sum + item.fragmentId.length + item.exactText.length, 0)
   );
 }
 
 function assertExecutionActive(execution: SemanticJudgeExecution): void {
   if (execution.signal?.aborted) throw new Error("JUDGE_CANCELLED");
   if (execution.deadlineEpochMs !== undefined) {
-    if (
-      !Number.isFinite(execution.deadlineEpochMs) ||
-      execution.deadlineEpochMs <= 0
-    )
+    if (!Number.isFinite(execution.deadlineEpochMs) || execution.deadlineEpochMs <= 0)
       throw new Error("JUDGE_DEADLINE_INVALID");
-    if (Date.now() >= execution.deadlineEpochMs)
-      throw new Error("JUDGE_DEADLINE_EXCEEDED");
+    if (Date.now() >= execution.deadlineEpochMs) throw new Error("JUDGE_DEADLINE_EXCEEDED");
   }
 }
 
@@ -179,9 +150,7 @@ function reconcileJudgments({
   const primary = judgments[0]!;
   const outputs = judgments.map((item) => item.output);
   let verdict: SemanticAssessmentRecord["verdict"] = primary.output.verdict;
-  let disposition: SemanticAssessmentRecord["disposition"] = supported.has(
-    primary.output.verdict,
-  )
+  let disposition: SemanticAssessmentRecord["disposition"] = supported.has(primary.output.verdict)
     ? "admit"
     : primary.output.verdict === "contradicted"
       ? "fail"
@@ -191,16 +160,9 @@ function reconcileJudgments({
     disposition = semanticCase.riskClass === "critical" ? "abstain" : "review";
     reasonCodes.push("CROSS_FAMILY_SECOND_JUDGE_REQUIRED");
   }
-  if (
-    judgments.length === 2 &&
-    judgments[0]!.output.verdict !== judgments[1]!.output.verdict
-  ) {
-    const bothSupport = outputs.every((output) =>
-      supported.has(output.verdict),
-    );
-    verdict = bothSupport
-      ? "supported_with_qualification"
-      : "mixed_or_conflicting";
+  if (judgments.length === 2 && judgments[0]!.output.verdict !== judgments[1]!.output.verdict) {
+    const bothSupport = outputs.every((output) => supported.has(output.verdict));
+    verdict = bothSupport ? "supported_with_qualification" : "mixed_or_conflicting";
     disposition = "review";
     reasonCodes.push("JUDGE_DISAGREEMENT");
   }
@@ -212,17 +174,14 @@ function reconcileJudgments({
     disposition = "review";
   }
   const evidenceSupport =
-    verdict === "directly_supported" ||
-    verdict === "supported_with_qualification"
+    verdict === "directly_supported" || verdict === "supported_with_qualification"
       ? "satisfied"
       : verdict === "contradicted" || verdict === "not_supported"
         ? "not_satisfied"
         : "unknown";
   return SemanticAssessmentRecordSchema.parse({
     assertionId: semanticCase.assertionId,
-    ...(semanticCase.value !== undefined
-      ? { assertionValueDigest: digestCanonicalJson(semanticCase.value) }
-      : {}),
+    ...(semanticCase.value !== undefined ? { assertionValueDigest: digestCanonicalJson(semanticCase.value) } : {}),
     verdict,
     disposition,
     evidenceSupport,
@@ -231,15 +190,9 @@ function reconcileJudgments({
     sourceAuthority: "not_assessed",
     provenanceIntegrity: "satisfied",
     judgeIdentities: judgments.map((item) => item.identity),
-    supportingFragmentIds: unique(
-      outputs.flatMap((output) => output.supportingFragmentIds),
-    ),
-    contradictingFragmentIds: unique(
-      outputs.flatMap((output) => output.contradictingFragmentIds),
-    ),
-    unsupportedFacets: unique(
-      outputs.flatMap((output) => output.unsupportedFacets),
-    ),
+    supportingFragmentIds: unique(outputs.flatMap((output) => output.supportingFragmentIds)),
+    contradictingFragmentIds: unique(outputs.flatMap((output) => output.contradictingFragmentIds)),
+    unsupportedFacets: unique(outputs.flatMap((output) => output.unsupportedFacets)),
     reasonCodes,
     crossFamilySecondJudge: crossFamily,
     rawProviderConfidences: judgments.flatMap((item) =>

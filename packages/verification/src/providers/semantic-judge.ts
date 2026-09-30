@@ -1,7 +1,4 @@
-import type {
-  SemanticJudgeAdapter,
-  SemanticJudgeExecution,
-} from "../semantic/ports.js";
+import type { SemanticJudgeAdapter, SemanticJudgeExecution } from "../semantic/ports.js";
 import {
   SemanticJudgeOutputSchema,
   type SemanticJudgeIdentity,
@@ -23,12 +20,7 @@ export class RecordedSemanticJudgeAdapter implements SemanticJudgeAdapter {
     readonly maximumInputCharacters?: number;
   }) {
     this.identity = Object.freeze({ ...config.identity });
-    this.#outputs = new Map(
-      [...config.outputs].map(([key, value]) => [
-        key,
-        deepFreeze(structuredClone(value)),
-      ]),
-    );
+    this.#outputs = new Map([...config.outputs].map(([key, value]) => [key, deepFreeze(structuredClone(value))]));
     this.maximumInputCharacters = config.maximumInputCharacters ?? 64_000;
   }
 
@@ -37,10 +29,7 @@ export class RecordedSemanticJudgeAdapter implements SemanticJudgeAdapter {
     execution: SemanticJudgeExecution,
   ): Promise<SemanticJudgeOutput> {
     if (execution.signal?.aborted) throw new Error("JUDGE_CANCELLED");
-    const output =
-      input.inputArtifactDigest === undefined
-        ? undefined
-        : this.#outputs.get(input.inputArtifactDigest);
+    const output = input.inputArtifactDigest === undefined ? undefined : this.#outputs.get(input.inputArtifactDigest);
     if (!output) throw new Error("RECORDED_JUDGE_FIXTURE_MISSING");
     return SemanticJudgeOutputSchema.parse(structuredClone(output));
   }
@@ -85,8 +74,7 @@ export class ThreeWayNliSemanticJudgeAdapter implements SemanticJudgeAdapter {
     readonly classify: NliClassifier;
     readonly maximumInputCharacters?: number;
   }) {
-    if (config.identity.capability !== "trained_nli")
-      throw new Error("NLI_IDENTITY_CAPABILITY_INVALID");
+    if (config.identity.capability !== "trained_nli") throw new Error("NLI_IDENTITY_CAPABILITY_INVALID");
     this.identity = Object.freeze({ ...config.identity });
     this.#classify = config.classify;
     this.maximumInputCharacters = config.maximumInputCharacters ?? 64_000;

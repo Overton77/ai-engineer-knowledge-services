@@ -1,4 +1,9 @@
-import { ActorSchema, OperationContextSchema, UuidSchema, type OperationContext } from "@aiengineer/knowledge-contracts";
+import {
+  ActorSchema,
+  OperationContextSchema,
+  UuidSchema,
+  type OperationContext,
+} from "@aiengineer/knowledge-contracts";
 import { z } from "zod";
 import { actorsMatch, isAuthorized, type LocalApiIdentity } from "../../access/api-access.js";
 import type { ResolveVerificationContext } from "../operations/verification-transport.js";
@@ -25,14 +30,15 @@ export class BenchmarkCaptureProfileResolver {
 
   /** Profiles are validated before the ownership resolver is created, preserving configuration-failure order. */
   constructor(rawProfiles: string, createOwnership: () => ResolveVerificationContext) {
-    if (Buffer.byteLength(rawProfiles) > 262_144) throw new Error("VERIFICATION_BENCHMARK_CLI_PROFILE_CONFIG_TOO_LARGE");
+    if (Buffer.byteLength(rawProfiles) > 262_144)
+      throw new Error("VERIFICATION_BENCHMARK_CLI_PROFILE_CONFIG_TOO_LARGE");
     const profiles = z.array(profileSchema).min(1).max(256).parse(JSON.parse(rawProfiles));
     const names = new Set<string>();
     for (const profile of profiles) {
       if (names.has(profile.profileName)) throw new Error("DUPLICATE_VERIFICATION_BENCHMARK_CLI_PROFILE");
       names.add(profile.profileName);
     }
-    this.#profiles = Object.freeze(profiles.map(profile => Object.freeze({ ...profile })));
+    this.#profiles = Object.freeze(profiles.map((profile) => Object.freeze({ ...profile })));
     this.#ownership = createOwnership();
   }
 
@@ -43,9 +49,13 @@ export class BenchmarkCaptureProfileResolver {
     idempotencyKey: string,
   ): Promise<OperationContext | undefined> {
     if (!/^[a-z][a-z0-9-]{0,63}$/u.test(profileName)) return undefined;
-    const profile = this.#profiles.find(candidate => candidate.profileName === profileName);
-    if (!profile || !actorsMatch(profile.actor, authenticatedIdentity.actor)
-      || !isAuthorized(authenticatedIdentity, profile.tenantId, "operation.submit")) return undefined;
+    const profile = this.#profiles.find((candidate) => candidate.profileName === profileName);
+    if (
+      !profile ||
+      !actorsMatch(profile.actor, authenticatedIdentity.actor) ||
+      !isAuthorized(authenticatedIdentity, profile.tenantId, "operation.submit")
+    )
+      return undefined;
     const resolved = await this.#ownership({
       tenantId: profile.tenantId,
       identity: authenticatedIdentity,

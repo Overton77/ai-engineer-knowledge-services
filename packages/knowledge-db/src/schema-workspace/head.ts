@@ -8,14 +8,26 @@ export interface HeadCheck {
 }
 
 export function compareHeads(workspace: Workspace, databaseHead: string | undefined): HeadCheck {
-  return { workspaceHead: workspace.migrationHead, databaseHead, matches: databaseHead !== undefined && databaseHead === workspace.migrationHead };
+  return {
+    workspaceHead: workspace.migrationHead,
+    databaseHead,
+    matches: databaseHead !== undefined && databaseHead === workspace.migrationHead,
+  };
 }
 
 /** Fails closed with `HEAD_MISMATCH` unless `allowStale` is set; the check result is returned either way so callers can record it. */
-export function assertHeadMatches(workspace: Workspace, databaseHead: string | undefined, allowStale = false): HeadCheck {
+export function assertHeadMatches(
+  workspace: Workspace,
+  databaseHead: string | undefined,
+  allowStale = false,
+): HeadCheck {
   const check = compareHeads(workspace, databaseHead);
   if (!check.matches && !allowStale) {
-    throw infrastructureError("HEAD_MISMATCH", `workspace migration head ${check.workspaceHead} ≠ database head ${String(check.databaseHead)}`, check);
+    throw infrastructureError(
+      "HEAD_MISMATCH",
+      `workspace migration head ${check.workspaceHead} ≠ database head ${String(check.databaseHead)}`,
+      check,
+    );
   }
   return check;
 }

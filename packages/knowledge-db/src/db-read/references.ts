@@ -14,7 +14,14 @@ export interface ResolvedParams {
 }
 
 function walk(root: unknown, path: string): unknown {
-  return path.split(".").filter(Boolean).reduce<unknown>((cursor, key) => (cursor !== null && typeof cursor === "object" ? (cursor as Record<string, unknown>)[key] : undefined), root);
+  return path
+    .split(".")
+    .filter(Boolean)
+    .reduce<unknown>(
+      (cursor, key) =>
+        cursor !== null && typeof cursor === "object" ? (cursor as Record<string, unknown>)[key] : undefined,
+      root,
+    );
 }
 
 function resolveOne(reference: string, completed: ReadonlyMap<string, OperationResult>): unknown {
@@ -27,15 +34,24 @@ function resolveOne(reference: string, completed: ReadonlyMap<string, OperationR
   return root === undefined ? undefined : walk(root, tail ?? "");
 }
 
-export function resolveReferences(params: Record<string, unknown>, completed: ReadonlyMap<string, OperationResult>): ResolvedParams {
+export function resolveReferences(
+  params: Record<string, unknown>,
+  completed: ReadonlyMap<string, OperationResult>,
+): ResolvedParams {
   const resolved: Record<string, unknown> = {};
   const resolvedFrom: Record<string, string> = {};
   const unresolved: string[] = [];
   for (const [key, value] of Object.entries(params)) {
-    if (typeof value !== "string" || !value.startsWith("$")) { resolved[key] = value; continue; }
+    if (typeof value !== "string" || !value.startsWith("$")) {
+      resolved[key] = value;
+      continue;
+    }
     const target = resolveOne(value, completed);
     if (target === undefined) unresolved.push(`${key} ← ${value}`);
-    else { resolved[key] = target; resolvedFrom[key] = value; }
+    else {
+      resolved[key] = target;
+      resolvedFrom[key] = value;
+    }
   }
   return { params: resolved, resolvedFrom, unresolved };
 }

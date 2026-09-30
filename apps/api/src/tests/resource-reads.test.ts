@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `10000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `10000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenantId = id(1);
 const token = "resource-reader-test-token";
 const identity: LocalApiIdentity = {
@@ -139,8 +138,7 @@ describe("canonical API resource reads", () => {
     const resourceReader = reader();
     const api = buildServer({
       resourceReader,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const response = await api.inject({
       method: "GET",
@@ -171,8 +169,7 @@ describe("canonical API resource reads", () => {
     } as never);
     const api = buildServer({
       resourceReader: invalid,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const corrupted = await api.inject({
       method: "GET",
@@ -184,8 +181,7 @@ describe("canonical API resource reads", () => {
     const bounded = buildServer({
       resourceReader: reader(),
       maximumResourceResponseBytes: 64,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const tooLarge = await bounded.inject({
       method: "GET",
@@ -199,8 +195,7 @@ describe("canonical API resource reads", () => {
     const resourceReader = reader();
     const api = buildServer({
       resourceReader,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const artifact = await api.inject({
       method: "GET",
@@ -233,8 +228,7 @@ describe("canonical API resource reads", () => {
     const resourceReader = reader();
     const api = buildServer({
       resourceReader,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const run = await api.inject({
       method: "GET",
@@ -266,8 +260,7 @@ describe("canonical API resource reads", () => {
     const resourceReader = reader();
     const api = buildServer({
       resourceReader,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const absent = await api.inject({
       method: "GET",
@@ -283,17 +276,13 @@ describe("canonical API resource reads", () => {
     expect(absent.json()).toMatchObject({ code: "NOT_FOUND" });
     expect(invalid.statusCode).toBe(400);
     expect(invalid.json()).toMatchObject({ code: "INVALID_CONTRACT" });
-    expect(resourceReader.getArtifactResource).toHaveBeenCalledWith(
-      tenantId,
-      id(99),
-    );
+    expect(resourceReader.getArtifactResource).toHaveBeenCalledWith(tenantId, id(99));
     await api.close();
   });
 
   it("fails closed when the canonical resource store is not configured", async () => {
     const api = buildServer({
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const response = await api.inject({
       method: "GET",
@@ -312,8 +301,7 @@ describe("canonical API resource reads", () => {
     const api = buildServer({
       resourceReader: reader(),
       maximumResourceResponseBytes: 32,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const response = await api.inject({
       method: "GET",

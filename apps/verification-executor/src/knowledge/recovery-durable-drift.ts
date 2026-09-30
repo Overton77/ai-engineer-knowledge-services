@@ -13,29 +13,50 @@ export async function ingestDurableRecoveryDrift(input: {
   custody: ArtifactCustody;
   recovery: Pick<DurableVerificationRecoveryService, "ingestDrift">;
   caseIdsForObservation(reference: {
-    tenantId: string; outboxId: string; sourceOperationId: string; observationArtifactId: string;
+    tenantId: string;
+    outboxId: string;
+    sourceOperationId: string;
+    observationArtifactId: string;
   }): Promise<readonly string[]>;
 }): Promise<{ acknowledged: number; unmapped: number }> {
-  if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new Error("RECOVERY_DRIFT_LIMIT_INVALID");
-  if (!Number.isSafeInteger(input.visibilityTimeoutMs) || input.visibilityTimeoutMs < 1_000
-    || input.visibilityTimeoutMs > 300_000) throw new Error("RECOVERY_DRIFT_VISIBILITY_INVALID");
+  if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100)
+    throw new Error("RECOVERY_DRIFT_LIMIT_INVALID");
+  if (
+    !Number.isSafeInteger(input.visibilityTimeoutMs) ||
+    input.visibilityTimeoutMs < 1_000 ||
+    input.visibilityTimeoutMs > 300_000
+  )
+    throw new Error("RECOVERY_DRIFT_VISIBILITY_INVALID");
   const claims = await input.outbox.claim(input.tenantId, input.holderIdentity, input.limit, input.visibilityTimeoutMs);
   let acknowledged = 0;
   let unmapped = 0;
   for (const claim of claims) {
-    const caseIds = [...new Set(await input.caseIdsForObservation({
-      tenantId: input.tenantId, outboxId: claim.id, sourceOperationId: claim.sourceOperationId,
-      observationArtifactId: claim.observationArtifactId,
-    }))].sort();
-    if (caseIds.length > 512 || caseIds.some(id => !id.trim() || id.length > 256)) throw new Error("RECOVERY_DRIFT_CASE_BINDING_INVALID");
-    if (!caseIds.length) { unmapped++; continue; }
+    const caseIds = [
+      ...new Set(
+        await input.caseIdsForObservation({
+          tenantId: input.tenantId,
+          outboxId: claim.id,
+          sourceOperationId: claim.sourceOperationId,
+          observationArtifactId: claim.observationArtifactId,
+        }),
+      ),
+    ].sort();
+    if (caseIds.length > 512 || caseIds.some((id) => !id.trim() || id.length > 256))
+      throw new Error("RECOVERY_DRIFT_CASE_BINDING_INVALID");
+    if (!caseIds.length) {
+      unmapped++;
+      continue;
+    }
     const observed = await input.custody.resolve(claim.observationArtifactId);
     if (!observed) throw new Error("RECOVERY_DRIFT_OBSERVATION_UNAVAILABLE");
-    if (observed.handle.artifactId !== claim.observationArtifactId) throw new Error("RECOVERY_DRIFT_OBSERVATION_IDENTITY_MISMATCH");
+    if (observed.handle.artifactId !== claim.observationArtifactId)
+      throw new Error("RECOVERY_DRIFT_OBSERVATION_IDENTITY_MISMATCH");
     validateStoredArtifact(input.tenantId, observed.handle, observed.bytes);
     for (const caseId of caseIds) {
       await input.recovery.ingestDrift(input.tenantId, {
-        caseId, notificationId: `drift:${claim.id}:${digestCanonicalJson(caseId)}`, artifact: observed.handle,
+        caseId,
+        notificationId: `drift:${claim.id}:${digestCanonicalJson(caseId)}`,
+        artifact: observed.handle,
       });
     }
     await input.outbox.ack(input.tenantId, claim.id, input.holderIdentity, claim.claimToken);

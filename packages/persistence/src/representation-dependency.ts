@@ -2,14 +2,28 @@ import type { TenantSqlClient } from "./postgres.js";
 import { readContentRepresentationAdmission } from "./content-representation-admission.js";
 
 const MAX_DEPENDENCIES = 1024;
-type DependencyRow = { artifact_id: string; storage_state: string | null; representation_id: string | null;
-  content_sha256: string; representation_class: string | null; withdrawn: boolean; has_decision: boolean;
-  capture_root: boolean; native_reviews: { id: string; digest: string; withdrawn: boolean; has_decision: boolean }[];
-  report_version_id: string | null };
+type DependencyRow = {
+  artifact_id: string;
+  storage_state: string | null;
+  representation_id: string | null;
+  content_sha256: string;
+  representation_class: string | null;
+  withdrawn: boolean;
+  has_decision: boolean;
+  capture_root: boolean;
+  native_reviews: { id: string; digest: string; withdrawn: boolean; has_decision: boolean }[];
+  report_version_id: string | null;
+};
 
 /** Required inputs retain their transformation binding when output bytes are reused by a later representation. */
-export async function readRepresentationDependencies(client: TenantSqlClient, tenantId: string, representationId: string) {
-  const rows = (await client.query<DependencyRow>(`with recursive required_edges as (
+export async function readRepresentationDependencies(
+  client: TenantSqlClient,
+  tenantId: string,
+  representationId: string,
+) {
+  const rows = (
+    await client.query<DependencyRow>(
+      `with recursive required_edges as (
       select 'artifact'::text child_kind,e.from_artifact_id child,'artifact'::text parent_kind,e.to_artifact_id parent
       from orchestration.artifact_lineage e where e.tenant_id=$1 and e.relation_kind='derived_from'
       union select 'representation',r.id,case when i.representation_id is not null then 'representation' else 'artifact' end,
@@ -44,12 +58,26 @@ export async function readRepresentationDependencies(client: TenantSqlClient, te
     left join orchestration.artifact a on a.tenant_id=$1 and a.id=case when b.kind='artifact' then b.id else r.artifact_id end
     left join content.document_version document on document.tenant_id=r.tenant_id and document.id=r.document_version_id
     left join research.report_artifact report on report.tenant_id=$1 and report.artifact_id=a.id
-    order by b.id,r.id limit ${MAX_DEPENDENCIES + 1}`, [tenantId, representationId])).rows;
-  const blocked = new Set<string>(), representations = new Set<string>(), reports = new Set<string>();
+    order by b.id,r.id limit ${MAX_DEPENDENCIES + 1}`,
+      [tenantId, representationId],
+    )
+  ).rows;
+  const blocked = new Set<string>(),
+    representations = new Set<string>(),
+    reports = new Set<string>();
   const admission = new Map<string, boolean>();
   async function admitted(id: string, digest: string) {
-    if (!admission.has(id)) admission.set(id, (await readContentRepresentationAdmission(client,
-      { tenantId, representationId: id, guardedDigest: `sha256:${digest}` })).accepted);
+    if (!admission.has(id))
+      admission.set(
+        id,
+        (
+          await readContentRepresentationAdmission(client, {
+            tenantId,
+            representationId: id,
+            guardedDigest: `sha256:${digest}`,
+          })
+        ).accepted,
+      );
     return admission.get(id)!;
   }
   if (!rows.length || rows.length > MAX_DEPENDENCIES) blocked.add("REPRESENTATION_DEPENDENCY_CLOSURE_INCOMPLETE");
@@ -61,26 +89,41 @@ export async function readRepresentationDependencies(client: TenantSqlClient, te
     }
     if (row.representation_id) {
       representations.add(row.representation_id);
-      const capturedInput = row.representation_class === "source_native" && row.representation_id !== representationId
-        && row.capture_root && !row.has_decision;
-      if (row.withdrawn || (!capturedInput && !await admitted(row.representation_id, row.content_sha256)))
+      const capturedInput =
+        row.representation_class === "source_native" &&
+        row.representation_id !== representationId &&
+        row.capture_root &&
+        !row.has_decision;
+      if (row.withdrawn || (!capturedInput && !(await admitted(row.representation_id, row.content_sha256))))
         blocked.add(`SOURCE_REPRESENTATION_NOT_ADMITTED:${row.representation_id}`);
     } else {
       if (!row.capture_root) blocked.add(`DEPENDENCY_AUTHORITY_REQUIRED:${row.artifact_id}`);
       for (const native of row.native_reviews ?? []) {
-        if (native.withdrawn || (native.has_decision && !await admitted(native.id, native.digest)))
+        if (native.withdrawn || (native.has_decision && !(await admitted(native.id, native.digest))))
           blocked.add(`SOURCE_REPRESENTATION_NOT_ADMITTED:${native.id}`);
       }
     }
   }
   if (!representations.has(representationId)) blocked.add("REPRESENTATION_DEPENDENCY_ROOT_MISSING");
-  return { eligible: blocked.size === 0, representationIds: [...representations].sort(),
-    blocked: [...blocked].sort(), unsupportedReportVersionIds: [...reports].sort() };
+  return {
+    eligible: blocked.size === 0,
+    representationIds: [...representations].sort(),
+    blocked: [...blocked].sort(),
+    unsupportedReportVersionIds: [...reports].sort(),
+  };
 }
 
 /** Impact discovery reports unsupported reports explicitly; it is not a recovery revalidation receipt. */
 export async function readRepresentationImpact(client: TenantSqlClient, tenantId: string, representationId: string) {
-  const rows = (await client.query<{ artifact_id: string | null; auxiliary_receipt: boolean; representation_id: string | null; projection_id: string | null; report_version_id: string | null }>(`
+  const rows = (
+    await client.query<{
+      artifact_id: string | null;
+      auxiliary_receipt: boolean;
+      representation_id: string | null;
+      projection_id: string | null;
+      report_version_id: string | null;
+    }>(
+      `
     with recursive edges as (
       select 'artifact'::text child_kind,from_artifact_id child,'artifact'::text parent_kind,to_artifact_id parent from orchestration.artifact_lineage
       where tenant_id=$1 and relation_kind='derived_from'
@@ -131,14 +174,36 @@ export async function readRepresentationImpact(client: TenantSqlClient, tenantId
     left join retrieval.search_projection p on p.tenant_id=support.tenant_id and p.id=support.search_projection_id
     left join research.report_artifact report on report.tenant_id=$1 and report.artifact_id=coalesce(r.artifact_id,b.id)
     union select null::uuid,false,null::uuid,null::uuid,report_version_id from report_dependencies
-    ) select * from result limit ${MAX_DEPENDENCIES + 1}`, [tenantId, representationId])).rows;
-  const unique = (key: "representation_id" | "projection_id" | "report_version_id") => [...new Set(rows.flatMap(row => row[key] ? [row[key]!] : []))].sort();
+    ) select * from result limit ${MAX_DEPENDENCIES + 1}`,
+      [tenantId, representationId],
+    )
+  ).rows;
+  const unique = (key: "representation_id" | "projection_id" | "report_version_id") =>
+    [...new Set(rows.flatMap((row) => (row[key] ? [row[key]!] : [])))].sort();
   const unsupportedReportVersionIds = unique("report_version_id");
-  const unsupportedArtifactIds = [...new Set(rows.flatMap(row => row.artifact_id && !row.representation_id && !row.report_version_id
-    && !row.auxiliary_receipt ? [row.artifact_id] : []))].sort();
-  return { complete: rows.length > 0 && rows.length <= MAX_DEPENDENCIES && unsupportedReportVersionIds.length === 0 && unsupportedArtifactIds.length === 0,
-    representationIds: unique("representation_id"), projectionIds: unique("projection_id"), unsupportedReportVersionIds,
-    unsupportedArtifactIds, blocked: [...unsupportedReportVersionIds.map(id => `REPORT_DEPENDENCY_REVALIDATION_REQUIRED:${id}`),
-      ...unsupportedArtifactIds.map(id => `DEPENDENCY_AUTHORITY_REQUIRED:${id}`),
-      ...(rows.length === 0 || rows.length > MAX_DEPENDENCIES ? ["REPRESENTATION_DEPENDENCY_CLOSURE_INCOMPLETE"] : [])] };
+  const unsupportedArtifactIds = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.artifact_id && !row.representation_id && !row.report_version_id && !row.auxiliary_receipt
+          ? [row.artifact_id]
+          : [],
+      ),
+    ),
+  ].sort();
+  return {
+    complete:
+      rows.length > 0 &&
+      rows.length <= MAX_DEPENDENCIES &&
+      unsupportedReportVersionIds.length === 0 &&
+      unsupportedArtifactIds.length === 0,
+    representationIds: unique("representation_id"),
+    projectionIds: unique("projection_id"),
+    unsupportedReportVersionIds,
+    unsupportedArtifactIds,
+    blocked: [
+      ...unsupportedReportVersionIds.map((id) => `REPORT_DEPENDENCY_REVALIDATION_REQUIRED:${id}`),
+      ...unsupportedArtifactIds.map((id) => `DEPENDENCY_AUTHORITY_REQUIRED:${id}`),
+      ...(rows.length === 0 || rows.length > MAX_DEPENDENCIES ? ["REPRESENTATION_DEPENDENCY_CLOSURE_INCOMPLETE"] : []),
+    ],
+  };
 }

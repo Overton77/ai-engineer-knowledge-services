@@ -25,14 +25,18 @@ import { actorsMatch } from "@aiengineer/knowledge-application";
 // The API route is the behavioral reference. Every former MCP HTTP shim row runs the
 // same application use case in both transports; each case asserts the reference
 // outcome and the MCP outcome together.
-const run = async (row: ParityRow, options: {
-  configured?: boolean;
-  token?: string;
-  tenantId?: string;
-  resourceId?: string;
-  assertedActor?: typeof owner;
-}) => {
-  const tenantId = options.tenantId ?? tenant, resourceId = options.resourceId ?? KNOWN;
+const run = async (
+  row: ParityRow,
+  options: {
+    configured?: boolean;
+    token?: string;
+    tenantId?: string;
+    resourceId?: string;
+    assertedActor?: typeof owner;
+  },
+) => {
+  const tenantId = options.tenantId ?? tenant,
+    resourceId = options.resourceId ?? KNOWN;
   const context = operationContext(tenantId, options.assertedActor ?? owner);
   const transports = row.transports(options.configured ?? true);
   return {
@@ -98,7 +102,10 @@ describe("uncaught read failure API/MCP parity", () => {
   it("maps a stored resource that fails its integrity checks to the same problem code", async () => {
     const transports = integrityFailureTransports();
     const context = operationContext(tenant, owner);
-    const api = await viaApi(transports.api, tokens.owner, tenant, { method: "GET", url: `/v1/retrieval-runs/${KNOWN}` });
+    const api = await viaApi(transports.api, tokens.owner, tenant, {
+      method: "GET",
+      url: `/v1/retrieval-runs/${KNOWN}`,
+    });
     const mcp = await viaMcp(transports.mcp, tokens.owner, "retrieval.read_run", {
       context,
       input: { runId: KNOWN },
@@ -187,18 +194,39 @@ describe("verification mutation API/MCP parity", () => {
   const mcpContext = (tenantId = tenant) => ({ tenantId, correlationId: CORRELATION, idempotencyKey: IDEMPOTENCY });
   const mutate = async (
     kind: "claims" | "decision",
-    options: { configured?: boolean; token?: string; tenantId?: string; owners?: (actor: typeof owner) => boolean; decisions?: boolean },
+    options: {
+      configured?: boolean;
+      token?: string;
+      tenantId?: string;
+      owners?: (actor: typeof owner) => boolean;
+      decisions?: boolean;
+    },
   ) => {
-    const transports = mutationTransports(options.configured ?? true, options.owners ?? ((actor) => actorsMatch(owner, actor)), options.decisions ?? true);
-    const tenantId = options.tenantId ?? tenant, token = options.token ?? tokens.owner;
+    const transports = mutationTransports(
+      options.configured ?? true,
+      options.owners ?? ((actor) => actorsMatch(owner, actor)),
+      options.decisions ?? true,
+    );
+    const tenantId = options.tenantId ?? tenant,
+      token = options.token ?? tokens.owner;
     return {
-      api: await viaApi(transports.api, token, tenantId, kind === "claims"
-        ? { method: "POST", url: "/v1/verification/claims:verify", payload: claimsRequest }
-        : { method: "POST", url: "/v1/verification/adjudications:record-decision", payload: decisionRequest }),
-      mcp: await viaMcp(transports.mcp, token, kind === "claims" ? "knowledge_verify_claims" : "knowledge_record_adjudication_decision", {
-        context: mcpContext(tenantId),
-        request: kind === "claims" ? claimsRequest : decisionRequest,
-      }),
+      api: await viaApi(
+        transports.api,
+        token,
+        tenantId,
+        kind === "claims"
+          ? { method: "POST", url: "/v1/verification/claims:verify", payload: claimsRequest }
+          : { method: "POST", url: "/v1/verification/adjudications:record-decision", payload: decisionRequest },
+      ),
+      mcp: await viaMcp(
+        transports.mcp,
+        token,
+        kind === "claims" ? "knowledge_verify_claims" : "knowledge_record_adjudication_decision",
+        {
+          context: mcpContext(tenantId),
+          request: kind === "claims" ? claimsRequest : decisionRequest,
+        },
+      ),
     };
   };
 
@@ -226,11 +254,14 @@ describe("verification mutation API/MCP parity", () => {
     expect(mcp).toEqual({ code: "FORBIDDEN" });
   });
 
-  it.each(["claims", "decision"] as const)("%s: reports missing verification operations without an HTTP fallback", async (kind) => {
-    const { api, mcp } = await mutate(kind, { configured: false });
-    expect(api).toEqual({ status: 503, code: "CAPABILITY_NOT_ADMITTED" });
-    expect(mcp).toEqual({ code: "CAPABILITY_NOT_ADMITTED" });
-  });
+  it.each(["claims", "decision"] as const)(
+    "%s: reports missing verification operations without an HTTP fallback",
+    async (kind) => {
+      const { api, mcp } = await mutate(kind, { configured: false });
+      expect(api).toEqual({ status: 503, code: "CAPABILITY_NOT_ADMITTED" });
+      expect(mcp).toEqual({ code: "CAPABILITY_NOT_ADMITTED" });
+    },
+  );
 
   it("decision: denies missing ownership before reporting missing decision admission", async () => {
     const { api, mcp } = await mutate("decision", { token: tokens.stranger, decisions: false });

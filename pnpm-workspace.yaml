@@ -18,3 +18,10 @@ catalog:
 
 allowBuilds:
   esbuild: set this to true or false
+
+# dependency-cruiser reads TypeScript sources through the `typescript` compiler API, which the workspace's TypeScript 7 does
+# not publish yet. Give only dependency-cruiser its own supported compiler; no workspace package resolves this copy.
+packageExtensions:
+  dependency-cruiser:
+    dependencies:
+      typescript: npm:typescript@6.0.3

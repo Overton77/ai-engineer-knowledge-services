@@ -3,28 +3,13 @@ import { createServer } from "node:http";
 import Fastify from "fastify";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { KnowledgeOperationPort } from "@aiengineer/knowledge-application";
-import {
-  createLocalIdentityResolver,
-  type LocalApiIdentity,
-} from "@aiengineer/knowledge-host";
-import type {
-  AcceptedOperation,
-  OperationContext,
-} from "@aiengineer/knowledge-contracts";
-import {
-  PostgresCanonicalRepository,
-  PostgresKnowledgeOperationService,
-} from "@aiengineer/knowledge-persistence";
-import {
-  apiPublicOrigin,
-  buildKnowledgeMcpApp,
-  createMcpRequestHandler,
-  createMcpToolExecutor,
-} from "../index.js";
+import { createLocalIdentityResolver, type LocalApiIdentity } from "@aiengineer/knowledge-host";
+import type { AcceptedOperation, OperationContext } from "@aiengineer/knowledge-contracts";
+import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
+import { apiPublicOrigin, buildKnowledgeMcpApp, createMcpRequestHandler, createMcpToolExecutor } from "../index.js";
 import vercelHandler from "../index.js";
 
-const id = (number: number) =>
-  `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
+const id = (number: number) => `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
 const context: OperationContext = {
   tenantId: id(1),
   operationId: id(2),
@@ -42,9 +27,7 @@ const context: OperationContext = {
 };
 const identity: LocalApiIdentity = {
   actor: context.actor,
-  grants: [
-    { tenantId: context.tenantId, roles: ["knowledge_operator"], scopes: [] },
-  ],
+  grants: [{ tenantId: context.tenantId, roles: ["knowledge_operator"], scopes: [] }],
 };
 const accepted: AcceptedOperation = {
   operationId: context.operationId,
@@ -57,9 +40,7 @@ const accepted: AcceptedOperation = {
   reconcileUrl: `https://api.example/v1/operations/${context.operationId}:reconcile`,
 };
 
-function operationPort(
-  submit: KnowledgeOperationPort["submit"],
-): KnowledgeOperationPort {
+function operationPort(submit: KnowledgeOperationPort["submit"]): KnowledgeOperationPort {
   return {
     submit,
     get: async () => undefined,
@@ -104,9 +85,7 @@ describe("durable MCP operation facade", () => {
   });
   it("is side-effect free on import and exports a Vercel handler", () => {
     expect(typeof vercelHandler).toBe("function");
-    expect(() => apiPublicOrigin("http://mcp.example", true)).toThrow(
-      "INVALID_KNOWLEDGE_API_URL",
-    );
+    expect(() => apiPublicOrigin("http://mcp.example", true)).toThrow("INVALID_KNOWLEDGE_API_URL");
   });
   it("bridges a real Node request through the exported serverless handler", async () => {
     const app = Fastify();
@@ -115,23 +94,16 @@ describe("durable MCP operation facade", () => {
     const nodeServer = createServer((request, response) => {
       void bridge(request, response).catch((error) => {
         response.statusCode = 500;
-        response.end(
-          error instanceof Error ? error.message : "handler failure",
-        );
+        response.end(error instanceof Error ? error.message : "handler failure");
       });
     });
-    await new Promise<void>((resolve) =>
-      nodeServer.listen(0, "127.0.0.1", resolve),
-    );
+    await new Promise<void>((resolve) => nodeServer.listen(0, "127.0.0.1", resolve));
     const address = nodeServer.address();
-    if (!address || typeof address === "string")
-      throw new Error("TEST_SERVER_ADDRESS_MISSING");
+    if (!address || typeof address === "string") throw new Error("TEST_SERVER_ADDRESS_MISSING");
     const response = await fetch(`http://127.0.0.1:${address.port}/health`);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "ok" });
-    await new Promise<void>((resolve, reject) =>
-      nodeServer.close((error) => (error ? reject(error) : resolve())),
-    );
+    await new Promise<void>((resolve, reject) => nodeServer.close((error) => (error ? reject(error) : resolve())));
     await app.close();
   });
   it("awaits the injected durable application port and roots accepted URLs at the API", async () => {
@@ -171,9 +143,7 @@ describe("durable MCP operation facade", () => {
   });
 
   it("enforces the same tenant grant and actor binding before durable admission", async () => {
-    const submit = vi.fn<KnowledgeOperationPort["submit"]>(
-      async () => accepted,
-    );
+    const submit = vi.fn<KnowledgeOperationPort["submit"]>(async () => accepted);
     const execute = createMcpToolExecutor({
       operationService: operationPort(submit),
       apiOrigin: "https://api.example",
@@ -201,9 +171,7 @@ describe("durable MCP operation facade", () => {
   });
 
   it("routes status and explanation tools to canonical in-process reads without admitting writes", async () => {
-    const submit = vi.fn<KnowledgeOperationPort["submit"]>(
-      async () => accepted,
-    );
+    const submit = vi.fn<KnowledgeOperationPort["submit"]>(async () => accepted);
     const reads = {
       vectorStoreOperation: vi.fn(),
       retrievalExplanation: vi.fn(async () => ({
@@ -226,26 +194,21 @@ describe("durable MCP operation facade", () => {
       input: { operationId: id(20) },
       expectedVersions: { api: "v1" },
     });
-    const explanation = await execute(
-      "retrieval.explain_run",
-      "retrieval_run",
-      { context, input: { runId: id(20) }, expectedVersions: { api: "v1" } },
-    );
+    const explanation = await execute("retrieval.explain_run", "retrieval_run", {
+      context,
+      input: { runId: id(20) },
+      expectedVersions: { api: "v1" },
+    });
     expect(status).toMatchObject({ structuredContent: { state: "succeeded" } });
     expect(explanation).toMatchObject({
       structuredContent: { retrievalRunId: id(20) },
     });
-    expect(reads.retrievalExplanation).toHaveBeenCalledWith(
-      context.tenantId,
-      id(20),
-    );
+    expect(reads.retrievalExplanation).toHaveBeenCalledWith(context.tenantId, id(20));
     expect(submit).not.toHaveBeenCalled();
   });
 
   it("rejects deferred read-like tools before admission", async () => {
-    const submit = vi.fn<KnowledgeOperationPort["submit"]>(
-      async () => accepted,
-    );
+    const submit = vi.fn<KnowledgeOperationPort["submit"]>(async () => accepted);
     const execute = createMcpToolExecutor({
       operationService: operationPort(submit),
       apiOrigin: "https://api.example",
@@ -267,9 +230,7 @@ describe("durable MCP operation facade", () => {
   it("uses the shared API identity resolver for the MCP HTTP host", async () => {
     const token = "mcp-shared-identity-token-long-enough";
     const resolveIdentity = createLocalIdentityResolver(
-      JSON.stringify([
-        { token, actor: context.actor, grants: identity.grants },
-      ]),
+      JSON.stringify([{ token, actor: context.actor, grants: identity.grants }]),
     );
     const app = buildKnowledgeMcpApp({
       operationService: operationPort(async () => accepted),
@@ -289,89 +250,81 @@ describe("durable MCP operation facade", () => {
 
   it("rejects non-public API origin forms before creating operation links", () => {
     expect(apiPublicOrigin("https://api.example/")).toBe("https://api.example");
-    expect(() => apiPublicOrigin(undefined)).toThrow(
-      "KNOWLEDGE_API_URL_REQUIRED",
-    );
-    expect(() => apiPublicOrigin("https://token@api.example")).toThrow(
-      "INVALID_KNOWLEDGE_API_URL",
-    );
+    expect(() => apiPublicOrigin(undefined)).toThrow("KNOWLEDGE_API_URL_REQUIRED");
+    expect(() => apiPublicOrigin("https://token@api.example")).toThrow("INVALID_KNOWLEDGE_API_URL");
   });
 });
 
-describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")(
-  "MCP durable PostgreSQL admission",
-  () => {
-    let mcpRepository: PostgresCanonicalRepository;
-    let workerRepository: PostgresCanonicalRepository;
+describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")("MCP durable PostgreSQL admission", () => {
+  let mcpRepository: PostgresCanonicalRepository;
+  let workerRepository: PostgresCanonicalRepository;
 
-    beforeAll(() => {
-      const connectionString = process.env.POSTGRES_URL;
-      if (!connectionString) throw new Error("POSTGRES_URL_REQUIRED");
-      mcpRepository = new PostgresCanonicalRepository({
-        connectionString,
-        localOnly: true,
-      });
-      workerRepository = new PostgresCanonicalRepository({
-        connectionString,
-        localOnly: true,
-      });
+  beforeAll(() => {
+    const connectionString = process.env.POSTGRES_URL;
+    if (!connectionString) throw new Error("POSTGRES_URL_REQUIRED");
+    mcpRepository = new PostgresCanonicalRepository({
+      connectionString,
+      localOnly: true,
     });
-
-    afterAll(async () => {
-      await Promise.all([mcpRepository?.close(), workerRepository?.close()]);
+    workerRepository = new PostgresCanonicalRepository({
+      connectionString,
+      localOnly: true,
     });
+  });
 
-    it("persists MCP admission for a separately connected worker and returns API-rooted links", async () => {
-      const durableContext: OperationContext = {
-        ...context,
-        tenantId: randomUUID(),
-        operationId: randomUUID(),
-        attemptId: randomUUID(),
-        correlationId: `mcp-durable-${randomUUID()}`,
-        actor: { ...context.actor, id: randomUUID() },
-        idempotencyKey: `mcp-durable-${randomUUID()}`,
-      };
-      const durableIdentity: LocalApiIdentity = {
-        actor: durableContext.actor,
-        grants: [
-          {
-            tenantId: durableContext.tenantId,
-            roles: ["knowledge_operator"],
-            scopes: [],
-          },
-        ],
-      };
-      const execute = createMcpToolExecutor({
-        operationService: new PostgresKnowledgeOperationService(mcpRepository),
-        apiOrigin: "https://api.example",
-        identity: durableIdentity,
-      });
-      const result = await execute("source.fetch", "capture", {
-        context: durableContext,
-        input: { subject: "durably admitted through MCP" },
-        expectedVersions: { api: "v1" },
-      });
-      expect(result).not.toHaveProperty("isError", true);
-      if (!("structuredContent" in result))
-        throw new Error("MCP_RESULT_REQUIRED");
-      expect(result.structuredContent).toMatchObject({
-        operationId: durableContext.operationId,
-        statusUrl: `https://api.example/v1/operations/${durableContext.operationId}`,
-      });
-      const claimed = await workerRepository.claimOperation(
-        durableContext.tenantId,
-        durableContext.operationId,
-        "separate-mcp-worker",
-      );
-      expect(claimed).toMatchObject({
-        operationId: durableContext.operationId,
-        stepKey: "acquire",
-        input: {
-          kind: "capture",
-          operationInput: { subject: "durably admitted through MCP" },
-          context: { operationId: durableContext.operationId },
+  afterAll(async () => {
+    await Promise.all([mcpRepository?.close(), workerRepository?.close()]);
+  });
+
+  it("persists MCP admission for a separately connected worker and returns API-rooted links", async () => {
+    const durableContext: OperationContext = {
+      ...context,
+      tenantId: randomUUID(),
+      operationId: randomUUID(),
+      attemptId: randomUUID(),
+      correlationId: `mcp-durable-${randomUUID()}`,
+      actor: { ...context.actor, id: randomUUID() },
+      idempotencyKey: `mcp-durable-${randomUUID()}`,
+    };
+    const durableIdentity: LocalApiIdentity = {
+      actor: durableContext.actor,
+      grants: [
+        {
+          tenantId: durableContext.tenantId,
+          roles: ["knowledge_operator"],
+          scopes: [],
         },
-      });
+      ],
+    };
+    const execute = createMcpToolExecutor({
+      operationService: new PostgresKnowledgeOperationService(mcpRepository),
+      apiOrigin: "https://api.example",
+      identity: durableIdentity,
     });
-  },
-);
+    const result = await execute("source.fetch", "capture", {
+      context: durableContext,
+      input: { subject: "durably admitted through MCP" },
+      expectedVersions: { api: "v1" },
+    });
+    expect(result).not.toHaveProperty("isError", true);
+    if (!("structuredContent" in result)) throw new Error("MCP_RESULT_REQUIRED");
+    expect(result.structuredContent).toMatchObject({
+      operationId: durableContext.operationId,
+      statusUrl: `https://api.example/v1/operations/${durableContext.operationId}`,
+    });
+    const claimed = await workerRepository.claimOperation(
+      durableContext.tenantId,
+      durableContext.operationId,
+      "separate-mcp-worker",
+    );
+    expect(claimed).toMatchObject({
+      operationId: durableContext.operationId,
+      stepKey: "acquire",
+      input: {
+        kind: "capture",
+        operationInput: { subject: "durably admitted through MCP" },
+        context: { operationId: durableContext.operationId },
+      },
+    });
+  });
+});

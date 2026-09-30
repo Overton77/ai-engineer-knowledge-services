@@ -10,7 +10,10 @@ import type { StructuralBlock, StructuralDocument, StructuralDocumentInput } fro
 export function normalizeDocumentText(text: string, kind: DocumentNode["kind"]): string {
   const lineNormalized = text.replace(/\r\n?/g, "\n").normalize("NFC");
   if (kind === "code_block" || kind === "table") return lineNormalized.trimEnd();
-  return lineNormalized.replace(/[\t ]+/g, " ").replace(/ *\n */g, "\n").trim();
+  return lineNormalized
+    .replace(/[\t ]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .trim();
 }
 
 // Structure is checked before any node is built: a broken tree must fail as a
@@ -27,10 +30,9 @@ export function convertStructuralDocument(input: StructuralDocumentInput): Struc
     if (block.parentKey === block.localKey) throw new Error(`Block ${block.localKey} cannot parent itself`);
   }
 
-  const idByKey = new Map(input.blocks.map(({ localKey }) => [
-    localKey,
-    deterministicUuid(`${input.representationId}:node:${localKey}`),
-  ]));
+  const idByKey = new Map(
+    input.blocks.map(({ localKey }) => [localKey, deterministicUuid(`${input.representationId}:node:${localKey}`)]),
+  );
   assertAcyclic(input.blocks);
   const nodes = input.blocks.map((block) => {
     const text = normalizeDocumentText(block.text, block.kind);

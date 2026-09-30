@@ -156,9 +156,7 @@ export function passingInput(): DeterministicVerificationInput {
 export function corruptedInput(): DeterministicVerificationInput {
   return {
     bundle: minimalBundle(),
-    artifacts: [
-      { artifactId: ARTIFACT_ID, content: CONTENT.replace("42", "24") },
-    ],
+    artifacts: [{ artifactId: ARTIFACT_ID, content: CONTENT.replace("42", "24") }],
     runtimePrincipals,
   };
 }

@@ -15,7 +15,7 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | — | merged locally 2026-09-28 |
 | 5B | KS | Local host profile and capability matrix | 5A | — | merged locally 2026-09-28 |
 | 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | — | merged locally 2026-09-29 |
-| Q0 | KS | Quality gates: formatter, lint ratchet, architecture boundary rules in `verify`/CI | 5C | — | proposed ([plan](./APP-AND-SKILL-QUALITY.md#q0--quality-gates-new-slice-after-5c-merges-before-5p)) |
+| Q0 | KS | Quality gates: formatter, lint ratchet, architecture boundary rules in `verify`/CI | 5C | — | merged locally 2026-09-29 (Biome, lint ratchet, boundary baseline; [record](./workspace/evidence/q0-validation.json)) |
 | 5P | KS | Transport structure before the folds: catalog module, MCP tool table, API route modules, golden error tests, MCP naming decision | Q0 | — | proposed ([plan](./APP-AND-SKILL-QUALITY.md#5p--transport-structure-before-the-folds-new-slice-before-5d1)) |
 | 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5P | — | queued |
 | 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
@@ -43,7 +43,7 @@ Q0 and 5P were added on 2026-09-29 (proposed; [app and skill quality plan](./APP
   6. `node .agent-docs/cli.mjs check --repo .` and `git diff --check`.
 
   Run one heavy command at a time: memory pressure has stopped a full run before.
-- **Quality (from 5P onward).** New operations are table entries in the 5P route/tool/command modules; `server.ts`, MCP `index.ts` and CLI dispatch do not grow. Folded handlers keep the four-step shape — authorization and admission move into application use cases. Format, lint ratchet and boundary baseline (Q0) may only improve. Apply the slice's additions in [APP-AND-SKILL-QUALITY.md §2](./APP-AND-SKILL-QUALITY.md#2-new-and-changed-work-by-slot).
+- **Quality (from 5P onward).** New operations are table entries in the 5P route/tool/command modules; `server.ts`, MCP `index.ts` and CLI dispatch do not grow. Folded handlers keep the four-step shape — authorization and admission move into application use cases. Format, lint ratchet and boundary baseline (Q0; `pnpm format:check`, `pnpm lint`, `pnpm boundaries`, see `tools/quality/README.md`) may only improve. Apply the slice's additions in [APP-AND-SKILL-QUALITY.md §2](./APP-AND-SKILL-QUALITY.md#2-new-and-changed-work-by-slot).
 - **Team shape.** Use one coordinator that owns the ledger, acceptance and the merge. Add at most one implementation worker per disjoint file set and one read-only reviewer. There is a single test-graph owner; no competing suites run.
 - **Finish.** Record the slice in the ledger and `workspace/evidence/unit5<letter>-validation.json`, update navigation, merge locally with a merge commit and return to a clean `main`. Keep the stage-graph experiment milestone in the handoff. No push, deployment, paid provider call or shared-database mutation.
 
@@ -188,7 +188,7 @@ Superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md). Eve stays in it
 
 ## Instruction template
 
-Paste this into the next session, replacing `<slice>` with the next slice from the map (next: **Q0**, then **5P**, **5D1**; 5A–5C are delivered and 5E1/5E2 are superseded; 5F now depends only on delivered 5C; run beside 5D3 only with disjoint files, merging 5D3 first):
+Paste this into the next session, replacing `<slice>` with the next slice from the map (next: **5P**, then **5D1**; 5A–5C and Q0 are delivered and 5E1/5E2 are superseded; 5F now depends only on delivered 5C; run beside 5D3 only with disjoint files, merging 5D3 first):
 
 > Continue the Knowledge Services package cleanup, Unit 5 slice `<slice>`, from local main in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`.
 >

@@ -9,10 +9,7 @@ import {
   type DetachedSealErrorCodes,
   type VerifiedDetachedManifest,
 } from "./detached-seal.js";
-import type {
-  AuditBundleSigner,
-  AuditBundleSignatureVerifier,
-} from "./model.js";
+import type { AuditBundleSigner, AuditBundleSignatureVerifier } from "./model.js";
 
 const codes: DetachedSealErrorCodes = {
   digestMismatch: "BENCHMARK_PUBLICATION_DIGEST_MISMATCH",
@@ -25,11 +22,7 @@ export function sealVerificationBenchmarkPublication(
   body: DetachedSealBody<VerificationBenchmarkPublicationManifest>,
   signer?: AuditBundleSigner,
 ): Promise<VerificationBenchmarkPublicationManifest> {
-  return sealDetachedManifest(
-    VerificationBenchmarkPublicationManifestSchema,
-    body,
-    signer,
-  );
+  return sealDetachedManifest(VerificationBenchmarkPublicationManifestSchema, body, signer);
 }
 
 export function verifyVerificationBenchmarkPublication(
@@ -39,9 +32,5 @@ export function verifyVerificationBenchmarkPublication(
     readonly requireSignature?: boolean;
   } = {},
 ): Promise<VerifiedDetachedManifest<VerificationBenchmarkPublicationManifest>> {
-  return verifyDetachedManifest(
-    VerificationBenchmarkPublicationManifestSchema,
-    value,
-    { ...options, codes },
-  );
+  return verifyDetachedManifest(VerificationBenchmarkPublicationManifestSchema, value, { ...options, codes });
 }

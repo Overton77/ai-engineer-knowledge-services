@@ -1,9 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 
-export type TextNormalization = Extract<
-  VerificationSelector,
-  { kind: "text_quote" }
->["normalization"];
+export type TextNormalization = Extract<VerificationSelector, { kind: "text_quote" }>["normalization"];
 
 /**
  * A search index over the source text. Quote search runs on `text`; every UTF-16 unit `i` of `text`
@@ -18,17 +15,11 @@ export interface NormalizedText {
 
 const FILLER_WORDS = /\b(?:uh|um)\b/giu;
 
-export function normalizeText(
-  source: string,
-  normalization: TextNormalization,
-): NormalizedText {
+export function normalizeText(source: string, normalization: TextNormalization): NormalizedText {
   if (normalization === "none") return identityMapping(source);
   const lineFeeds = normalizeLineEndings(source);
   if (normalization === "lf") return lineFeeds;
-  return collapseWhitespace(
-    lineFeeds,
-    normalization === "casefold_whitespace_filler_removed",
-  );
+  return collapseWhitespace(lineFeeds, normalization === "casefold_whitespace_filler_removed");
 }
 
 /** Every start offset of `needle` in `text`, overlapping hits included, so two `42`s are two occurrences. */
@@ -73,18 +64,13 @@ function normalizeLineEndings(source: string): NormalizedText {
  * Runs of whitespace become one space; leading and trailing whitespace are dropped.
  * With `casefoldAndRemoveFiller`, "uh"/"um" are treated as whitespace and letters are lowercased.
  */
-function collapseWhitespace(
-  input: NormalizedText,
-  casefoldAndRemoveFiller: boolean,
-): NormalizedText {
-  const removed = casefoldAndRemoveFiller
-    ? fillerWordUnits(input.text)
-    : new Set<number>();
+function collapseWhitespace(input: NormalizedText, casefoldAndRemoveFiller: boolean): NormalizedText {
+  const removed = casefoldAndRemoveFiller ? fillerWordUnits(input.text) : new Set<number>();
   const output = new MappedTextBuilder();
   let pendingGapStart: number | undefined;
   let pendingGapEnd: number | undefined;
 
-  for (let index = 0; index < input.text.length;) {
+  for (let index = 0; index < input.text.length; ) {
     const char = String.fromCodePoint(input.text.codePointAt(index)!);
     const units = char.length;
     const sourceStart = input.sourceStarts[index]!;
@@ -101,11 +87,7 @@ function collapseWhitespace(
         output.append(" ", pendingGapStart, pendingGapEnd);
       pendingGapStart = undefined;
       pendingGapEnd = undefined;
-      output.append(
-        casefoldAndRemoveFiller ? char.toLocaleLowerCase("und") : char,
-        sourceStart,
-        sourceEnd,
-      );
+      output.append(casefoldAndRemoveFiller ? char.toLocaleLowerCase("und") : char, sourceStart, sourceEnd);
     }
     index += units;
   }
@@ -116,19 +98,13 @@ function fillerWordUnits(text: string): Set<number> {
   const removed = new Set<number>();
   for (const match of text.matchAll(FILLER_WORDS)) {
     const start = match.index ?? 0;
-    for (let index = start; index < start + match[0].length; index += 1)
-      removed.add(index);
+    for (let index = start; index < start + match[0].length; index += 1) removed.add(index);
   }
   return removed;
 }
 
-function allUnitsRemoved(
-  removed: Set<number>,
-  index: number,
-  units: number,
-): boolean {
-  for (let offset = 0; offset < units; offset += 1)
-    if (!removed.has(index + offset)) return false;
+function allUnitsRemoved(removed: Set<number>, index: number, units: number): boolean {
+  for (let offset = 0; offset < units; offset += 1) if (!removed.has(index + offset)) return false;
   return true;
 }
 

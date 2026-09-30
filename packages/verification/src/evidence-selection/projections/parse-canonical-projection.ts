@@ -5,14 +5,7 @@ import { parseHtml, type HtmlDomProjection } from "./html.js";
 import { parseApi, type PaginatedApiProjection } from "./paginated-api.js";
 import { parsePdf, type PdfTextProjection } from "./pdf-text.js";
 import { parseRepository, type RepositoryProjection } from "./repository.js";
-import {
-  fail,
-  isRecord,
-  MAX_BYTES,
-  MAX_NATIVE_PROJECTION_BYTES,
-  string,
-  type UnknownRecord,
-} from "./shared.js";
+import { fail, isRecord, MAX_BYTES, MAX_NATIVE_PROJECTION_BYTES, string, type UnknownRecord } from "./shared.js";
 import { parseTable, type TableProjection } from "./table.js";
 import { parseTranscript, type TranscriptProjection } from "./transcript.js";
 
@@ -39,10 +32,7 @@ export type CanonicalProjection =
 
 export type CanonicalProjectionKind = CanonicalProjection["kind"];
 
-const parsers: Record<
-  CanonicalProjectionKind,
-  (input: UnknownRecord) => CanonicalProjection
-> = {
+const parsers: Record<CanonicalProjectionKind, (input: UnknownRecord) => CanonicalProjection> = {
   html_dom: parseHtml,
   pdf_text: parsePdf,
   geometry: parseGeometry,
@@ -54,18 +44,12 @@ const parsers: Record<
 };
 
 /** Kinds whose native parser output may legitimately exceed the 1MB single-projection envelope. */
-const nativeKinds: ReadonlySet<string> = new Set<CanonicalProjectionKind>([
-  "geometry",
-  "html_dom",
-]);
+const nativeKinds: ReadonlySet<string> = new Set<CanonicalProjectionKind>(["geometry", "html_dom"]);
 
-const isProjectionKind = (value: string): value is CanonicalProjectionKind =>
-  Object.hasOwn(parsers, value);
+const isProjectionKind = (value: string): value is CanonicalProjectionKind => Object.hasOwn(parsers, value);
 
 /** Parses only canonical JSON projections. It does not assert they were safely produced or registered. */
-export function parseCanonicalProjection(
-  content: Uint8Array,
-): CanonicalProjection {
+export function parseCanonicalProjection(content: Uint8Array): CanonicalProjection {
   if (content.byteLength > MAX_NATIVE_PROJECTION_BYTES) fail("BYTES");
   let text = "";
   let value: unknown = undefined;

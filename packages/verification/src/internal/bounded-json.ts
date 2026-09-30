@@ -54,14 +54,9 @@ export type BoundedJsonViolation =
   | { readonly kind: "string_budget"; readonly at: "string" | "key" }
   | { readonly kind: "key_length" };
 
-export function walkBoundedJson(
-  root: unknown,
-  options: BoundedJsonWalkOptions,
-): BoundedJsonViolation | undefined {
+export function walkBoundedJson(root: unknown, options: BoundedJsonWalkOptions): BoundedJsonViolation | undefined {
   const { limits, measure } = options;
-  const stack: { value: unknown; depth: number }[] = [
-    { value: root, depth: 0 },
-  ];
+  const stack: { value: unknown; depth: number }[] = [{ value: root, depth: 0 }];
   const seen = new WeakSet<object>();
   let nodes = 0;
   let budget = 0;
@@ -72,8 +67,7 @@ export function walkBoundedJson(
     if (depth > limits.maximumDepth) return { kind: "depth_limit" };
     if (typeof value === "string") {
       budget += measure.string(value);
-      if (budget > limits.maximumStringBudget)
-        return { kind: "string_budget", at: "string" };
+      if (budget > limits.maximumStringBudget) return { kind: "string_budget", at: "string" };
       continue;
     }
     if (value === null || typeof value === "boolean") {
@@ -81,8 +75,7 @@ export function walkBoundedJson(
       continue;
     }
     if (typeof value === "number") {
-      if (options.rejectNonFiniteNumbers && !Number.isFinite(value))
-        return { kind: "non_finite_number" };
+      if (options.rejectNonFiniteNumbers && !Number.isFinite(value)) return { kind: "non_finite_number" };
       budget += measure.scalar?.(value) ?? 0;
       continue;
     }
@@ -90,34 +83,21 @@ export function walkBoundedJson(
       if (options.rejectNonJsonValues) return { kind: "non_json_value" };
       continue;
     }
-    if (
-      options.plainObjectsOnly &&
-      !Array.isArray(value) &&
-      !isPlainObject(value)
-    )
-      return { kind: "non_json_value" };
+    if (options.plainObjectsOnly && !Array.isArray(value) && !isPlainObject(value)) return { kind: "non_json_value" };
     if (seen.has(value)) return { kind: "aliased_node" };
     seen.add(value);
     if (Array.isArray(value)) {
-      if (value.length > limits.maximumCollection)
-        return { kind: "collection_limit", container: "array" };
+      if (value.length > limits.maximumCollection) return { kind: "collection_limit", container: "array" };
       for (const child of value) stack.push({ value: child, depth: depth + 1 });
       continue;
     }
     const entries = Object.entries(value);
-    if (
-      entries.length > (limits.maximumObjectEntries ?? limits.maximumCollection)
-    )
+    if (entries.length > (limits.maximumObjectEntries ?? limits.maximumCollection))
       return { kind: "collection_limit", container: "object" };
     for (const [key, child] of entries) {
       budget += measure.key(key);
-      if (
-        limits.maximumKeyLength !== undefined &&
-        key.length > limits.maximumKeyLength
-      )
-        return { kind: "key_length" };
-      if (budget > limits.maximumStringBudget)
-        return { kind: "string_budget", at: "key" };
+      if (limits.maximumKeyLength !== undefined && key.length > limits.maximumKeyLength) return { kind: "key_length" };
+      if (budget > limits.maximumStringBudget) return { kind: "string_budget", at: "key" };
       stack.push({ value: child, depth: depth + 1 });
     }
   }

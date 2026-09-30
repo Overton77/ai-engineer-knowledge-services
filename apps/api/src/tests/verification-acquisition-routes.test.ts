@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  KnowledgeIntegrationService,
-  VerificationServiceCatalog,
-} from "@aiengineer/knowledge-application";
+import { KnowledgeIntegrationService, VerificationServiceCatalog } from "@aiengineer/knowledge-application";
 import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1),
   foreignTenant = id(9),
   operationId = id(10);
@@ -56,13 +52,8 @@ function options(
 ) {
   return {
     verificationOperationService: operations,
-    resolveIdentity: (candidate: string) =>
-      candidate === token ? currentIdentity : undefined,
-    resolveVerificationContext: ({
-      identity,
-      correlationId,
-      idempotencyKey,
-    }: any) => ({
+    resolveIdentity: (candidate: string) => (candidate === token ? currentIdentity : undefined),
+    resolveVerificationContext: ({ identity, correlationId, idempotencyKey }: any) => ({
       tenantId,
       operationId,
       attemptId: id(11),
@@ -79,9 +70,7 @@ function options(
 const catalog = () =>
   new VerificationServiceCatalog({
     captureGrants: [],
-    acquisitionGrants: [
-      { tenantId: tenant, sourceKey: "approved-report", source },
-    ],
+    acquisitionGrants: [{ tenantId: tenant, sourceKey: "approved-report", source }],
     extractionProfileArtifacts: [],
   });
 

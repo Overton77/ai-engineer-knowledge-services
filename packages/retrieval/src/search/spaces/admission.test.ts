@@ -12,10 +12,7 @@ describe("inferSpaces", () => {
   it.each([
     ["benchmark scores", ["benchmark_intelligence"]],
     ["which model is best", ["model_capabilities", "engineering_claims"]],
-    [
-      "implement the api",
-      ["implementation_examples", "tool_capabilities", "source_native_sections"],
-    ],
+    ["implement the api", ["implementation_examples", "tool_capabilities", "source_native_sections"]],
     ["read the paper", ["paper_case_study_knowledge", "source_native_sections"]],
     ["which company built this", ["entity_profiles", "engineering_claims"]],
   ])("infers spaces for %j", (query, expected) => {
@@ -32,19 +29,13 @@ describe("inferSpaces", () => {
 describe("assertAdmittedSpaces", () => {
   it("throws SPACE_NOT_ADMITTED with the denied spaces listed, in order", () => {
     expect(() =>
-      assertAdmittedSpaces(
-        ["benchmark_intelligence", "model_capabilities"],
-        ["engineering_claims"],
-      ),
+      assertAdmittedSpaces(["benchmark_intelligence", "model_capabilities"], ["engineering_claims"]),
     ).toThrow("SPACE_NOT_ADMITTED:benchmark_intelligence,model_capabilities");
   });
 
   it("passes silently when every requested space is admitted", () => {
     expect(() =>
-      assertAdmittedSpaces(
-        ["engineering_claims"],
-        ["engineering_claims", "model_capabilities"],
-      ),
+      assertAdmittedSpaces(["engineering_claims"], ["engineering_claims", "model_capabilities"]),
     ).not.toThrow();
   });
 });

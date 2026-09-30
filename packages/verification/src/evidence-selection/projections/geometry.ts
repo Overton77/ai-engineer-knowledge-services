@@ -1,8 +1,5 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolvedValue, unresolved } from "./report.js";
 import {
   boundedArray,
@@ -43,10 +40,7 @@ export interface GeometryProjection {
   readonly pages: readonly GeometryPage[];
 }
 
-type BoundingBoxSelector = Extract<
-  VerificationSelector,
-  { kind: "bounding_box" }
->;
+type BoundingBoxSelector = Extract<VerificationSelector, { kind: "bounding_box" }>;
 
 interface Dimensions {
   readonly width: number;
@@ -63,11 +57,8 @@ interface Box {
 export function parseGeometry(input: UnknownRecord): GeometryProjection {
   only(input, ["kind", "pages"], "GEOMETRY");
   const pages = boundedArray(input.pages, "GEOMETRY_PAGES").map(parsePage);
-  const numbered = pages
-    .map((page) => page.physicalPageNumber)
-    .filter((page): page is number => page !== undefined);
-  if (pages.length === 0 || new Set(numbered).size !== numbered.length)
-    fail("GEOMETRY_PAGE_DUPLICATE");
+  const numbered = pages.map((page) => page.physicalPageNumber).filter((page): page is number => page !== undefined);
+  if (pages.length === 0 || new Set(numbered).size !== numbered.length) fail("GEOMETRY_PAGE_DUPLICATE");
   return { kind: "geometry", pages };
 }
 
@@ -75,42 +66,19 @@ function parsePage(item: unknown): GeometryPage {
   if (!isRecord(item)) fail("GEOMETRY_PAGE");
   only(
     item,
-    [
-      "physicalPageNumber",
-      "widthPoints",
-      "heightPoints",
-      "imageWidth",
-      "imageHeight",
-      "tokens",
-    ],
+    ["physicalPageNumber", "widthPoints", "heightPoints", "imageWidth", "imageHeight", "tokens"],
     "GEOMETRY_PAGE",
   );
   const { physicalPageNumber } = item;
-  if (physicalPageNumber !== undefined && !positiveInteger(physicalPageNumber))
-    fail("GEOMETRY_PAGE_NUMBER");
-  const points = parseDimensionPair(
-    [item.widthPoints, item.heightPoints],
-    positive,
-    "GEOMETRY_POINT_DIMENSIONS",
-  );
-  const pixels = parseDimensionPair(
-    [item.imageWidth, item.imageHeight],
-    positiveInteger,
-    "GEOMETRY_PIXEL_DIMENSIONS",
-  );
-  const tokens = boundedArray(item.tokens, "GEOMETRY_TOKENS").map((token) =>
-    parseToken(token, { points, pixels }),
-  );
-  if (new Set(tokens.map((token) => token.order)).size !== tokens.length)
-    fail("GEOMETRY_TOKEN_ORDER");
+  if (physicalPageNumber !== undefined && !positiveInteger(physicalPageNumber)) fail("GEOMETRY_PAGE_NUMBER");
+  const points = parseDimensionPair([item.widthPoints, item.heightPoints], positive, "GEOMETRY_POINT_DIMENSIONS");
+  const pixels = parseDimensionPair([item.imageWidth, item.imageHeight], positiveInteger, "GEOMETRY_PIXEL_DIMENSIONS");
+  const tokens = boundedArray(item.tokens, "GEOMETRY_TOKENS").map((token) => parseToken(token, { points, pixels }));
+  if (new Set(tokens.map((token) => token.order)).size !== tokens.length) fail("GEOMETRY_TOKEN_ORDER");
   return {
     ...(physicalPageNumber === undefined ? {} : { physicalPageNumber }),
-    ...(points === undefined
-      ? {}
-      : { widthPoints: points.width, heightPoints: points.height }),
-    ...(pixels === undefined
-      ? {}
-      : { imageWidth: pixels.width, imageHeight: pixels.height }),
+    ...(points === undefined ? {} : { widthPoints: points.width, heightPoints: points.height }),
+    ...(pixels === undefined ? {} : { imageWidth: pixels.width, imageHeight: pixels.height }),
     tokens,
   };
 }
@@ -134,12 +102,7 @@ function parseToken(
     readonly pixels: Dimensions | undefined;
   },
 ): GeometryToken {
-  if (isRecord(token))
-    only(
-      token,
-      ["text", "x", "y", "width", "height", "coordinateSpace", "order"],
-      "GEOMETRY_TOKEN",
-    );
+  if (isRecord(token)) only(token, ["text", "x", "y", "width", "height", "coordinateSpace", "order"], "GEOMETRY_TOKEN");
   if (
     !isRecord(token) ||
     !string(token.text) ||
@@ -153,20 +116,15 @@ function parseToken(
   )
     fail("GEOMETRY_TOKEN");
   const { text, x, y, width, height, coordinateSpace, order } = token;
-  if (coordinateSpace === "normalized" && (x + width > 1 || y + height > 1))
-    fail("GEOMETRY_NORMALIZED_BOUNDS");
+  if (coordinateSpace === "normalized" && (x + width > 1 || y + height > 1)) fail("GEOMETRY_NORMALIZED_BOUNDS");
   if (
     coordinateSpace === "pixels" &&
-    (page.pixels === undefined ||
-      x + width > page.pixels.width ||
-      y + height > page.pixels.height)
+    (page.pixels === undefined || x + width > page.pixels.width || y + height > page.pixels.height)
   )
     fail("GEOMETRY_PIXEL_BOUNDS");
   if (
     coordinateSpace === "pdf_points" &&
-    (page.points === undefined ||
-      x + width > page.points.width ||
-      y + height > page.points.height)
+    (page.points === undefined || x + width > page.points.width || y + height > page.points.height)
   )
     fail("GEOMETRY_POINT_BOUNDS");
   return { text, x, y, width, height, coordinateSpace, order };
@@ -184,20 +142,12 @@ export function resolveGeometry(
   const pages =
     selector.page === undefined
       ? projection.pages
-      : projection.pages.filter(
-          (page) => page.physicalPageNumber === selector.page,
-        );
-  if (pages.length !== 1)
-    return unresolved(
-      request,
-      pages.length > 1 ? "ambiguous" : "not_found",
-      pages.length,
-    );
+      : projection.pages.filter((page) => page.physicalPageNumber === selector.page);
+  if (pages.length !== 1) return unresolved(request, pages.length > 1 ? "ambiguous" : "not_found", pages.length);
   const page = pages[0]!;
   if (
     selector.coordinateSpace === "pixels" &&
-    (page.imageWidth !== selector.imageWidth ||
-      page.imageHeight !== selector.imageHeight)
+    (page.imageWidth !== selector.imageWidth || page.imageHeight !== selector.imageHeight)
   )
     return unresolved(request, "invalid");
   const box = normalizedSelectorBox(selector);
@@ -245,10 +195,7 @@ function normalizedSelectorBox(selector: BoundingBoxSelector): Box {
   };
 }
 
-function normalizedToken(
-  token: GeometryToken,
-  page: GeometryPage,
-): GeometryToken {
+function normalizedToken(token: GeometryToken, page: GeometryPage): GeometryToken {
   if (token.coordinateSpace === "normalized") return token;
   if (token.coordinateSpace === "pixels")
     return {

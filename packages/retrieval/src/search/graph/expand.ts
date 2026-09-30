@@ -1,10 +1,4 @@
-import type {
-  AdvancedRetrievalPlan,
-  GraphEdge,
-  RetrievalChannel,
-  RetrievalPolicy,
-  RetrievalRecord,
-} from "../types.js";
+import type { AdvancedRetrievalPlan, GraphEdge, RetrievalChannel, RetrievalPolicy, RetrievalRecord } from "../types.js";
 
 // Graph — verified-edge frontier walk. A pure function over the seeds retrieve()
 // already ranked: the load-bearing seed order (highest fused score first) is
@@ -35,11 +29,8 @@ export function expandVerifiedGraph(
       for (const edge of graphEdges) {
         const sourceRecord = byId.get(edge.fromId),
           targetRecord = byId.get(edge.toId);
-        const locatorBoundToEndpoint = [sourceRecord, targetRecord].some(
-          (endpoint) =>
-            endpoint?.locators.some(
-              (locator) => locator.quoteDigest === edge.locatorDigest,
-            ),
+        const locatorBoundToEndpoint = [sourceRecord, targetRecord].some((endpoint) =>
+          endpoint?.locators.some((locator) => locator.quoteDigest === edge.locatorDigest),
         );
         if (
           !edge.verified ||

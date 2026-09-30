@@ -26,7 +26,15 @@ describe("chunk profile table", () => {
 
 describe("ChunkProfileRegistry", () => {
   it("registers all admitted strategies in table order", () => {
-    expect(defaultChunkProfileRegistry.list().map(({ strategy }) => strategy)).toEqual(["transcripts", "headings", "claims", "entities", "tools", "code", "tables"]);
+    expect(defaultChunkProfileRegistry.list().map(({ strategy }) => strategy)).toEqual([
+      "transcripts",
+      "headings",
+      "claims",
+      "entities",
+      "tools",
+      "code",
+      "tables",
+    ]);
   });
 
   it.each([
@@ -43,12 +51,17 @@ describe("ChunkProfileRegistry", () => {
   });
 
   it("covers every vector space in the contract", () => {
-    for (const space of VectorSpaceSchema.options) expect(defaultChunkProfileRegistry.forSpace(space).length).toBeGreaterThan(0);
+    for (const space of VectorSpaceSchema.options)
+      expect(defaultChunkProfileRegistry.forSpace(space).length).toBeGreaterThan(0);
   });
 
   it("skips the table profile when no table node was observed", () => {
-    expect(names(defaultChunkProfileRegistry.forSpaceAndNodeKinds("paper_case_study_knowledge", ["heading", "paragraph"]))).toEqual(["heading-sections-v1"]);
-    expect(names(defaultChunkProfileRegistry.forSpaceAndNodeKinds("paper_case_study_knowledge", ["table"]))).toEqual(["table-row-groups-v1"]);
+    expect(
+      names(defaultChunkProfileRegistry.forSpaceAndNodeKinds("paper_case_study_knowledge", ["heading", "paragraph"])),
+    ).toEqual(["heading-sections-v1"]);
+    expect(names(defaultChunkProfileRegistry.forSpaceAndNodeKinds("paper_case_study_knowledge", ["table"]))).toEqual([
+      "table-row-groups-v1",
+    ]);
     expect(names(defaultChunkProfileRegistry.forSpaceAndNodeKinds("engineering_claims", ["figure"]))).toEqual([]);
   });
 
@@ -69,7 +82,9 @@ describe("ChunkProfileRegistry", () => {
     expect(() => new ChunkProfileRegistry([{ ...claims, targetTokens: 500 }])).toThrow(/Invalid token bounds/);
     expect(() => new ChunkProfileRegistry([{ ...claims, minimumTokens: 0 }])).toThrow(/Invalid token bounds/);
     expect(() => new ChunkProfileRegistry([{ ...claims, overlapTokens: 160 }])).toThrow(/Overlap must be below/);
-    expect(() => new ChunkProfileRegistry([{ ...claims, maximumDuplicatedTokenRatio: 1.5 }])).toThrow(/duplicated-token ratio/);
+    expect(() => new ChunkProfileRegistry([{ ...claims, maximumDuplicatedTokenRatio: 1.5 }])).toThrow(
+      /duplicated-token ratio/,
+    );
   });
 
   it("hands out frozen copies, not the arrays it was given", () => {

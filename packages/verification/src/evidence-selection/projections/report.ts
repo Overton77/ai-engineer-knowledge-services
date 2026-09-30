@@ -1,9 +1,5 @@
 import { PROJECTION_RESOLVER_VERSION } from "../../versions.js";
-import {
-  evidenceSelectionReporter,
-  type EvidenceSelection,
-  type EvidenceSelectionRequest,
-} from "../selection.js";
+import { evidenceSelectionReporter, type EvidenceSelection, type EvidenceSelectionRequest } from "../selection.js";
 import type { Range } from "./shared.js";
 
 /**

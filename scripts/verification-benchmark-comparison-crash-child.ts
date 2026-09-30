@@ -19,30 +19,35 @@ function local(value: string | undefined, port: string, code: string): string {
 
 const connectionString = local(process.env.POSTGRES_URL, "54322", "COMPARISON_CRASH_CHILD_LOCAL_DB_REQUIRED");
 const projectUrl = local(process.env.SUPABASE_URL, "54321", "COMPARISON_CRASH_CHILD_LOCAL_STORAGE_REQUIRED");
-if (!process.send || !process.env.SUPABASE_SECRET_KEY) throw new Error("COMPARISON_CRASH_CHILD_IPC_AND_STORAGE_REQUIRED");
+if (!process.send || !process.env.SUPABASE_SECRET_KEY)
+  throw new Error("COMPARISON_CRASH_CHILD_IPC_AND_STORAGE_REQUIRED");
 const operationId = UuidSchema.parse(process.env.COMPARISON_CRASH_OPERATION_ID);
 const configPath = process.env.COMPARISON_CRASH_CONFIG_FILE;
 if (!configPath) throw new Error("COMPARISON_CRASH_CHILD_CONFIG_REQUIRED");
 const rawConfig = await readFile(configPath, "utf8");
 const config = parseVerificationBenchmarkComparisonRuntimeConfig(rawConfig);
 const crashPoint = process.env.COMPARISON_CRASH_POINT;
-if (!["result_completed", "sealed", "none"].includes(crashPoint ?? "")) throw new Error("COMPARISON_CRASH_CHILD_POINT_INVALID");
+if (!["result_completed", "sealed", "none"].includes(crashPoint ?? ""))
+  throw new Error("COMPARISON_CRASH_CHILD_POINT_INVALID");
 
 const database = new PostgresCanonicalRepository({ connectionString, localOnly: true });
 let claim: LeasedStep | undefined;
-const send = (value: unknown) => new Promise<void>((resolveSend, reject) => {
-  if (!process.send || !process.connected) {
-    reject(new Error("COMPARISON_CRASH_CHILD_IPC_CLOSED"));
-    return;
-  }
-  process.send(value, error => error ? reject(error) : resolveSend());
-});
+const send = (value: unknown) =>
+  new Promise<void>((resolveSend, reject) => {
+    if (!process.send || !process.connected) {
+      reject(new Error("COMPARISON_CRASH_CHILD_IPC_CLOSED"));
+      return;
+    }
+    process.send(value, (error) => (error ? reject(error) : resolveSend()));
+  });
 const parked = () => new Promise<never>(() => undefined);
 
 // Proof-only interception runs after the production store transaction commits.
 // The child then remains alive until the parent terminates the actual OS process.
 const originalComplete = PostgresVerificationBenchmarkComparisonStore.prototype.complete;
-PostgresVerificationBenchmarkComparisonStore.prototype.complete = async function (...args: Parameters<typeof originalComplete>) {
+PostgresVerificationBenchmarkComparisonStore.prototype.complete = async function (
+  ...args: Parameters<typeof originalComplete>
+) {
   const durable = await originalComplete.apply(this, args);
   if (crashPoint === "result_completed") {
     await send({ kind: "result_completed", claim, durable });
@@ -52,7 +57,9 @@ PostgresVerificationBenchmarkComparisonStore.prototype.complete = async function
 };
 
 const originalSeal = PostgresVerificationBenchmarkComparisonStore.prototype.seal;
-PostgresVerificationBenchmarkComparisonStore.prototype.seal = async function (...args: Parameters<typeof originalSeal>) {
+PostgresVerificationBenchmarkComparisonStore.prototype.seal = async function (
+  ...args: Parameters<typeof originalSeal>
+) {
   const durable = await originalSeal.apply(this, args);
   if (crashPoint === "sealed") {
     await send({ kind: "sealed", claim, durable });
@@ -80,7 +87,7 @@ try {
     `comparison-crash-child-${process.pid}`,
     config.tenantId,
     database,
-    async leased => {
+    async (leased) => {
       claim = leased;
       return execute(leased);
     },

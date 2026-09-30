@@ -1,8 +1,4 @@
-import type {
-  Assertion,
-  DeterministicVerificationResult,
-  VerificationBundle,
-} from "@aiengineer/knowledge-contracts";
+import type { Assertion, DeterministicVerificationResult, VerificationBundle } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "../canonical/index.js";
 import { deepFreeze } from "../internal/deep-freeze.js";
 import { SEMANTIC_RUBRIC_VERSION } from "../versions.js";
@@ -44,9 +40,7 @@ export interface AuthorizedSemanticCase {
   readonly fragments: readonly AuthorizedSemanticFragment[];
 }
 
-const authorizedSemanticCaseBrand: unique symbol = Symbol(
-  "authorized-semantic-case",
-);
+const authorizedSemanticCaseBrand: unique symbol = Symbol("authorized-semantic-case");
 const authorizedSemanticCases = new WeakSet<object>();
 
 /** True only for objects created by `authorizeSemanticCase` in this runtime. */
@@ -67,18 +61,11 @@ export interface SemanticCaseAuthorizationInput {
  * mechanically selected: declared on the assertion, resolved, and hashing to
  * the digest the engine recorded. Anything else throws; nothing is repaired.
  */
-export function authorizeSemanticCase(
-  input: SemanticCaseAuthorizationInput,
-): AuthorizedSemanticCase {
+export function authorizeSemanticCase(input: SemanticCaseAuthorizationInput): AuthorizedSemanticCase {
   const { bundle, deterministicResult, assertionId, selectedFragments } = input;
-  const assertion = bundle.assertions.find(
-    (item) => item.assertionId === assertionId,
-  );
-  const mechanical = deterministicResult.assertions.find(
-    (item) => item.assertionId === assertionId,
-  );
-  if (!assertion || !mechanical)
-    throw new Error("SEMANTIC_ASSERTION_NOT_FOUND");
+  const assertion = bundle.assertions.find((item) => item.assertionId === assertionId);
+  const mechanical = deterministicResult.assertions.find((item) => item.assertionId === assertionId);
+  if (!assertion || !mechanical) throw new Error("SEMANTIC_ASSERTION_NOT_FOUND");
   if (
     !mechanical.semanticEligibility ||
     mechanical.status !== "passed" ||
@@ -86,29 +73,17 @@ export function authorizeSemanticCase(
     !deterministicResult.semanticEligibility
   )
     throw new Error("SEMANTIC_MECHANICAL_GATE_CLOSED");
-  if (!assertion.atomic || !assertion.proposition)
-    throw new Error("SEMANTIC_ATOMIC_PROPOSITION_REQUIRED");
-  if (
-    selectedFragments.length === 0 ||
-    selectedFragments.length > MAX_FRAGMENTS
-  )
+  if (!assertion.atomic || !assertion.proposition) throw new Error("SEMANTIC_ATOMIC_PROPOSITION_REQUIRED");
+  if (selectedFragments.length === 0 || selectedFragments.length > MAX_FRAGMENTS)
     throw new Error("SEMANTIC_FRAGMENT_COUNT_INVALID");
-  const fragments = authorizeFragments(
-    assertion,
-    mechanical,
-    selectedFragments,
-  );
+  const fragments = authorizeFragments(assertion, mechanical, selectedFragments);
   const admitted = Object.freeze({
     [authorizedSemanticCaseBrand]: true as const,
     assertionId,
     proposition: assertion.proposition,
-    ...(assertion.value !== undefined
-      ? { value: deepFreeze(structuredClone(assertion.value)) }
-      : {}),
+    ...(assertion.value !== undefined ? { value: deepFreeze(structuredClone(assertion.value)) } : {}),
     qualifiers: Object.freeze([...assertion.qualifiers]),
-    entityBindings: Object.freeze(
-      assertion.entityBindings.map((binding) => Object.freeze({ ...binding })),
-    ),
+    entityBindings: Object.freeze(assertion.entityBindings.map((binding) => Object.freeze({ ...binding }))),
     riskClass: assertion.riskClass,
     downstreamUse: Object.freeze([...assertion.downstreamUse]),
     fragments: Object.freeze(fragments),
@@ -117,8 +92,7 @@ export function authorizeSemanticCase(
   return admitted;
 }
 
-type MechanicalAssertion =
-  DeterministicVerificationResult["assertions"][number];
+type MechanicalAssertion = DeterministicVerificationResult["assertions"][number];
 
 function authorizeFragments(
   assertion: Assertion,
@@ -128,19 +102,14 @@ function authorizeFragments(
   const ids = new Set<string>();
   let totalCharacters = 0;
   const fragments = selected.map((candidate) => {
-    if (ids.has(candidate.fragmentId))
-      throw new Error("SEMANTIC_FRAGMENT_DUPLICATE");
+    if (ids.has(candidate.fragmentId)) throw new Error("SEMANTIC_FRAGMENT_DUPLICATE");
     ids.add(candidate.fragmentId);
-    if (
-      candidate.exactText.length === 0 ||
-      candidate.exactText.length > MAX_FRAGMENT_CHARS
-    )
+    if (candidate.exactText.length === 0 || candidate.exactText.length > MAX_FRAGMENT_CHARS)
       throw new Error("SEMANTIC_FRAGMENT_SIZE_INVALID");
     totalCharacters += candidate.exactText.length;
     return authorizeFragment(assertion, mechanical, candidate);
   });
-  if (totalCharacters > MAX_TOTAL_CHARS)
-    throw new Error("SEMANTIC_TOTAL_EVIDENCE_TOO_LARGE");
+  if (totalCharacters > MAX_TOTAL_CHARS) throw new Error("SEMANTIC_TOTAL_EVIDENCE_TOO_LARGE");
   return fragments;
 }
 
@@ -151,23 +120,14 @@ function authorizeFragment(
   candidate: MechanicallySelectedFragment,
 ): AuthorizedSemanticFragment {
   const edge = assertion.evidence.find(
-    (item) =>
-      item.evidenceId === candidate.evidenceId &&
-      item.fragment.fragmentId === candidate.fragmentId,
+    (item) => item.evidenceId === candidate.evidenceId && item.fragment.fragmentId === candidate.fragmentId,
   );
-  const mechanicalEvidence = mechanical.evidence.find(
-    (item) => item.evidenceId === candidate.evidenceId,
-  );
-  if (!edge || !mechanicalEvidence)
-    throw new Error("SEMANTIC_FRAGMENT_NOT_DECLARED");
-  if (
-    mechanicalEvidence.status !== "passed" ||
-    mechanicalEvidence.resolution.status !== "resolved"
-  )
+  const mechanicalEvidence = mechanical.evidence.find((item) => item.evidenceId === candidate.evidenceId);
+  if (!edge || !mechanicalEvidence) throw new Error("SEMANTIC_FRAGMENT_NOT_DECLARED");
+  if (mechanicalEvidence.status !== "passed" || mechanicalEvidence.resolution.status !== "resolved")
     throw new Error("SEMANTIC_FRAGMENT_NOT_MECHANICALLY_SELECTED");
   if (
-    mechanicalEvidence.resolution.selectedContentDigest !==
-      candidate.selectedContentDigest ||
+    mechanicalEvidence.resolution.selectedContentDigest !== candidate.selectedContentDigest ||
     sha256Digest(candidate.exactText) !== candidate.selectedContentDigest
   )
     throw new Error("SEMANTIC_FRAGMENT_DIGEST_MISMATCH");
@@ -180,15 +140,12 @@ function authorizeFragment(
  * retained, so callers may extend it (inferred mutable shape is intentional).
  */
 export function semanticJudgeInput(semanticCase: AuthorizedSemanticCase) {
-  if (!authorizedSemanticCases.has(semanticCase))
-    throw new Error("SEMANTIC_CASE_NOT_AUTHORIZED");
+  if (!authorizedSemanticCases.has(semanticCase)) throw new Error("SEMANTIC_CASE_NOT_AUTHORIZED");
   return {
     rubricVersion: SEMANTIC_RUBRIC_VERSION,
     assertionId: semanticCase.assertionId,
     proposition: semanticCase.proposition,
-    ...(semanticCase.value !== undefined
-      ? { value: structuredClone(semanticCase.value) }
-      : {}),
+    ...(semanticCase.value !== undefined ? { value: structuredClone(semanticCase.value) } : {}),
     qualifiers: [...semanticCase.qualifiers],
     entityBindings: semanticCase.entityBindings.map((binding) => ({
       ...binding,

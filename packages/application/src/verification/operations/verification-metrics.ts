@@ -27,9 +27,13 @@ const artifactReferenceSchema = z.strictObject({
   artifactId: z.uuid(),
   digest: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
 });
-const captureIdsSchema = z.array(z.string().trim().min(1).max(255)).min(1).max(100).superRefine((ids, context) => {
-  if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "capture IDs must be unique" });
-});
+const captureIdsSchema = z
+  .array(z.string().trim().min(1).max(255))
+  .min(1)
+  .max(100)
+  .superRefine((ids, context) => {
+    if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "capture IDs must be unique" });
+  });
 
 /**
  * Immutable server-side profile for a metric-observation artifact. It binds
@@ -41,14 +45,20 @@ export const VerificationMetricProfileSchema = z.strictObject({
   profileId: z.string().trim().min(1).max(255),
   observations: artifactReferenceSchema,
   captureIds: captureIdsSchema,
-  projectionAdmissions: z.array(z.strictObject({
-    captureId: z.string().trim().min(1).max(255),
-    projectionArtifactId: z.uuid(),
-    transformationArtifactId: z.uuid(),
-  })).max(100).superRefine((items, context) => {
-    const keys = items.map((item) => `${item.captureId}:${item.projectionArtifactId}`);
-    if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", message: "projection admissions must be unique by capture and projection" });
-  }),
+  projectionAdmissions: z
+    .array(
+      z.strictObject({
+        captureId: z.string().trim().min(1).max(255),
+        projectionArtifactId: z.uuid(),
+        transformationArtifactId: z.uuid(),
+      }),
+    )
+    .max(100)
+    .superRefine((items, context) => {
+      const keys = items.map((item) => `${item.captureId}:${item.projectionArtifactId}`);
+      if (new Set(keys).size !== keys.length)
+        context.addIssue({ code: "custom", message: "projection admissions must be unique by capture and projection" });
+    }),
 });
 export type VerificationMetricProfile = z.infer<typeof VerificationMetricProfileSchema>;
 
@@ -74,9 +84,14 @@ export class VerificationMetricProfileCatalog {
 
   constructor(grants: readonly VerificationMetricProfileGrant[]) {
     for (const grantValue of grants) {
-      const parsed = z.strictObject({ profileArtifact: artifactReferenceSchema, observations: artifactReferenceSchema }).parse(grantValue);
+      const parsed = z
+        .strictObject({ profileArtifact: artifactReferenceSchema, observations: artifactReferenceSchema })
+        .parse(grantValue);
       const grant = immutable({
-        profileArtifact: { artifactId: parsed.profileArtifact.artifactId, digest: parsed.profileArtifact.digest as Digest },
+        profileArtifact: {
+          artifactId: parsed.profileArtifact.artifactId,
+          digest: parsed.profileArtifact.digest as Digest,
+        },
         observations: { artifactId: parsed.observations.artifactId, digest: parsed.observations.digest as Digest },
       });
       const key = this.#key(grant.observations);
@@ -161,8 +176,11 @@ function sameSet(left: readonly string[], right: readonly string[]): boolean {
 }
 
 function decodeJson(bytes: Uint8Array, code: string): unknown {
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { throw new Error(code); }
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new Error(code);
+  }
 }
 
 /**
@@ -181,9 +199,13 @@ export class VerificationMetricApplicationService {
     // Keep this sequence explicit so production repositories retain that guard.
     const profileArtifact = await this.#hydrateExact(context.tenantId, grant.profileArtifact);
     const observationsArtifact = await this.#hydrateExact(context.tenantId, request.observations);
-    const profile = VerificationMetricProfileSchema.parse(decodeJson(profileArtifact.bytes, "VERIFICATION_METRIC_PROFILE_INVALID"));
+    const profile = VerificationMetricProfileSchema.parse(
+      decodeJson(profileArtifact.bytes, "VERIFICATION_METRIC_PROFILE_INVALID"),
+    );
     this.#assertProfileBinding(profile, request, grant);
-    const bundle = VerificationBundleSchema.parse(decodeJson(observationsArtifact.bytes, "VERIFICATION_METRIC_OBSERVATIONS_INVALID"));
+    const bundle = VerificationBundleSchema.parse(
+      decodeJson(observationsArtifact.bytes, "VERIFICATION_METRIC_OBSERVATIONS_INVALID"),
+    );
     if (bundle.assertions.length !== 0) throw new Error("VERIFICATION_METRIC_OBSERVATIONS_ASSERTIONS_FORBIDDEN");
     this.#assertCaptureSet(bundle, request.captureIds);
     const hydratedCaptures = await this.#hydrateTrustedCaptures(context.tenantId, bundle);
@@ -193,14 +215,17 @@ export class VerificationMetricApplicationService {
       observationsArtifact: observationsArtifact.registration,
       captureIds: [...request.captureIds],
     });
-    const deterministicResult = verifyDeterministicBundle({
-      bundle,
-      artifacts: hydratedCaptures.map(({ artifact, bytes }) => ({ artifactId: artifact.artifactId, content: bytes })),
-      runtimePrincipals: runtimeIdentity.runtimePrincipals,
-    }, {
-      ...(this.dependencies.selectorResolvers ? { selectorResolvers: this.dependencies.selectorResolvers } : {}),
-      ...(admittedProjectionLineage ? { isProjectionLineageAdmitted: admittedProjectionLineage } : {}),
-    });
+    const deterministicResult = verifyDeterministicBundle(
+      {
+        bundle,
+        artifacts: hydratedCaptures.map(({ artifact, bytes }) => ({ artifactId: artifact.artifactId, content: bytes })),
+        runtimePrincipals: runtimeIdentity.runtimePrincipals,
+      },
+      {
+        ...(this.dependencies.selectorResolvers ? { selectorResolvers: this.dependencies.selectorResolvers } : {}),
+        ...(admittedProjectionLineage ? { isProjectionLineageAdmitted: admittedProjectionLineage } : {}),
+      },
+    );
     return Object.freeze({
       admissionState: "mechanical_only" as const,
       deterministicResult,
@@ -211,12 +236,21 @@ export class VerificationMetricApplicationService {
     });
   }
 
-  #assertProfileBinding(profile: VerificationMetricProfile, request: VerifyMetricObservationRequest, grant: VerificationMetricProfileGrant): void {
-    if (profile.observations.artifactId !== request.observations.artifactId || profile.observations.digest !== request.observations.digest
-      || grant.observations.artifactId !== request.observations.artifactId || grant.observations.digest !== request.observations.digest) {
+  #assertProfileBinding(
+    profile: VerificationMetricProfile,
+    request: VerifyMetricObservationRequest,
+    grant: VerificationMetricProfileGrant,
+  ): void {
+    if (
+      profile.observations.artifactId !== request.observations.artifactId ||
+      profile.observations.digest !== request.observations.digest ||
+      grant.observations.artifactId !== request.observations.artifactId ||
+      grant.observations.digest !== request.observations.digest
+    ) {
       throw new Error("VERIFICATION_METRIC_PROFILE_OBSERVATIONS_MISMATCH");
     }
-    if (!sameSet(profile.captureIds, request.captureIds)) throw new Error("VERIFICATION_METRIC_PROFILE_CAPTURE_SET_MISMATCH");
+    if (!sameSet(profile.captureIds, request.captureIds))
+      throw new Error("VERIFICATION_METRIC_PROFILE_CAPTURE_SET_MISMATCH");
   }
 
   #assertCaptureSet(bundle: VerificationBundle, requestCaptureIds: readonly string[]): void {
@@ -226,33 +260,50 @@ export class VerificationMetricApplicationService {
     }
   }
 
-  async #hydrateTrustedCaptures(tenantId: string, bundle: VerificationBundle): Promise<Array<{ artifact: VerificationArtifactHandle; bytes: Uint8Array }>> {
+  async #hydrateTrustedCaptures(
+    tenantId: string,
+    bundle: VerificationBundle,
+  ): Promise<Array<{ artifact: VerificationArtifactHandle; bytes: Uint8Array }>> {
     const artifacts = new Map<string, { artifact: VerificationArtifactHandle; bytes: Uint8Array }>();
     const add = (hydrated: { artifact: VerificationArtifactHandle; bytes: Uint8Array }): void => {
       const previous = artifacts.get(hydrated.artifact.artifactId);
-      if (previous && (digestCanonicalJson(previous.artifact) !== digestCanonicalJson(hydrated.artifact)
-        || previous.bytes.byteLength !== hydrated.bytes.byteLength
-        || previous.bytes.some((value, index) => value !== hydrated.bytes[index]))) {
+      if (
+        previous &&
+        (digestCanonicalJson(previous.artifact) !== digestCanonicalJson(hydrated.artifact) ||
+          previous.bytes.byteLength !== hydrated.bytes.byteLength ||
+          previous.bytes.some((value, index) => value !== hydrated.bytes[index]))
+      ) {
         throw new Error("VERIFICATION_METRIC_SHARED_ARTIFACT_BINDING_CONFLICT");
       }
       artifacts.set(hydrated.artifact.artifactId, hydrated);
     };
     for (const declared of bundle.captures) {
-      const registered = await this.dependencies.captures.getRegisteredCapture({ tenantId, captureId: declared.captureId });
+      const registered = await this.dependencies.captures.getRegisteredCapture({
+        tenantId,
+        captureId: declared.captureId,
+      });
       const declaredSource = bundle.sources.find((source) => source.sourceId === declared.sourceId);
-      const declaredBaseCapture = declared.canonicalProjectionArtifact === undefined ? declared : (() => {
-        const { canonicalProjectionArtifact: _projection, ...base } = declared;
-        return base;
-      })();
-      const registeredCaptureMatches = registered.capture.canonicalProjectionArtifact === undefined
-        ? digestCanonicalJson(registered.capture) === digestCanonicalJson(declaredBaseCapture)
-        : digestCanonicalJson(registered.capture) === digestCanonicalJson(declared);
-      if (!declaredSource || digestCanonicalJson(registered.source) !== digestCanonicalJson(declaredSource)
-        || !registeredCaptureMatches) {
+      const declaredBaseCapture =
+        declared.canonicalProjectionArtifact === undefined
+          ? declared
+          : (() => {
+              const { canonicalProjectionArtifact: _projection, ...base } = declared;
+              return base;
+            })();
+      const registeredCaptureMatches =
+        registered.capture.canonicalProjectionArtifact === undefined
+          ? digestCanonicalJson(registered.capture) === digestCanonicalJson(declaredBaseCapture)
+          : digestCanonicalJson(registered.capture) === digestCanonicalJson(declared);
+      if (
+        !declaredSource ||
+        digestCanonicalJson(registered.source) !== digestCanonicalJson(declaredSource) ||
+        !registeredCaptureMatches
+      ) {
         throw new Error("VERIFICATION_METRIC_CAPTURE_REGISTRATION_MISMATCH");
       }
       add(await this.#hydrateExpected(tenantId, declared.contentArtifact));
-      if (declared.canonicalProjectionArtifact) add(await this.#hydrateExpected(tenantId, declared.canonicalProjectionArtifact));
+      if (declared.canonicalProjectionArtifact)
+        add(await this.#hydrateExpected(tenantId, declared.canonicalProjectionArtifact));
     }
     return [...artifacts.values()];
   }
@@ -261,47 +312,85 @@ export class VerificationMetricApplicationService {
     tenantId: string,
     bundle: VerificationBundle,
     profile: VerificationMetricProfile,
-  ): Promise<((binding: { captureId: string; sourceArtifact: VerificationArtifactHandle; projectionArtifact: VerificationArtifactHandle }) => boolean) | undefined> {
+  ): Promise<
+    | ((binding: {
+        captureId: string;
+        sourceArtifact: VerificationArtifactHandle;
+        projectionArtifact: VerificationArtifactHandle;
+      }) => boolean)
+    | undefined
+  > {
     const projectionCaptures = bundle.captures.filter((capture) => capture.canonicalProjectionArtifact !== undefined);
     if (projectionCaptures.length === 0) return undefined;
-    if (!this.dependencies.nativeProjectionAdmission) throw new Error("VERIFICATION_METRIC_NATIVE_PROJECTION_ADMISSION_REQUIRED");
+    if (!this.dependencies.nativeProjectionAdmission)
+      throw new Error("VERIFICATION_METRIC_NATIVE_PROJECTION_ADMISSION_REQUIRED");
     const admitted = new Set<string>();
     for (const capture of projectionCaptures) {
       const projection = capture.canonicalProjectionArtifact!;
-      const admission = profile.projectionAdmissions.find((item) => item.captureId === capture.captureId && item.projectionArtifactId === projection.artifactId);
+      const admission = profile.projectionAdmissions.find(
+        (item) => item.captureId === capture.captureId && item.projectionArtifactId === projection.artifactId,
+      );
       if (!admission) throw new Error("VERIFICATION_METRIC_PROJECTION_ENVELOPE_GRANT_REQUIRED");
       const hydrated = await this.dependencies.nativeProjectionAdmission.hydrateAdmittedProjection({
         tenantId,
         captureId: capture.captureId,
-        expectedSourceArtifact: { artifactId: capture.contentArtifact.artifactId, digest: capture.contentArtifact.digest as Digest },
+        expectedSourceArtifact: {
+          artifactId: capture.contentArtifact.artifactId,
+          digest: capture.contentArtifact.digest as Digest,
+        },
         transformationArtifactId: admission.transformationArtifactId,
         projectionArtifactId: admission.projectionArtifactId,
       });
-      if (hydrated.receipt.captureId !== capture.captureId
-        || digestCanonicalJson(hydrated.receipt.sourceArtifact) !== digestCanonicalJson(capture.contentArtifact)
-        || digestCanonicalJson(hydrated.receipt.projectionArtifact) !== digestCanonicalJson(projection)) {
+      if (
+        hydrated.receipt.captureId !== capture.captureId ||
+        digestCanonicalJson(hydrated.receipt.sourceArtifact) !== digestCanonicalJson(capture.contentArtifact) ||
+        digestCanonicalJson(hydrated.receipt.projectionArtifact) !== digestCanonicalJson(projection)
+      ) {
         throw new Error("VERIFICATION_METRIC_NATIVE_PROJECTION_RECEIPT_MISMATCH");
       }
       admitted.add(this.#projectionBindingKey(capture.captureId, capture.contentArtifact, projection));
     }
-    return (binding) => admitted.has(this.#projectionBindingKey(binding.captureId, binding.sourceArtifact, binding.projectionArtifact));
+    return (binding) =>
+      admitted.has(this.#projectionBindingKey(binding.captureId, binding.sourceArtifact, binding.projectionArtifact));
   }
 
-  #projectionBindingKey(captureId: string, sourceArtifact: VerificationArtifactHandle, projectionArtifact: VerificationArtifactHandle): string {
+  #projectionBindingKey(
+    captureId: string,
+    sourceArtifact: VerificationArtifactHandle,
+    projectionArtifact: VerificationArtifactHandle,
+  ): string {
     return digestCanonicalJson({ captureId, sourceArtifact, projectionArtifact });
   }
 
-  async #hydrateExact(tenantId: string, expected: { readonly artifactId: string; readonly digest: string }): Promise<{ registration: VerificationArtifactHandle; bytes: Uint8Array }> {
+  async #hydrateExact(
+    tenantId: string,
+    expected: { readonly artifactId: string; readonly digest: string },
+  ): Promise<{ registration: VerificationArtifactHandle; bytes: Uint8Array }> {
     const hydrated = await this.#hydrateExpected(tenantId, expected);
     return { registration: hydrated.artifact, bytes: hydrated.bytes };
   }
 
-  async #hydrateExpected(tenantId: string, expected: { readonly artifactId: string; readonly digest: string }): Promise<{ artifact: VerificationArtifactHandle; bytes: Uint8Array }> {
-    await this.dependencies.artifactResolver.authorizeArtifact({ tenantId, artifactId: expected.artifactId, purpose: "verification_admission" });
-    const hydrated = await this.dependencies.artifactResolver.hydrateRegisteredArtifact({ tenantId, artifactId: expected.artifactId });
+  async #hydrateExpected(
+    tenantId: string,
+    expected: { readonly artifactId: string; readonly digest: string },
+  ): Promise<{ artifact: VerificationArtifactHandle; bytes: Uint8Array }> {
+    await this.dependencies.artifactResolver.authorizeArtifact({
+      tenantId,
+      artifactId: expected.artifactId,
+      purpose: "verification_admission",
+    });
+    const hydrated = await this.dependencies.artifactResolver.hydrateRegisteredArtifact({
+      tenantId,
+      artifactId: expected.artifactId,
+    });
     const registration = VerificationArtifactHandleSchema.parse(hydrated.registration);
-    if (registration.tenantId !== tenantId || registration.artifactId !== expected.artifactId || registration.digest !== expected.digest
-      || sha256Digest(hydrated.bytes) !== registration.digest || hydrated.bytes.byteLength !== registration.byteLength) {
+    if (
+      registration.tenantId !== tenantId ||
+      registration.artifactId !== expected.artifactId ||
+      registration.digest !== expected.digest ||
+      sha256Digest(hydrated.bytes) !== registration.digest ||
+      hydrated.bytes.byteLength !== registration.byteLength
+    ) {
       throw new Error("VERIFICATION_METRIC_ARTIFACT_REGISTRATION_MISMATCH");
     }
     return { artifact: registration, bytes: hydrated.bytes };

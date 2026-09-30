@@ -13,19 +13,89 @@ const transformId = "66666666-6666-4666-8666-666666666666";
 const text = "Results are available within 2–4 weeks after the lab receives the sample.";
 const bytes = new TextEncoder().encode(text);
 const digest = sha256Digest(bytes);
-const handle = (artifactId: string, valueDigest = digest): VerificationArtifactHandle => ({ artifactId, tenantId: tenant, digest: valueDigest, mediaType: "application/json", byteLength: bytes.byteLength, objectKey: `fixture/${artifactId}`, createdAt: "2026-09-07T00:00:00.000Z", producerActivityId: "fixture", producerVersion: "v1", encryptionClass: "supabase-managed", retentionClass: "verification-audit", dataClassification: "restricted", parentArtifactIds: [] });
+const handle = (artifactId: string, valueDigest = digest): VerificationArtifactHandle => ({
+  artifactId,
+  tenantId: tenant,
+  digest: valueDigest,
+  mediaType: "application/json",
+  byteLength: bytes.byteLength,
+  objectKey: `fixture/${artifactId}`,
+  createdAt: "2026-09-07T00:00:00.000Z",
+  producerActivityId: "fixture",
+  producerVersion: "v1",
+  encryptionClass: "supabase-managed",
+  retentionClass: "verification-audit",
+  dataClassification: "restricted",
+  parentArtifactIds: [],
+});
 const receipt: ProjectionAdmissionReceipt = {
-  schemaVersion: "verification-projection-admission.v1", captureId, sourceArtifact: handle(sourceId), nativeOutputArtifact: handle(nativeId), projectionArtifact: handle(projectionId), transformationArtifact: handle(transformId), projectionKind: "html_dom", projectionOrdinal: 0, parserVersion: "verification-native-parser.v1", imageDigest: `sha256:${"a".repeat(64)}`, parserOptionsDigest: `sha256:${"b".repeat(64)}`, parserTransformationSignature: `sha256:${"c".repeat(64)}`, residualsDigest: `sha256:${"d".repeat(64)}`,
+  schemaVersion: "verification-projection-admission.v1",
+  captureId,
+  sourceArtifact: handle(sourceId),
+  nativeOutputArtifact: handle(nativeId),
+  projectionArtifact: handle(projectionId),
+  transformationArtifact: handle(transformId),
+  projectionKind: "html_dom",
+  projectionOrdinal: 0,
+  parserVersion: "verification-native-parser.v1",
+  imageDigest: `sha256:${"a".repeat(64)}`,
+  parserOptionsDigest: `sha256:${"b".repeat(64)}`,
+  parserTransformationSignature: `sha256:${"c".repeat(64)}`,
+  residualsDigest: `sha256:${"d".repeat(64)}`,
 };
 const baseCase = (assertion: string): VerificationBenchmarkCase => ({
-  schemaVersion: "verification-benchmark.v1", caseId: "adversarial-fixture", caseDigest: `sha256:${"e".repeat(64)}`, partition: "development", inputManifestArtifactId: sourceId, goldArtifactId: null, modality: "html", sourceFamily: "fixture", entityFamily: "fixture", reportCluster: "fixture", pairCluster: "fixture", tags: ["adversarial"], adversarialTransforms: ["count_or_timeline_swap"], assertion,
-  evidence: [{ fragmentId: `sha256:${"f".repeat(64)}`, captureId, sourceKey: "fixture", sourceClass: "first_party", projectionArtifactId: projectionId, projectionDigest: digest, transformationArtifactId: transformId, selector: { kind: "text_quote", quote: text, normalization: "none" }, selectedContentDigest: digest, excerpt: text, rights: "test", providerUploadAuthorized: false }],
-  expectation: { label: "contradicted", labelStatus: "engineering_expectation", expectedPolicy: "fail", expectedLocatorValid: true, support: "contradicted", authority: "interested_party_only", worldCorrectness: "unknown", rationale: "Not used by the helper." }, independentObservation: false, humanGoldScoringEligible: false, adjudicationId: null,
+  schemaVersion: "verification-benchmark.v1",
+  caseId: "adversarial-fixture",
+  caseDigest: `sha256:${"e".repeat(64)}`,
+  partition: "development",
+  inputManifestArtifactId: sourceId,
+  goldArtifactId: null,
+  modality: "html",
+  sourceFamily: "fixture",
+  entityFamily: "fixture",
+  reportCluster: "fixture",
+  pairCluster: "fixture",
+  tags: ["adversarial"],
+  adversarialTransforms: ["count_or_timeline_swap"],
+  assertion,
+  evidence: [
+    {
+      fragmentId: `sha256:${"f".repeat(64)}`,
+      captureId,
+      sourceKey: "fixture",
+      sourceClass: "first_party",
+      projectionArtifactId: projectionId,
+      projectionDigest: digest,
+      transformationArtifactId: transformId,
+      selector: { kind: "text_quote", quote: text, normalization: "none" },
+      selectedContentDigest: digest,
+      excerpt: text,
+      rights: "test",
+      providerUploadAuthorized: false,
+    },
+  ],
+  expectation: {
+    label: "contradicted",
+    labelStatus: "engineering_expectation",
+    expectedPolicy: "fail",
+    expectedLocatorValid: true,
+    support: "contradicted",
+    authority: "interested_party_only",
+    worldCorrectness: "unknown",
+    rationale: "Not used by the helper.",
+  },
+  independentObservation: false,
+  humanGoldScoringEligible: false,
+  adjudicationId: null,
 });
 
 describe("verifyDiagnosticsAdversarialProjection", () => {
   it("uses immutable admitted bytes to reject corrupted locators and selected-digest tampering", () => {
-    const result = verifyDiagnosticsAdversarialProjection({ testCase: baseCase("Results are available within 24 hours."), receipt, content: bytes });
+    const result = verifyDiagnosticsAdversarialProjection({
+      testCase: baseCase("Results are available within 24 hours."),
+      receipt,
+      content: bytes,
+    });
     expect(result.exactSource).toMatchObject({ valid: true });
     expect(result.corruptedLocator).toMatchObject({ evaluated: true, valid: false });
     expect(result.selectedDigestTamper).toMatchObject({ valid: false });
@@ -42,8 +112,8 @@ describe("verifyDiagnosticsAdversarialProjection", () => {
 
   it("fails closed if caller supplies a receipt unrelated to frozen evidence", () => {
     const changed = { ...receipt, projectionArtifact: { ...receipt.projectionArtifact, artifactId: sourceId } };
-    expect(() => verifyDiagnosticsAdversarialProjection({ testCase: baseCase(text), receipt: changed, content: bytes })).toThrow("DIAGNOSTICS_ADVERSARIAL_ADMISSION_BINDING");
+    expect(() =>
+      verifyDiagnosticsAdversarialProjection({ testCase: baseCase(text), receipt: changed, content: bytes }),
+    ).toThrow("DIAGNOSTICS_ADVERSARIAL_ADMISSION_BINDING");
   });
 });
-
-

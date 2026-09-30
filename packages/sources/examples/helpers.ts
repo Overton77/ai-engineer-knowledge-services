@@ -11,9 +11,7 @@ export const examplePolicy = {
   maximumDecompressionRatio: 10,
 };
 
-export function exampleRequest(
-  target: AcquisitionRequest["target"],
-): AcquisitionRequest {
+export function exampleRequest(target: AcquisitionRequest["target"]): AcquisitionRequest {
   return {
     tenantId: "11111111-1111-4111-8111-111111111111",
     purpose: "capture",

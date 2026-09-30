@@ -11,11 +11,7 @@ import {
   type VerificationOperationContextHints,
 } from "@aiengineer/knowledge-contracts";
 import { sha256Digest } from "@aiengineer/knowledge-core";
-import {
-  deterministicUuid,
-  parseEveRuntimeAttestation,
-  verifyEveRuntimeAttestation,
-} from "@aiengineer/knowledge-core";
+import { deterministicUuid, parseEveRuntimeAttestation, verifyEveRuntimeAttestation } from "@aiengineer/knowledge-core";
 import { createPublicKey } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
@@ -47,32 +43,34 @@ const OWNED_OPERATION_READ_SQL = `select o.mission_id,a.agent_deployment_id,
         join orchestration.work_item w on w.tenant_id=a.tenant_id and w.id=a.work_item_id and w.id=o.work_item_id and w.mission_id=o.mission_id
         where o.tenant_id=$1 and o.id=$2 and o.operation_kind=any($3::text[])`;
 
-const grantSchema = z.strictObject({
-  tenantId: z.uuid(),
-  actor: ActorSchema,
-  missionId: z.uuid(),
-  agentDeploymentId: z.string().min(1).max(255),
-  capabilityVersion: z.string().min(1).max(255),
-  externalExecution: ExternalExecutionContextSchema.optional(),
-  eveRuntimeAuthority: z
-    .strictObject({
-      grantId: z.string().trim().min(1).max(128),
-      issuer: z.string().trim().min(1).max(128),
-      keyIds: z
-        .array(z.string().trim().min(1).max(128))
-        .min(1)
-        .max(16)
-        .refine((value) => new Set(value).size === value.length, "duplicate Eve key ID"),
-    })
-    .optional(),
-}).superRefine((value, context) => {
-  if (value.externalExecution !== undefined && value.eveRuntimeAuthority !== undefined)
-    context.addIssue({
-      code: "custom",
-      path: ["eveRuntimeAuthority"],
-      message: "Eve authority and fixed external execution are mutually exclusive",
-    });
-});
+const grantSchema = z
+  .strictObject({
+    tenantId: z.uuid(),
+    actor: ActorSchema,
+    missionId: z.uuid(),
+    agentDeploymentId: z.string().min(1).max(255),
+    capabilityVersion: z.string().min(1).max(255),
+    externalExecution: ExternalExecutionContextSchema.optional(),
+    eveRuntimeAuthority: z
+      .strictObject({
+        grantId: z.string().trim().min(1).max(128),
+        issuer: z.string().trim().min(1).max(128),
+        keyIds: z
+          .array(z.string().trim().min(1).max(128))
+          .min(1)
+          .max(16)
+          .refine((value) => new Set(value).size === value.length, "duplicate Eve key ID"),
+      })
+      .optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.externalExecution !== undefined && value.eveRuntimeAuthority !== undefined)
+      context.addIssue({
+        code: "custom",
+        path: ["eveRuntimeAuthority"],
+        message: "Eve authority and fixed external execution are mutually exclusive",
+      });
+  });
 const eveKeySchema = z.strictObject({
   issuer: z.string().trim().min(1).max(128),
   keyId: z.string().trim().min(1).max(128),
@@ -83,9 +81,7 @@ type OwnershipGrant = z.infer<typeof grantSchema>;
 type EveAttestationKey = z.infer<typeof eveKeySchema>;
 type EveRuntimeAuthority = NonNullable<OwnershipGrant["eveRuntimeAuthority"]>;
 
-export type ResolveEveVerificationBinding = (
-  envelope: EveRuntimeAttestationEnvelope,
-) => Promise<unknown>;
+export type ResolveEveVerificationBinding = (envelope: EveRuntimeAttestationEnvelope) => Promise<unknown>;
 
 export interface VerificationOwnershipResolverOptions {
   readonly eveRuntimeAttestationKeysJson?: string;
@@ -94,17 +90,12 @@ export interface VerificationOwnershipResolverOptions {
 
 const verifiedEveRetries = new WeakMap<object, { readonly context: OperationContext; readonly observed: unknown }>();
 
-function headerString(
-  headers: Record<string, unknown>,
-  name: string,
-): string | undefined {
+function headerString(headers: Record<string, unknown>, name: string): string | undefined {
   const value = headers[name];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function externalExecutionFromRequest(request: {
-  readonly headers: Record<string, unknown>;
-}): unknown {
+function externalExecutionFromRequest(request: { readonly headers: Record<string, unknown> }): unknown {
   const fields = {
     runtime: headerString(request.headers, EXTERNAL_EXECUTION_HEADER_NAMES.runtime),
     runId: headerString(request.headers, EXTERNAL_EXECUTION_HEADER_NAMES.runId),
@@ -118,18 +109,12 @@ function externalExecutionFromRequest(request: {
 }
 
 /** Allows only the exact signed retry that the production resolver mapped for this request. */
-export function isVerifiedEveRuntimeRetry(
-  request: object,
-  context: OperationContext,
-): boolean {
+export function isVerifiedEveRuntimeRetry(request: object, context: OperationContext): boolean {
   const entry = verifiedEveRetries.get(request);
   return (
     entry !== undefined &&
     isDeepStrictEqual(entry.context, context) &&
-    isDeepStrictEqual(
-      entry.observed,
-      externalExecutionFromRequest(request as { headers: Record<string, unknown> }),
-    )
+    isDeepStrictEqual(entry.observed, externalExecutionFromRequest(request as { headers: Record<string, unknown> }))
   );
 }
 
@@ -142,17 +127,13 @@ function parseOwnershipGrants(rawGrants: string): OwnershipGrant[] {
     throw new Error("VERIFICATION_OWNERSHIP_CONFIG_TOO_LARGE");
   const grants = z.array(grantSchema).min(1).max(256).parse(JSON.parse(rawGrants));
   assertUniqueKeys(
-    grants.map(
-      (grant) => `${grant.tenantId}:${grant.actor.kind}:${grant.actor.id}:${grant.missionId}`,
-    ),
+    grants.map((grant) => `${grant.tenantId}:${grant.actor.kind}:${grant.actor.id}:${grant.missionId}`),
     "DUPLICATE_VERIFICATION_OWNERSHIP_GRANT",
   );
   return grants;
 }
 
-function parseEveRuntimeAttestationKeys(
-  raw: string | undefined,
-): readonly EveAttestationKey[] {
+function parseEveRuntimeAttestationKeys(raw: string | undefined): readonly EveAttestationKey[] {
   if (!raw?.trim()) return [];
   if (Buffer.byteLength(raw, "utf8") > OWNERSHIP_CONFIG_MAX_BYTES)
     throw new Error("VERIFICATION_EVE_RUNTIME_ATTESTATION_KEYS_TOO_LARGE");
@@ -193,8 +174,7 @@ function grantMatchesOwnedOperation(
     grant.missionId === row.mission_id &&
     grant.agentDeploymentId === row.agent_deployment_id &&
     grant.capabilityVersion === row.capability_version &&
-    (!grant.externalExecution ||
-      isDeepStrictEqual(grant.externalExecution, row.external_execution))
+    (!grant.externalExecution || isDeepStrictEqual(grant.externalExecution, row.external_execution))
   );
 }
 
@@ -205,16 +185,11 @@ export function createVerificationOperationReadAuthorizer(
   operationKinds: readonly string[] = ["verification_structured_extraction"],
 ) {
   const grants = parseOwnershipGrants(rawGrants);
-  if (
-    operationKinds.length < 1 ||
-    operationKinds.length > 16 ||
-    operationKinds.some((kind) => !kind.trim())
-  )
+  if (operationKinds.length < 1 || operationKinds.length > 16 || operationKinds.some((kind) => !kind.trim()))
     throw new Error("VERIFICATION_READ_OPERATION_KINDS_INVALID");
   return async (input: { tenantId: string; operationId: string; actor: Actor }) => {
     const matches = grants.filter(
-      (grant) =>
-        grant.tenantId === input.tenantId && actorsMatch(grant.actor, input.actor),
+      (grant) => grant.tenantId === input.tenantId && actorsMatch(grant.actor, input.actor),
     );
     if (matches.length === 0) return false;
     return store.transaction(input.tenantId, async (client) => {
@@ -224,29 +199,15 @@ export function createVerificationOperationReadAuthorizer(
           agent_deployment_id: string;
           capability_version: string;
           external_execution: unknown;
-        }>(OWNED_OPERATION_READ_SQL, [
-          input.tenantId,
-          input.operationId,
-          [...operationKinds],
-        ])
+        }>(OWNED_OPERATION_READ_SQL, [input.tenantId, input.operationId, [...operationKinds]])
       ).rows;
-      return (
-        rows.length === 1 &&
-        matches.some((grant) => grantMatchesOwnedOperation(grant, rows[0]!))
-      );
+      return rows.length === 1 && matches.some((grant) => grantMatchesOwnedOperation(grant, rows[0]!));
     });
   };
 }
 
-function operationIdFor(input: {
-  tenantId: string;
-  useCase: string;
-  idempotencyKey: string;
-}): string {
-  return deterministicUuid(
-    "verification-http-operation",
-    `${input.tenantId}:${input.useCase}:${input.idempotencyKey}`,
-  );
+function operationIdFor(input: { tenantId: string; useCase: string; idempotencyKey: string }): string {
+  return deterministicUuid("verification-http-operation", `${input.tenantId}:${input.useCase}:${input.idempotencyKey}`);
 }
 
 function payloadMatchesOwnedRequest(input: {
@@ -297,12 +258,7 @@ async function resolveEveExecution(args: {
 }): Promise<unknown | undefined> {
   const { grant, resolution } = args;
   const authority = grant.eveRuntimeAuthority;
-  if (
-    !authority ||
-    !resolution.request ||
-    !EVE_VERIFICATION_USE_CASES.has(resolution.useCase)
-  )
-    return undefined;
+  if (!authority || !resolution.request || !EVE_VERIFICATION_USE_CASES.has(resolution.useCase)) return undefined;
   const expectedOperationId = operationIdFor(resolution);
   if (
     resolution.hints.causationId !== undefined ||
@@ -310,11 +266,7 @@ async function resolveEveExecution(args: {
   )
     return undefined;
   const rawHeader = resolution.request.headers["x-eve-runtime-attestation"];
-  if (
-    typeof rawHeader !== "string" ||
-    rawHeader.length === 0 ||
-    rawHeader.length > EVE_ATTESTATION_HEADER_MAX_LENGTH
-  )
+  if (typeof rawHeader !== "string" || rawHeader.length === 0 || rawHeader.length > EVE_ATTESTATION_HEADER_MAX_LENGTH)
     return undefined;
   let envelope;
   try {
@@ -323,15 +275,9 @@ async function resolveEveExecution(args: {
     return undefined;
   }
   const key = args.keys.find(
-    (candidate) =>
-      candidate.issuer === envelope.payload.issuer &&
-      candidate.keyId === envelope.payload.keyId,
+    (candidate) => candidate.issuer === envelope.payload.issuer && candidate.keyId === envelope.payload.keyId,
   );
-  if (
-    !key ||
-    envelope.payload.issuer !== authority.issuer ||
-    !authority.keyIds.includes(envelope.payload.keyId)
-  )
+  if (!key || envelope.payload.issuer !== authority.issuer || !authority.keyIds.includes(envelope.payload.keyId))
     return undefined;
   let payload;
   try {

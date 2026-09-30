@@ -76,16 +76,16 @@ export class PostgresKnowledgeOperationService implements KnowledgeOperationPort
       operationKind: kind,
       idempotencyKey: envelope.context.idempotencyKey,
       ownershipMode: ownership.mode,
-      ...(verificationOwned ? {
-        attemptId: envelope.context.attemptId,
-        ...(envelope.context.workItemId ? { workItemId: envelope.context.workItemId } : {}),
-        ...(envelope.context.missionId ? { missionId: envelope.context.missionId } : {}),
-      } : {}),
+      ...(verificationOwned
+        ? {
+            attemptId: envelope.context.attemptId,
+            ...(envelope.context.workItemId ? { workItemId: envelope.context.workItemId } : {}),
+            ...(envelope.context.missionId ? { missionId: envelope.context.missionId } : {}),
+          }
+        : {}),
       ...(ownership.externalRunId ? { externalRunId: ownership.externalRunId } : {}),
       correlationId: databaseUuid("correlation", envelope.context.correlationId),
-      ...(envelope.context.causationId
-        ? { causationId: databaseUuid("causation", envelope.context.causationId) }
-        : {}),
+      ...(envelope.context.causationId ? { causationId: databaseUuid("causation", envelope.context.causationId) } : {}),
       actorIdentity: `${envelope.context.actor.kind}:${envelope.context.actor.id}`,
       request,
       steps: stepNames.map((name, ordinal) => ({
@@ -130,19 +130,31 @@ export class PostgresKnowledgeOperationService implements KnowledgeOperationPort
     return events?.map((event) => ({ ...event, payloadDigest: sha256Digest(event.payload as JsonValue) }));
   }
 
-  async cancel(operationId: string, tenantId?: string, context?: OperationContext): Promise<OperationStatus | undefined> {
+  async cancel(
+    operationId: string,
+    tenantId?: string,
+    context?: OperationContext,
+  ): Promise<OperationStatus | undefined> {
     if (!tenantId || !context) return undefined;
     const record = await this.repository.cancelOperation(tenantId, operationId, controlFrom(context));
     return record ? this.#status(record) : undefined;
   }
 
-  async retry(operationId: string, tenantId?: string, context?: OperationContext): Promise<OperationStatus | undefined> {
+  async retry(
+    operationId: string,
+    tenantId?: string,
+    context?: OperationContext,
+  ): Promise<OperationStatus | undefined> {
     if (!tenantId || !context) return undefined;
     const record = await this.repository.retryOperation(tenantId, operationId, controlFrom(context));
     return record ? this.#status(record) : undefined;
   }
 
-  async reconcile(operationId: string, tenantId?: string, _context?: OperationContext): Promise<OperationStatus | undefined> {
+  async reconcile(
+    operationId: string,
+    tenantId?: string,
+    _context?: OperationContext,
+  ): Promise<OperationStatus | undefined> {
     if (!tenantId) return undefined;
     const record = await this.repository.reconcileOperation(tenantId, operationId);
     return record ? this.#status(record) : undefined;
@@ -154,7 +166,13 @@ export class PostgresKnowledgeOperationService implements KnowledgeOperationPort
     if (!request || !kind.success || request.kind !== kind.data || !isWireState(record.status)) return undefined;
     const steps = await this.repository.listSteps(record.tenantId, record.id);
     const context = contextFromSteps(steps);
-    if (!context || context.operationId !== record.id || context.tenantId !== record.tenantId || context.idempotencyKey !== record.idempotencyKey) return undefined;
+    if (
+      !context ||
+      context.operationId !== record.id ||
+      context.tenantId !== record.tenantId ||
+      context.idempotencyKey !== record.idempotencyKey
+    )
+      return undefined;
     const receipts = await this.repository.listReceipts(record.tenantId, record.id);
     const failure = operationFailureSummary(receipts, record.status);
     return {
@@ -162,7 +180,11 @@ export class PostgresKnowledgeOperationService implements KnowledgeOperationPort
       kind: kind.data,
       state: record.status,
       context,
-      inputDigest: sha256Digest({ kind: request.kind, input: request.input, expectedVersions: request.expectedVersions }),
+      inputDigest: sha256Digest({
+        kind: request.kind,
+        input: request.input,
+        expectedVersions: request.expectedVersions,
+      }),
       rowVersion: record.rowVersion + 1,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -172,41 +194,73 @@ export class PostgresKnowledgeOperationService implements KnowledgeOperationPort
   }
 }
 
-const failureClassification: Readonly<Record<string, Pick<OperationFailureSummary, "category" | "qualityFailure">>> = Object.freeze({
-  PROVIDER_HTTP_FAILURE: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_HTTP_FAILURE_CAPTURED: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_NETWORK_FAILURE: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_RESPONSE_INVALID: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_RESPONSE_TOO_LARGE: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_RESPONSE_SCHEMA_INVALID: { category: "provider_upstream_failure", qualityFailure: false },
-  PROVIDER_OUTPUT_SCHEMA_INVALID_CAPTURED: { category: "judge_output_failure", qualityFailure: false },
-  PROVIDER_AUTHENTICATION_FAILURE: { category: "provider_authentication_failure", qualityFailure: false },
-  PROVIDER_KEY_REQUIRED: { category: "provider_authentication_failure", qualityFailure: false },
-  PROVIDER_RATE_LIMIT: { category: "provider_rate_limit", qualityFailure: false },
-  PROVIDER_DEADLINE_EXCEEDED: { category: "provider_timeout", qualityFailure: false },
-  PROVIDER_CANCELLED: { category: "cancelled", qualityFailure: false },
-  PROVIDER_CONFIGURATION_INVALID: { category: "harness_failure", qualityFailure: false },
-  PROVIDER_UNSUPPORTED_TASK: { category: "harness_failure", qualityFailure: false },
-  PROVIDER_ARTIFACT_PERSISTENCE_FAILURE: { category: "artifact_registration_failure", qualityFailure: false },
-  PROVIDER_INPUT_POLICY_REJECTED: { category: "policy_rejection", qualityFailure: false },
-  POLICY_OVERRIDE_FAIL_CLOSED: { category: "policy_rejection", qualityFailure: false },
-});
+const failureClassification: Readonly<Record<string, Pick<OperationFailureSummary, "category" | "qualityFailure">>> =
+  Object.freeze({
+    PROVIDER_HTTP_FAILURE: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_HTTP_FAILURE_CAPTURED: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_NETWORK_FAILURE: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_RESPONSE_INVALID: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_RESPONSE_TOO_LARGE: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_RESPONSE_SCHEMA_INVALID: { category: "provider_upstream_failure", qualityFailure: false },
+    PROVIDER_OUTPUT_SCHEMA_INVALID_CAPTURED: { category: "judge_output_failure", qualityFailure: false },
+    PROVIDER_AUTHENTICATION_FAILURE: { category: "provider_authentication_failure", qualityFailure: false },
+    PROVIDER_KEY_REQUIRED: { category: "provider_authentication_failure", qualityFailure: false },
+    PROVIDER_RATE_LIMIT: { category: "provider_rate_limit", qualityFailure: false },
+    PROVIDER_DEADLINE_EXCEEDED: { category: "provider_timeout", qualityFailure: false },
+    PROVIDER_CANCELLED: { category: "cancelled", qualityFailure: false },
+    PROVIDER_CONFIGURATION_INVALID: { category: "harness_failure", qualityFailure: false },
+    PROVIDER_UNSUPPORTED_TASK: { category: "harness_failure", qualityFailure: false },
+    PROVIDER_ARTIFACT_PERSISTENCE_FAILURE: { category: "artifact_registration_failure", qualityFailure: false },
+    PROVIDER_INPUT_POLICY_REJECTED: { category: "policy_rejection", qualityFailure: false },
+    POLICY_OVERRIDE_FAIL_CLOSED: { category: "policy_rejection", qualityFailure: false },
+  });
 
 /** Only canonical failure receipts are trusted; unknown exact classes deliberately remain harness failures. */
-const publicErrorClass = (value: unknown): value is string => typeof value === "string" && /^[A-Z][A-Z0-9_]{2,79}$/u.test(value);
+const publicErrorClass = (value: unknown): value is string =>
+  typeof value === "string" && /^[A-Z][A-Z0-9_]{2,79}$/u.test(value);
 
-export function operationFailureSummary(receipts: readonly { readonly id: string; readonly receiptKind: string; readonly outcome: string; readonly body: unknown }[], terminalState: string): OperationFailureSummary | undefined {
+export function operationFailureSummary(
+  receipts: readonly {
+    readonly id: string;
+    readonly receiptKind: string;
+    readonly outcome: string;
+    readonly body: unknown;
+  }[],
+  terminalState: string,
+): OperationFailureSummary | undefined {
   if (terminalState !== "failed") return undefined;
-  const receipt = [...receipts].reverse().find((candidate) => candidate.receiptKind === "failure" && candidate.outcome === "failed");
-  if (!receipt || !isRecord(receipt.body) || !publicErrorClass(receipt.body.errorClass) || typeof receipt.body.retryable !== "boolean") return undefined;
-  const classification = failureClassification[receipt.body.errorClass] ?? { category: "harness_failure" as const, qualityFailure: false };
-  return { receiptId: receipt.id, errorClass: receipt.body.errorClass, retryable: receipt.body.retryable, ...classification };
+  const receipt = [...receipts]
+    .reverse()
+    .find((candidate) => candidate.receiptKind === "failure" && candidate.outcome === "failed");
+  if (
+    !receipt ||
+    !isRecord(receipt.body) ||
+    !publicErrorClass(receipt.body.errorClass) ||
+    typeof receipt.body.retryable !== "boolean"
+  )
+    return undefined;
+  const classification = failureClassification[receipt.body.errorClass] ?? {
+    category: "harness_failure" as const,
+    qualityFailure: false,
+  };
+  return {
+    receiptId: receipt.id,
+    errorClass: receipt.body.errorClass,
+    retryable: receipt.body.retryable,
+    ...classification,
+  };
 }
 
 function parseDurableRequest(value: unknown): DurableOperationRequest | undefined {
   if (!isRecord(value) || value.schemaVersion !== KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION) return undefined;
   const kind = OperationKindSchema.safeParse(value.kind);
-  if (!kind.success || !("input" in value) || !isStringRecord(value.expectedVersions) || Object.keys(value.expectedVersions).length === 0) return undefined;
+  if (
+    !kind.success ||
+    !("input" in value) ||
+    !isStringRecord(value.expectedVersions) ||
+    Object.keys(value.expectedVersions).length === 0
+  )
+    return undefined;
   return {
     schemaVersion: KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION,
     kind: kind.data,
@@ -217,7 +271,8 @@ function parseDurableRequest(value: unknown): DurableOperationRequest | undefine
 
 function contextFromSteps(steps: readonly CanonicalStep[]): OperationContext | undefined {
   for (const candidate of steps) {
-    if (!isRecord(candidate.input) || candidate.input.schemaVersion !== KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION) continue;
+    if (!isRecord(candidate.input) || candidate.input.schemaVersion !== KNOWLEDGE_OPERATION_REQUEST_SCHEMA_VERSION)
+      continue;
     const parsed = OperationContextSchema.safeParse(candidate.input.context);
     if (parsed.success) return parsed.data;
   }
@@ -238,7 +293,10 @@ function acceptedOperation(id: string, origin: string): AcceptedOperation {
   };
 }
 
-function ownershipFrom(envelope: MutationEnvelope): { mode: "standalone" | "mission_control" | "eve"; externalRunId?: string } {
+function ownershipFrom(envelope: MutationEnvelope): {
+  mode: "standalone" | "mission_control" | "eve";
+  externalRunId?: string;
+} {
   const external = envelope.context.externalExecution;
   if (external?.runtime === "eve") return { mode: "eve", externalRunId: external.runId };
   if (external?.runtime === "mission_control") return { mode: "mission_control", externalRunId: external.runId };
@@ -260,7 +318,7 @@ function databaseUuid(namespace: string, value: string): string {
 }
 
 function isWireState(value: string): value is OperationStatus["state"] {
-  return ["queued","running","needs_review","quarantined","succeeded","failed","cancelled"].includes(value);
+  return ["queued", "running", "needs_review", "quarantined", "succeeded", "failed", "cancelled"].includes(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

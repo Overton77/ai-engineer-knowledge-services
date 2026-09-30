@@ -6,8 +6,15 @@ export const createdAt = "2026-09-03T12:00:00Z";
 export const digest = (character: string) => `sha256:${character.repeat(64)}` as const;
 
 export const manifests: PublicationManifests = {
-  source: digest("1"), representation: digest("2"), chunkSet: digest("3"), projection: digest("4"), vectorItem: digest("5"),
-  embedding: digest("6"), index: digest("7"), retrievalPolicy: digest("8"), evaluation: digest("9"),
+  source: digest("1"),
+  representation: digest("2"),
+  chunkSet: digest("3"),
+  projection: digest("4"),
+  vectorItem: digest("5"),
+  embedding: digest("6"),
+  index: digest("7"),
+  retrievalPolicy: digest("8"),
+  evaluation: digest("9"),
 };
 
 export const vector = (entries: Readonly<Record<number, number>>) => {
@@ -16,10 +23,21 @@ export const vector = (entries: Readonly<Record<number, number>>) => {
   return value;
 };
 
-export function baseInspection(vectorSpaceVersionId: string, overrides: Partial<PublicationInspection> = {}): PublicationInspection {
+export function baseInspection(
+  vectorSpaceVersionId: string,
+  overrides: Partial<PublicationInspection> = {},
+): PublicationInspection {
   return {
-    vectorSpaceVersionId, itemCount: 2, dimensions: 1_536, precision: "halfvec", manifests,
-    indexReady: true, authorizationPassed: true, evaluationPassed: true, sampleSearchPassed: true, ...overrides,
+    vectorSpaceVersionId,
+    itemCount: 2,
+    dimensions: 1_536,
+    precision: "halfvec",
+    manifests,
+    indexReady: true,
+    authorizationPassed: true,
+    evaluationPassed: true,
+    sampleSearchPassed: true,
+    ...overrides,
   };
 }
 

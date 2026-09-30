@@ -38,7 +38,7 @@ export * from "./verification-adjudication-reads.js";
 export * from "./verification-audit-runtime.js";
 export * from "./verification-adjudication-runtime.js";
 
-export * from './verification-semantic-observation.js';
+export * from "./verification-semantic-observation.js";
 export * from "./verification-drift-revalidation-outbox.js";
 
 export * from "./verification-semantic-observation-store.js";
@@ -54,12 +54,11 @@ export * from "./verification-semantic-reconciliation-read.js";
 
 export * from "./verification-capture-reads.js";
 
-
-export * from './eve-verification-binding.js';
-export * from './verification-adjudication-decision-preparation.js';
-export * from './verification-adjudication-decision.js';
-export * from './verification-adjudication-decision-reads.js';
-export * from './source-discovery.js';
+export * from "./eve-verification-binding.js";
+export * from "./verification-adjudication-decision-preparation.js";
+export * from "./verification-adjudication-decision.js";
+export * from "./verification-adjudication-decision-reads.js";
+export * from "./source-discovery.js";
 
 export * from "./checkpoints.js";
 export * from "./verification-recovery-durable.js";

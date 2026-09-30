@@ -1,4 +1,13 @@
-import type { CheckpointCommitRequest, CheckpointManifest, CheckpointOperationOutcome, CheckpointPendingOperation, CheckpointProfilePins, CheckpointReceipt, CheckpointScope, VerificationArtifactHandle, } from "@aiengineer/knowledge-contracts";
+import type {
+  CheckpointCommitRequest,
+  CheckpointManifest,
+  CheckpointOperationOutcome,
+  CheckpointPendingOperation,
+  CheckpointProfilePins,
+  CheckpointReceipt,
+  CheckpointScope,
+  VerificationArtifactHandle,
+} from "@aiengineer/knowledge-contracts";
 export interface CheckpointCustody {
   validateExecutorState(input: {
     tenantId: string;
@@ -11,13 +20,13 @@ export interface CheckpointCustody {
     artifact: VerificationArtifactHandle;
     pendingOperations: readonly CheckpointPendingOperation[];
   }): Promise<void>;
-  resolve(input: {
-    tenantId: string;
-    artifactId: string;
-  }): Promise<{
-    handle: VerificationArtifactHandle;
-    bytes: Uint8Array;
-  } | undefined>;
+  resolve(input: { tenantId: string; artifactId: string }): Promise<
+    | {
+        handle: VerificationArtifactHandle;
+        bytes: Uint8Array;
+      }
+    | undefined
+  >;
   registerManifest(input: {
     tenantId: string;
     manifest: CheckpointManifest;
@@ -46,11 +55,7 @@ export interface CheckpointStoredRecord {
   readonly requestDigest: string;
 }
 export interface CheckpointStore {
-  ensureScope(input: {
-    tenantId: string;
-    scopeId: string;
-    scope: CheckpointScope;
-  }): Promise<void>;
+  ensureScope(input: { tenantId: string; scopeId: string; scope: CheckpointScope }): Promise<void>;
   findScopeBySession(input: {
     tenantId: string;
     runId: string;
@@ -62,14 +67,8 @@ export interface CheckpointStore {
     scopeId: string;
     idempotencyKey: string;
   }): Promise<CheckpointStoredRecord | undefined>;
-  read(input: {
-    tenantId: string;
-    checkpointId: string;
-  }): Promise<CheckpointStoredRecord | undefined>;
-  head(input: {
-    tenantId: string;
-    scopeId: string;
-  }): Promise<CheckpointReceipt | undefined>;
+  read(input: { tenantId: string; checkpointId: string }): Promise<CheckpointStoredRecord | undefined>;
+  head(input: { tenantId: string; scopeId: string }): Promise<CheckpointReceipt | undefined>;
   commit(input: {
     tenantId: string;
     scopeId: string;
@@ -78,14 +77,11 @@ export interface CheckpointStore {
     manifestArtifact: VerificationArtifactHandle;
     closure: readonly VerificationArtifactHandle[];
   }): Promise<CheckpointReceipt>;
-  pinReconciledArtifacts(input: { tenantId: string; checkpointId: string; artifactIds: readonly string[] }): Promise<void>;
-  assertLive(input: {
+  pinReconciledArtifacts(input: {
     tenantId: string;
+    checkpointId: string;
     artifactIds: readonly string[];
   }): Promise<void>;
-  tombstone(input: {
-    tenantId: string;
-    artifactId: string;
-    reason: string;
-  }): Promise<void>;
+  assertLive(input: { tenantId: string; artifactIds: readonly string[] }): Promise<void>;
+  tombstone(input: { tenantId: string; artifactId: string; reason: string }): Promise<void>;
 }

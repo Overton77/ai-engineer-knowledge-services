@@ -21,7 +21,14 @@ describe("versioned knowledge skills", () => {
     const root = await repositoryRoot();
     const manifest = JSON.parse(await readFile(join(root, "skills", "manifest.json"), "utf8")) as {
       contractVersion: string;
-      skills: Array<{ id: string; version: string; path: string; surfaces: string[]; operations: string[]; requireCatalogPrefix?: string[] }>;
+      skills: Array<{
+        id: string;
+        version: string;
+        path: string;
+        surfaces: string[];
+        operations: string[];
+        requireCatalogPrefix?: string[];
+      }>;
     };
     expect(manifest.contractVersion).toBe("v1");
     expect(manifest.skills.map(({ id, version }) => ({ id, version }))).toEqual([
@@ -51,7 +58,7 @@ describe("versioned knowledge skills", () => {
         expect(markdown).toContain('contract: "knowledge-jev/v1"');
         expect(skill.surfaces).toEqual(["jev-cli", "jev-mcp", "jev-http"]);
         const mcpSource = await readFile(join(root, "apps/jev/src/mcp.ts"), "utf8");
-        const implementedTools = [...mcpSource.matchAll(/registerTool\(\s*"(jev_[a-z_]+)"/g)].map(match => match[1]);
+        const implementedTools = [...mcpSource.matchAll(/registerTool\(\s*"(jev_[a-z_]+)"/g)].map((match) => match[1]);
         expect(implementedTools).toHaveLength(6);
         expect([...skill.operations].sort()).toEqual(implementedTools.sort());
         expect(skill.requireCatalogPrefix).toEqual(["jev_"]);

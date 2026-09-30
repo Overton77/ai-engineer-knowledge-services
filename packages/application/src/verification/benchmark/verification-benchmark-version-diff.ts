@@ -1,6 +1,10 @@
 import { VerificationBenchmarkDatasetSchema, type VerificationBenchmarkDataset } from "@aiengineer/knowledge-contracts";
 import { deepFreeze } from "@aiengineer/knowledge-core";
-import { assertFrozenVerificationBenchmarkDataset, diffVerificationBenchmarkDatasets, verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
+import {
+  assertFrozenVerificationBenchmarkDataset,
+  diffVerificationBenchmarkDatasets,
+  verificationBenchmarkDigest,
+} from "@aiengineer/knowledge-evaluation";
 
 type Digest = `sha256:${string}`;
 const maximumDatasetBytes = 8 * 1024 * 1024;
@@ -14,14 +18,20 @@ export interface VerificationBenchmarkVersionDiffInput {
   readonly proposedManifestDigest: string;
 }
 
-const pendingReviewCount = (dataset: VerificationBenchmarkDataset) => dataset.cases.filter((item) => item.expectation.labelStatus !== "expert_adjudicated").length;
-const humanGoldCount = (dataset: VerificationBenchmarkDataset) => dataset.cases.filter((item) => item.humanGoldScoringEligible).length;
+const pendingReviewCount = (dataset: VerificationBenchmarkDataset) =>
+  dataset.cases.filter((item) => item.expectation.labelStatus !== "expert_adjudicated").length;
+const humanGoldCount = (dataset: VerificationBenchmarkDataset) =>
+  dataset.cases.filter((item) => item.humanGoldScoringEligible).length;
 
 function parseFrozenDataset(value: unknown, role: "previous" | "proposed"): VerificationBenchmarkDataset {
   let bytes: number;
-  try { bytes = new TextEncoder().encode(JSON.stringify(value)).byteLength; }
-  catch { throw new Error(`BENCHMARK_VERSION_DIFF_${role.toUpperCase()}_DATASET_ENCODING_INVALID`); }
-  if (bytes < 2 || bytes > maximumDatasetBytes) throw new Error(`BENCHMARK_VERSION_DIFF_${role.toUpperCase()}_DATASET_BOUND_EXCEEDED`);
+  try {
+    bytes = new TextEncoder().encode(JSON.stringify(value)).byteLength;
+  } catch {
+    throw new Error(`BENCHMARK_VERSION_DIFF_${role.toUpperCase()}_DATASET_ENCODING_INVALID`);
+  }
+  if (bytes < 2 || bytes > maximumDatasetBytes)
+    throw new Error(`BENCHMARK_VERSION_DIFF_${role.toUpperCase()}_DATASET_BOUND_EXCEEDED`);
   const dataset = VerificationBenchmarkDatasetSchema.parse(structuredClone(value));
   assertFrozenVerificationBenchmarkDataset(dataset);
   return deepFreeze(dataset);
@@ -32,10 +42,15 @@ function parseFrozenDataset(value: unknown, role: "previous" | "proposed"): Veri
  * files nor proposes, labels, approves, captures, or persists a version.
  */
 export function prepareVerificationBenchmarkVersionDiff(input: VerificationBenchmarkVersionDiffInput) {
-  if (!digest(input.previousManifestDigest) || !digest(input.proposedManifestDigest)) throw new Error("BENCHMARK_VERSION_DIFF_MANIFEST_REFERENCE_INVALID");
+  if (!digest(input.previousManifestDigest) || !digest(input.proposedManifestDigest))
+    throw new Error("BENCHMARK_VERSION_DIFF_MANIFEST_REFERENCE_INVALID");
   const previous = parseFrozenDataset(input.previousDataset, "previous");
   const proposed = parseFrozenDataset(input.proposedDataset, "proposed");
-  if (previous.manifestDigest !== input.previousManifestDigest || proposed.manifestDigest !== input.proposedManifestDigest) throw new Error("BENCHMARK_VERSION_DIFF_MANIFEST_REFERENCE_MISMATCH");
+  if (
+    previous.manifestDigest !== input.previousManifestDigest ||
+    proposed.manifestDigest !== input.proposedManifestDigest
+  )
+    throw new Error("BENCHMARK_VERSION_DIFF_MANIFEST_REFERENCE_MISMATCH");
   const caseDiff = diffVerificationBenchmarkDatasets(previous, proposed);
   const material = {
     schemaVersion: "verification-benchmark-version-diff.v1" as const,

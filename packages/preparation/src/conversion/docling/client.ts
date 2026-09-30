@@ -12,11 +12,7 @@ import {
 } from "../http/fetch.js";
 
 export interface DoclingServeClient {
-  convert(input: {
-    bytes: Uint8Array;
-    mediaType: string;
-    profileDigest: string;
-  }): Promise<{
+  convert(input: { bytes: Uint8Array; mediaType: string; profileDigest: string }): Promise<{
     native: Uint8Array;
     markdown: string;
     plainText: string;
@@ -43,10 +39,8 @@ const SUFFIX_BY_MEDIA_TYPE: Readonly<Record<string, string>> = {
   "text/plain": "txt",
   "text/vtt": "vtt",
   "application/json": "json",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    "docx",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-    "pptx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
 };
 
 const DEFAULT_CONVERT_PATH = "/v1/convert/file";
@@ -63,11 +57,7 @@ function assertPositiveSafeInteger(value: number, errorCode: string): void {
   }
 }
 
-function positiveEnvironmentInteger(
-  environment: DoclingServeEnvironment,
-  name: string,
-  fallback: number,
-): number {
+function positiveEnvironmentInteger(environment: DoclingServeEnvironment, name: string, fallback: number): number {
   const raw = environment[name]?.trim();
   if (!raw) return fallback;
   const value = Number(raw);
@@ -78,28 +68,16 @@ function positiveEnvironmentInteger(
 }
 
 function assertDoclingHttpConfig(config: DoclingServeHttpConfig): void {
-  assertPositiveSafeInteger(
-    config.maximumResultBytes,
-    "DOCLING_INVALID_RESULT_LIMIT",
-  );
+  assertPositiveSafeInteger(config.maximumResultBytes, "DOCLING_INVALID_RESULT_LIMIT");
   if (config.requestTimeoutMs !== undefined) {
-    assertPositiveSafeInteger(
-      config.requestTimeoutMs,
-      "DOCLING_INVALID_TIMEOUT",
-    );
+    assertPositiveSafeInteger(config.requestTimeoutMs, "DOCLING_INVALID_TIMEOUT");
   }
-  if (
-    config.convertPath !== undefined &&
-    !CONVERT_PATH_PATTERN.test(config.convertPath)
-  ) {
+  if (config.convertPath !== undefined && !CONVERT_PATH_PATTERN.test(config.convertPath)) {
     throw new Error("DOCLING_INVALID_CONVERT_PATH");
   }
 }
 
-function buildConvertForm(
-  input: DoclingConvertInput,
-  doOcr: boolean,
-): FormData {
+function buildConvertForm(input: DoclingConvertInput, doOcr: boolean): FormData {
   const form = new FormData();
   const suffix = SUFFIX_BY_MEDIA_TYPE[input.mediaType] ?? DEFAULT_FILE_SUFFIX;
   form.append(
@@ -133,24 +111,15 @@ function parseDoclingOutput(native: Uint8Array): DoclingConvertOutput {
   if (!isJsonRecord(value.document)) {
     throw new Error("DOCLING_INVALID_OUTPUT");
   }
-  const markdown =
-    typeof value.document.md_content === "string"
-      ? value.document.md_content
-      : "";
-  const plainText =
-    typeof value.document.text_content === "string"
-      ? value.document.text_content
-      : markdown;
+  const markdown = typeof value.document.md_content === "string" ? value.document.md_content : "";
+  const plainText = typeof value.document.text_content === "string" ? value.document.text_content : markdown;
   if (!markdown.trim() && !plainText.trim()) {
     throw new Error("DOCLING_EMPTY_OUTPUT");
   }
   if (value.document.json_content === undefined) {
     throw new Error("DOCLING_INVALID_OUTPUT");
   }
-  const jobId =
-    typeof value.task_id === "string" && value.task_id
-      ? value.task_id
-      : undefined;
+  const jobId = typeof value.task_id === "string" && value.task_id ? value.task_id : undefined;
   return {
     native,
     markdown: markdown || plainText,
@@ -174,31 +143,20 @@ export class HttpDoclingServeClient implements DoclingServeClient {
   async convert(input: DoclingConvertInput): Promise<DoclingConvertOutput> {
     const headers = new Headers({ accept: "application/json" });
     if (this.config.apiKey?.trim()) headers.set("x-api-key", this.config.apiKey);
-    const response = await this.fetcher(
-      `${this.#baseUrl}${this.config.convertPath ?? DEFAULT_CONVERT_PATH}`,
-      {
-        method: "POST",
-        headers,
-        body: buildConvertForm(input, this.config.doOcr ?? DEFAULT_DO_OCR),
-        ...(this.config.requestTimeoutMs === undefined
-          ? {}
-          : { signal: AbortSignal.timeout(this.config.requestTimeoutMs) }),
-      },
-    );
+    const response = await this.fetcher(`${this.#baseUrl}${this.config.convertPath ?? DEFAULT_CONVERT_PATH}`, {
+      method: "POST",
+      headers,
+      body: buildConvertForm(input, this.config.doOcr ?? DEFAULT_DO_OCR),
+      ...(this.config.requestTimeoutMs === undefined
+        ? {}
+        : { signal: AbortSignal.timeout(this.config.requestTimeoutMs) }),
+    });
     if (!response.ok) throw new Error(`DOCLING_HTTP_${response.status}`);
-    return parseDoclingOutput(
-      await readBounded(
-        response,
-        this.config.maximumResultBytes,
-        "DOCLING_RESULT_SIZE_LIMIT",
-      ),
-    );
+    return parseDoclingOutput(await readBounded(response, this.config.maximumResultBytes, "DOCLING_RESULT_SIZE_LIMIT"));
   }
 }
 
-export type DoclingServeEnvironment = Readonly<
-  Record<string, string | undefined>
->;
+export type DoclingServeEnvironment = Readonly<Record<string, string | undefined>>;
 
 /** Constructs the Docling client without exposing resolved configuration outside the provider boundary. */
 export function createDoclingServeClientFromEnvironment(
@@ -208,9 +166,7 @@ export function createDoclingServeClientFromEnvironment(
   return new HttpDoclingServeClient(
     {
       baseUrl: environment.DOCLING_BASE_URL?.trim() || DEFAULT_DOCLING_BASE_URL,
-      ...(environment.DOCLING_API_KEY?.trim()
-        ? { apiKey: environment.DOCLING_API_KEY.trim() }
-        : {}),
+      ...(environment.DOCLING_API_KEY?.trim() ? { apiKey: environment.DOCLING_API_KEY.trim() } : {}),
       maximumResultBytes: positiveEnvironmentInteger(
         environment,
         "DOCLING_MAXIMUM_RESULT_BYTES",

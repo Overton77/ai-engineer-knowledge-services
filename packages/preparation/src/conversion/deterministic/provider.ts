@@ -1,19 +1,8 @@
 import type { ArtifactStore } from "@aiengineer/knowledge-core";
-import {
-  conversionOutputReceiptDigest,
-  conversionRequestDigests,
-  putConversionArtifacts,
-} from "../artifacts.js";
-import {
-  DETERMINISTIC_PROVIDER_KEY,
-  DETERMINISTIC_PROVIDER_VERSION,
-} from "../constants.js";
+import { conversionOutputReceiptDigest, conversionRequestDigests, putConversionArtifacts } from "../artifacts.js";
+import { DETERMINISTIC_PROVIDER_KEY, DETERMINISTIC_PROVIDER_VERSION } from "../constants.js";
 import { isDeterministicTextMediaType } from "../media-type.js";
-import type {
-  ConversionOutput,
-  ConversionRequest,
-  DocumentConversionProvider,
-} from "../types.js";
+import type { ConversionOutput, ConversionRequest, DocumentConversionProvider } from "../types.js";
 import { inspectConversion } from "./inspect.js";
 import { convertTextToNodes } from "./nodes.js";
 
@@ -22,9 +11,7 @@ const encoder = new TextEncoder();
 const DOCUMENT_JSON_MEDIA_TYPE = "application/vnd.aiengineer.document+json";
 const DETERMINISTIC_OBSERVATION = 1;
 
-export class DeterministicTextConversionProvider
-  implements DocumentConversionProvider
-{
+export class DeterministicTextConversionProvider implements DocumentConversionProvider {
   readonly providerKey = DETERMINISTIC_PROVIDER_KEY;
   readonly version = DETERMINISTIC_PROVIDER_VERSION;
 
@@ -35,18 +22,11 @@ export class DeterministicTextConversionProvider
   }
 
   async convert(request: ConversionRequest): Promise<ConversionOutput> {
-    const bytes = await this.artifacts.get(
-      request.tenantId,
-      request.sourceArtifact.digest,
-    );
+    const bytes = await this.artifacts.get(request.tenantId, request.sourceArtifact.digest);
     if (!bytes) throw new Error("SOURCE_ARTIFACT_NOT_FOUND");
     const input = decoder.decode(bytes);
     const { profileDigest, requestDigest } = conversionRequestDigests(request);
-    const converted = convertTextToNodes(
-      input,
-      request.profile.mediaType,
-      requestDigest,
-    );
+    const converted = convertTextToNodes(input, request.profile.mediaType, requestDigest);
     const stored = await putConversionArtifacts({
       artifacts: this.artifacts,
       tenantId: request.tenantId,
@@ -57,11 +37,7 @@ export class DeterministicTextConversionProvider
       markdown: converted.markdown,
       plainText: converted.plainText,
     });
-    const inspected = inspectConversion(
-      input,
-      converted.markdown,
-      converted.nodes,
-    );
+    const inspected = inspectConversion(input, converted.markdown, converted.nodes);
     return {
       providerKey: this.providerKey,
       providerVersion: this.version,
@@ -77,11 +53,7 @@ export class DeterministicTextConversionProvider
         providerKey: this.providerKey,
         version: this.version,
         requestDigest,
-        outputDigests: [
-          stored.native.digest,
-          stored.markdown.digest,
-          stored.plain.digest,
-        ],
+        outputDigests: [stored.native.digest, stored.markdown.digest, stored.plain.digest],
       }),
       observations: { deterministic: DETERMINISTIC_OBSERVATION },
     };

@@ -23,11 +23,17 @@ describe("local knowledge host composition", () => {
     try {
       expect(services?.config.defaultTenantId).toBe(loadExecutorConfig(env).tenantId);
       expect(services?.config.evidenceOracle).toBe("verification-store");
-    } finally { await services?.close(); }
+    } finally {
+      await services?.close();
+    }
     const executor = await VerificationExecutor.create(loadExecutorConfig(env));
     const reused = await createKnowledgeFromEnv(env, executor);
     await reused?.close();
-    await expect(createKnowledgeFromEnv({ ...env, KNOWLEDGE_TENANT_ID: "00000000-0000-4000-8000-000000000099" }, executor)).rejects.toThrow("EVIDENCE_NOT_AUTHORIZED");
-    await expect(createKnowledgeFromEnv({ ...env, KNOWLEDGE_EVIDENCE_ORACLE: "declared" }, executor)).rejects.toThrow("EVIDENCE_ORACLE_REQUIRED");
+    await expect(
+      createKnowledgeFromEnv({ ...env, KNOWLEDGE_TENANT_ID: "00000000-0000-4000-8000-000000000099" }, executor),
+    ).rejects.toThrow("EVIDENCE_NOT_AUTHORIZED");
+    await expect(createKnowledgeFromEnv({ ...env, KNOWLEDGE_EVIDENCE_ORACLE: "declared" }, executor)).rejects.toThrow(
+      "EVIDENCE_ORACLE_REQUIRED",
+    );
   });
 });

@@ -1,12 +1,5 @@
 import { ConversionRouter } from "../../src/index.js";
-import {
-  countingProvider,
-  exampleStore,
-  pdfRequest,
-  printJson,
-  stubOutput,
-  unusedTextProvider,
-} from "./helpers.js";
+import { countingProvider, exampleStore, pdfRequest, printJson, stubOutput, unusedTextProvider } from "./helpers.js";
 
 export async function runPdfDoclingExample() {
   const store = exampleStore();

@@ -83,20 +83,15 @@ describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")(
         "x-tenant-id": tenantId,
         "x-correlation-id": context.correlationId,
       };
-      const resolver = (candidate: string) =>
-        candidate === token ? identity : undefined;
+      const resolver = (candidate: string) => (candidate === token ? identity : undefined);
       const secretResolver = (candidateTenant: string, reference: string) =>
-        candidateTenant === tenantId && reference === signingKeyReference
-          ? secret
-          : undefined;
+        candidateTenant === tenantId && reference === signingKeyReference ? secret : undefined;
 
       const firstRepository = new PostgresCanonicalRepository({
         connectionString,
         localOnly: true,
       });
-      const firstOperations = new PostgresKnowledgeOperationService(
-        firstRepository,
-      );
+      const firstOperations = new PostgresKnowledgeOperationService(firstRepository);
       const firstApi = buildServer({
         operationService: firstOperations,
         resolveIdentity: resolver,
@@ -115,10 +110,7 @@ describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")(
             })
           ).statusCode,
         ).toBe(202);
-        const callback = new A2AKnowledgeAdapter(
-          firstOperations,
-          "https://knowledge.example",
-        ).callback(
+        const callback = new A2AKnowledgeAdapter(firstOperations, "https://knowledge.example").callback(
           task,
           {
             outcome: "succeeded",
@@ -146,14 +138,10 @@ describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")(
           localOnly: true,
         });
         const restartedApi = buildServer({
-          operationService: new PostgresKnowledgeOperationService(
-            restartedRepository,
-          ),
+          operationService: new PostgresKnowledgeOperationService(restartedRepository),
           resolveIdentity: resolver,
           resolveCallbackSigningSecret: secretResolver,
-          callbackReplayStore: new PostgresCallbackReplayStore(
-            restartedRepository,
-          ),
+          callbackReplayStore: new PostgresCallbackReplayStore(restartedRepository),
           callbackClock: clock,
         });
         try {

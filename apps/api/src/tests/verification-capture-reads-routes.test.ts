@@ -5,8 +5,7 @@ import type { VerificationCaptureTerminalResource } from "@aiengineer/knowledge-
 import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const digest = (value: string) => `sha256:${value.repeat(64)}` as const;
 const tenant = id(1),
   foreignTenant = id(2),
@@ -23,9 +22,7 @@ const identity: LocalApiIdentity = {
 };
 const foreignIdentity: LocalApiIdentity = {
   actor,
-  grants: [
-    { tenantId: foreignTenant, roles: ["knowledge_reader"], scopes: [] },
-  ],
+  grants: [{ tenantId: foreignTenant, roles: ["knowledge_reader"], scopes: [] }],
 };
 const headers = {
   authorization: `Bearer ${token}`,
@@ -91,8 +88,7 @@ const options = (
   }) => Promise<VerificationCaptureTerminalResource>,
   currentIdentity: LocalApiIdentity = identity,
 ) => ({
-  resolveIdentity: (candidate: string) =>
-    candidate === token ? currentIdentity : undefined,
+  resolveIdentity: (candidate: string) => (candidate === token ? currentIdentity : undefined),
   ...(getCapture ? { verificationCaptureReads: { getCapture } } : {}),
 });
 
@@ -175,9 +171,7 @@ describe("capture terminal HTTP reads", () => {
       await server.close();
     }
 
-    const malformed = buildServer(
-      options(async () => ({ ...resource, rawBytes: "secret" }) as never),
-    );
+    const malformed = buildServer(options(async () => ({ ...resource, rawBytes: "secret" }) as never));
     try {
       expect(
         (

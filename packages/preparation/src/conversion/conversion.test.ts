@@ -29,8 +29,7 @@ function stubOutput(providerKey: string): ConversionOutput {
 
 function stubProvider(
   providerKey: string,
-  convert: DocumentConversionProvider["convert"] = async () =>
-    stubOutput(providerKey),
+  convert: DocumentConversionProvider["convert"] = async () => stubOutput(providerKey),
   supports: DocumentConversionProvider["supports"] = () => true,
 ): DocumentConversionProvider {
   return {
@@ -51,9 +50,7 @@ function unusedTextProvider(): DocumentConversionProvider {
   );
 }
 
-async function pdfRequest(
-  managedProcessingAllowed: boolean,
-): Promise<ConversionRequest> {
+async function pdfRequest(managedProcessingAllowed: boolean): Promise<ConversionRequest> {
   const store = new InMemoryArtifactStore();
   const sourceArtifact = await store.put({
     tenantId: "tenant",
@@ -75,12 +72,13 @@ async function pdfRequest(
 describe("deterministic conversion", () => {
   it("produces stable heading and code nodes", () => {
     const text = "# Heading\n\nParagraph.\n\n```ts\nconst x = 1;\n```";
-    expect(convertTextToNodes(text, "text/markdown", "rep")).toEqual(
-      convertTextToNodes(text, "text/markdown", "rep"),
-    );
-    expect(
-      convertTextToNodes(text, "text/markdown", "rep").nodes.map((node) => node.kind),
-    ).toEqual(["document", "heading", "paragraph", "code_block"]);
+    expect(convertTextToNodes(text, "text/markdown", "rep")).toEqual(convertTextToNodes(text, "text/markdown", "rep"));
+    expect(convertTextToNodes(text, "text/markdown", "rep").nodes.map((node) => node.kind)).toEqual([
+      "document",
+      "heading",
+      "paragraph",
+      "code_block",
+    ]);
   });
 
   it("records only present ancestors when heading levels jump", () => {
@@ -102,9 +100,7 @@ describe("deterministic conversion", () => {
 
   it("preserves transcript timestamps and seals all outputs", async () => {
     const store = new InMemoryArtifactStore();
-    const bytes = encoder.encode(
-      "WEBVTT\n\n00:01.000 --> 00:03.000\nHarrison: Reliability matters.",
-    );
+    const bytes = encoder.encode("WEBVTT\n\n00:01.000 --> 00:03.000\nHarrison: Reliability matters.");
     const sourceArtifact = await store.put({
       tenantId: "tenant",
       mediaType: "text/vtt",
@@ -124,9 +120,7 @@ describe("deterministic conversion", () => {
     expect(output.nodes[1]?.locator.startTimeMs).toBe(1000);
     expect(output.nodes[1]?.locator.speaker).toBe("Harrison");
     expect(output.fidelity.grade).toBe("high");
-    expect(
-      await store.get("tenant", output.providerNativeArtifact.digest),
-    ).toBeDefined();
+    expect(await store.get("tenant", output.providerNativeArtifact.digest)).toBeDefined();
   });
 });
 
@@ -139,8 +133,7 @@ describe("conversion media types", () => {
   });
 
   it("does not treat Office Open XML as deterministic text", () => {
-    const docx =
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     expect(isDeterministicTextMediaType(docx)).toBe(false);
     expect(isExclusiveTextMediaType(docx)).toBe(false);
     expect(isDoclingMediaType(docx)).toBe(true);
@@ -180,18 +173,10 @@ describe("conversion router", () => {
       binaryCalls += 1;
       throw new Error("unused");
     });
-    const router = new ConversionRouter(
-      new DeterministicTextConversionProvider(store),
-      binary,
-      paid,
-    );
+    const router = new ConversionRouter(new DeterministicTextConversionProvider(store), binary, paid);
     const routed = await router.convertWithReceipt(request);
-    expect(routed.receipt.candidateRoute).toEqual([
-      "deterministic-structural-text@1.0.0",
-    ]);
-    expect(routed.receipt.selectedProviderKey).toBe(
-      "deterministic-structural-text",
-    );
+    expect(routed.receipt.candidateRoute).toEqual(["deterministic-structural-text@1.0.0"]);
+    expect(routed.receipt.selectedProviderKey).toBe("deterministic-structural-text");
     expect(routed.receipt.fallbackUsed).toBe(false);
     expect(binaryCalls).toBe(0);
   });
@@ -230,12 +215,7 @@ describe("conversion router", () => {
     );
     const first = await router.convertWithReceipt(request);
     const second = await router.convertWithReceipt(request);
-    expect(order).toEqual([
-      "docling-serve",
-      "unstructured-transform",
-      "docling-serve",
-      "unstructured-transform",
-    ]);
+    expect(order).toEqual(["docling-serve", "unstructured-transform", "docling-serve", "unstructured-transform"]);
     expect(first.receipt).toEqual(second.receipt);
     expect(first.receipt.fallbackUsed).toBe(true);
     expect(first.receipt.attempts[0]).toMatchObject({
@@ -345,10 +325,7 @@ describe("conversion router", () => {
     const routed = await router.convertWithReceipt(request, {
       admittedKeys: ["unstructured-transform", "docling-serve"],
     });
-    expect(routed.receipt.candidateRoute).toEqual([
-      "docling-serve@1",
-      "unstructured-transform@1",
-    ]);
+    expect(routed.receipt.candidateRoute).toEqual(["docling-serve@1", "unstructured-transform@1"]);
     expect(routed.receipt.selectedProviderKey).toBe("docling-serve");
   });
 
@@ -393,9 +370,7 @@ describe("conversion HTTP clients", () => {
       }),
     ).toEqual({ jobId: "job-1" });
     expect(calls[0]!.url).not.toContain("test-secret");
-    expect(new Headers(calls[0]!.init?.headers).get("unstructured-api-key")).toBe(
-      "test-secret",
-    );
+    expect(new Headers(calls[0]!.init?.headers).get("unstructured-api-key")).toBe("test-secret");
   });
 
   it("calls the bounded Docling Serve v1 multipart API and validates its output", async () => {
@@ -428,9 +403,7 @@ describe("conversion HTTP clients", () => {
     expect(output.markdown).toBe("# Result");
     expect(output.plainText).toBe("Result");
     expect(calls[0]?.url).toBe("http://127.0.0.1:5001/v1/convert/file");
-    expect(new Headers(calls[0]?.init?.headers).get("x-api-key")).toBe(
-      "docling-secret",
-    );
+    expect(new Headers(calls[0]?.init?.headers).get("x-api-key")).toBe("docling-secret");
     const form = calls[0]?.init?.body as FormData;
     expect(form.getAll("to_formats")).toEqual(["md", "json", "text"]);
     expect(form.get("files")).toBeInstanceOf(File);
@@ -458,11 +431,7 @@ describe("conversion HTTP clients", () => {
     ).rejects.toThrow("DOCLING_RESULT_SIZE_LIMIT");
     const failed = new HttpDoclingServeClient(
       { baseUrl: "http://localhost:5001", maximumResultBytes: 1_000 },
-      async () =>
-        new Response(
-          JSON.stringify({ status: "failure", document: {}, errors: ["bad"] }),
-          { status: 200 },
-        ),
+      async () => new Response(JSON.stringify({ status: "failure", document: {}, errors: ["bad"] }), { status: 200 }),
     );
     await expect(
       failed.convert({

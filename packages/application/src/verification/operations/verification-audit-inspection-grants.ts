@@ -1,4 +1,9 @@
-import { InspectAuditBundleRequestSchema, Sha256DigestSchema, UuidSchema, type InspectAuditBundleRequest } from "@aiengineer/knowledge-contracts";
+import {
+  InspectAuditBundleRequestSchema,
+  Sha256DigestSchema,
+  UuidSchema,
+  type InspectAuditBundleRequest,
+} from "@aiengineer/knowledge-contracts";
 import { z } from "zod";
 
 const grantSchema = z.strictObject({
@@ -36,8 +41,10 @@ export class VerificationAuditInspectionGrantCatalog {
   }
 
   admits(tenantId: unknown, request: unknown): boolean {
-    try { this.resolve(tenantId, request); return true; }
-    catch (error) {
+    try {
+      this.resolve(tenantId, request);
+      return true;
+    } catch (error) {
       if (error instanceof Error && error.message === "VERIFICATION_AUDIT_INSPECTION_GRANT_REQUIRED") return false;
       throw error;
     }

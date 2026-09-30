@@ -14,7 +14,11 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import { deepFreeze } from "@aiengineer/knowledge-core";
 import { deterministicUuid } from "@aiengineer/knowledge-core";
-import { canonicalizeJson, digestCanonicalJson, type VerificationAuditBundle } from "@aiengineer/knowledge-verification";
+import {
+  canonicalizeJson,
+  digestCanonicalJson,
+  type VerificationAuditBundle,
+} from "@aiengineer/knowledge-verification";
 import { z } from "zod";
 
 type ReviewRequirements = z.infer<typeof VerificationAdjudicationReviewRequirementsSchema>;
@@ -100,7 +104,11 @@ export class VerificationAdjudicationRequestApplicationService {
     this.#requirements = deepFreeze(VerificationAdjudicationReviewRequirementsSchema.parse(requirementsValue));
   }
 
-  async prepare(requestValue: unknown, contextValue: unknown, signal?: AbortSignal): Promise<PreparedVerificationAdjudicationRequest> {
+  async prepare(
+    requestValue: unknown,
+    contextValue: unknown,
+    signal?: AbortSignal,
+  ): Promise<PreparedVerificationAdjudicationRequest> {
     const requestResult = RequestAdjudicationRequestSchema.safeParse(requestValue);
     const contextResult = OperationContextSchema.safeParse(contextValue);
     const request = requestResult.success ? requestResult.data : fail("VERIFICATION_ADJUDICATION_INVALID_REQUEST");
@@ -108,52 +116,79 @@ export class VerificationAdjudicationRequestApplicationService {
     const controller = signal ?? new AbortController().signal;
     assertActive(controller);
 
-    const resolved = await this.canonicalAudit.inspectAndResolve({ request, context, signal: controller }).catch((error): never => {
-      if (controller.aborted) fail("VERIFICATION_ADJUDICATION_CANCELLED");
-      if (error instanceof VerificationAdjudicationRequestError) throw error;
-      return fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
-    });
+    const resolved = await this.canonicalAudit
+      .inspectAndResolve({ request, context, signal: controller })
+      .catch((error): never => {
+        if (controller.aborted) fail("VERIFICATION_ADJUDICATION_CANCELLED");
+        if (error instanceof VerificationAdjudicationRequestError) throw error;
+        return fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
+      });
     assertActive(controller);
 
     const inspectionResult = VerificationAuditInspectionResultSchema.safeParse(resolved.inspection);
     const manifestResult = VerificationArtifactHandleSchema.safeParse(resolved.manifestArtifact);
-    const inspection = inspectionResult.success ? inspectionResult.data : fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
-    const manifestArtifact = manifestResult.success ? manifestResult.data : fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
+    const inspection = inspectionResult.success
+      ? inspectionResult.data
+      : fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
+    const manifestArtifact = manifestResult.success
+      ? manifestResult.data
+      : fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
     const audit = resolved.auditBundle;
-    if (manifestArtifact.tenantId !== context.tenantId
-      || manifestArtifact.artifactId !== request.evidencePacket.artifactId
-      || manifestArtifact.digest !== request.evidencePacket.digest
-      || manifestArtifact.mediaType !== "application/vnd.aiengineer.verification-run-manifest+json"
-      || inspection.auditArtifact.artifactId !== manifestArtifact.artifactId
-      || inspection.auditArtifact.digest !== manifestArtifact.digest
-      || inspection.auditArtifact.sizeBytes !== manifestArtifact.byteLength
-      || audit.tenantId !== context.tenantId
-      || audit.manifest.runId !== inspection.run.runId
-      || audit.manifest.canonicalization.manifestDigest !== inspection.run.manifestDigest
-      || audit.deterministicResultDigest !== inspection.run.deterministicResultDigest
-      || audit.policyDecisionDigest !== inspection.run.policyDecisionDigest
-      || audit.manifest.policyOutcome !== inspection.run.policyOutcome
-      || audit.seal.payloadDigest !== inspection.proof.payloadDigest
-      || digestCanonicalJson(audit) !== manifestArtifact.digest) {
+    if (
+      manifestArtifact.tenantId !== context.tenantId ||
+      manifestArtifact.artifactId !== request.evidencePacket.artifactId ||
+      manifestArtifact.digest !== request.evidencePacket.digest ||
+      manifestArtifact.mediaType !== "application/vnd.aiengineer.verification-run-manifest+json" ||
+      inspection.auditArtifact.artifactId !== manifestArtifact.artifactId ||
+      inspection.auditArtifact.digest !== manifestArtifact.digest ||
+      inspection.auditArtifact.sizeBytes !== manifestArtifact.byteLength ||
+      audit.tenantId !== context.tenantId ||
+      audit.manifest.runId !== inspection.run.runId ||
+      audit.manifest.canonicalization.manifestDigest !== inspection.run.manifestDigest ||
+      audit.deterministicResultDigest !== inspection.run.deterministicResultDigest ||
+      audit.policyDecisionDigest !== inspection.run.policyDecisionDigest ||
+      audit.manifest.policyOutcome !== inspection.run.policyOutcome ||
+      audit.seal.payloadDigest !== inspection.proof.payloadDigest ||
+      digestCanonicalJson(audit) !== manifestArtifact.digest
+    ) {
       fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
     }
 
     const runKind = classifyRun(audit);
     const indexed = indexManifestArtifacts(audit);
-    const bundleArtifact = uniqueDigest(indexed.output, digestCanonicalJson(audit.verificationBundle), "application/vnd.aiengineer.verification-bundle+json");
-    const deterministicResultArtifact = uniqueDigest(indexed.output, audit.deterministicResultDigest, "application/vnd.aiengineer.deterministic-verification-result+json");
+    const bundleArtifact = uniqueDigest(
+      indexed.output,
+      digestCanonicalJson(audit.verificationBundle),
+      "application/vnd.aiengineer.verification-bundle+json",
+    );
+    const deterministicResultArtifact = uniqueDigest(
+      indexed.output,
+      audit.deterministicResultDigest,
+      "application/vnd.aiengineer.deterministic-verification-result+json",
+    );
     const policyArtifact = uniqueExact(indexed.all, audit.policyBinding.policyArtifact);
     const recordedPolicyInputsArtifact = uniqueExact(indexed.all, audit.policyBinding.recordedPolicyInputsArtifact);
-    const policyDecisionArtifact = uniqueDigest(indexed.output, audit.policyDecisionDigest, "application/vnd.aiengineer.verification-policy-decision+json");
+    const policyDecisionArtifact = uniqueDigest(
+      indexed.output,
+      audit.policyDecisionDigest,
+      "application/vnd.aiengineer.verification-policy-decision+json",
+    );
     const reportGateArtifact = audit.manifest.gateDigest
-      ? uniqueDigest(indexed.output, audit.manifest.gateDigest, "application/vnd.aiengineer.verification-report-result+json")
+      ? uniqueDigest(
+          indexed.output,
+          audit.manifest.gateDigest,
+          "application/vnd.aiengineer.verification-report-result+json",
+        )
       : undefined;
-    if ((runKind === "report") !== (reportGateArtifact !== undefined)) fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
+    if ((runKind === "report") !== (reportGateArtifact !== undefined))
+      fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
 
     const retainedIds = [...new Set(indexed.all.map((artifact) => artifact.artifactId))];
-    if (manifestArtifact.parentArtifactIds.length !== retainedIds.length
-      || new Set(manifestArtifact.parentArtifactIds).size !== manifestArtifact.parentArtifactIds.length
-      || retainedIds.some((artifactId) => !manifestArtifact.parentArtifactIds.includes(artifactId))) {
+    if (
+      manifestArtifact.parentArtifactIds.length !== retainedIds.length ||
+      new Set(manifestArtifact.parentArtifactIds).size !== manifestArtifact.parentArtifactIds.length ||
+      retainedIds.some((artifactId) => !manifestArtifact.parentArtifactIds.includes(artifactId))
+    ) {
       fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
     }
 
@@ -194,7 +229,15 @@ export class VerificationAdjudicationRequestApplicationService {
         policyReplay: inspection.proof.policyReplay,
       },
     });
-    const parentArtifacts = deepFreeze([manifestArtifact, bundleArtifact, deterministicResultArtifact, policyArtifact, recordedPolicyInputsArtifact, policyDecisionArtifact, ...(reportGateArtifact ? [reportGateArtifact] : [])]);
+    const parentArtifacts = deepFreeze([
+      manifestArtifact,
+      bundleArtifact,
+      deterministicResultArtifact,
+      policyArtifact,
+      recordedPolicyInputsArtifact,
+      policyDecisionArtifact,
+      ...(reportGateArtifact ? [reportGateArtifact] : []),
+    ]);
     const frozenPacket = deepFreeze(packet);
     const packetBytes = new TextEncoder().encode(canonicalizeJson(frozenPacket));
     return Object.freeze({
@@ -237,13 +280,20 @@ function indexManifestArtifacts(audit: VerificationAuditBundle) {
   return { input, output, all };
 }
 
-function uniqueDigest(artifacts: readonly VerificationArtifactHandle[], digest: string, mediaType: string): VerificationArtifactHandle {
+function uniqueDigest(
+  artifacts: readonly VerificationArtifactHandle[],
+  digest: string,
+  mediaType: string,
+): VerificationArtifactHandle {
   const matches = artifacts.filter((artifact) => artifact.digest === digest && artifact.mediaType === mediaType);
   if (matches.length !== 1) return fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
   return matches[0]!;
 }
 
-function uniqueExact(artifacts: readonly VerificationArtifactHandle[], expectedValue: unknown): VerificationArtifactHandle {
+function uniqueExact(
+  artifacts: readonly VerificationArtifactHandle[],
+  expectedValue: unknown,
+): VerificationArtifactHandle {
   const expected = VerificationArtifactHandleSchema.safeParse(expectedValue);
   if (!expected.success) return fail("VERIFICATION_ADJUDICATION_RUN_BINDING_MISMATCH");
   const expectedIdentity = canonicalizeJson(expected.data);
@@ -255,7 +305,10 @@ function uniqueExact(artifacts: readonly VerificationArtifactHandle[], expectedV
 function resolveTargetDigest(request: RequestAdjudicationRequest, audit: VerificationAuditBundle): `sha256:${string}` {
   if (request.target.kind === "run") {
     if (request.target.runId !== audit.manifest.runId) return fail("VERIFICATION_ADJUDICATION_TARGET_NOT_FOUND");
-    return digestCanonicalJson({ runId: audit.manifest.runId, manifestDigest: audit.manifest.canonicalization.manifestDigest });
+    return digestCanonicalJson({
+      runId: audit.manifest.runId,
+      manifestDigest: audit.manifest.canonicalization.manifestDigest,
+    });
   }
   if (request.target.kind === "assertion") {
     const assertionId = request.target.assertionId;
@@ -265,7 +318,9 @@ function resolveTargetDigest(request: RequestAdjudicationRequest, audit: Verific
     return digestCanonicalJson(matches[0]);
   }
   const evidenceId = request.target.evidenceId;
-  const matches = audit.verificationBundle.assertions.flatMap((assertion) => assertion.evidence.filter((edge) => edge.evidenceId === evidenceId));
+  const matches = audit.verificationBundle.assertions.flatMap((assertion) =>
+    assertion.evidence.filter((edge) => edge.evidenceId === evidenceId),
+  );
   if (matches.length === 0) return fail("VERIFICATION_ADJUDICATION_TARGET_NOT_FOUND");
   const identities = [...new Set(matches.map((edge) => canonicalizeJson(edge)))];
   if (identities.length !== 1) return fail("VERIFICATION_ADJUDICATION_TARGET_AMBIGUOUS");

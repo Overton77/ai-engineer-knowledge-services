@@ -89,7 +89,10 @@ const inputs: readonly ProjectionInput[] = [
 
 describe("createProjection", () => {
   it("builds deterministic contract-valid projections for every space", () => {
-    expect(inputs.map((input) => createProjection(input).space)).toEqual([...publicProjectionSpaces, "source_native_sections"]);
+    expect(inputs.map((input) => createProjection(input).space)).toEqual([
+      ...publicProjectionSpaces,
+      "source_native_sections",
+    ]);
     expect(createProjection(inputs[0]!).projectionId).toBe(createProjection(inputs[0]!).projectionId);
   });
 

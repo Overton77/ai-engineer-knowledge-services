@@ -13,11 +13,7 @@ import {
 } from "./index.js";
 
 const digest = `sha256:${"a".repeat(64)}` as const;
-function adapter(
-  deploymentId: string,
-  family: string,
-  output: Record<string, unknown>,
-): SemanticJudgeAdapter {
+function adapter(deploymentId: string, family: string, output: Record<string, unknown>): SemanticJudgeAdapter {
   return {
     identity: {
       deploymentId,
@@ -40,16 +36,9 @@ function directOutput(verdict = "directly_supported") {
     schemaVersion: "verification-semantic-judge.v1",
     assertionId: "claim-1",
     verdict,
-    nliLabel:
-      verdict === "contradicted"
-        ? "contradicted"
-        : verdict === "directly_supported"
-          ? "entailed"
-          : "neutral",
-    supportingFragmentIds:
-      verdict === "contradicted" ? [] : ["fragment-evidence-1"],
-    contradictingFragmentIds:
-      verdict === "contradicted" ? ["fragment-evidence-1"] : [],
+    nliLabel: verdict === "contradicted" ? "contradicted" : verdict === "directly_supported" ? "entailed" : "neutral",
+    supportingFragmentIds: verdict === "contradicted" ? [] : ["fragment-evidence-1"],
+    contradictingFragmentIds: verdict === "contradicted" ? ["fragment-evidence-1"] : [],
     unsupportedFacets: [],
     qualifiersPreserved: true,
     publicRationale: "Synthetic fixture judgment over the cited fragment.",
@@ -107,9 +96,7 @@ describe("evidence-closed semantic verification with declared synthetic adapters
       attributionFaithfulness: "not_assessed",
       sourceAuthority: "not_assessed",
     });
-    expect(result.rawProviderConfidences).toEqual([
-      { deploymentId: "gateway-luna-runtime", value: 0.7 },
-    ]);
+    expect(result.rawProviderConfidences).toEqual([{ deploymentId: "gateway-luna-runtime", value: 0.7 }]);
     expect(result).not.toHaveProperty("calibratedProbability");
     expect(primary.judge).toHaveBeenCalledTimes(1);
   });
@@ -330,12 +317,7 @@ describe("evidence-closed semantic verification with declared synthetic adapters
     expect(primary.judge).not.toHaveBeenCalled();
   });
 
-  it.each([
-    "swapped entity",
-    "swapped algorithm",
-    "swapped count",
-    "swapped negation",
-  ])(
+  it.each(["swapped entity", "swapped algorithm", "swapped count", "swapped negation"])(
     "records %s as contradicted when the evidence-closed synthetic fixture says so",
     async (variant) => {
       const value = fixture();
@@ -373,9 +355,7 @@ describe("evidence-closed semantic verification with declared synthetic adapters
     });
     const judge = adapter("synthetic", "synthetic", directOutput());
     const assessment = await verifySemanticCase(authorized, { primary: judge });
-    expect(assessment.assertionValueDigest).toBe(
-      digestCanonicalJson(input.value),
-    );
+    expect(assessment.assertionValueDigest).toBe(digestCanonicalJson(input.value));
     expect(judge.judge).toHaveBeenCalledWith(
       expect.objectContaining({
         value: input.value,
@@ -383,8 +363,6 @@ describe("evidence-closed semantic verification with declared synthetic adapters
       }),
       {},
     );
-    expect(digestCanonicalJson({ ...input, value: { status: "ga" } })).not.toBe(
-      digestCanonicalJson(input),
-    );
+    expect(digestCanonicalJson({ ...input, value: { status: "ga" } })).not.toBe(digestCanonicalJson(input));
   });
 });

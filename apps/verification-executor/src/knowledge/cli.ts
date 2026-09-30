@@ -90,17 +90,26 @@ Exit codes
      REBASE_REQUIRED, SUBJECT_*, EVIDENCE_NOT_ELIGIBLE, REVIEW_REQUIRED_ONLY, DUPLICATE_PENDING, HEAD_MISMATCH (atKnowledgeSeq), plan rejected
   2  infrastructure/usage: WORKSPACE_MISSING, WORKSPACE_STALE, HEAD_MISMATCH (migration), DB_UNAVAILABLE, ROLE_DENIED, network, auth`;
 
-export interface Parsed { readonly positionals: readonly string[]; readonly flags: Readonly<Record<string, string | true>> }
+export interface Parsed {
+  readonly positionals: readonly string[];
+  readonly flags: Readonly<Record<string, string | true>>;
+}
 
 export function parseArgv(argv: readonly string[]): Parsed {
   const positionals: string[] = [];
   const flags: Record<string, string | true> = {};
   for (let index = 0; index < argv.length; index += 1) {
     const item = argv[index]!;
-    if (!item.startsWith("--")) { positionals.push(item); continue; }
+    if (!item.startsWith("--")) {
+      positionals.push(item);
+      continue;
+    }
     const key = item.slice(2);
     const next = argv[index + 1];
-    if (next !== undefined && !next.startsWith("--")) { flags[key] = next; index += 1; } else flags[key] = true;
+    if (next !== undefined && !next.startsWith("--")) {
+      flags[key] = next;
+      index += 1;
+    } else flags[key] = true;
   }
   return { positionals, flags };
 }
@@ -110,7 +119,11 @@ const camel = (flag: string): string => flag.replace(/-([a-z0-9])/g, (_, letter:
 
 function coerce(value: string | true): unknown {
   if (value === true) return true;
-  try { return JSON.parse(value); } catch { return value; }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 /** Builds the operation input from positionals (by the operation's binding) and `--flags` (camelCased, JSON-coerced). */
@@ -125,19 +138,38 @@ export async function buildInput(operation: AnyOperation<unknown>, parsed: Parse
   for (const [flag, value] of Object.entries(parsed.flags)) {
     if (RESERVED_FLAGS.has(flag)) continue;
     const name = camel(flag);
-    input[name] = operation.cli.jsonFiles?.includes(name) && typeof value === "string" ? JSON.parse(await readFile(value, "utf8")) : coerce(value);
+    input[name] =
+      operation.cli.jsonFiles?.includes(name) && typeof value === "string"
+        ? JSON.parse(await readFile(value, "utf8"))
+        : coerce(value);
   }
   if (typeof parsed.flags.tenant === "string") input.tenantId = parsed.flags.tenant;
   return input;
 }
 
-export class UsageError extends Error { override readonly name = "UsageError"; }
-export class GateError extends Error { override readonly name = "GateError"; constructor(readonly payload: unknown, readonly reason: string) { super(reason); } }
+export class UsageError extends Error {
+  override readonly name = "UsageError";
+}
+export class GateError extends Error {
+  override readonly name = "GateError";
+  constructor(
+    readonly payload: unknown,
+    readonly reason: string,
+  ) {
+    super(reason);
+  }
+}
 
-interface Invocation { readonly operation: AnyOperation<unknown>; readonly input: Record<string, unknown> }
+interface Invocation {
+  readonly operation: AnyOperation<unknown>;
+  readonly input: Record<string, unknown>;
+}
 
 async function invokeLocal(invocation: Invocation, services: KnowledgeServices | undefined): Promise<unknown> {
-  if (!services) throw new UsageError("local mode needs POSTGRES_URL (or KNOWLEDGE_DB_URL) and a schema workspace; or set KNOWLEDGE_EXECUTOR_URL for remote mode");
+  if (!services)
+    throw new UsageError(
+      "local mode needs POSTGRES_URL (or KNOWLEDGE_DB_URL) and a schema workspace; or set KNOWLEDGE_EXECUTOR_URL for remote mode",
+    );
   const { output } = await knowledgeOperations.invoke(invocation.operation.name, invocation.input, services);
   const gate = invocation.operation.gate?.(output);
   if (gate) throw new GateError(output, gate);
@@ -155,65 +187,116 @@ function summarize(output: unknown): unknown {
   if (!output || typeof output !== "object" || Array.isArray(output)) return output;
   const summary: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(output as Record<string, unknown>)) {
-    if (value === null || ["string", "number", "boolean"].includes(typeof value)) summary[key] = typeof value === "string" && value.length > 200 ? `${value.slice(0, 200)}… (${value.length} chars)` : value;
+    if (value === null || ["string", "number", "boolean"].includes(typeof value))
+      summary[key] =
+        typeof value === "string" && value.length > 200 ? `${value.slice(0, 200)}… (${value.length} chars)` : value;
     else if (Array.isArray(value)) summary[key] = `[${value.length} items]`;
     else summary[key] = "{…}";
   }
   return summary;
 }
 
-export async function runKnowledgeCli(argv: readonly string[], env: Readonly<Record<string, string | undefined>> = process.env): Promise<void> {
+export async function runKnowledgeCli(
+  argv: readonly string[],
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<void> {
   const [group, sub, ...rest] = argv;
-  if (!group || group === "help" || group === "--help" || group === "-h") { console.log(KNOWLEDGE_HELP); return; }
+  if (!group || group === "help" || group === "--help" || group === "-h") {
+    console.log(KNOWLEDGE_HELP);
+    return;
+  }
   const parsed = parseArgv(group === "serve" || group === "health" || group === "ops" ? argv.slice(1) : rest);
   const out = typeof parsed.flags.out === "string" ? parsed.flags.out : undefined;
   const emit = async (value: unknown) => {
     const text = JSON.stringify(value, null, 2);
-    if (out) { await writeFile(out, `${text}\n`, "utf8"); process.stdout.write(`${JSON.stringify({ ...(summarize(value) as object), writtenTo: out }, null, 2)}\n`); }
-    else process.stdout.write(`${text}\n`);
+    if (out) {
+      await writeFile(out, `${text}\n`, "utf8");
+      process.stdout.write(`${JSON.stringify({ ...(summarize(value) as object), writtenTo: out }, null, 2)}\n`);
+    } else process.stdout.write(`${text}\n`);
   };
-  const remoteUrl = typeof parsed.flags.remote === "string" ? parsed.flags.remote : env.KNOWLEDGE_EXECUTOR_URL?.trim() || env.VERIFY_EXECUTOR_URL?.trim();
-  const token = typeof parsed.flags.token === "string" ? parsed.flags.token : env.KNOWLEDGE_EXECUTOR_TOKEN?.trim() || env.VERIFY_EXECUTOR_TOKEN?.trim();
+  const remoteUrl =
+    typeof parsed.flags.remote === "string"
+      ? parsed.flags.remote
+      : env.KNOWLEDGE_EXECUTOR_URL?.trim() || env.VERIFY_EXECUTOR_URL?.trim();
+  const token =
+    typeof parsed.flags.token === "string"
+      ? parsed.flags.token
+      : env.KNOWLEDGE_EXECUTOR_TOKEN?.trim() || env.VERIFY_EXECUTOR_TOKEN?.trim();
 
   if (group === "ops") {
     const schemas = parsed.flags.schemas === true;
-    await emit(knowledgeOperations.list().map((operation) => ({
-      tool: operation.name,
-      cli: `knowledge ${operation.cli.command.join(" ")} ${(operation.cli.positional ?? []).map((name) => `<${name}>`).join(" ")}`.trim(),
-      title: operation.title,
-      ...(schemas ? { jsonFiles: operation.cli.jsonFiles ?? [], inputSchema: z.toJSONSchema(operation.input, { io: "input", unrepresentable: "any" }) } : {}),
-    })));
+    await emit(
+      knowledgeOperations.list().map((operation) => ({
+        tool: operation.name,
+        cli: `knowledge ${operation.cli.command.join(" ")} ${(operation.cli.positional ?? []).map((name) => `<${name}>`).join(" ")}`.trim(),
+        title: operation.title,
+        ...(schemas
+          ? {
+              jsonFiles: operation.cli.jsonFiles ?? [],
+              inputSchema: z.toJSONSchema(operation.input, { io: "input", unrepresentable: "any" }),
+            }
+          : {}),
+      })),
+    );
     return;
   }
   if (group === "serve") {
-    const port = typeof parsed.flags.port === "string" ? Number(parsed.flags.port) : Number(env.KNOWLEDGE_PORT ?? env.VERIFY_PORT ?? 4310);
-    const host = typeof parsed.flags.host === "string" ? parsed.flags.host : env.KNOWLEDGE_HOST ?? env.VERIFY_HOST ?? "127.0.0.1";
+    const port =
+      typeof parsed.flags.port === "string"
+        ? Number(parsed.flags.port)
+        : Number(env.KNOWLEDGE_PORT ?? env.VERIFY_PORT ?? 4310);
+    const host =
+      typeof parsed.flags.host === "string"
+        ? parsed.flags.host
+        : (env.KNOWLEDGE_HOST ?? env.VERIFY_HOST ?? "127.0.0.1");
     const running = await startExecutorServer({ port, host, ...(token ? { token } : {}), env });
     console.error(JSON.stringify(describeRunning(running, token ? "bearer" : "none")));
-    await new Promise<void>((resolve) => { process.on("SIGINT", () => void running.close().then(resolve)); process.on("SIGTERM", () => void running.close().then(resolve)); });
+    await new Promise<void>((resolve) => {
+      process.on("SIGINT", () => void running.close().then(resolve));
+      process.on("SIGTERM", () => void running.close().then(resolve));
+    });
     return;
   }
   if (group === "health") {
-    if (remoteUrl) { await emit(await new RemoteExecutor({ baseUrl: remoteUrl, ...(token ? { token } : {}) }).health()); return; }
+    if (remoteUrl) {
+      await emit(await new RemoteExecutor({ baseUrl: remoteUrl, ...(token ? { token } : {}) }).health());
+      return;
+    }
     const services = await createKnowledgeFromEnv(env);
     if (!services) throw new UsageError("no database configured");
-    try { await emit(await knowledgeOperations.invoke("schema_manifest", {}, services).then((result) => result.output)); } finally { await services.close(); }
+    try {
+      await emit(await knowledgeOperations.invoke("schema_manifest", {}, services).then((result) => result.output));
+    } finally {
+      await services.close();
+    }
     return;
   }
   if (!sub) throw new UsageError(`missing command for group ${group}\n\n${KNOWLEDGE_HELP}`);
   const operation = knowledgeOperations.byCommand(group, sub) as AnyOperation<unknown> | undefined;
   if (!operation) throw new UsageError(`unknown command: knowledge ${group} ${sub}\n\n${KNOWLEDGE_HELP}`);
   const input = await buildInput(operation, parsed);
-  if (remoteUrl) { await emit(await invokeRemote({ operation, input }, new RemoteExecutor({ baseUrl: remoteUrl, ...(token ? { token } : {}) }))); return; }
+  if (remoteUrl) {
+    await emit(
+      await invokeRemote({ operation, input }, new RemoteExecutor({ baseUrl: remoteUrl, ...(token ? { token } : {}) })),
+    );
+    return;
+  }
   const services = await createKnowledgeFromEnv(env);
-  try { await emit(await invokeLocal({ operation, input }, services)); } finally { await services?.close(); }
+  try {
+    await emit(await invokeLocal({ operation, input }, services));
+  } finally {
+    await services?.close();
+  }
 }
 
 /** Exit lattice: 0 ok, 1 domain outcome, 2 infrastructure/usage. */
 export function exitCodeFor(error: unknown): 1 | 2 {
   if (error instanceof GateError) return 1;
   if (isKnowledgeError(error)) return error.exit;
-  if (error instanceof RemoteExecutorError) { const exit = (error.payload as { exit?: number } | undefined)?.exit; return exit === 1 ? 1 : 2; }
+  if (error instanceof RemoteExecutorError) {
+    const exit = (error.payload as { exit?: number } | undefined)?.exit;
+    return exit === 1 ? 1 : 2;
+  }
   if (error instanceof UnknownOperationError || error instanceof UsageError) return 2;
   if (typeof error === "object" && error && "issues" in error) return 1;
   return 2;
@@ -222,8 +305,12 @@ export function exitCodeFor(error: unknown): 1 | 2 {
 export function errorPayload(error: unknown): Record<string, unknown> {
   if (error instanceof GateError) return { qualityGate: "failed", reason: error.reason };
   if (isKnowledgeError(error)) return error.toJSON();
-  if (error instanceof RemoteExecutorError) return typeof error.payload === "object" && error.payload ? (error.payload as Record<string, unknown>) : { error: error.message };
+  if (error instanceof RemoteExecutorError)
+    return typeof error.payload === "object" && error.payload
+      ? (error.payload as Record<string, unknown>)
+      : { error: error.message };
   const message = error instanceof Error ? error.message : String(error);
-  const issues = typeof error === "object" && error && "issues" in error ? (error as { issues: unknown }).issues : undefined;
+  const issues =
+    typeof error === "object" && error && "issues" in error ? (error as { issues: unknown }).issues : undefined;
   return { error: message, ...(issues ? { code: "INPUT_INVALID", issues } : {}) };
 }

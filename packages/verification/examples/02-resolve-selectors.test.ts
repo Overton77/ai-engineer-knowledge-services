@@ -2,16 +2,11 @@ import { describe, expect, it } from "vitest";
 import { resolveExample, selectorExamples } from "./02-resolve-selectors.js";
 
 describe("runnable selector capability examples", () => {
-  it.each(selectorExamples)(
-    "resolves $name from preserved fixture bytes",
-    (example) => {
-      const result = resolveExample(example);
-      expect(result?.resolution.status).toBe("resolved");
-      expect(new TextDecoder().decode(result?.selectedContent)).toContain(
-        example.expectedText,
-      );
-    },
-  );
+  it.each(selectorExamples)("resolves $name from preserved fixture bytes", (example) => {
+    const result = resolveExample(example);
+    expect(result?.resolution.status).toBe("resolved");
+    expect(new TextDecoder().decode(result?.selectedContent)).toContain(example.expectedText);
+  });
 
   it("requires more context instead of picking the first repeated quote", () => {
     const repeated = {
@@ -34,9 +29,7 @@ describe("runnable selector capability examples", () => {
   });
 
   it("reports the declared code-point coordinates after a non-BMP character", () => {
-    const example = selectorExamples.find(
-      (item) => item.selector.kind === "character_position",
-    )!;
+    const example = selectorExamples.find((item) => item.selector.kind === "character_position")!;
     expect(resolveExample(example)?.resolution.resolvedRanges).toEqual([
       { start: 2, end: 4, coordinateSpace: "unicode_code_points" },
     ]);

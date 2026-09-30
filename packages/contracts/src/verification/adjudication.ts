@@ -5,7 +5,12 @@ import { VerificationArtifactHandleSchema } from "./primitives.js";
 import { VerificationArtifactReferenceSchema } from "./reads.js";
 import { RequestAdjudicationRequestSchema } from "./requests.js";
 
-const ReviewerRoleSchema = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u);
+const ReviewerRoleSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u);
 const AdjudicationTargetSchema = RequestAdjudicationRequestSchema.shape.target;
 
 export const VerificationAdjudicationRequestBindingSchema = z.strictObject({
@@ -22,9 +27,14 @@ export const VerificationAdjudicationRequestBindingSchema = z.strictObject({
 });
 
 export const VerificationAdjudicationReviewRequirementsSchema = z.strictObject({
-  eligibleReviewerRoles: z.array(ReviewerRoleSchema).min(1).max(16).superRefine((roles, context) => {
-    if (new Set(roles).size !== roles.length) context.addIssue({ code: "custom", message: "eligible reviewer roles must be unique" });
-  }),
+  eligibleReviewerRoles: z
+    .array(ReviewerRoleSchema)
+    .min(1)
+    .max(16)
+    .superRefine((roles, context) => {
+      if (new Set(roles).size !== roles.length)
+        context.addIssue({ code: "custom", message: "eligible reviewer roles must be unique" });
+    }),
   quorumRequired: z.int().min(1).max(16),
   expiresAt: z.iso.datetime().optional(),
 });
@@ -56,43 +66,65 @@ export const VerificationAdjudicationAuditProofSchema = z.strictObject({
  * Server-composed immutable packet. It contains proof references and digests,
  * never caller-provided reviewer authority, decision fields, or evidence bytes.
  */
-export const VerificationAdjudicationPacketSchema = z.strictObject({
-  schemaVersion: z.literal("verification-adjudication-packet.v1"),
-  verificationContractVersion: z.literal("verification.v1"),
-  tenantId: UuidSchema,
-  requestBinding: VerificationAdjudicationRequestBindingSchema,
-  reviewRequirements: VerificationAdjudicationReviewRequirementsSchema,
-  sealedRun: VerificationAdjudicationSealedRunBindingSchema,
-  auditProof: VerificationAdjudicationAuditProofSchema,
-}).superRefine((packet, context) => {
-  const handles = [
-    packet.sealedRun.manifestArtifact,
-    packet.sealedRun.bundleArtifact,
-    packet.sealedRun.deterministicResultArtifact,
-    packet.sealedRun.policyArtifact,
-    packet.sealedRun.recordedPolicyInputsArtifact,
-    packet.sealedRun.policyDecisionArtifact,
-    ...(packet.sealedRun.reportGateArtifact ? [packet.sealedRun.reportGateArtifact] : []),
-  ];
-  if (handles.some((handle) => handle.tenantId !== packet.tenantId)) {
-    context.addIssue({ code: "custom", path: ["sealedRun"], message: "all sealed run artifacts must belong to the packet tenant" });
-  }
-  if (new Set(handles.map((handle) => handle.artifactId)).size !== handles.length) {
-    context.addIssue({ code: "custom", path: ["sealedRun"], message: "sealed run artifact roles must be distinct" });
-  }
-  if ((packet.sealedRun.runKind === "report") !== (packet.sealedRun.reportGateArtifact !== undefined)) {
-    context.addIssue({ code: "custom", path: ["sealedRun", "reportGateArtifact"], message: "report runs require exactly one report gate and claims runs forbid it" });
-  }
-  if (packet.sealedRun.deterministicResultArtifact.digest !== packet.auditProof.deterministicResultDigest) {
-    context.addIssue({ code: "custom", path: ["auditProof", "deterministicResultDigest"], message: "deterministic result digest must match its artifact" });
-  }
-  if (packet.sealedRun.policyDecisionArtifact.digest !== packet.auditProof.policyDecisionDigest) {
-    context.addIssue({ code: "custom", path: ["auditProof", "policyDecisionDigest"], message: "policy decision digest must match its artifact" });
-  }
-  if (packet.requestBinding.target.kind === "run" && packet.requestBinding.target.runId !== packet.sealedRun.runId) {
-    context.addIssue({ code: "custom", path: ["requestBinding", "target", "runId"], message: "run target must match the sealed run" });
-  }
-});
+export const VerificationAdjudicationPacketSchema = z
+  .strictObject({
+    schemaVersion: z.literal("verification-adjudication-packet.v1"),
+    verificationContractVersion: z.literal("verification.v1"),
+    tenantId: UuidSchema,
+    requestBinding: VerificationAdjudicationRequestBindingSchema,
+    reviewRequirements: VerificationAdjudicationReviewRequirementsSchema,
+    sealedRun: VerificationAdjudicationSealedRunBindingSchema,
+    auditProof: VerificationAdjudicationAuditProofSchema,
+  })
+  .superRefine((packet, context) => {
+    const handles = [
+      packet.sealedRun.manifestArtifact,
+      packet.sealedRun.bundleArtifact,
+      packet.sealedRun.deterministicResultArtifact,
+      packet.sealedRun.policyArtifact,
+      packet.sealedRun.recordedPolicyInputsArtifact,
+      packet.sealedRun.policyDecisionArtifact,
+      ...(packet.sealedRun.reportGateArtifact ? [packet.sealedRun.reportGateArtifact] : []),
+    ];
+    if (handles.some((handle) => handle.tenantId !== packet.tenantId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["sealedRun"],
+        message: "all sealed run artifacts must belong to the packet tenant",
+      });
+    }
+    if (new Set(handles.map((handle) => handle.artifactId)).size !== handles.length) {
+      context.addIssue({ code: "custom", path: ["sealedRun"], message: "sealed run artifact roles must be distinct" });
+    }
+    if ((packet.sealedRun.runKind === "report") !== (packet.sealedRun.reportGateArtifact !== undefined)) {
+      context.addIssue({
+        code: "custom",
+        path: ["sealedRun", "reportGateArtifact"],
+        message: "report runs require exactly one report gate and claims runs forbid it",
+      });
+    }
+    if (packet.sealedRun.deterministicResultArtifact.digest !== packet.auditProof.deterministicResultDigest) {
+      context.addIssue({
+        code: "custom",
+        path: ["auditProof", "deterministicResultDigest"],
+        message: "deterministic result digest must match its artifact",
+      });
+    }
+    if (packet.sealedRun.policyDecisionArtifact.digest !== packet.auditProof.policyDecisionDigest) {
+      context.addIssue({
+        code: "custom",
+        path: ["auditProof", "policyDecisionDigest"],
+        message: "policy decision digest must match its artifact",
+      });
+    }
+    if (packet.requestBinding.target.kind === "run" && packet.requestBinding.target.runId !== packet.sealedRun.runId) {
+      context.addIssue({
+        code: "custom",
+        path: ["requestBinding", "target", "runId"],
+        message: "run target must match the sealed run",
+      });
+    }
+  });
 export type VerificationAdjudicationPacket = z.infer<typeof VerificationAdjudicationPacketSchema>;
 
 /** A packet-bound review record. It records review only and cannot alter policy admission. */
@@ -114,18 +146,24 @@ export const VerificationAdjudicationDecisionResultSchema = z.strictObject({
   decision: z.enum(["affirm", "reject", "defer"]),
   reviewerProvenance: VerificationAdjudicationDecisionProvenanceSchema,
   /** Only distinct `human_origin` `affirm` decisions count. Reject and defer never satisfy quorum. */
-  quorum: z.strictObject({
-    required: z.int().min(1).max(16),
-    humanAffirmRecorded: z.int().min(0),
-    humanRejectRecorded: z.int().min(0),
-    humanDeferRecorded: z.int().min(0),
-    syntheticAffirmRecorded: z.int().min(0),
-    reached: z.boolean(),
-  }).superRefine((quorum, context) => {
-    if (quorum.reached && (quorum.humanAffirmRecorded < quorum.required || quorum.humanRejectRecorded > 0)) {
-      context.addIssue({code: "custom", path: ["reached"], message: "human quorum requires enough affirmations and no rejection"});
-    }
-  }),
+  quorum: z
+    .strictObject({
+      required: z.int().min(1).max(16),
+      humanAffirmRecorded: z.int().min(0),
+      humanRejectRecorded: z.int().min(0),
+      humanDeferRecorded: z.int().min(0),
+      syntheticAffirmRecorded: z.int().min(0),
+      reached: z.boolean(),
+    })
+    .superRefine((quorum, context) => {
+      if (quorum.reached && (quorum.humanAffirmRecorded < quorum.required || quorum.humanRejectRecorded > 0)) {
+        context.addIssue({
+          code: "custom",
+          path: ["reached"],
+          message: "human quorum requires enough affirmations and no rejection",
+        });
+      }
+    }),
   admissionChanged: z.literal(false),
   humanGoldScoringEligible: z.literal(false),
 });
@@ -133,11 +171,16 @@ export type VerificationAdjudicationDecisionResult = z.infer<typeof Verification
 
 /** Quorum is the snapshot recorded by this operation, not a current review tally. */
 export const VerificationAdjudicationDecisionTerminalResourceSchema = z.strictObject({
-  verificationContractVersion: z.literal("verification.v1"), tenantId: UuidSchema, operationId: UuidSchema,
-  requestDigest: Sha256DigestSchema, output: VerificationAdjudicationDecisionResultSchema,
+  verificationContractVersion: z.literal("verification.v1"),
+  tenantId: UuidSchema,
+  operationId: UuidSchema,
+  requestDigest: Sha256DigestSchema,
+  output: VerificationAdjudicationDecisionResultSchema,
   terminalFencingToken: z.int().positive(),
 });
-export type VerificationAdjudicationDecisionTerminalResource = z.infer<typeof VerificationAdjudicationDecisionTerminalResourceSchema>;
+export type VerificationAdjudicationDecisionTerminalResource = z.infer<
+  typeof VerificationAdjudicationDecisionTerminalResourceSchema
+>;
 
 export const VerificationAdjudicationPendingSubjectSchema = z.strictObject({
   subjectId: UuidSchema,
@@ -149,19 +192,27 @@ export const VerificationAdjudicationPendingSubjectSchema = z.strictObject({
 });
 export type VerificationAdjudicationPendingSubject = z.infer<typeof VerificationAdjudicationPendingSubjectSchema>;
 
-export const VerificationAdjudicationOperationResultSchema = z.strictObject({
-  schemaVersion: z.literal("verification-operation-result.v1"),
-  operationId: UuidSchema,
-  useCase: z.literal("requestAdjudication"),
-  requestDigest: Sha256DigestSchema,
-  output: VerificationAdjudicationPendingSubjectSchema,
-  resultArtifact: VerificationArtifactHandleSchema,
-}).superRefine((value, context) => {
-  if (value.resultArtifact.artifactId !== value.output.packetArtifact.artifactId
-    || value.resultArtifact.digest !== value.output.packetArtifact.digest) {
-    context.addIssue({ code: "custom", path: ["resultArtifact"], message: "the operation result artifact must be the immutable adjudication packet" });
-  }
-});
+export const VerificationAdjudicationOperationResultSchema = z
+  .strictObject({
+    schemaVersion: z.literal("verification-operation-result.v1"),
+    operationId: UuidSchema,
+    useCase: z.literal("requestAdjudication"),
+    requestDigest: Sha256DigestSchema,
+    output: VerificationAdjudicationPendingSubjectSchema,
+    resultArtifact: VerificationArtifactHandleSchema,
+  })
+  .superRefine((value, context) => {
+    if (
+      value.resultArtifact.artifactId !== value.output.packetArtifact.artifactId ||
+      value.resultArtifact.digest !== value.output.packetArtifact.digest
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["resultArtifact"],
+        message: "the operation result artifact must be the immutable adjudication packet",
+      });
+    }
+  });
 export type VerificationAdjudicationOperationResult = z.infer<typeof VerificationAdjudicationOperationResultSchema>;
 
 /** Stable safe failure taxonomy for request creation; no reviewer or storage detail is exposed. */

@@ -12,7 +12,11 @@ import {
 } from "@aiengineer/knowledge-contracts";
 import { verificationBenchmarkDigest } from "@aiengineer/knowledge-evaluation";
 import { canonicalizeJson, sha256Digest, type TrustedArtifactResolver } from "@aiengineer/knowledge-verification";
-import { prepareVerificationProviderTransportResponse, VerificationProviderTransportBindingSchema, VerificationProviderTransportResponseSchema } from "../verification/operations/verification-provider-transport.js";
+import {
+  prepareVerificationProviderTransportResponse,
+  VerificationProviderTransportBindingSchema,
+  VerificationProviderTransportResponseSchema,
+} from "../verification/operations/verification-provider-transport.js";
 import { loadDiagnosticsOfflineCatalog } from "./verification-diagnostics-offline-catalog.js";
 
 const digest = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
@@ -77,7 +81,9 @@ function freezeClone<T>(value: T): T {
   return freeze(clone) as T;
 }
 
-function withoutFixtureDigest(manifest: z.infer<typeof FixtureManifestSchema>): Omit<z.infer<typeof FixtureManifestSchema>, "fixtureDigest"> {
+function withoutFixtureDigest(
+  manifest: z.infer<typeof FixtureManifestSchema>,
+): Omit<z.infer<typeof FixtureManifestSchema>, "fixtureDigest"> {
   const { fixtureDigest: _ignored, ...material } = manifest;
   return material;
 }
@@ -88,12 +94,19 @@ function safeRelativeFile(value: string): boolean {
   return parts.every((part) => part.length > 0 && part !== "." && part !== "..");
 }
 
-function requireExactHandle(map: ReadonlyMap<string, LoadedArtifact>, handle: VerificationArtifactHandle, code: string): void {
+function requireExactHandle(
+  map: ReadonlyMap<string, LoadedArtifact>,
+  handle: VerificationArtifactHandle,
+  code: string,
+): void {
   const loaded = map.get(handle.artifactId);
   if (!loaded || !same(loaded.handle, handle)) throw new Error(code);
 }
 
-function collectObservationClosure(entry: DiagnosticsSemanticReplayEntry, artifactMap: ReadonlyMap<string, LoadedArtifact>): void {
+function collectObservationClosure(
+  entry: DiagnosticsSemanticReplayEntry,
+  artifactMap: ReadonlyMap<string, LoadedArtifact>,
+): void {
   const declaredIds = new Set<string>();
   for (const judge of entry.judges) {
     if (declaredIds.has(judge.identity.deploymentId)) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_JUDGE_DUPLICATE");
@@ -101,28 +114,60 @@ function collectObservationClosure(entry: DiagnosticsSemanticReplayEntry, artifa
     requireExactHandle(artifactMap, judge.profileArtifact, "DIAGNOSTICS_SEMANTIC_FIXTURE_PROFILE_CLOSURE");
     requireExactHandle(artifactMap, judge.observationArtifact, "DIAGNOSTICS_SEMANTIC_FIXTURE_OBSERVATION_CLOSURE");
     const transport = artifactMap.get(judge.capture.transportArtifactId);
-    if (!transport || transport.handle.digest !== judge.capture.transportDigest || transport.handle.tenantId !== judge.capture.tenantId)
+    if (
+      !transport ||
+      transport.handle.digest !== judge.capture.transportDigest ||
+      transport.handle.tenantId !== judge.capture.tenantId
+    )
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_TRANSPORT_CLOSURE");
     const observationHandle = artifactMap.get(judge.observationArtifact.artifactId)!.handle;
-    const observationBytes = new TextDecoder("utf-8", { fatal: true }).decode(artifactMap.get(judge.observationArtifact.artifactId)!.bytes);
+    const observationBytes = new TextDecoder("utf-8", { fatal: true }).decode(
+      artifactMap.get(judge.observationArtifact.artifactId)!.bytes,
+    );
     const body = SemanticProviderResponseObservationBodySchema.parse(JSON.parse(observationBytes));
-    if (body.context.tenantId !== judge.capture.tenantId || body.context.operationId !== judge.capture.operationId
-      || body.context.operationStepId !== judge.capture.operationStepId || body.context.providerAttemptId !== judge.capture.providerAttemptId
-      || body.context.fencingToken !== judge.capture.dispatchFencingToken || !same(body.profileArtifact, judge.profileArtifact)
-      || !same(body.judgeIdentity, judge.identity) || body.responseEnvelopeArtifact.artifactId !== judge.capture.responseEnvelopeArtifactId
-      || observationBytes !== canonicalizeJson(body) || !same(observationHandle.parentArtifactIds, [body.blindedInputArtifact.artifactId, body.responseEnvelopeArtifact.artifactId, body.profileArtifact.artifactId]))
+    if (
+      body.context.tenantId !== judge.capture.tenantId ||
+      body.context.operationId !== judge.capture.operationId ||
+      body.context.operationStepId !== judge.capture.operationStepId ||
+      body.context.providerAttemptId !== judge.capture.providerAttemptId ||
+      body.context.fencingToken !== judge.capture.dispatchFencingToken ||
+      !same(body.profileArtifact, judge.profileArtifact) ||
+      !same(body.judgeIdentity, judge.identity) ||
+      body.responseEnvelopeArtifact.artifactId !== judge.capture.responseEnvelopeArtifactId ||
+      observationBytes !== canonicalizeJson(body) ||
+      !same(observationHandle.parentArtifactIds, [
+        body.blindedInputArtifact.artifactId,
+        body.responseEnvelopeArtifact.artifactId,
+        body.profileArtifact.artifactId,
+      ])
+    )
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_OBSERVATION_BINDING");
-    for (const handle of [body.blindedInputArtifact, body.requestArtifact, body.rawResponseArtifact, body.responseEnvelopeArtifact])
+    for (const handle of [
+      body.blindedInputArtifact,
+      body.requestArtifact,
+      body.rawResponseArtifact,
+      body.responseEnvelopeArtifact,
+    ])
       requireExactHandle(artifactMap, handle, "DIAGNOSTICS_SEMANTIC_FIXTURE_ARTIFACT_CLOSURE");
     const transportText = new TextDecoder("utf-8", { fatal: true }).decode(transport.bytes);
     const transportBody = VerificationProviderTransportResponseSchema.parse(JSON.parse(transportText));
     const preparedTransport = prepareVerificationProviderTransportResponse(transportBody);
-    if (transportText !== canonicalizeJson(transportBody) || !same(transportBody.binding, {
-      tenantId: judge.capture.tenantId, operationId: judge.capture.operationId, operationStepId: judge.capture.operationStepId,
-      providerAttemptId: judge.capture.providerAttemptId, profileArtifactId: judge.capture.profileArtifactId,
-      profileDigest: judge.capture.profileDigest, dispatchFencingToken: judge.capture.dispatchFencingToken,
-    }) || transportBody.httpStatus !== judge.capture.httpStatus || transportBody.responseEnvelope.artifactId !== judge.capture.responseEnvelopeArtifactId
-      || !same(transport.handle.parentArtifactIds, preparedTransport.parentArtifactIds) || transport.handle.transformationSignature !== preparedTransport.transformationSignature)
+    if (
+      transportText !== canonicalizeJson(transportBody) ||
+      !same(transportBody.binding, {
+        tenantId: judge.capture.tenantId,
+        operationId: judge.capture.operationId,
+        operationStepId: judge.capture.operationStepId,
+        providerAttemptId: judge.capture.providerAttemptId,
+        profileArtifactId: judge.capture.profileArtifactId,
+        profileDigest: judge.capture.profileDigest,
+        dispatchFencingToken: judge.capture.dispatchFencingToken,
+      }) ||
+      transportBody.httpStatus !== judge.capture.httpStatus ||
+      transportBody.responseEnvelope.artifactId !== judge.capture.responseEnvelopeArtifactId ||
+      !same(transport.handle.parentArtifactIds, preparedTransport.parentArtifactIds) ||
+      transport.handle.transformationSignature !== preparedTransport.transformationSignature
+    )
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_TRANSPORT_BINDING");
   }
 }
@@ -140,20 +185,33 @@ export async function loadDiagnosticsSemanticReplayFixture(input: {
   const root = await realpath(input.directory);
   const manifestPath = resolve(root, "manifest.json");
   const manifestRelative = relative(root, manifestPath);
-  if (manifestRelative === ".." || manifestRelative.startsWith(`..${sep}`)) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_PATH_ESCAPE");
+  if (manifestRelative === ".." || manifestRelative.startsWith(`..${sep}`))
+    throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_PATH_ESCAPE");
   const manifestStat = await lstat(manifestPath);
-  if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_MANIFEST_PATH_INVALID");
-  const manifest = FixtureManifestSchema.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await readFile(manifestPath))));
-  if (manifest.fixtureDigest !== canonical(withoutFixtureDigest(manifest)) || manifest.fixtureDigest !== input.expectedFixtureDigest)
+  if (!manifestStat.isFile() || manifestStat.isSymbolicLink())
+    throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_MANIFEST_PATH_INVALID");
+  const manifest = FixtureManifestSchema.parse(
+    JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await readFile(manifestPath))),
+  );
+  if (
+    manifest.fixtureDigest !== canonical(withoutFixtureDigest(manifest)) ||
+    manifest.fixtureDigest !== input.expectedFixtureDigest
+  )
     throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_SEAL_MISMATCH");
 
   const catalog = await loadDiagnosticsOfflineCatalog("diagnostics-companies-v1", input.catalogDirectory);
-  if (catalog.datasetManifestDigest !== manifest.datasetManifestDigest) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_DATASET_SEAL_MISMATCH");
+  if (catalog.datasetManifestDigest !== manifest.datasetManifestDigest)
+    throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_DATASET_SEAL_MISMATCH");
   const cases = new Map(catalog.dataset.cases.map((item) => [item.caseId, item]));
   const seenCases = new Set<string>();
   for (const entry of manifest.entries) {
     const item = cases.get(entry.caseId);
-    if (!item || seenCases.has(entry.caseId) || item.caseDigest !== entry.caseDigest || item.inputManifestArtifactId !== entry.inputManifestArtifactId)
+    if (
+      !item ||
+      seenCases.has(entry.caseId) ||
+      item.caseDigest !== entry.caseDigest ||
+      item.inputManifestArtifactId !== entry.inputManifestArtifactId
+    )
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_CASE_BINDING");
     seenCases.add(entry.caseId);
   }
@@ -164,14 +222,20 @@ export async function loadDiagnosticsSemanticReplayFixture(input: {
     if (!safeRelativeFile(artifact.file) || fileNames.has(artifact.file) || artifactMap.has(artifact.handle.artifactId))
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_ARTIFACT_IDENTITY");
     fileNames.add(artifact.file);
-    const path = resolve(root, artifact.file), pathRelative = relative(root, path);
-    if (pathRelative === ".." || pathRelative.startsWith(`..${sep}`)) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_PATH_ESCAPE");
+    const path = resolve(root, artifact.file),
+      pathRelative = relative(root, path);
+    if (pathRelative === ".." || pathRelative.startsWith(`..${sep}`))
+      throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_PATH_ESCAPE");
     const stat = await lstat(path);
-    if (!stat.isFile() || stat.isSymbolicLink() || await realpath(path) !== path) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_ARTIFACT_PATH_INVALID");
+    if (!stat.isFile() || stat.isSymbolicLink() || (await realpath(path)) !== path)
+      throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_ARTIFACT_PATH_INVALID");
     const bytes = new Uint8Array(await readFile(path));
     if (bytes.byteLength !== artifact.handle.byteLength || sha256Digest(bytes) !== artifact.handle.digest)
       throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_ARTIFACT_DIGEST_MISMATCH");
-    artifactMap.set(artifact.handle.artifactId, Object.freeze({ handle: freezeClone(artifact.handle), bytes: new Uint8Array(bytes) }));
+    artifactMap.set(
+      artifact.handle.artifactId,
+      Object.freeze({ handle: freezeClone(artifact.handle), bytes: new Uint8Array(bytes) }),
+    );
   }
   for (const { handle } of artifactMap.values()) {
     if (handle.parentArtifactIds.some((parentId) => !artifactMap.has(parentId)))
@@ -180,7 +244,12 @@ export async function loadDiagnosticsSemanticReplayFixture(input: {
   for (const entry of manifest.entries) {
     requireExactHandle(artifactMap, entry.verificationBundleArtifact, "DIAGNOSTICS_SEMANTIC_FIXTURE_BUNDLE_CLOSURE");
     requireExactHandle(artifactMap, entry.deterministicResultArtifact, "DIAGNOSTICS_SEMANTIC_FIXTURE_RESULT_CLOSURE");
-    if (entry.runtimePrincipalBindingArtifact) requireExactHandle(artifactMap, entry.runtimePrincipalBindingArtifact, "DIAGNOSTICS_SEMANTIC_FIXTURE_RUNTIME_BINDING_CLOSURE");
+    if (entry.runtimePrincipalBindingArtifact)
+      requireExactHandle(
+        artifactMap,
+        entry.runtimePrincipalBindingArtifact,
+        "DIAGNOSTICS_SEMANTIC_FIXTURE_RUNTIME_BINDING_CLOSURE",
+      );
     collectObservationClosure(entry, artifactMap);
   }
 
@@ -193,9 +262,15 @@ export async function loadDiagnosticsSemanticReplayFixture(input: {
     },
     async hydrateRegisteredArtifact({ tenantId, artifactId }) {
       const artifact = artifactMap.get(artifactId);
-      if (!artifact || artifact.handle.tenantId !== tenantId) throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_HYDRATION_DENIED");
+      if (!artifact || artifact.handle.tenantId !== tenantId)
+        throw new Error("DIAGNOSTICS_SEMANTIC_FIXTURE_HYDRATION_DENIED");
       return { registration: freezeClone(artifact.handle), bytes: new Uint8Array(artifact.bytes) };
     },
   });
-  return Object.freeze({ datasetManifestDigest: manifest.datasetManifestDigest, fixtureDigest: manifest.fixtureDigest, entries, createResolver });
+  return Object.freeze({
+    datasetManifestDigest: manifest.datasetManifestDigest,
+    fixtureDigest: manifest.fixtureDigest,
+    entries,
+    createResolver,
+  });
 }

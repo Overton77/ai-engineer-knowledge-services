@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
-import {
-  dispatchCliCommand,
-  resolveCommand,
-  type CliKnowledgeClient,
-} from "../commands.js";
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+import { dispatchCliCommand, resolveCommand, type CliKnowledgeClient } from "../commands.js";
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const context: OperationContext = {
   tenantId: id(1),
   operationId: id(2),
@@ -48,12 +43,7 @@ const client = () =>
 describe("CLI semantic dispatcher", () => {
   it("routes store reads using real ids", async () => {
     const c = client();
-    await dispatchCliCommand(
-      c,
-      resolveCommand("store", "show")!,
-      { vectorStoreId: id(6) },
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("store", "show")!, { vectorStoreId: id(6) }, context);
     await dispatchCliCommand(
       c,
       resolveCommand("store", "status")!,
@@ -61,11 +51,7 @@ describe("CLI semantic dispatcher", () => {
       context,
     );
     expect(c.getVectorStore).toHaveBeenCalledWith(id(6), context);
-    expect(c.getVectorStoreOperation).toHaveBeenCalledWith(
-      id(6),
-      id(7),
-      context,
-    );
+    expect(c.getVectorStoreOperation).toHaveBeenCalledWith(id(6), id(7), context);
     expect(c.submitOperation).not.toHaveBeenCalled();
   });
   it.each([
@@ -75,75 +61,41 @@ describe("CLI semantic dispatcher", () => {
     ["eval", "failures", "getEvaluationFailures", "runId"],
   ])("routes %s %s as a read", async (group, action, method, key) => {
     const c = client();
-    await dispatchCliCommand(
-      c,
-      resolveCommand(group, action)!,
-      { [key]: id(8) },
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand(group, action)!, { [key]: id(8) }, context);
     expect(c[method as keyof CliKnowledgeClient]).toHaveBeenCalled();
     expect(c.submitOperation).not.toHaveBeenCalled();
   });
   it("routes verify status through the verification-aware operation read", async () => {
     const c = client();
-    await dispatchCliCommand(
-      c,
-      resolveCommand("verify", "status")!,
-      { operationId: id(16) },
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("verify", "status")!, { operationId: id(16) }, context);
     expect(c.getVerificationOperation).toHaveBeenCalledWith(id(16), context);
     expect(c.getOperation).not.toHaveBeenCalled();
     await expect(
-      dispatchCliCommand(
-        c,
-        resolveCommand("verify", "status")!,
-        { operationId: "latest" },
-        context,
-      ),
+      dispatchCliCommand(c, resolveCommand("verify", "status")!, { operationId: "latest" }, context),
     ).rejects.toThrow();
     await expect(
-      dispatchCliCommand(
-        c,
-        resolveCommand("verify", "status")!,
-        { operationId: id(16), state: "succeeded" },
-        context,
-      ),
+      dispatchCliCommand(c, resolveCommand("verify", "status")!, { operationId: id(16), state: "succeeded" }, context),
     ).rejects.toThrow("CLI_OPERATION_READ_UNKNOWN_FIELD");
     expect(c.getVerificationOperation).toHaveBeenCalledTimes(1);
   });
   it("rejects deferred commands before admission", async () => {
     const c = client();
-    await expect(
-      dispatchCliCommand(c, resolveCommand("space", "rebuild")!, {}, context),
-    ).rejects.toThrow("CAPABILITY_NOT_ADMITTED");
+    await expect(dispatchCliCommand(c, resolveCommand("space", "rebuild")!, {}, context)).rejects.toThrow(
+      "CAPABILITY_NOT_ADMITTED",
+    );
     expect(c.submitOperation).not.toHaveBeenCalled();
   });
   it("rejects fabricated ids", async () => {
     const c = client();
     await expect(
-      dispatchCliCommand(
-        c,
-        resolveCommand("store", "show")!,
-        { vectorStoreId: "latest" },
-        context,
-      ),
+      dispatchCliCommand(c, resolveCommand("store", "show")!, { vectorStoreId: "latest" }, context),
     ).rejects.toThrow();
     expect(c.getVectorStore).not.toHaveBeenCalled();
   });
   it("routes admitted mutations", async () => {
     const c = client();
-    await dispatchCliCommand(
-      c,
-      resolveCommand("embed", "run")!,
-      { model: "x" },
-      context,
-    );
-    expect(c.submitOperation).toHaveBeenCalledWith(
-      "embedding_run",
-      { model: "x" },
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("embed", "run")!, { model: "x" }, context);
+    expect(c.submitOperation).toHaveBeenCalledWith("embedding_run", { model: "x" }, context);
   });
   it("uses the typed vector-store documents endpoint", async () => {
     const c = client(),
@@ -159,17 +111,8 @@ describe("CLI semantic dispatcher", () => {
           },
         ],
       };
-    await dispatchCliCommand(
-      c,
-      resolveCommand("store", "add-documents")!,
-      input,
-      context,
-    );
-    expect(c.attachVectorStoreDocuments).toHaveBeenCalledWith(
-      id(6),
-      input,
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("store", "add-documents")!, input, context);
+    expect(c.attachVectorStoreDocuments).toHaveBeenCalledWith(id(6), input, context);
     expect(c.submitOperation).not.toHaveBeenCalled();
   });
   it("routes extraction verification through the strict verification client method", async () => {
@@ -186,12 +129,7 @@ describe("CLI semantic dispatcher", () => {
           digest: `sha256:${"2".repeat(64)}`,
         },
       };
-    await dispatchCliCommand(
-      c,
-      resolveCommand("verify", "extract")!,
-      input,
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("verify", "extract")!, input, context);
     expect(c.verifyExtraction).toHaveBeenCalledWith(input, context);
     expect(c.submitOperation).not.toHaveBeenCalled();
   });
@@ -216,12 +154,7 @@ describe("CLI semantic dispatcher", () => {
           parentArtifactIds: [],
         },
       };
-    await dispatchCliCommand(
-      c,
-      resolveCommand("artifact", "parse")!,
-      input,
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("artifact", "parse")!, input, context);
     expect(c.parseArtifact).toHaveBeenCalledWith(input, context);
   });
   it("routes claim and report verification through strict client methods", async () => {
@@ -238,18 +171,8 @@ describe("CLI semantic dispatcher", () => {
         report: ref,
         claimLedger: { artifactId: id(11), digest: `sha256:${"2".repeat(64)}` },
       };
-    await dispatchCliCommand(
-      c,
-      resolveCommand("verify", "citations")!,
-      claims,
-      context,
-    );
-    await dispatchCliCommand(
-      c,
-      resolveCommand("verify", "report")!,
-      report,
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("verify", "citations")!, claims, context);
+    await dispatchCliCommand(c, resolveCommand("verify", "report")!, report, context);
     expect(c.verifyClaims).toHaveBeenCalledWith(claims, context);
     expect(c.verifyReport).toHaveBeenCalledWith(report, context);
   });
@@ -259,44 +182,19 @@ describe("CLI semantic dispatcher", () => {
         verificationContractVersion: "verification.v1",
         auditBundle: { artifactId: id(12), digest: `sha256:${"3".repeat(64)}` },
       };
-    await dispatchCliCommand(
-      c,
-      resolveCommand("bundle", "inspect")!,
-      request,
-      context,
-    );
-    await dispatchCliCommand(
-      c,
-      resolveCommand("bundle", "show")!,
-      { operationId: id(13) },
-      context,
-    );
+    await dispatchCliCommand(c, resolveCommand("bundle", "inspect")!, request, context);
+    await dispatchCliCommand(c, resolveCommand("bundle", "show")!, { operationId: id(13) }, context);
     expect(c.inspectAuditBundle).toHaveBeenCalledWith(request, context);
     expect(c.getAuditInspection).toHaveBeenCalledWith(id(13), context);
     await expect(
-      dispatchCliCommand(
-        c,
-        resolveCommand("bundle", "inspect")!,
-        { ...request, publicKey: "caller" },
-        context,
-      ),
+      dispatchCliCommand(c, resolveCommand("bundle", "inspect")!, { ...request, publicKey: "caller" }, context),
     ).rejects.toThrow();
   });
 });
 it("routes claims and report terminal reads without accepting extra fields", async () => {
   const c = client();
-  await dispatchCliCommand(
-    c,
-    resolveCommand("verify", "claims-result")!,
-    { operationId: id(14) },
-    context,
-  );
-  await dispatchCliCommand(
-    c,
-    resolveCommand("verify", "report-result")!,
-    { operationId: id(15) },
-    context,
-  );
+  await dispatchCliCommand(c, resolveCommand("verify", "claims-result")!, { operationId: id(14) }, context);
+  await dispatchCliCommand(c, resolveCommand("verify", "report-result")!, { operationId: id(15) }, context);
   expect(c.getVerificationClaimsResult).toHaveBeenCalledWith(id(14), context);
   expect(c.getVerificationReportResult).toHaveBeenCalledWith(id(15), context);
   await expect(

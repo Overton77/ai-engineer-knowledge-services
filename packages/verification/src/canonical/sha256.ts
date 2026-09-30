@@ -26,9 +26,7 @@ export function digestCanonicalJson(value: unknown): Sha256Digest {
 /** Compatibility boundary for the prototype's unprefixed digest representation. */
 export function fromPrototypeSha256(value: string): Sha256Digest {
   if (!/^[a-f0-9]{64}$/.test(value))
-    throw new TypeError(
-      "prototype SHA-256 must be 64 lowercase hexadecimal characters",
-    );
+    throw new TypeError("prototype SHA-256 must be 64 lowercase hexadecimal characters");
   return `sha256:${value}`;
 }
 

@@ -24,15 +24,11 @@ describe("example 06: seal, inspect, replay", () => {
 
   it("authorizes every artifact before hydrating it", async () => {
     const { replay } = await sealInspectReplayExample();
-    const hydrations = replay.custodyCalls.filter((call) =>
-      call.startsWith("hydrate:"),
-    );
+    const hydrations = replay.custodyCalls.filter((call) => call.startsWith("hydrate:"));
     expect(hydrations.length).toBeGreaterThan(0);
     for (const hydrate of hydrations) {
       const authorize = hydrate.replace("hydrate:", "authorize:");
-      expect(replay.custodyCalls.indexOf(authorize)).toBeLessThan(
-        replay.custodyCalls.indexOf(hydrate),
-      );
+      expect(replay.custodyCalls.indexOf(authorize)).toBeLessThan(replay.custodyCalls.indexOf(hydrate));
     }
   });
 });

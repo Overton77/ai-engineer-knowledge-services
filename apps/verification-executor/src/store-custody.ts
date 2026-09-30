@@ -10,11 +10,18 @@ export interface ArtifactCustody {
   resolve(artifactId: string): Promise<{ handle: VerificationArtifactHandle; bytes: Uint8Array } | undefined>;
 }
 
-export function validateStoredArtifact(tenantId: string, value: unknown, bytes?: Uint8Array): VerificationArtifactHandle {
+export function validateStoredArtifact(
+  tenantId: string,
+  value: unknown,
+  bytes?: Uint8Array,
+): VerificationArtifactHandle {
   const handle = VerificationArtifactHandleSchema.parse(value);
   if (handle.tenantId !== tenantId) throw new Error("ARTIFACT_TENANT_MISMATCH");
   const digest = handle.digest.slice(7);
-  if (handle.objectKey !== `artifacts/${digest}` && handle.objectKey !== `${tenantId}/${digest.slice(0, 2)}/${digest}`) {
+  if (
+    handle.objectKey !== `artifacts/${digest}` &&
+    handle.objectKey !== `${tenantId}/${digest.slice(0, 2)}/${digest}`
+  ) {
     throw new Error("ARTIFACT_LOCAL_PATH_DENIED");
   }
   if (bytes && (sha256Digest(bytes) !== handle.digest || bytes.byteLength !== handle.byteLength)) {
@@ -29,18 +36,20 @@ export function assertSameArtifact(expected: VerificationArtifactHandle, actual:
 
 export async function readArtifactFile(path: string): Promise<Uint8Array> {
   const parent = await realpath(dirname(path));
-  const normalize = (value: string) => process.platform === "win32" ? value.toLowerCase() : value;
-  if (normalize(parent) !== normalize(resolve(dirname(path))) || (await lstat(path)).isSymbolicLink()) throw new Error("ARTIFACT_LOCAL_PATH_DENIED");
+  const normalize = (value: string) => (process.platform === "win32" ? value.toLowerCase() : value);
+  if (normalize(parent) !== normalize(resolve(dirname(path))) || (await lstat(path)).isSymbolicLink())
+    throw new Error("ARTIFACT_LOCAL_PATH_DENIED");
   return readFile(path);
 }
 
 export async function writeArtifactFileOnce(path: string, bytes: Uint8Array): Promise<Uint8Array> {
   const parent = dirname(path);
   let existing = parent;
-  const normalize = (value: string) => process.platform === "win32" ? value.toLowerCase() : value;
+  const normalize = (value: string) => (process.platform === "win32" ? value.toLowerCase() : value);
   for (;;) {
     try {
-      if (normalize(await realpath(existing)) !== normalize(resolve(existing))) throw new Error("ARTIFACT_LOCAL_PATH_DENIED");
+      if (normalize(await realpath(existing)) !== normalize(resolve(existing)))
+        throw new Error("ARTIFACT_LOCAL_PATH_DENIED");
       break;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT" || dirname(existing) === existing) throw error;
@@ -52,9 +61,15 @@ export async function writeArtifactFileOnce(path: string, bytes: Uint8Array): Pr
   const temporary = `${path}.${randomUUID()}.pending`;
   try {
     await writeFile(temporary, bytes, { flag: "wx" });
-    try { await link(temporary, path); } catch (error) {
+    try {
+      await link(temporary, path);
+    } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
     }
     return await readArtifactFile(path);
-  } finally { await unlink(temporary).catch((error: unknown) => { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }); }
+  } finally {
+    await unlink(temporary).catch((error: unknown) => {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    });
+  }
 }

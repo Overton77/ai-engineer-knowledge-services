@@ -47,7 +47,10 @@ function window(content: string, offset: number, length: number, radius = 160): 
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
 
-export async function loadCaptureContent(store: FilesystemStore, captureId: string): Promise<{ record: CaptureRecord; content: string }> {
+export async function loadCaptureContent(
+  store: FilesystemStore,
+  captureId: string,
+): Promise<{ record: CaptureRecord; content: string }> {
   const record = await store.readCapture(captureId);
   const content = await store.text(record.contentArtifact);
   return { record, content };
@@ -65,7 +68,9 @@ export function searchContent(content: string, query: string, limit = 10): Searc
     hits.push({ offset: index, exact: match[0], context: window(content, index, match[0].length) });
   }
   if (hits.length > 0) return hits;
-  const words = normalize(terms).split(" ").filter((word) => word.length > 2);
+  const words = normalize(terms)
+    .split(" ")
+    .filter((word) => word.length > 2);
   if (words.length === 0) return hits;
   const lines = content.split("\n");
   let offset = 0;
@@ -91,7 +96,8 @@ export function locateQuote(record: CaptureRecord, content: string, quote: strin
     content: contentBytes,
   });
   const occurrenceCount = resolved?.resolution.occurrenceCount ?? countOccurrences(content, quote);
-  const status: LocateResult["status"] = resolved?.resolution.status === "resolved" ? "resolved" : occurrenceCount > 1 ? "ambiguous" : "not_found";
+  const status: LocateResult["status"] =
+    resolved?.resolution.status === "resolved" ? "resolved" : occurrenceCount > 1 ? "ambiguous" : "not_found";
   const firstOffset = content.indexOf(quote);
   const suggestions: { quote: string; offset: number; context: string }[] = [];
   if (status === "ambiguous") {
@@ -107,14 +113,17 @@ export function locateQuote(record: CaptureRecord, content: string, quote: strin
       from = index + 1;
     }
   } else if (status === "not_found") {
-    for (const hit of searchContent(content, quote, 5)) suggestions.push({ quote: hit.exact, offset: hit.offset, context: hit.context });
+    for (const hit of searchContent(content, quote, 5))
+      suggestions.push({ quote: hit.exact, offset: hit.offset, context: hit.context });
   }
   return {
     captureId: record.captureId,
     quote,
     status,
     occurrenceCount,
-    ...(status === "resolved" ? { selectedContentDigest: sha256Digest(quote), firstOffset, context: window(content, firstOffset, quote.length) } : {}),
+    ...(status === "resolved"
+      ? { selectedContentDigest: sha256Digest(quote), firstOffset, context: window(content, firstOffset, quote.length) }
+      : {}),
     suggestions,
   };
 }

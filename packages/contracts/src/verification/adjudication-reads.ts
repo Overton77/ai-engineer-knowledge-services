@@ -11,20 +11,26 @@ const TargetSchema = z.discriminatedUnion("kind", [
   RequestAdjudicationRequestSchema.shape.target.options[2]!.extend({ objectDigest: Sha256DigestSchema }),
 ]);
 
-const SourceRunSchema = z.strictObject({
-  runKind: z.enum(["claims", "report"]),
-  runId: UuidSchema,
-  manifestArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
-  manifestDigest: Sha256DigestSchema,
-  bundleArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
-  deterministicResultArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
-  policyDecisionArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
-  reportGateArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }).optional(),
-}).superRefine((source, context) => {
-  if ((source.runKind === "report") !== (source.reportGateArtifact !== undefined)) {
-    context.addIssue({ code: "custom", path: ["reportGateArtifact"], message: "report source requires its signed gate reference" });
-  }
-});
+const SourceRunSchema = z
+  .strictObject({
+    runKind: z.enum(["claims", "report"]),
+    runId: UuidSchema,
+    manifestArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
+    manifestDigest: Sha256DigestSchema,
+    bundleArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
+    deterministicResultArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
+    policyDecisionArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }),
+    reportGateArtifact: VerificationArtifactReferenceSchema.pick({ artifactId: true, digest: true }).optional(),
+  })
+  .superRefine((source, context) => {
+    if ((source.runKind === "report") !== (source.reportGateArtifact !== undefined)) {
+      context.addIssue({
+        code: "custom",
+        path: ["reportGateArtifact"],
+        message: "report source requires its signed gate reference",
+      });
+    }
+  });
 
 /** Sanitized terminal projection for an immutable pending review request. */
 export const VerificationAdjudicationTerminalResourceSchema = z.strictObject({

@@ -1,9 +1,6 @@
 import type { VerificationSelector } from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson } from "../../canonical/index.js";
-import type {
-  EvidenceSelection,
-  EvidenceSelectionRequest,
-} from "../selection.js";
+import type { EvidenceSelection, EvidenceSelectionRequest } from "../selection.js";
 import { resolvedValue, unresolved } from "./report.js";
 import {
   array,
@@ -46,8 +43,7 @@ const MAX_EXPANDED_TABLE_CELLS = 100_000;
 export function parseTable(input: UnknownRecord): TableProjection {
   only(input, ["kind", "tables"], "TABLE");
   const tables = boundedArray(input.tables, "TABLES").map(parseOneTable);
-  if (expandedCellCount(tables) > MAX_EXPANDED_TABLE_CELLS)
-    fail("TABLE_EXPANDED_CELL_BUDGET");
+  if (expandedCellCount(tables) > MAX_EXPANDED_TABLE_CELLS) fail("TABLE_EXPANDED_CELL_BUDGET");
   for (const table of tables) assertNoOverlappingCells(table);
   unique(
     tables.map((table) => table.tableId),
@@ -73,11 +69,7 @@ function parseCell(cell: unknown): TableCell {
     !string(cell.value)
   )
     fail("TABLE_CELL");
-  only(
-    cell,
-    ["row", "column", "value", "headerPath", "rowSpan", "columnSpan"],
-    "TABLE_CELL",
-  );
+  only(cell, ["row", "column", "value", "headerPath", "rowSpan", "columnSpan"], "TABLE_CELL");
   const headerPath = array(cell.headerPath, "TABLE_HEADER_PATH");
   const { rowSpan, columnSpan } = cell;
   if (
@@ -96,20 +88,13 @@ function parseCell(cell: unknown): TableCell {
   };
 }
 
-const isHeaderSegment = (part: unknown): part is string =>
-  boundedString(part) && part.length > 0;
-const isSpan = (value: unknown): value is number =>
-  integer(value) && value > 0 && value <= MAX_SPAN;
+const isHeaderSegment = (part: unknown): part is string => boundedString(part) && part.length > 0;
+const isSpan = (value: unknown): value is number => integer(value) && value > 0 && value <= MAX_SPAN;
 
 function expandedCellCount(tables: readonly Table[]): number {
   return tables.reduce(
     (total, table) =>
-      total +
-      table.cells.reduce(
-        (tableTotal, cell) =>
-          tableTotal + (cell.rowSpan ?? 1) * (cell.columnSpan ?? 1),
-        0,
-      ),
+      total + table.cells.reduce((tableTotal, cell) => tableTotal + (cell.rowSpan ?? 1) * (cell.columnSpan ?? 1), 0),
     0,
   );
 }
@@ -119,8 +104,7 @@ function assertNoOverlappingCells(table: Table): void {
   for (const cell of table.cells) {
     const rowEnd = cell.row + (cell.rowSpan ?? 1);
     const columnEnd = cell.column + (cell.columnSpan ?? 1);
-    if (!Number.isSafeInteger(rowEnd) || !Number.isSafeInteger(columnEnd))
-      fail("TABLE_COORDINATE_OVERFLOW");
+    if (!Number.isSafeInteger(rowEnd) || !Number.isSafeInteger(columnEnd)) fail("TABLE_COORDINATE_OVERFLOW");
     for (let row = cell.row; row < rowEnd; row += 1)
       for (let column = cell.column; column < columnEnd; column += 1) {
         const key = `${row}:${column}`;
@@ -136,30 +120,14 @@ export function resolveTable(
   projection: TableProjection,
   selector: TableSelector,
 ): EvidenceSelection {
-  const tables = projection.tables.filter(
-    (table) => table.tableId === selector.tableId,
-  );
-  if (tables.length !== 1)
-    return unresolved(
-      request,
-      tables.length > 1 ? "ambiguous" : "not_found",
-      tables.length,
-    );
-  const cells = tables[0]!.cells.filter(
-    (cell) => cell.row === selector.row && cell.column === selector.column,
-  );
-  if (cells.length !== 1)
-    return unresolved(
-      request,
-      cells.length > 1 ? "ambiguous" : "not_found",
-      cells.length,
-    );
+  const tables = projection.tables.filter((table) => table.tableId === selector.tableId);
+  if (tables.length !== 1) return unresolved(request, tables.length > 1 ? "ambiguous" : "not_found", tables.length);
+  const cells = tables[0]!.cells.filter((cell) => cell.row === selector.row && cell.column === selector.column);
+  if (cells.length !== 1) return unresolved(request, cells.length > 1 ? "ambiguous" : "not_found", cells.length);
   const cell = cells[0]!;
   if (
-    canonicalizeJson(cell.headerPath) !==
-      canonicalizeJson(selector.headerPath) ||
-    (selector.expectedCellValue !== undefined &&
-      selector.expectedCellValue !== cell.value)
+    canonicalizeJson(cell.headerPath) !== canonicalizeJson(selector.headerPath) ||
+    (selector.expectedCellValue !== undefined && selector.expectedCellValue !== cell.value)
   )
     return unresolved(request, "invalid");
   return resolvedValue(request, cell, [

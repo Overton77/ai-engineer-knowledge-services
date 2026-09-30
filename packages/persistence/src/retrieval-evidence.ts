@@ -6,8 +6,12 @@ import type { TenantSqlClient } from "./postgres.js";
 import { readRepresentationDependencies } from "./representation-dependency.js";
 
 export interface ReadRetrievalArtifact {
-  (input: { tenantId: string; artifactId: string; expectedDigest: string; maximumBytes: number }):
-    Promise<{ bytes: Uint8Array; mediaType: string }>;
+  (input: {
+    tenantId: string;
+    artifactId: string;
+    expectedDigest: string;
+    maximumBytes: number;
+  }): Promise<{ bytes: Uint8Array; mediaType: string }>;
 }
 export interface RetrievalCitationRequest {
   readonly tenantId: string;
@@ -42,58 +46,128 @@ export class RetrievalCitationReplay {
   private citationsRemaining = MAX_CITATIONS;
   private readonly artifacts = new Map<string, { bytes: Uint8Array; mediaType: string; digest: string }>();
 
-  constructor(private readonly client: TenantSqlClient, private readonly readArtifact: ReadRetrievalArtifact) {}
+  constructor(
+    private readonly client: TenantSqlClient,
+    private readonly readArtifact: ReadRetrievalArtifact,
+  ) {}
 
   async replay(input: RetrievalCitationRequest): Promise<ReplayedRetrievalCitation> {
-    if (!uuid.test(input.tenantId) || !uuid.test(input.locatorId) || !digest.test(input.selectorDigest)
-      || !digest.test(input.selectedContentDigest)) throw new Error("RETRIEVAL_CITATION_REQUEST_INVALID");
+    if (
+      !uuid.test(input.tenantId) ||
+      !uuid.test(input.locatorId) ||
+      !digest.test(input.selectorDigest) ||
+      !digest.test(input.selectedContentDigest)
+    )
+      throw new Error("RETRIEVAL_CITATION_REQUEST_INVALID");
     if (--this.citationsRemaining < 0) throw new Error("RETRIEVAL_CITATION_LIMIT");
-    const row = (await this.client.query<Row>(`select l.*,c.artifact_id capture_artifact_id,c.content_sha256 capture_sha256,
+    const row = (
+      await this.client.query<Row>(
+        `select l.*,c.artifact_id capture_artifact_id,c.content_sha256 capture_sha256,
       c.id capture_id,s.id source_family_id
       from evidence.locator l join evidence.source_capture c on c.tenant_id=l.tenant_id and c.id=l.capture_id
       join evidence.source s on s.tenant_id=c.tenant_id and s.id=c.source_id
-      where l.tenant_id=$1 and l.id=$2`, [input.tenantId, input.locatorId])).rows[0];
-    if (!row || row.tenant_id !== input.tenantId || row.id !== input.locatorId || row.resolution_state !== "resolved"
-      || !uuid.test(String(row.representation_artifact_id)) || !uuid.test(String(row.capture_id)) || !uuid.test(String(row.source_family_id))
-      || `sha256:${row.selector_sha256}` !== input.selectorDigest || `sha256:${row.selected_content_sha256}` !== input.selectedContentDigest)
+      where l.tenant_id=$1 and l.id=$2`,
+        [input.tenantId, input.locatorId],
+      )
+    ).rows[0];
+    if (
+      !row ||
+      row.tenant_id !== input.tenantId ||
+      row.id !== input.locatorId ||
+      row.resolution_state !== "resolved" ||
+      !uuid.test(String(row.representation_artifact_id)) ||
+      !uuid.test(String(row.capture_id)) ||
+      !uuid.test(String(row.source_family_id)) ||
+      `sha256:${row.selector_sha256}` !== input.selectorDigest ||
+      `sha256:${row.selected_content_sha256}` !== input.selectedContentDigest
+    )
       throw new Error("RETRIEVAL_CITATION_BINDING_INVALID");
     const selector = VerificationSelectorSchema.parse(row.selector);
     if (digestCanonicalJson(selector) !== input.selectorDigest) throw new Error("RETRIEVAL_SELECTOR_DIGEST_MISMATCH");
-    const capture = await this.artifact(input.tenantId, String(row.capture_artifact_id), `sha256:${row.capture_sha256}`);
-    const representation = row.representation_artifact_id === row.capture_artifact_id ? capture
-      : await this.artifact(input.tenantId, String(row.representation_artifact_id));
-    const selected = resolveEvidenceSelector({ captureId: String(row.capture_id), representationArtifactId: String(row.representation_artifact_id),
-      representationDigest: representation.digest, selector, content: representation.bytes });
+    const capture = await this.artifact(
+      input.tenantId,
+      String(row.capture_artifact_id),
+      `sha256:${row.capture_sha256}`,
+    );
+    const representation =
+      row.representation_artifact_id === row.capture_artifact_id
+        ? capture
+        : await this.artifact(input.tenantId, String(row.representation_artifact_id));
+    const selected = resolveEvidenceSelector({
+      captureId: String(row.capture_id),
+      representationArtifactId: String(row.representation_artifact_id),
+      representationDigest: representation.digest,
+      selector,
+      content: representation.bytes,
+    });
     if (!selected) throw new Error("RETRIEVAL_SELECTOR_UNSUPPORTED");
-    if (selected.resolution.status !== "resolved" || selected.resolution.selectedContentDigest !== input.selectedContentDigest
-      || selected.selectedContent.byteLength !== Number(row.selected_size_bytes)
-      || selected.resolution.occurrenceCount !== Number(row.occurrence_count)
-      || selected.resolution.normalization !== row.normalization_policy
-      || selected.resolution.resolverVersion !== row.resolution_version)
+    if (
+      selected.resolution.status !== "resolved" ||
+      selected.resolution.selectedContentDigest !== input.selectedContentDigest ||
+      selected.selectedContent.byteLength !== Number(row.selected_size_bytes) ||
+      selected.resolution.occurrenceCount !== Number(row.occurrence_count) ||
+      selected.resolution.normalization !== row.normalization_policy ||
+      selected.resolution.resolverVersion !== row.resolution_version
+    )
       throw new Error("RETRIEVAL_CITATION_REPLAY_MISMATCH");
-    return { locatorId: input.locatorId, captureId: String(row.capture_id), sourceFamilyId: String(row.source_family_id),
-      captureArtifactId: String(row.capture_artifact_id), representationArtifactId: String(row.representation_artifact_id),
-      captureDigest: capture.digest, representationDigest: representation.digest, selectorDigest: input.selectorDigest,
-      selectedContentDigest: input.selectedContentDigest, selectedText: new TextDecoder("utf-8", { fatal: true }).decode(selected.selectedContent),
-      selectedSizeBytes: selected.selectedContent.byteLength };
+    return {
+      locatorId: input.locatorId,
+      captureId: String(row.capture_id),
+      sourceFamilyId: String(row.source_family_id),
+      captureArtifactId: String(row.capture_artifact_id),
+      representationArtifactId: String(row.representation_artifact_id),
+      captureDigest: capture.digest,
+      representationDigest: representation.digest,
+      selectorDigest: input.selectorDigest,
+      selectedContentDigest: input.selectedContentDigest,
+      selectedText: new TextDecoder("utf-8", { fatal: true }).decode(selected.selectedContent),
+      selectedSizeBytes: selected.selectedContent.byteLength,
+    };
   }
 
   private async artifact(tenantId: string, artifactId: string, expectedDigest?: string) {
-    const key = `${tenantId}:${artifactId}`, cached = this.artifacts.get(key);
+    const key = `${tenantId}:${artifactId}`,
+      cached = this.artifacts.get(key);
     if (cached) {
       if (expectedDigest && cached.digest !== expectedDigest) throw new Error("RETRIEVAL_ARTIFACT_DIGEST_MISMATCH");
       return cached;
     }
-    const metadata = (await this.client.query<Row>(`select tenant_id,id,sha256,storage_state,size_bytes,media_type
-      from orchestration.artifact where tenant_id=$1 and id=$2`, [tenantId, artifactId])).rows[0];
-    const size = Number(metadata?.size_bytes), actualDigest = `sha256:${metadata?.sha256}`;
-    if (!metadata || metadata.tenant_id !== tenantId || metadata.id !== artifactId || metadata.storage_state !== "available"
-      || !Number.isSafeInteger(size) || size < 0 || size > MAX_ARTIFACT_BYTES || size > this.bytesRemaining
-      || !digest.test(actualDigest) || (expectedDigest !== undefined && expectedDigest !== actualDigest)) throw new Error("RETRIEVAL_ARTIFACT_UNAVAILABLE");
+    const metadata = (
+      await this.client.query<Row>(
+        `select tenant_id,id,sha256,storage_state,size_bytes,media_type
+      from orchestration.artifact where tenant_id=$1 and id=$2`,
+        [tenantId, artifactId],
+      )
+    ).rows[0];
+    const size = Number(metadata?.size_bytes),
+      actualDigest = `sha256:${metadata?.sha256}`;
+    if (
+      !metadata ||
+      metadata.tenant_id !== tenantId ||
+      metadata.id !== artifactId ||
+      metadata.storage_state !== "available" ||
+      !Number.isSafeInteger(size) ||
+      size < 0 ||
+      size > MAX_ARTIFACT_BYTES ||
+      size > this.bytesRemaining ||
+      !digest.test(actualDigest) ||
+      (expectedDigest !== undefined && expectedDigest !== actualDigest)
+    )
+      throw new Error("RETRIEVAL_ARTIFACT_UNAVAILABLE");
     this.bytesRemaining -= size;
-    const loaded = await this.readArtifact({ tenantId, artifactId, expectedDigest: actualDigest, maximumBytes: Math.min(size, MAX_ARTIFACT_BYTES) });
-    if (!(loaded.bytes instanceof Uint8Array) || loaded.bytes.byteLength !== size || loaded.mediaType !== metadata.media_type
-      || hash(loaded.bytes) !== actualDigest) throw new Error("RETRIEVAL_ARTIFACT_BYTES_MISMATCH");
+    const loaded = await this.readArtifact({
+      tenantId,
+      artifactId,
+      expectedDigest: actualDigest,
+      maximumBytes: Math.min(size, MAX_ARTIFACT_BYTES),
+    });
+    if (
+      !(loaded.bytes instanceof Uint8Array) ||
+      loaded.bytes.byteLength !== size ||
+      loaded.mediaType !== metadata.media_type ||
+      hash(loaded.bytes) !== actualDigest
+    )
+      throw new Error("RETRIEVAL_ARTIFACT_BYTES_MISMATCH");
     const result = { bytes: loaded.bytes.slice(), mediaType: loaded.mediaType, digest: actualDigest };
     this.artifacts.set(key, result);
     return result;
@@ -117,7 +191,11 @@ import {
 } from "@aiengineer/knowledge-application";
 
 const TARGET_COLUMNS: ReadonlyMap<RetrievalTargetKind, string> = new Map([
-  ["entity", "entity_id"], ["record", "record_id"], ["chunk", "chunk_id"], ["claim", "claim_id"], ["summary", "summary_id"],
+  ["entity", "entity_id"],
+  ["record", "record_id"],
+  ["chunk", "chunk_id"],
+  ["claim", "claim_id"],
+  ["summary", "summary_id"],
 ]);
 const ADMISSIBLE_VERDICTS = ["directly_supported", "supported_with_qualification", "derived_verified"];
 
@@ -136,28 +214,43 @@ export class RetrievalSupportResolver {
   constructor(private readonly client: TenantSqlClient) {}
 
   async resolve(input: RetrievalSupportRequest): Promise<readonly ResolvedRetrievalSupport[]> {
-    if (!uuid.test(input.tenantId) || !Number.isSafeInteger(input.knowledgeSeq) || input.knowledgeSeq < 0
-      || input.vectorItemIds.length > RETRIEVAL_SUPPORT_LIMITS.maximumCandidates
-      || new Set(input.vectorItemIds).size !== input.vectorItemIds.length
-      || input.vectorItemIds.some(id => !uuid.test(id))) throw new Error("RETRIEVAL_SUPPORT_REQUEST_INVALID");
+    if (
+      !uuid.test(input.tenantId) ||
+      !Number.isSafeInteger(input.knowledgeSeq) ||
+      input.knowledgeSeq < 0 ||
+      input.vectorItemIds.length > RETRIEVAL_SUPPORT_LIMITS.maximumCandidates ||
+      new Set(input.vectorItemIds).size !== input.vectorItemIds.length ||
+      input.vectorItemIds.some((id) => !uuid.test(id))
+    )
+      throw new Error("RETRIEVAL_SUPPORT_REQUEST_INVALID");
     if (!input.vectorItemIds.length) return [];
     const targets = await this.targets(input);
     if (!targets.size) return [];
     const rows = await this.supportRows(input);
     if (rows.length > RETRIEVAL_SUPPORT_LIMITS.maximumRows) throw new Error("RETRIEVAL_SUPPORT_ROW_LIMIT");
-    const { contradictions, supersessions } = await this.claimState(input.tenantId, [...new Set(rows.map(row => String(row.claim_id)))], input.knowledgeSeq);
+    const { contradictions, supersessions } = await this.claimState(
+      input.tenantId,
+      [...new Set(rows.map((row) => String(row.claim_id)))],
+      input.knowledgeSeq,
+    );
     const byCandidate = new Map<string, RetrievalSupportPathRow[]>();
     const truncated = new Set<string>();
     let captureBytes = 0;
     const eligibleRepresentations = new Map<string, boolean>();
     for (const row of rows) {
       const representationId = String(row.representation_id);
-      if (!eligibleRepresentations.has(representationId)) eligibleRepresentations.set(representationId,
-        (await readRepresentationDependencies(this.client, input.tenantId, representationId)).eligible);
+      if (!eligibleRepresentations.has(representationId))
+        eligibleRepresentations.set(
+          representationId,
+          (await readRepresentationDependencies(this.client, input.tenantId, representationId)).eligible,
+        );
       if (!eligibleRepresentations.get(representationId)) continue;
       const vectorItemId = String(row.vector_item_id);
       const paths = byCandidate.get(vectorItemId) ?? [];
-      if (paths.length >= RETRIEVAL_SUPPORT_LIMITS.maximumPathsPerCandidate) { truncated.add(vectorItemId); continue; }
+      if (paths.length >= RETRIEVAL_SUPPORT_LIMITS.maximumPathsPerCandidate) {
+        truncated.add(vectorItemId);
+        continue;
+      }
       const path = supportPath(input.tenantId, row);
       captureBytes += path.captureArtifact.byteLength;
       if (captureBytes > RETRIEVAL_SUPPORT_LIMITS.maximumCaptureBytes) throw new Error("RETRIEVAL_SUPPORT_BYTE_LIMIT");
@@ -167,23 +260,32 @@ export class RetrievalSupportResolver {
     return [...targets.entries()].flatMap(([vectorItemId, target]) => {
       const paths = byCandidate.get(vectorItemId) ?? [];
       if (!paths.length) return [];
-      return [{
-        vectorItemId,
-        searchProjectionId: target.searchProjectionId,
-        target: { kind: target.kind, canonicalId: target.canonicalId, projectionTargetId: target.projectionTargetId },
-        paths,
-        sourceFamilyIds: [...new Set(paths.map(path => path.sourceFamilyId))].sort(),
-        graphPaths: paths.map(path => [`projection_target:${target.projectionTargetId}`, `claim:${path.claimId}`,
-          `locator:${path.locatorId}`, `capture:${path.captureId}`, `source:${path.sourceFamilyId}`]),
-        contradictionIds: [...new Set(paths.flatMap(path => contradictions.get(path.claimId) ?? []))].sort(),
-        supersedesIds: [...new Set(paths.flatMap(path => supersessions.get(path.claimId) ?? []))].sort(),
-        truncated: truncated.has(vectorItemId),
-      }];
+      return [
+        {
+          vectorItemId,
+          searchProjectionId: target.searchProjectionId,
+          target: { kind: target.kind, canonicalId: target.canonicalId, projectionTargetId: target.projectionTargetId },
+          paths,
+          sourceFamilyIds: [...new Set(paths.map((path) => path.sourceFamilyId))].sort(),
+          graphPaths: paths.map((path) => [
+            `projection_target:${target.projectionTargetId}`,
+            `claim:${path.claimId}`,
+            `locator:${path.locatorId}`,
+            `capture:${path.captureId}`,
+            `source:${path.sourceFamilyId}`,
+          ]),
+          contradictionIds: [...new Set(paths.flatMap((path) => contradictions.get(path.claimId) ?? []))].sort(),
+          supersedesIds: [...new Set(paths.flatMap((path) => supersessions.get(path.claimId) ?? []))].sort(),
+          truncated: truncated.has(vectorItemId),
+        },
+      ];
     });
   }
 
   private async targets(input: RetrievalSupportRequest) {
-    const rows = (await this.client.query<Row>(`select vi.id vector_item_id,vi.search_projection_id,pt.id projection_target_id,
+    const rows = (
+      await this.client.query<Row>(
+        `select vi.id vector_item_id,vi.search_projection_id,pt.id projection_target_id,
         pt.target_kind,pt.entity_id,pt.record_id,pt.chunk_id,pt.claim_id,pt.summary_id,summary.representation_id summary_representation_id
       from retrieval.vector_item vi
       join retrieval.search_projection sp on sp.tenant_id=vi.tenant_id and sp.id=vi.search_projection_id
@@ -191,17 +293,31 @@ export class RetrievalSupportResolver {
         and pt.id=vi.projection_target_id and pt.retired_at is null
       left join content.document_summary summary on summary.tenant_id=pt.tenant_id and summary.id=pt.summary_id
       where vi.tenant_id=$1 and vi.id=any($2::uuid[]) and vi.lifecycle='active'
-      order by array_position($2::uuid[],vi.id)`, [input.tenantId, input.vectorItemIds])).rows;
-    const targets = new Map<string, { searchProjectionId: string; kind: RetrievalTargetKind; canonicalId: string; projectionTargetId: string }>();
+      order by array_position($2::uuid[],vi.id)`,
+        [input.tenantId, input.vectorItemIds],
+      )
+    ).rows;
+    const targets = new Map<
+      string,
+      { searchProjectionId: string; kind: RetrievalTargetKind; canonicalId: string; projectionTargetId: string }
+    >();
     for (const row of rows) {
-      if (typeof row.summary_representation_id === "string"
-        && !(await readRepresentationDependencies(this.client, input.tenantId, row.summary_representation_id)).eligible) continue;
+      if (
+        typeof row.summary_representation_id === "string" &&
+        !(await readRepresentationDependencies(this.client, input.tenantId, row.summary_representation_id)).eligible
+      )
+        continue;
       const kind = String(row.target_kind) as RetrievalTargetKind;
       const column = TARGET_COLUMNS.get(kind);
       const canonicalId = column === undefined ? undefined : row[column];
-      if (typeof canonicalId !== "string" || !uuid.test(canonicalId)) throw new Error("RETRIEVAL_TARGET_IDENTITY_INVALID");
-      targets.set(String(row.vector_item_id), { searchProjectionId: String(row.search_projection_id), kind, canonicalId,
-        projectionTargetId: String(row.projection_target_id) });
+      if (typeof canonicalId !== "string" || !uuid.test(canonicalId))
+        throw new Error("RETRIEVAL_TARGET_IDENTITY_INVALID");
+      targets.set(String(row.vector_item_id), {
+        searchProjectionId: String(row.search_projection_id),
+        kind,
+        canonicalId,
+        projectionTargetId: String(row.projection_target_id),
+      });
     }
     return targets;
   }
@@ -211,7 +327,9 @@ export class RetrievalSupportResolver {
     const admissionPath = "'{verification,admission,run,runId}'";
     const auditPath = "'{verification,admission,run,auditDigest}'";
     const qualifierPath = "'{verification,qualifiers}'";
-    return (await this.client.query<Row>(`select vi.id vector_item_id,c.id claim_id,c.status::text claim_status,
+    return (
+      await this.client.query<Row>(
+        `select vi.id vector_item_id,c.id claim_id,c.status::text claim_status,
         c.structured #>> ${admissionPath} verification_run_id,
         c.structured #>> ${auditPath} admission_digest,
         coalesce(c.structured #> ${qualifierPath},'[]'::jsonb) qualifiers,
@@ -238,13 +356,18 @@ export class RetrievalSupportResolver {
         and coalesce(retrieval.history_receipt_k(c.created_by_receipt_id),$3::bigint+1)<=$3::bigint
       order by array_position($2::uuid[],vi.id),c.id,loc.id
       limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`,
-    [input.tenantId, input.vectorItemIds, input.knowledgeSeq, ADMISSIBLE_VERDICTS])).rows;
+        [input.tenantId, input.vectorItemIds, input.knowledgeSeq, ADMISSIBLE_VERDICTS],
+      )
+    ).rows;
   }
 
   private async claimState(tenantId: string, claimIds: readonly string[], knowledgeSeq: number) {
-    const contradictions = new Map<string, string[]>(), supersessions = new Map<string, string[]>();
+    const contradictions = new Map<string, string[]>(),
+      supersessions = new Map<string, string[]>();
     if (!claimIds.length) return { contradictions, supersessions };
-    const conflicts = (await this.client.query<Row>(`select k.claim_a_id,k.claim_b_id from evidence.claim_conflict k
+    const conflicts = (
+      await this.client.query<Row>(
+        `select k.claim_a_id,k.claim_b_id from evidence.claim_conflict k
       join evidence.claim a on a.tenant_id=$1 and a.id=k.claim_a_id
       join evidence.claim b on b.tenant_id=$1 and b.id=k.claim_b_id
       where (k.claim_a_id=any($2::uuid[]) or k.claim_b_id=any($2::uuid[]))
@@ -253,13 +376,18 @@ export class RetrievalSupportResolver {
         and retrieval.history_claim_authorized(a.id) and retrieval.history_claim_authorized(b.id)
         and retrieval.history_receipt_k(a.created_by_receipt_id)<=$3
         and retrieval.history_receipt_k(b.created_by_receipt_id)<=$3
-      limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`, [tenantId, claimIds, knowledgeSeq])).rows;
+      limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`,
+        [tenantId, claimIds, knowledgeSeq],
+      )
+    ).rows;
     if (conflicts.length > RETRIEVAL_SUPPORT_LIMITS.maximumRows) throw new Error("RETRIEVAL_CLAIM_STATE_ROW_LIMIT");
     for (const row of conflicts) {
       append(contradictions, String(row.claim_a_id), String(row.claim_b_id));
       append(contradictions, String(row.claim_b_id), String(row.claim_a_id));
     }
-    const lineage = (await this.client.query<Row>(`select c.id claim_id,older.id older_id
+    const lineage = (
+      await this.client.query<Row>(
+        `select c.id claim_id,older.id older_id
       from evidence.claim c
       join evidence.claim older on older.tenant_id=c.tenant_id and older.superseded_by_id=c.id
       where c.tenant_id=$1 and c.id=any($2::uuid[])
@@ -267,12 +395,17 @@ export class RetrievalSupportResolver {
         and retrieval.history_claim_authorized(c.id) and retrieval.history_claim_authorized(older.id)
         and retrieval.history_receipt_k(c.created_by_receipt_id)<=$3
         and retrieval.history_receipt_k(older.created_by_receipt_id)<=$3
-      limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`, [tenantId, claimIds, knowledgeSeq])).rows;
+      limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`,
+        [tenantId, claimIds, knowledgeSeq],
+      )
+    ).rows;
     if (lineage.length > RETRIEVAL_SUPPORT_LIMITS.maximumRows) throw new Error("RETRIEVAL_CLAIM_STATE_ROW_LIMIT");
     for (const row of lineage) {
       if (row.older_id) append(supersessions, String(row.claim_id), String(row.older_id));
     }
-    const temporal = (await this.client.query<Row>(`select 'supersedes' relation,newer.primary_claim_id claim_id,older.primary_claim_id other_claim_id
+    const temporal = (
+      await this.client.query<Row>(
+        `select 'supersedes' relation,newer.primary_claim_id claim_id,older.primary_claim_id other_claim_id
       from temporal.segment newer
       join temporal.segment older on older.tenant_id=newer.tenant_id and older.id=newer.replaces_segment_id
         and older.stream_id=newer.stream_id and older.k_to=newer.k_from
@@ -303,7 +436,9 @@ export class RetrievalSupportResolver {
         and retrieval.history_claim_authorized(support.claim_id)
         and retrieval.history_claim_authorized(coalesce(segment.primary_claim_id,occurrence.primary_claim_id))
       limit ${RETRIEVAL_SUPPORT_LIMITS.maximumRows + 1}`,
-    [tenantId, claimIds, knowledgeSeq])).rows;
+        [tenantId, claimIds, knowledgeSeq],
+      )
+    ).rows;
     if (temporal.length > RETRIEVAL_SUPPORT_LIMITS.maximumRows) throw new Error("RETRIEVAL_CLAIM_STATE_ROW_LIMIT");
     for (const row of temporal) {
       if (row.relation === "supersedes") append(supersessions, String(row.claim_id), String(row.other_claim_id));
@@ -318,7 +453,10 @@ export class RetrievalSupportResolver {
 
 function append(index: Map<string, string[]>, key: string, value: string): void {
   const current = index.get(key);
-  if (!current) { index.set(key, [value]); return; }
+  if (!current) {
+    index.set(key, [value]);
+    return;
+  }
   if (!current.includes(value)) current.push(value);
 }
 
@@ -327,22 +465,44 @@ function supportPath(tenantId: string, row: Row): RetrievalSupportPathRow {
   const selectorDigest = `sha256:${String(row.selector_sha256)}`;
   const selectedContentDigest = `sha256:${String(row.selected_content_sha256)}`;
   const captureDigest = `sha256:${String(row.capture_artifact_sha256)}`;
-  const status = String(row.claim_status), verdict = String(row.assessment_verdict);
+  const status = String(row.claim_status),
+    verdict = String(row.assessment_verdict);
   const byteLength = Number(row.capture_size_bytes);
-  const qualifiers = Array.isArray(row.qualifiers) ? row.qualifiers.filter((value): value is string => typeof value === "string") : [];
-  if (!digest.test(admissionDigest) || !digest.test(selectorDigest) || !digest.test(selectedContentDigest)
-    || !digest.test(captureDigest) || !uuid.test(String(row.verification_run_id)) || !uuid.test(String(row.locator_id))
-    || !Number.isSafeInteger(byteLength) || byteLength < 0
-    || !["verified", "superseded"].includes(status) || !ADMISSIBLE_VERDICTS.includes(verdict))
+  const qualifiers = Array.isArray(row.qualifiers)
+    ? row.qualifiers.filter((value): value is string => typeof value === "string")
+    : [];
+  if (
+    !digest.test(admissionDigest) ||
+    !digest.test(selectorDigest) ||
+    !digest.test(selectedContentDigest) ||
+    !digest.test(captureDigest) ||
+    !uuid.test(String(row.verification_run_id)) ||
+    !uuid.test(String(row.locator_id)) ||
+    !Number.isSafeInteger(byteLength) ||
+    byteLength < 0 ||
+    !["verified", "superseded"].includes(status) ||
+    !ADMISSIBLE_VERDICTS.includes(verdict)
+  )
     throw new Error("RETRIEVAL_SUPPORT_BINDING_INVALID");
   return {
-    claimId: String(row.claim_id), claimStatus: status as "verified" | "superseded",
-    verificationRunId: String(row.verification_run_id), assessmentVerdict: verdict as RetrievalSupportPathRow["assessmentVerdict"],
-    admissionDigest: admissionDigest as `sha256:${string}`, locatorId: String(row.locator_id),
-    selectorDigest: selectorDigest as `sha256:${string}`, selectedContentDigest: selectedContentDigest as `sha256:${string}`,
-    captureId: String(row.capture_id), sourceFamilyId: String(row.source_family_id), representationId: String(row.representation_id),
-    captureArtifact: { artifactId: String(row.capture_artifact_id), tenantId, digest: captureDigest as `sha256:${string}`,
-      mediaType: String(row.capture_media_type), byteLength },
+    claimId: String(row.claim_id),
+    claimStatus: status as "verified" | "superseded",
+    verificationRunId: String(row.verification_run_id),
+    assessmentVerdict: verdict as RetrievalSupportPathRow["assessmentVerdict"],
+    admissionDigest: admissionDigest as `sha256:${string}`,
+    locatorId: String(row.locator_id),
+    selectorDigest: selectorDigest as `sha256:${string}`,
+    selectedContentDigest: selectedContentDigest as `sha256:${string}`,
+    captureId: String(row.capture_id),
+    sourceFamilyId: String(row.source_family_id),
+    representationId: String(row.representation_id),
+    captureArtifact: {
+      artifactId: String(row.capture_artifact_id),
+      tenantId,
+      digest: captureDigest as `sha256:${string}`,
+      mediaType: String(row.capture_media_type),
+      byteLength,
+    },
     qualifiers,
   };
 }
@@ -371,16 +531,34 @@ export function createRemoteRetrievalArtifactReader(
   database: RetrievalArtifactCatalog,
   config: RemoteRetrievalArtifactReaderConfig,
 ): ReadRetrievalArtifact {
-  if (!config.buckets.length || new Set(config.buckets).size !== config.buckets.length) throw new Error("RETRIEVAL_ARTIFACT_BUCKETS_INVALID");
+  if (!config.buckets.length || new Set(config.buckets).size !== config.buckets.length)
+    throw new Error("RETRIEVAL_ARTIFACT_BUCKETS_INVALID");
   const maximumBytes = config.maximumBytes ?? MAX_ARTIFACT_BYTES;
-  const stores = new Map(config.buckets.map(bucket => [bucket, new SupabaseArtifactStore({
-    projectUrl: config.projectUrl, serviceRoleKey: config.serviceRoleKey, bucket, maximumBytes })]));
-  return async input => {
+  const stores = new Map(
+    config.buckets.map((bucket) => [
+      bucket,
+      new SupabaseArtifactStore({
+        projectUrl: config.projectUrl,
+        serviceRoleKey: config.serviceRoleKey,
+        bucket,
+        maximumBytes,
+      }),
+    ]),
+  );
+  return async (input) => {
     if (!uuid.test(input.tenantId) || !uuid.test(input.artifactId) || !digest.test(input.expectedDigest))
       throw new Error("RETRIEVAL_ARTIFACT_REQUEST_INVALID");
-    const row = await database.transaction(input.tenantId, async client => (await client.query<Row>(
-      `select storage_bucket,media_type,size_bytes,sha256,storage_state
-       from orchestration.artifact where tenant_id=$1 and id=$2`, [input.tenantId, input.artifactId])).rows[0]);
+    const row = await database.transaction(
+      input.tenantId,
+      async (client) =>
+        (
+          await client.query<Row>(
+            `select storage_bucket,media_type,size_bytes,sha256,storage_state
+       from orchestration.artifact where tenant_id=$1 and id=$2`,
+            [input.tenantId, input.artifactId],
+          )
+        ).rows[0],
+    );
     if (!row || row.storage_state !== "available" || `sha256:${String(row.sha256)}` !== input.expectedDigest)
       throw new Error("RETRIEVAL_ARTIFACT_UNAVAILABLE");
     const store = stores.get(String(row.storage_bucket));

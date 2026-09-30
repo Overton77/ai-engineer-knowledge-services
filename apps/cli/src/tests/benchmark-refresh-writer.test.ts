@@ -7,18 +7,11 @@ import { describe, expect, it } from "vitest";
 
 import { writeBenchmarkRefreshProposal } from "../benchmark-refresh-writer.js";
 
-const id = (number: number) =>
-  `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
+const id = (number: number) => `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
 const digest = (character: string) => `sha256:${character.repeat(64)}`;
-const hash = (value: Uint8Array | string) =>
-  `sha256:${createHash("sha256").update(value).digest("hex")}`;
+const hash = (value: Uint8Array | string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 const canonical = (value: unknown): string => {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "number" ||
-    typeof value === "string"
-  )
+  if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string")
     return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   const object = value as Record<string, unknown>;
@@ -77,8 +70,7 @@ const proposal = (sourceOutcomes: readonly Record<string, unknown>[]) => {
             captureId: terminal.capture.captureId,
             contentArtifact: terminal.capture.contentArtifact,
             projectionArtifact: terminal.projections[0].projectionArtifact,
-            transformationArtifact:
-              terminal.projections[0].transformationArtifact,
+            transformationArtifact: terminal.projections[0].transformationArtifact,
             resultArtifact: terminal.resultArtifact,
           };
     }),
@@ -86,11 +78,7 @@ const proposal = (sourceOutcomes: readonly Record<string, unknown>[]) => {
   };
   return { ...material, proposalDigest: hash(canonical(material)) };
 };
-const artifact = (
-  number: number,
-  character: string,
-  mediaType = "application/json",
-) => ({
+const artifact = (number: number, character: string, mediaType = "application/json") => ({
   artifactId: id(number),
   digest: digest(character),
   mediaType,
@@ -138,11 +126,7 @@ const capture = () => {
       },
     ],
     resultArtifact: artifact(8, "4"),
-    acquisitionReceipt: artifact(
-      10,
-      "5",
-      "application/vnd.aiengineer.verification-source-acquisition-receipt+json",
-    ),
+    acquisitionReceipt: artifact(10, "5", "application/vnd.aiengineer.verification-source-acquisition-receipt+json"),
   };
 };
 const pdfCapture = () => {
@@ -202,9 +186,7 @@ describe("writeBenchmarkRefreshProposal", () => {
         sourceOutcomes,
       });
       const storedFiles = await Promise.all(
-        ["proposal.json", "source-outcomes.json", "manifest.json"].map((name) =>
-          readFile(join(outputDirectory, name)),
-        ),
+        ["proposal.json", "source-outcomes.json", "manifest.json"].map((name) => readFile(join(outputDirectory, name))),
       );
       const proposalBytes = storedFiles[0]!,
         outcomeBytes = storedFiles[1]!,
@@ -215,14 +197,7 @@ describe("writeBenchmarkRefreshProposal", () => {
       };
       expect(result.outputDirectory).toBe(outputDirectory);
       expect(result.manifestDigest).toBe(
-        hash(
-          canonical(
-            without(
-              manifest as unknown as Record<string, unknown>,
-              "manifestDigest",
-            ),
-          ),
-        ),
+        hash(canonical(without(manifest as unknown as Record<string, unknown>, "manifestDigest"))),
       );
       expect(manifest.files).toEqual([
         {
@@ -236,9 +211,7 @@ describe("writeBenchmarkRefreshProposal", () => {
           bytes: outcomeBytes.byteLength,
         },
       ]);
-      const storedOutcomes = JSON.parse(
-        new TextDecoder().decode(outcomeBytes),
-      ) as {
+      const storedOutcomes = JSON.parse(new TextDecoder().decode(outcomeBytes)) as {
         outcomes: readonly Record<string, unknown>[];
         outcomesDigest: string;
       };
@@ -295,20 +268,16 @@ describe("writeBenchmarkRefreshProposal", () => {
           sourceOutcomes: tampered,
         }),
       ).rejects.toThrow("BENCHMARK_REFRESH_WRITER_OUTCOME_BINDING_INVALID");
-      expect(
-        (await readdir(parent)).filter(
-          (name) => name.includes(".pending-") || name.endsWith(".lock"),
-        ),
-      ).toEqual([]);
+      expect((await readdir(parent)).filter((name) => name.includes(".pending-") || name.endsWith(".lock"))).toEqual(
+        [],
+      );
     } finally {
       await rm(parent, { recursive: true, force: true });
     }
   });
 
   it("binds both PDF text and geometry projection/transformation roles", async () => {
-    const parent = await mkdtemp(
-      join(tmpdir(), "knowledge-refresh-writer-pdf-"),
-    );
+    const parent = await mkdtemp(join(tmpdir(), "knowledge-refresh-writer-pdf-"));
     const sourceOutcomes = outcomes() as Array<Record<string, unknown>>;
     sourceOutcomes[0] = {
       sourceKey: "source-0",
@@ -327,8 +296,7 @@ describe("writeBenchmarkRefreshProposal", () => {
         files: [{ name: "proposal.json" }, { name: "source-outcomes.json" }],
       });
       const altered = structuredClone(sourceOutcomes);
-      (altered[0]!.capture as any).projections[1].transformationArtifact =
-        artifact(99, "9");
+      (altered[0]!.capture as any).projections[1].transformationArtifact = artifact(99, "9");
       await expect(
         writeBenchmarkRefreshProposal({
           outputDirectory: join(parent, "tampered"),

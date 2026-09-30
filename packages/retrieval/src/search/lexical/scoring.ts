@@ -12,9 +12,7 @@ export function score(
   return records
     .map((record) => ({ record, score: scorer(record), explanation }))
     .filter((x) => x.score > 0)
-    .sort(
-      (a, b) => b.score - a.score || a.record.id.localeCompare(b.record.id),
-    );
+    .sort((a, b) => b.score - a.score || a.record.id.localeCompare(b.record.id));
 }
 
 export function exactScore(record: RetrievalRecord, query: string): number {

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const actor = {
   kind: "service" as const,
   id: id(2),
@@ -25,12 +24,8 @@ function fixture(admitted?: boolean, reviewer = true) {
   const operations = new KnowledgeIntegrationService(),
     grant = vi.fn().mockResolvedValue(admitted);
   const identity = {
-    actor: reviewer
-      ? actor
-      : { ...actor, serviceIdentity: "mission_control_client" as const },
-    grants: [
-      { tenantId: id(1), roles: ["knowledge_operator" as const], scopes: [] },
-    ],
+    actor: reviewer ? actor : { ...actor, serviceIdentity: "mission_control_client" as const },
+    grants: [{ tenantId: id(1), roles: ["knowledge_operator" as const], scopes: [] }],
   };
   const server = buildServer({
     verificationOperationService: operations,
@@ -46,9 +41,7 @@ function fixture(admitted?: boolean, reviewer = true) {
       reason: "Test",
       contractVersion: "v1",
     }),
-    ...(admitted === undefined
-      ? {}
-      : { isAdjudicationDecisionAdmitted: grant }),
+    ...(admitted === undefined ? {} : { isAdjudicationDecisionAdmitted: grant }),
   });
   const send = (payload: unknown = request) =>
     server.inject({
@@ -87,9 +80,7 @@ describe("packet-bound decision HTTP boundary", () => {
   it("rejects request authority injection and forwards authenticated identity to grant checking", async () => {
     const f = fixture(true);
     try {
-      expect(
-        (await f.send({ ...request, reviewerRole: "admin" })).statusCode,
-      ).toBe(400);
+      expect((await f.send({ ...request, reviewerRole: "admin" })).statusCode).toBe(400);
       expect(f.grant).not.toHaveBeenCalled();
       const response = await f.send();
       expect(response.statusCode, response.body).toBe(202);

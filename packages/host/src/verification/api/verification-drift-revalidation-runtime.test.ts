@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const { compare } = vi.hoisted(() => ({ compare: vi.fn() }));
 vi.mock("@aiengineer/knowledge-application", async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import("@aiengineer/knowledge-application")
-  >()),
+  ...(await importOriginal<typeof import("@aiengineer/knowledge-application")>()),
   compareVerifiedComponentVersions: compare,
 }));
 import { createVerificationDriftRevalidationRuntime } from "./verification-drift-revalidation-runtime.js";
@@ -34,9 +32,7 @@ const keys = () => {
   return JSON.stringify([
     {
       keyId: "k",
-      publicKeyPem: pair.publicKey
-        .export({ type: "spki", format: "pem" })
-        .toString(),
+      publicKeyPem: pair.publicKey.export({ type: "spki", format: "pem" }).toString(),
     },
   ]);
 };
@@ -50,8 +46,7 @@ function db(modelRows = 0) {
           operation_id: id,
         })),
       };
-    if (sql.includes("plan_verification_drift_revalidation"))
-      return { rows: [{ inserted: true }] };
+    if (sql.includes("plan_verification_drift_revalidation")) return { rows: [{ inserted: true }] };
     return { rows: [] };
   });
   return {
@@ -60,9 +55,7 @@ function db(modelRows = 0) {
   };
 }
 const monitor = (tenantId = tenant) =>
-  JSON.stringify([
-    { tenantId, baseline: handle(tenantId), candidate: handle(tenantId, 2) },
-  ]);
+  JSON.stringify([{ tenantId, baseline: handle(tenantId), candidate: handle(tenantId, 2) }]);
 function monitorSet() {
   return JSON.stringify(
     [1, 2, 3].map((number) => ({
@@ -72,9 +65,7 @@ function monitorSet() {
     })),
   );
 }
-function component(publisher: {
-  publishComponentObservation: ReturnType<typeof vi.fn>;
-}) {
+function component(publisher: { publishComponentObservation: ReturnType<typeof vi.fn> }) {
   return {
     forTenant: vi.fn(() => ({
       publisher: publisher as never,
@@ -150,17 +141,12 @@ describe("component drift runtime", () => {
       component(publisher),
     );
     compare.mockResolvedValueOnce(observation([]));
-    await expect(runtime.scan({ tenantId: tenant, limit: 1 })).resolves.toEqual(
-      { planned: 0, alreadyPlanned: 0 },
-    );
+    await expect(runtime.scan({ tenantId: tenant, limit: 1 })).resolves.toEqual({ planned: 0, alreadyPlanned: 0 });
     expect(publisher.publishComponentObservation).not.toHaveBeenCalled();
   });
   it("publishes derived drift once and returns durable replay count", async () => {
     const publisher = {
-      publishComponentObservation: vi
-        .fn()
-        .mockResolvedValueOnce("planned")
-        .mockResolvedValueOnce("already_planned"),
+      publishComponentObservation: vi.fn().mockResolvedValueOnce("planned").mockResolvedValueOnce("already_planned"),
     };
     const runtime = createVerificationDriftRevalidationRuntime(
       db() as never,
@@ -213,9 +199,7 @@ describe("component drift runtime", () => {
     await runtime.scan({ tenantId: tenant, limit: 1 });
     await runtime.scan({ tenantId: tenant, limit: 1 });
     await runtime.scan({ tenantId: tenant, limit: 1 });
-    expect(
-      compare.mock.calls.map(([input]) => input.baseline.artifact.artifactId),
-    ).toEqual([
+    expect(compare.mock.calls.map(([input]) => input.baseline.artifact.artifactId)).toEqual([
       handle(tenant, 2).artifactId,
       handle(tenant, 4).artifactId,
       handle(tenant, 6).artifactId,

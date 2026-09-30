@@ -34,5 +34,8 @@ export function artifactDestination(handle: VerificationArtifactHandle) {
     return { ...EXECUTOR_STORAGE_PROFILE.captures, artifactType: "source_capture" };
   }
   const kind = /^application\/vnd\.aiengineer\.([^+]+)\+json$/.exec(handle.mediaType)?.[1];
-  return { ...EXECUTOR_STORAGE_PROFILE.intermediate, artifactType: kind ? MEDIA_TYPES[kind] ?? "workspace_file" : "workspace_file" };
+  return {
+    ...EXECUTOR_STORAGE_PROFILE.intermediate,
+    artifactType: kind ? (MEDIA_TYPES[kind] ?? "workspace_file") : "workspace_file",
+  };
 }

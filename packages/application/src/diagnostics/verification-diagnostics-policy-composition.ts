@@ -1,6 +1,13 @@
-import type { DeterministicVerificationResult, SemanticAssessmentRecord, VerificationPolicyDefinition } from "@aiengineer/knowledge-contracts";
+import type {
+  DeterministicVerificationResult,
+  SemanticAssessmentRecord,
+  VerificationPolicyDefinition,
+} from "@aiengineer/knowledge-contracts";
 import { canonicalizeJson, digestCanonicalJson } from "@aiengineer/knowledge-verification";
-import { replayDiagnosticsPolicy, type DiagnosticsPolicyReplayResult } from "./verification-diagnostics-policy-replay.js";
+import {
+  replayDiagnosticsPolicy,
+  type DiagnosticsPolicyReplayResult,
+} from "./verification-diagnostics-policy-replay.js";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
@@ -31,7 +38,13 @@ export const CONSERVATIVE_DIAGNOSTICS_REPLAY_POLICY: VerificationPolicyDefinitio
   definitionId: "diagnostics-policy-engineering-replay",
   criticalDownstreamUses: ["clinical_decision", "publication"],
   requireCrossFamilyForRisk: ["high", "critical"],
-  requireIndependentAuthorityForScopes: ["population_accuracy", "clinical_utility", "comparative_superiority", "causal", "product_validation"],
+  requireIndependentAuthorityForScopes: [
+    "population_accuracy",
+    "clinical_utility",
+    "comparative_superiority",
+    "causal",
+    "product_validation",
+  ],
   mixedEvidenceOutcome: "review",
   unknownCriticalOutcome: "abstain",
   authorityWithheldOutcome: "review",
@@ -41,7 +54,12 @@ export const CONSERVATIVE_DIAGNOSTICS_REPLAY_POLICY: VerificationPolicyDefinitio
 export interface DiagnosticsPolicyComposition {
   readonly schemaVersion: "verification-diagnostics-policy-composition.v1";
   readonly purpose: "internal_research" | "publication_eligibility";
-  readonly policy: { readonly policyVersion: string; readonly json: string; readonly digest: `sha256:${string}`; readonly authority: "engineering_replay_policy" };
+  readonly policy: {
+    readonly policyVersion: string;
+    readonly json: string;
+    readonly digest: `sha256:${string}`;
+    readonly authority: "engineering_replay_policy";
+  };
   readonly cases: readonly {
     readonly caseId: string;
     readonly caseDigest: `sha256:${string}`;
@@ -85,46 +103,68 @@ export function composeDiagnosticsPolicyReplay(input: {
 }): DiagnosticsPolicyComposition {
   const policy = input.policy ?? CONSERVATIVE_DIAGNOSTICS_REPLAY_POLICY;
   const purpose = input.purpose ?? "internal_research";
-  if (purpose !== "internal_research" && purpose !== "publication_eligibility") throw new Error("DIAGNOSTICS_POLICY_PURPOSE_INVALID");
+  if (purpose !== "internal_research" && purpose !== "publication_eligibility")
+    throw new Error("DIAGNOSTICS_POLICY_PURPOSE_INVALID");
   const policyJson = canonicalizeJson(policy);
   const cases = input.replay.map((entry) => {
     const sourceClass = entry.authenticatedEvidence.sourceClass;
-    if (!["first_party", "first_party_marketing", "interested_party_comparison", "publication"].includes(sourceClass)) throw new Error("DIAGNOSTICS_POLICY_COMPOSITION_SOURCE_CLASS");
+    if (!["first_party", "first_party_marketing", "interested_party_comparison", "publication"].includes(sourceClass))
+      throw new Error("DIAGNOSTICS_POLICY_COMPOSITION_SOURCE_CLASS");
     const normalizedProposition = entry.authenticatedEvidence.proposition.replace(/\s+/gu, " ").trim();
-    const exactProductValidation = entry.caseId === "pace-definition-mutated"
-      && normalizedProposition === "This paragraph validates every commercial feature of TruAge and SystemAge.";
-    const exactComparativeClaim = entry.caseId === "noise-method-mutated"
-      && normalizedProposition === "This paragraph proves that SystemAge is superior to TruAge in an independent head-to-head clinical trial.";
-    const exactInterestedComparison = entry.caseId === "gl-interested-comparison-source"
-      && normalizedProposition === "Used by thousands of people around the world, the SystemAge test by Generation Lab is the most advanced and comprehensive aging speed test in preventive healthcare.";
-    if ((entry.caseId === "pace-definition-mutated" && !exactProductValidation)
-      || (entry.caseId === "noise-method-mutated" && !exactComparativeClaim)
-      || (entry.caseId === "gl-interested-comparison-source" && !exactInterestedComparison)) throw new Error("DIAGNOSTICS_POLICY_COMPOSITION_SCOPE_DRIFT");
-    const claimScope: "source_summary" | "product_validation" | "comparative_superiority" = exactProductValidation ? "product_validation" : exactComparativeClaim || exactInterestedComparison ? "comparative_superiority" : "source_summary";
+    const exactProductValidation =
+      entry.caseId === "pace-definition-mutated" &&
+      normalizedProposition === "This paragraph validates every commercial feature of TruAge and SystemAge.";
+    const exactComparativeClaim =
+      entry.caseId === "noise-method-mutated" &&
+      normalizedProposition ===
+        "This paragraph proves that SystemAge is superior to TruAge in an independent head-to-head clinical trial.";
+    const exactInterestedComparison =
+      entry.caseId === "gl-interested-comparison-source" &&
+      normalizedProposition ===
+        "Used by thousands of people around the world, the SystemAge test by Generation Lab is the most advanced and comprehensive aging speed test in preventive healthcare.";
+    if (
+      (entry.caseId === "pace-definition-mutated" && !exactProductValidation) ||
+      (entry.caseId === "noise-method-mutated" && !exactComparativeClaim) ||
+      (entry.caseId === "gl-interested-comparison-source" && !exactInterestedComparison)
+    )
+      throw new Error("DIAGNOSTICS_POLICY_COMPOSITION_SCOPE_DRIFT");
+    const claimScope: "source_summary" | "product_validation" | "comparative_superiority" = exactProductValidation
+      ? "product_validation"
+      : exactComparativeClaim || exactInterestedComparison
+        ? "comparative_superiority"
+        : "source_summary";
     const riskClass: "low" | "high" = claimScope === "source_summary" ? "low" : "high";
-    const evidenceScope: "unknown" | "company_statement" = sourceClass === "publication" ? "unknown" : "company_statement";
-    const publicationRelation: "unknown" | "not_publication" = sourceClass === "publication" ? "unknown" : "not_publication";
+    const evidenceScope: "unknown" | "company_statement" =
+      sourceClass === "publication" ? "unknown" : "company_statement";
+    const publicationRelation: "unknown" | "not_publication" =
+      sourceClass === "publication" ? "unknown" : "not_publication";
     const result = replayDiagnosticsPolicy({
       policy,
       runId: `${input.runIdPrefix}:${entry.caseId}`,
       recordedAt: input.recordedAt,
       deterministicResult: entry.deterministicResult,
-      cases: [{
-        caseId: entry.caseId,
-        caseDigest: entry.authenticatedEvidence.caseDigest,
-        assertionId: entry.authenticatedEvidence.assertionId,
-        fragmentId: entry.authenticatedEvidence.fragmentId,
-        captureId: entry.authenticatedEvidence.captureId,
-        sourceFamilyId: entry.authenticatedEvidence.sourceFamilyId,
-        sourceOrganizationId: "unknown-source-organization",
-        sourceClass: sourceClass as "first_party" | "first_party_marketing" | "interested_party_comparison" | "publication",
-        claimScope,
-        evidenceScope,
-        publicationRelation,
-        riskClass,
-        downstreamUse: [purpose === "publication_eligibility" ? "publication" : "internal_research"],
-        semantic: entry.assessment,
-      }],
+      cases: [
+        {
+          caseId: entry.caseId,
+          caseDigest: entry.authenticatedEvidence.caseDigest,
+          assertionId: entry.authenticatedEvidence.assertionId,
+          fragmentId: entry.authenticatedEvidence.fragmentId,
+          captureId: entry.authenticatedEvidence.captureId,
+          sourceFamilyId: entry.authenticatedEvidence.sourceFamilyId,
+          sourceOrganizationId: "unknown-source-organization",
+          sourceClass: sourceClass as
+            | "first_party"
+            | "first_party_marketing"
+            | "interested_party_comparison"
+            | "publication",
+          claimScope,
+          evidenceScope,
+          publicationRelation,
+          riskClass,
+          downstreamUse: [purpose === "publication_eligibility" ? "publication" : "internal_research"],
+          semantic: entry.assessment,
+        },
+      ],
     });
     return {
       caseId: entry.caseId,
@@ -152,7 +192,12 @@ export function composeDiagnosticsPolicyReplay(input: {
   return Object.freeze({
     schemaVersion: "verification-diagnostics-policy-composition.v1",
     purpose,
-    policy: { policyVersion: policy.policyVersion, json: policyJson, digest: digestCanonicalJson(policy), authority: "engineering_replay_policy" as const },
+    policy: {
+      policyVersion: policy.policyVersion,
+      json: policyJson,
+      digest: digestCanonicalJson(policy),
+      authority: "engineering_replay_policy" as const,
+    },
     cases: Object.freeze(cases),
     externalRequests: 0,
   });

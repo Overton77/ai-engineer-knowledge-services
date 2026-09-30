@@ -7,21 +7,16 @@ import {
   runBroadEvaluation,
 } from "../packages/testkit/src/index.js";
 
-const reviewArtifactPath =
-  process.argv[2] ?? "catalog/broad-corpus-review-v4.json";
+const reviewArtifactPath = process.argv[2] ?? "catalog/broad-corpus-review-v4.json";
 const outputPath = process.argv[3] ?? "catalog/broad-heldout-evaluation.json";
-const reviewArtifact = JSON.parse(
-  await readFile(reviewArtifactPath, "utf8"),
-) as EvaluationReviewArtifact;
+const reviewArtifact = JSON.parse(await readFile(reviewArtifactPath, "utf8")) as EvaluationReviewArtifact;
 const corpus = await createBroadEvaluationCorpus(reviewArtifact);
 const started = performance.now();
 const result = await runBroadEvaluation(corpus);
 const totalWallMs = Number((performance.now() - started).toFixed(3));
 const countBy = <T extends string>(values: readonly T[]) =>
   Object.fromEntries(
-    [...new Set(values)]
-      .sort()
-      .map((value) => [value, values.filter((item) => item === value).length]),
+    [...new Set(values)].sort().map((value) => [value, values.filter((item) => item === value).length]),
   );
 const receipt = {
   storeClass: "internal_exploratory",
@@ -32,8 +27,7 @@ const receipt = {
     version: corpus.dataset.version,
     manifestDigest: corpus.dataset.manifestDigest,
     publicRequestManifestDigest: corpus.publicRequestManifestDigest,
-    candidateManifestDigest:
-      corpus.dataset.reviewArtifact?.candidateManifestDigest,
+    candidateManifestDigest: corpus.dataset.reviewArtifact?.candidateManifestDigest,
     reviewArtifactDigest: corpus.dataset.reviewArtifact?.digest,
     reviewerIdentity: corpus.dataset.reviewArtifact?.reviewerIdentity,
     caseCount: corpus.dataset.cases.length,
@@ -44,18 +38,10 @@ const receipt = {
     partitionLeakageValid: result.partitionAudit.valid,
     partitionLeakageViolations: result.partitionAudit.violations,
     domains: countBy(corpus.dataset.cases.map(({ domain }) => domain)),
-    queryClasses: countBy(
-      corpus.dataset.cases.map(({ queryClass }) => queryClass),
-    ),
-    fixtureKinds: countBy(
-      corpus.dataset.cases.map(({ fixtureKind }) => fixtureKind),
-    ),
-    sourceFamilyCount: new Set(
-      corpus.dataset.cases.map(({ sourceFamily }) => sourceFamily),
-    ).size,
-    entityFamilyCount: new Set(
-      corpus.dataset.cases.map(({ entityFamily }) => entityFamily),
-    ).size,
+    queryClasses: countBy(corpus.dataset.cases.map(({ queryClass }) => queryClass)),
+    fixtureKinds: countBy(corpus.dataset.cases.map(({ fixtureKind }) => fixtureKind)),
+    sourceFamilyCount: new Set(corpus.dataset.cases.map(({ sourceFamily }) => sourceFamily)).size,
+    entityFamilyCount: new Set(corpus.dataset.cases.map(({ entityFamily }) => entityFamily)).size,
     everyRequiredDomainPresent: BROAD_DOMAINS.every((domain) =>
       corpus.dataset.cases.some((item) => item.domain === domain),
     ),
@@ -87,14 +73,10 @@ const receipt = {
 await writeFile(outputPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 console.log(
   JSON.stringify({
-    ok:
-      result.controlGate.passed &&
-      result.regressionGate.passed &&
-      result.rollbackProof.passed,
+    ok: result.controlGate.passed && result.regressionGate.passed && result.rollbackProof.passed,
     cases: corpus.dataset.cases.length,
     partitions: result.partitionAudit.counts,
-    control: result.experiment.arms.find(({ arm }) => arm.control)?.report
-      .overall,
+    control: result.experiment.arms.find(({ arm }) => arm.control)?.report.overall,
     falseAcceptances: result.falseAcceptanceCases.length,
     totalWallMs,
     outputPath,

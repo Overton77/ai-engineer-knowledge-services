@@ -12,16 +12,22 @@ export type Digest = `sha256:${string}`;
 export function canonicalJson(value: unknown): string {
   if (value === null) return "null";
   switch (typeof value) {
-    case "string": return JSON.stringify(value.normalize("NFC"));
-    case "boolean": return String(value);
+    case "string":
+      return JSON.stringify(value.normalize("NFC"));
+    case "boolean":
+      return String(value);
     case "number":
       if (!Number.isFinite(value)) throw new TypeError("canonical JSON cannot encode a non-finite number");
       return JSON.stringify(value);
-    case "bigint": return JSON.stringify(Number(value));
-    case "object": break;
-    default: throw new TypeError(`canonical JSON cannot encode ${typeof value}`);
+    case "bigint":
+      return JSON.stringify(Number(value));
+    case "object":
+      break;
+    default:
+      throw new TypeError(`canonical JSON cannot encode ${typeof value}`);
   }
-  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]`;
+  if (Array.isArray(value))
+    return `[${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]`;
   if (value instanceof Date) return JSON.stringify(value.toISOString());
   const entries = Object.entries(value as Record<string, unknown>)
     .filter(([, item]) => item !== undefined)
@@ -30,7 +36,8 @@ export function canonicalJson(value: unknown): string {
 }
 
 function compareCodePoints(a: string, b: string): number {
-  const left = [...a]; const right = [...b];
+  const left = [...a];
+  const right = [...b];
   for (let index = 0; index < Math.min(left.length, right.length); index += 1) {
     const diff = left[index]!.codePointAt(0)! - right[index]!.codePointAt(0)!;
     if (diff !== 0) return diff;

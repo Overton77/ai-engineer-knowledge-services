@@ -4,8 +4,7 @@ import type { LocalApiIdentity } from "../auth.js";
 import { buildServer } from "../server.js";
 import { createVerificationOwnershipResolver } from "@aiengineer/knowledge-host";
 
-const id = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const tenant = id(1),
   actor = {
     kind: "service" as const,
@@ -59,12 +58,7 @@ describe("verification HTTP composition", () => {
     const api = buildServer({
       verificationOperationService: operations,
       resolveIdentity: () => identity,
-      resolveVerificationContext: ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }) => ({
+      resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }) => ({
         tenantId,
         actor: identity.actor,
         correlationId,
@@ -107,10 +101,7 @@ describe("verification HTTP composition", () => {
   it("matches only the literal parser action suffix", async () => {
     const server = buildServer();
     try {
-      for (const url of [
-        "/v1/verification/artifacts-anything",
-        "/v1/verification/artifacts:other",
-      ]) {
+      for (const url of ["/v1/verification/artifacts-anything", "/v1/verification/artifacts:other"]) {
         expect(
           (
             await server.inject({
@@ -130,12 +121,7 @@ describe("verification HTTP composition", () => {
     const options = (operations: KnowledgeIntegrationService) => ({
       verificationOperationService: operations,
       resolveIdentity: () => identity,
-      resolveVerificationContext: ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }: any) => ({
+      resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
         tenantId,
         operationId: id(42),
         attemptId: id(43),
@@ -218,12 +204,7 @@ describe("verification HTTP composition", () => {
     const makeOptions = (operations: KnowledgeIntegrationService) => ({
       verificationOperationService: operations,
       resolveIdentity: () => identity,
-      resolveVerificationContext: ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }: any) => ({
+      resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
         tenantId,
         operationId,
         attemptId: id(62),
@@ -300,12 +281,7 @@ describe("verification HTTP composition", () => {
     const options = {
       verificationOperationService: operations,
       resolveIdentity: () => identity,
-      resolveVerificationContext: ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }: any) => ({
+      resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
         tenantId,
         operationId: id(82),
         attemptId: id(83),
@@ -388,16 +364,10 @@ describe("verification HTTP composition", () => {
   it("admits only strict offline benchmark references under trusted ownership", async () => {
     const operations = new KnowledgeIntegrationService();
     const api = buildServer({
-      isBenchmarkRequestAdmitted: (tenantId, input) =>
-        tenantId === tenant && input.dataset.artifactId === id(72),
+      isBenchmarkRequestAdmitted: (tenantId, input) => tenantId === tenant && input.dataset.artifactId === id(72),
       verificationOperationService: operations,
       resolveIdentity: () => identity,
-      resolveVerificationContext: ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }) => ({
+      resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }) => ({
         tenantId,
         operationId: id(70),
         attemptId: id(71),
@@ -487,12 +457,7 @@ describe("verification HTTP composition", () => {
     const api = buildServer({
       verificationOperationService: new KnowledgeIntegrationService(),
       resolveIdentity: () => identity,
-      resolveVerificationContext: async ({
-        tenantId,
-        identity,
-        correlationId,
-        idempotencyKey,
-      }: any) => ({
+      resolveVerificationContext: async ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
         tenantId,
         operationId: id(20),
         attemptId: id(21),
@@ -529,8 +494,7 @@ describe("verification HTTP composition", () => {
   });
   it("admits exact external execution grants when optional headers are absent", async () => {
     const database = {
-      transaction: async (_tenant: unknown, work: any) =>
-        work({ query: async () => ({ rows: [{ id: id(31) }] }) }),
+      transaction: async (_tenant: unknown, work: any) => work({ query: async () => ({ rows: [{ id: id(31) }] }) }),
     };
     const api = buildServer({
       verificationOperationService: new KnowledgeIntegrationService(),
@@ -575,15 +539,9 @@ describe("verification HTTP composition", () => {
     const operations = new KnowledgeIntegrationService(),
       api = buildServer({
         verificationOperationService: operations,
-        resolveIdentity: (candidate) =>
-          candidate === token ? identity : undefined,
+        resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
         publicOrigin: "https://knowledge.example",
-        resolveVerificationContext: ({
-          tenantId,
-          identity,
-          correlationId,
-          idempotencyKey,
-        }) => ({
+        resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }) => ({
           tenantId,
           operationId: id(10),
           attemptId: id(11),
@@ -620,14 +578,8 @@ describe("verification HTTP composition", () => {
     const operations = new KnowledgeIntegrationService(),
       base = {
         verificationOperationService: operations,
-        resolveIdentity: (candidate: string) =>
-          candidate === token ? identity : undefined,
-        resolveVerificationContext: ({
-          tenantId,
-          identity,
-          correlationId,
-          idempotencyKey,
-        }: any) => ({
+        resolveIdentity: (candidate: string) => (candidate === token ? identity : undefined),
+        resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
           tenantId,
           operationId: id(20),
           attemptId: id(21),
@@ -675,8 +627,7 @@ describe("verification HTTP composition", () => {
   });
   it("keeps verification mutations unavailable when trusted composition is absent", async () => {
     const api = buildServer({
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
     });
     const response = await api.inject({
       method: "POST",
@@ -702,8 +653,7 @@ describe("verification HTTP composition", () => {
     let observed: unknown;
     const denied = buildServer({
       verificationOperationService: operations,
-      resolveIdentity: (candidate) =>
-        candidate === token ? identity : undefined,
+      resolveIdentity: (candidate) => (candidate === token ? identity : undefined),
       resolveVerificationContext: (input) => {
         observed = input.hints;
         return undefined;

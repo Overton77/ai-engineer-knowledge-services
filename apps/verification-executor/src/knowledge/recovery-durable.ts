@@ -1,5 +1,11 @@
-import { DurableVerificationRecoveryService, type DurableRecoveryEvidenceAuthority } from "@aiengineer/knowledge-application";
-import { PostgresDurableVerificationRecoveryStore, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
+import {
+  DurableVerificationRecoveryService,
+  type DurableRecoveryEvidenceAuthority,
+} from "@aiengineer/knowledge-application";
+import {
+  PostgresDurableVerificationRecoveryStore,
+  type PostgresCanonicalRepository,
+} from "@aiengineer/knowledge-persistence";
 import type { ArtifactCustody } from "../store-custody.js";
 import type { FilesystemStore } from "../store.js";
 import { createDurableRecoveryCheckpoints } from "./recovery-durable-checkpoints.js";

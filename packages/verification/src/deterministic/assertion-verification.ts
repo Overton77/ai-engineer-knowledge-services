@@ -1,14 +1,9 @@
-import type {
-  Assertion,
-  DeterministicVerificationResult,
-  VerificationBundle,
-} from "@aiengineer/knowledge-contracts";
+import type { Assertion, DeterministicVerificationResult, VerificationBundle } from "@aiengineer/knowledge-contracts";
 import { CHECK, Checks, combineCheckStatus } from "./checks.js";
 import type { EvidenceEdgeVerifier } from "./evidence-edge.js";
 import type { RuntimeSeparation } from "./runtime-separation.js";
 
-export type AssertionResult =
-  DeterministicVerificationResult["assertions"][number];
+export type AssertionResult = DeterministicVerificationResult["assertions"][number];
 
 export interface AssertionContext {
   readonly producer: VerificationBundle["producer"];
@@ -21,10 +16,7 @@ export interface AssertionContext {
  * bundle's producer under established separation, and every evidence edge
  * resolved mechanically. The verdict is always left to the semantic layer.
  */
-export function verifyAssertion(
-  context: AssertionContext,
-  assertion: Assertion,
-): AssertionResult {
+export function verifyAssertion(context: AssertionContext, assertion: Assertion): AssertionResult {
   const evidence = assertion.evidence.map(context.verifyEvidence);
   const { producer, separation } = context;
   const checks = new Checks(assertion.assertionId)
@@ -48,14 +40,8 @@ export function verifyAssertion(
       pass: "Assertion is atomic.",
       fail: "Composite assertion requires decomposition.",
     })
-    .require(
-      CHECK.EVIDENCE_PRESENT,
-      evidence.length > 0,
-      `${evidence.length} evidence reference(s) supplied.`,
-    );
-  const evidenceStatus = combineEvidenceStatus(
-    evidence.map((item) => item.contract.status),
-  );
+    .require(CHECK.EVIDENCE_PRESENT, evidence.length > 0, `${evidence.length} evidence reference(s) supplied.`);
+  const evidenceStatus = combineEvidenceStatus(evidence.map((item) => item.contract.status));
   checks.add({
     code: CHECK.EVIDENCE_MECHANICALLY_VALID,
     status: evidenceStatus,
@@ -64,10 +50,7 @@ export function verifyAssertion(
     detail: "All evidence must pass deterministic resolution before semantics.",
     targetId: assertion.assertionId,
   });
-  const status = combineCheckStatus([
-    ...checks.items,
-    ...evidence.flatMap((item) => item.contract.checks),
-  ]);
+  const status = combineCheckStatus([...checks.items, ...evidence.flatMap((item) => item.contract.checks)]);
   return {
     assertionId: assertion.assertionId,
     status,
@@ -79,9 +62,7 @@ export function verifyAssertion(
 }
 
 /** All passed → passed; any failed → failed; otherwise the edges need review. */
-function combineEvidenceStatus(
-  statuses: readonly AssertionResult["status"][],
-): AssertionResult["status"] {
+function combineEvidenceStatus(statuses: readonly AssertionResult["status"][]): AssertionResult["status"] {
   if (statuses.every((status) => status === "passed")) return "passed";
   if (statuses.some((status) => status === "failed")) return "failed";
   return "review_required";

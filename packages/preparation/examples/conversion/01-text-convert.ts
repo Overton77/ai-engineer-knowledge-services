@@ -1,10 +1,5 @@
 import { ConversionRouter, DeterministicTextConversionProvider } from "../../src/index.js";
-import {
-  EXAMPLE_TENANT,
-  countingProvider,
-  exampleStore,
-  printJson,
-} from "./helpers.js";
+import { EXAMPLE_TENANT, countingProvider, exampleStore, printJson } from "./helpers.js";
 
 export async function runTextConvertExample() {
   const store = exampleStore();

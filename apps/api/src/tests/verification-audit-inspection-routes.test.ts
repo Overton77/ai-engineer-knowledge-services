@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildServer } from "../server.js";
 import type { LocalApiIdentity } from "../auth.js";
 
-const id = (n: number) =>
-    `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
   tenant = id(1),
   operationId = id(2),
   token = "audit-route-token",
@@ -30,12 +29,7 @@ const request = {
 const base = (operations: KnowledgeIntegrationService) => ({
   verificationOperationService: operations,
   resolveIdentity: () => identity,
-  resolveVerificationContext: ({
-    tenantId,
-    identity,
-    correlationId,
-    idempotencyKey,
-  }: any) => ({
+  resolveVerificationContext: ({ tenantId, identity, correlationId, idempotencyKey }: any) => ({
     tenantId,
     operationId,
     attemptId: id(5),
@@ -74,8 +68,7 @@ describe("audit inspection HTTP routes", () => {
       server = buildServer({
         ...base(operations),
         isAuditInspectionRequestAdmitted: async (t, r) =>
-          t === tenant &&
-          r.auditBundle.artifactId === request.auditBundle.artifactId,
+          t === tenant && r.auditBundle.artifactId === request.auditBundle.artifactId,
         verificationAuditInspectionReads: {
           getInspection: async () => ({
             verificationContractVersion: "verification.v1",
@@ -91,8 +84,7 @@ describe("audit inspection HTTP routes", () => {
               verificationContractVersion: "verification.v1",
               auditArtifact: {
                 ...request.auditBundle,
-                mediaType:
-                  "application/vnd.aiengineer.verification-run-manifest+json",
+                mediaType: "application/vnd.aiengineer.verification-run-manifest+json",
                 sizeBytes: 10,
               },
               run: {
@@ -158,8 +150,7 @@ describe("audit inspection HTTP routes", () => {
       server = buildServer({
         ...base(operations),
         verificationAuditInspectionReads: {
-          getInspection: async () =>
-            ({ objectKey: "private-storage-coordinate" }) as any,
+          getInspection: async () => ({ objectKey: "private-storage-coordinate" }) as any,
         },
       });
     try {

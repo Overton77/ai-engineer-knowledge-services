@@ -18,10 +18,22 @@ export function qaFailureNextProfileExample() {
   let accepted: ChunkingResult | undefined;
   for (const profile of order) {
     const result = chunkDocument(nodes, profile);
-    attempts.push({ profile: `${profile.name}@${profile.version}`, valid: result.qa.valid, issues: result.qa.issues, chunkCount: result.chunks.length });
-    if (result.qa.valid) { accepted = result; break; }
+    attempts.push({
+      profile: `${profile.name}@${profile.version}`,
+      valid: result.qa.valid,
+      issues: result.qa.issues,
+      chunkCount: result.chunks.length,
+    });
+    if (result.qa.valid) {
+      accepted = result;
+      break;
+    }
   }
-  return { observedKinds, attempts, accepted: accepted === undefined ? undefined : `${accepted.profile.name}@${accepted.profile.version}` };
+  return {
+    observedKinds,
+    attempts,
+    accepted: accepted === undefined ? undefined : `${accepted.profile.name}@${accepted.profile.version}`,
+  };
 }
 
 if (process.argv[1]?.includes("03-qa-failure-next-profile")) printJson(qaFailureNextProfileExample());

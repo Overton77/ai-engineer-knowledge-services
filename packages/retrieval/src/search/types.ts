@@ -1,7 +1,4 @@
-import type {
-  SourceLocator,
-  VectorSpace,
-} from "@aiengineer/knowledge-contracts";
+import type { SourceLocator, VectorSpace } from "@aiengineer/knowledge-contracts";
 
 export type RetrievalIntent =
   | "entity_discovery"
@@ -10,11 +7,7 @@ export type RetrievalIntent =
   | "implementation_support"
   | "tool_selection"
   | "implementation_lookup";
-export type FilterValue =
-  | string
-  | number
-  | boolean
-  | readonly (string | number | boolean)[];
+export type FilterValue = string | number | boolean | readonly (string | number | boolean)[];
 export interface RetrievalFilter {
   readonly field: string;
   readonly op: "eq" | "neq" | "in" | "contains" | "gte" | "lte";
@@ -103,13 +96,7 @@ export interface GraphEdge {
   readonly provenance?: readonly string[];
   readonly locatorDigest?: string;
 }
-export type RetrievalChannel =
-  | "exact"
-  | "trigram"
-  | "fts"
-  | "semantic"
-  | "graph"
-  | "rerank";
+export type RetrievalChannel = "exact" | "trigram" | "fts" | "semantic" | "graph" | "rerank";
 export interface StageContribution {
   readonly channel: RetrievalChannel;
   readonly rank: number;
@@ -169,10 +156,7 @@ export interface ImmutableEvidencePacket {
 }
 export interface Reranker {
   readonly version: string;
-  rerank(
-    query: string,
-    records: readonly RetrievalRecord[],
-  ): Promise<readonly { recordId: string; score: number }[]>;
+  rerank(query: string, records: readonly RetrievalRecord[]): Promise<readonly { recordId: string; score: number }[]>;
 }
 export interface RetrievalStages {
   readonly exact: boolean;

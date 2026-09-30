@@ -10,8 +10,7 @@ import { prototypeSha256 } from "./digest.js";
  * it only replaces whitespace surrounding a newline.  Keep that transform here
  * until all persisted prototype locators have been migrated.
  */
-export type PrototypeTextOffsetBasis =
-  "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
+export type PrototypeTextOffsetBasis = "raw_utf16" | "lf_normalized" | "lf_normalized_newlines_collapsed";
 
 export interface PrototypeTextLocator {
   readonly kind: "text_quote";
@@ -27,10 +26,7 @@ export interface PrototypeResolvedTextLocator {
   readonly occurrenceCount: number;
 }
 
-function contentForPrototypeBasis(
-  content: string,
-  basis: PrototypeTextOffsetBasis,
-): string {
+function contentForPrototypeBasis(content: string, basis: PrototypeTextOffsetBasis): string {
   const lf = content.replace(/\r\n?/g, "\n");
   if (basis === "raw_utf16") return content;
   if (basis === "lf_normalized") return lf;
@@ -60,8 +56,7 @@ function normalizePrototypeText(value: string): NormalizedText {
   const removed = value.split("");
   for (const match of value.matchAll(/\b(?:uh|um)\b/gi)) {
     const start = match.index ?? 0;
-    for (let index = start; index < start + match[0].length; index += 1)
-      removed[index] = " ";
+    for (let index = start; index < start + match[0].length; index += 1) removed[index] = " ";
   }
   let text = "";
   const originalOffsets: number[] = [];
@@ -83,10 +78,7 @@ function normalizePrototypeText(value: string): NormalizedText {
   return { text: text.trim(), originalOffsets };
 }
 
-function unresolved(
-  matchMode: "not_found" | "ambiguous",
-  occurrenceCount: number,
-): PrototypeResolvedTextLocator {
+function unresolved(matchMode: "not_found" | "ambiguous", occurrenceCount: number): PrototypeResolvedTextLocator {
   return {
     matchMode,
     start: null,
@@ -122,9 +114,7 @@ export function resolvePrototypeTextLocator(
         matchMode: "exact",
         start: range.start,
         end: range.end,
-        selectedContentSha256: prototypeSha256(
-          basisContent.slice(range.start, range.end),
-        ),
+        selectedContentSha256: prototypeSha256(basisContent.slice(range.start, range.end)),
         occurrenceCount: 1,
       };
   }
@@ -135,10 +125,7 @@ export function resolvePrototypeTextLocator(
   const normalizedQuote = normalizePrototypeText(locator.quote).text;
   const normalizedMatches = allIndexes(normalizedContent.text, normalizedQuote);
   if (normalizedMatches.length !== 1)
-    return unresolved(
-      normalizedMatches.length > 1 ? "ambiguous" : "not_found",
-      normalizedMatches.length,
-    );
+    return unresolved(normalizedMatches.length > 1 ? "ambiguous" : "not_found", normalizedMatches.length);
   const normalizedStart = normalizedMatches[0] ?? 0;
   const normalizedEnd = normalizedStart + normalizedQuote.length - 1;
   const start = normalizedContent.originalOffsets[normalizedStart] ?? null;

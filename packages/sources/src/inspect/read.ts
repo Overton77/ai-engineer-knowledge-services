@@ -19,20 +19,13 @@ export interface SealedCaptureExcerpt {
 const DEFAULT_EXCERPT_LENGTH = 6_000;
 const MAXIMUM_EXCERPT_LENGTH = 20_000;
 
-export function readSealedCapture(
-  input: ReadSealedCaptureInput,
-): SealedCaptureExcerpt {
+export function readSealedCapture(input: ReadSealedCaptureInput): SealedCaptureExcerpt {
   assertSealedCaptureDigest(input.bytes, input.digest);
   const totalBytes = input.bytes.byteLength;
   const offset = Math.max(0, input.offset ?? 0);
-  const requested = Math.min(
-    Math.max(1, input.length ?? DEFAULT_EXCERPT_LENGTH),
-    MAXIMUM_EXCERPT_LENGTH,
-  );
+  const requested = Math.min(Math.max(1, input.length ?? DEFAULT_EXCERPT_LENGTH), MAXIMUM_EXCERPT_LENGTH);
   const length = Math.min(requested, Math.max(0, totalBytes - offset));
-  const excerpt = new TextDecoder("utf-8", { fatal: false }).decode(
-    input.bytes.subarray(offset, offset + length),
-  );
+  const excerpt = new TextDecoder("utf-8", { fatal: false }).decode(input.bytes.subarray(offset, offset + length));
   return {
     digest: input.digest,
     offset,

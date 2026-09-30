@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OperationContext } from "@aiengineer/knowledge-contracts";
-import {
-  dispatchCliCommand,
-  resolveCommand,
-  type CliKnowledgeClient,
-} from "../commands.js";
+import { dispatchCliCommand, resolveCommand, type CliKnowledgeClient } from "../commands.js";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const context = {
@@ -29,23 +25,9 @@ describe("CLI authored case reads", () => {
       { runId: id, pageSize: 2, cursor: id },
       context,
     );
-    await dispatchCliCommand(
-      client,
-      resolveCommand("verify", "case")!,
-      { caseRunId: id },
-      context,
-    );
-    await dispatchCliCommand(
-      client,
-      resolveCommand("verify", "evidence")!,
-      { evidenceId: id },
-      context,
-    );
-    expect(methods.listVerificationRunCases).toHaveBeenCalledWith(
-      id,
-      { pageSize: 2, cursor: id },
-      context,
-    );
+    await dispatchCliCommand(client, resolveCommand("verify", "case")!, { caseRunId: id }, context);
+    await dispatchCliCommand(client, resolveCommand("verify", "evidence")!, { evidenceId: id }, context);
+    expect(methods.listVerificationRunCases).toHaveBeenCalledWith(id, { pageSize: 2, cursor: id }, context);
     expect(methods.getVerificationCase).toHaveBeenCalledWith(id, context);
     expect(methods.getVerificationEvidence).toHaveBeenCalledWith(id, context);
     expect(methods.submitOperation).not.toHaveBeenCalled();
@@ -58,22 +40,10 @@ describe("CLI authored case reads", () => {
       { runId: id, cursor: "locator" },
       { runId: id, tenantId: id },
     ]) {
-      await expect(
-        dispatchCliCommand(
-          client,
-          resolveCommand("verify", "cases")!,
-          input,
-          context,
-        ),
-      ).rejects.toThrow();
+      await expect(dispatchCliCommand(client, resolveCommand("verify", "cases")!, input, context)).rejects.toThrow();
     }
     await expect(
-      dispatchCliCommand(
-        client,
-        resolveCommand("verify", "evidence")!,
-        { evidenceId: "judgment-evidence" },
-        context,
-      ),
+      dispatchCliCommand(client, resolveCommand("verify", "evidence")!, { evidenceId: "judgment-evidence" }, context),
     ).rejects.toThrow();
     expect(methods.listVerificationRunCases).not.toHaveBeenCalled();
     expect(methods.getVerificationEvidence).not.toHaveBeenCalled();

@@ -21,10 +21,7 @@ export class FilesystemManualUploadSource implements ManualUploadSource {
     const sidecarPath = resolvedLeaf(root, `${uploadId}.json`);
     if (!bytesPath || !sidecarPath) return undefined;
     try {
-      const [bytes, sidecarText] = await Promise.all([
-        readFile(bytesPath),
-        readFile(sidecarPath, "utf8"),
-      ]);
+      const [bytes, sidecarText] = await Promise.all([readFile(bytesPath), readFile(sidecarPath, "utf8")]);
       const sidecar = parseSidecar(sidecarText);
       if (!sidecar) return undefined;
       return {
@@ -32,9 +29,7 @@ export class FilesystemManualUploadSource implements ManualUploadSource {
         relativePath: sidecar.relativePath,
         mediaType: sidecar.mediaType,
         bytes: new Uint8Array(bytes),
-        ...(sidecar.declaredDigest
-          ? { declaredDigest: sidecar.declaredDigest }
-          : {}),
+        ...(sidecar.declaredDigest ? { declaredDigest: sidecar.declaredDigest } : {}),
         attestation: sidecar.attestation,
       };
     } catch {
@@ -45,17 +40,12 @@ export class FilesystemManualUploadSource implements ManualUploadSource {
 
 function staysInsideRoot(root: string, candidate: string): boolean {
   const relativePath = relative(root, candidate);
-  return (
-    relativePath !== "" &&
-    !relativePath.startsWith("..") &&
-    !isAbsolute(relativePath)
-  );
+  return relativePath !== "" && !relativePath.startsWith("..") && !isAbsolute(relativePath);
 }
 
 function resolvedLeaf(root: string, name: string): string | undefined {
   const candidate = resolve(root, name);
-  if (!staysInsideRoot(root, candidate) || candidate.split(sep).includes(".."))
-    return undefined;
+  if (!staysInsideRoot(root, candidate) || candidate.split(sep).includes("..")) return undefined;
   return candidate;
 }
 
@@ -65,8 +55,7 @@ function parseSidecar(text: string): FilesystemUploadSidecar | undefined {
   const relativePath = readStringField(parsed, "relativePath");
   const mediaType = readStringField(parsed, "mediaType");
   const attestation = parseAttestation(Reflect.get(parsed, "attestation"));
-  if (relativePath === undefined || mediaType === undefined || !attestation)
-    return undefined;
+  if (relativePath === undefined || mediaType === undefined || !attestation) return undefined;
   const declaredDigest = readStringField(parsed, "declaredDigest");
   return {
     relativePath,
@@ -86,9 +75,7 @@ function parseJsonObject(text: string): object | undefined {
   }
 }
 
-function parseAttestation(
-  value: unknown,
-): ManualUploadRecord["attestation"] | undefined {
+function parseAttestation(value: unknown): ManualUploadRecord["attestation"] | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   return {
     uploadId: readStringField(value, "uploadId") ?? "",

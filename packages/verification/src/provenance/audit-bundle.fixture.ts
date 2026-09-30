@@ -1,12 +1,6 @@
-import type {
-  VerificationArtifactHandle,
-  VerificationRunManifest,
-} from "@aiengineer/knowledge-contracts";
+import type { VerificationArtifactHandle, VerificationRunManifest } from "@aiengineer/knowledge-contracts";
 import { digestCanonicalJson, sha256Digest } from "../canonical/index.js";
-import {
-  verifyDeterministicBundle,
-  type DeterministicVerificationInput,
-} from "../deterministic/index.js";
+import { verifyDeterministicBundle, type DeterministicVerificationInput } from "../deterministic/index.js";
 import { prototypeClaimInput } from "../deterministic/engine-golden.fixture.js";
 import { verificationManifestDigest } from "./seal.js";
 
@@ -47,8 +41,7 @@ function policyHandle(tenantId: string): VerificationArtifactHandle {
 
 export function auditBundleFixture(options: AuditBundleFixtureOptions = {}) {
   const judged = options.judged ?? false;
-  const deterministicInput =
-    options.deterministicInput ?? prototypeClaimInput();
+  const deterministicInput = options.deterministicInput ?? prototypeClaimInput();
   const deterministicResult = verifyDeterministicBundle(deterministicInput);
   const sourceHandle = deterministicInput.bundle.captures[0]!.contentArtifact;
   const policyArtifact = policyHandle(sourceHandle.tenantId);
@@ -131,11 +124,7 @@ export function auditBundleFixture(options: AuditBundleFixtureOptions = {}) {
       },
       pricingSnapshotArtifactId: policyArtifact.artifactId,
     },
-    inputArtifacts: [
-      sourceHandle,
-      policyArtifact,
-      recordedPolicyInputsArtifact,
-    ],
+    inputArtifacts: [sourceHandle, policyArtifact, recordedPolicyInputsArtifact],
     outputArtifacts: [],
     stages: [
       {
@@ -161,8 +150,7 @@ export function auditBundleFixture(options: AuditBundleFixtureOptions = {}) {
     startedAt: createdAt,
     completedAt: createdAt,
   };
-  manifest.canonicalization.manifestDigest =
-    verificationManifestDigest(manifest);
+  manifest.canonicalization.manifestDigest = verificationManifestDigest(manifest);
   return {
     deterministicInput,
     deterministicResult,

@@ -3,10 +3,7 @@ import {
   createVerificationResourceReads,
   type VerificationContextResolutionInput,
 } from "@aiengineer/knowledge-application";
-import {
-  createClaimsReportReadMcpExecutor,
-  createVerificationMcpToolExecutor,
-} from "../index.js";
+import { createClaimsReportReadMcpExecutor, createVerificationMcpToolExecutor } from "../index.js";
 
 // Submissions run in process: trusted ownership resolves the context, the shared
 // admission gates admit the request, and the application service enqueues it.
@@ -19,33 +16,26 @@ const admitAll = {
   isAuditInspectionRequestAdmitted: () => true,
   isAdjudicationRequestAdmitted: () => true,
 };
-function inProcess(
-  submissions: Record<string, ReturnType<typeof vi.fn>>,
-  grantTenant = tenant,
-) {
-  const resolveVerificationContext = vi.fn(
-    (input: VerificationContextResolutionInput) => ({
-      tenantId: input.tenantId,
-      correlationId: input.correlationId,
-      idempotencyKey: input.idempotencyKey,
-      operationId: id(90),
-      attemptId: input.hints.attemptId ?? id(91),
-      ...(input.hints.missionId ? { missionId: input.hints.missionId } : {}),
-      ...(input.hints.workItemId ? { workItemId: input.hints.workItemId } : {}),
-      actor,
-      capabilityVersion: "verification-service.v1",
-      reason: "mcp verification test",
-      contractVersion: "v1" as const,
-    }),
-  );
+function inProcess(submissions: Record<string, ReturnType<typeof vi.fn>>, grantTenant = tenant) {
+  const resolveVerificationContext = vi.fn((input: VerificationContextResolutionInput) => ({
+    tenantId: input.tenantId,
+    correlationId: input.correlationId,
+    idempotencyKey: input.idempotencyKey,
+    operationId: id(90),
+    attemptId: input.hints.attemptId ?? id(91),
+    ...(input.hints.missionId ? { missionId: input.hints.missionId } : {}),
+    ...(input.hints.workItemId ? { workItemId: input.hints.workItemId } : {}),
+    actor,
+    capabilityVersion: "verification-service.v1",
+    reason: "mcp verification test",
+    contractVersion: "v1" as const,
+  }));
   const execute = createVerificationMcpToolExecutor({
     operationService: {} as never,
     apiOrigin: "https://knowledge.example",
     identity: {
       actor,
-      grants: [
-        { tenantId: grantTenant, roles: ["knowledge_operator"], scopes: [] },
-      ],
+      grants: [{ tenantId: grantTenant, roles: ["knowledge_operator"], scopes: [] }],
     },
     verificationOperations: submissions as never,
     resolveVerificationContext,
@@ -53,8 +43,7 @@ function inProcess(
   });
   return { execute, resolveVerificationContext };
 }
-const queued = (operationId: string) =>
-  vi.fn(async () => ({ operationId, state: "queued" }));
+const queued = (operationId: string) => vi.fn(async () => ({ operationId, state: "queued" }));
 const bound = (value: Record<string, unknown> = context) =>
   expect.objectContaining({ ...value, actor, operationId: id(90) });
 
@@ -68,9 +57,9 @@ describe("metric MCP adapter", () => {
       candidateRunId: id(82),
       comparisonProfile: "paired_default",
     };
-    await expect(
-      execute("knowledge_compare_benchmark_runs", { context, request }),
-    ).resolves.toMatchObject({ structuredContent: { operationId: id(80) } });
+    await expect(execute("knowledge_compare_benchmark_runs", { context, request })).resolves.toMatchObject({
+      structuredContent: { operationId: id(80) },
+    });
     expect(submitCompareBenchmarkRuns).toHaveBeenCalledWith(request, bound());
     await expect(
       execute("knowledge_compare_benchmark_runs", {
@@ -92,9 +81,9 @@ describe("metric MCP adapter", () => {
       },
       executionMode: "offline_recorded",
     };
-    await expect(
-      execute("knowledge_run_benchmark", { context, request }),
-    ).resolves.toMatchObject({ structuredContent: { operationId: id(8) } });
+    await expect(execute("knowledge_run_benchmark", { context, request })).resolves.toMatchObject({
+      structuredContent: { operationId: id(8) },
+    });
     expect(submitRunBenchmark).toHaveBeenCalledWith(request, bound());
     await expect(
       execute("knowledge_run_benchmark", {
@@ -128,10 +117,7 @@ describe("metric MCP adapter", () => {
         hints: expect.objectContaining(hints),
       }),
     );
-    expect(submitVerifyMetricObservation).toHaveBeenCalledWith(
-      metricRequest,
-      bound(metricContext),
-    );
+    expect(submitVerifyMetricObservation).toHaveBeenCalledWith(metricRequest, bound(metricContext));
     await expect(
       execute("knowledge_verify_metric", {
         context: metricContext,
@@ -141,8 +127,7 @@ describe("metric MCP adapter", () => {
   });
 });
 
-const id = (n: number) =>
-    `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
   tenant = id(1),
   actor = {
     kind: "service" as const,
@@ -172,9 +157,9 @@ describe("verification MCP adapter", () => {
       { execute, resolveVerificationContext } = inProcess({
         submitVerifyExtraction,
       });
-    await expect(
-      execute("knowledge_verify_extraction", { context, request }),
-    ).resolves.toMatchObject({ structuredContent: { operationId: id(5) } });
+    await expect(execute("knowledge_verify_extraction", { context, request })).resolves.toMatchObject({
+      structuredContent: { operationId: id(5) },
+    });
     expect(resolveVerificationContext).toHaveBeenCalledWith(
       expect.objectContaining({ identity: expect.objectContaining({ actor }) }),
     );
@@ -188,13 +173,10 @@ describe("verification MCP adapter", () => {
   });
   it("denies a tenant outside the authenticated grant before submission", async () => {
     const submitVerifyExtraction = vi.fn(),
-      { execute, resolveVerificationContext } = inProcess(
-        { submitVerifyExtraction },
-        id(99),
-      );
-    await expect(
-      execute("knowledge_verify_extraction", { context, request }),
-    ).resolves.toMatchObject({ isError: true });
+      { execute, resolveVerificationContext } = inProcess({ submitVerifyExtraction }, id(99));
+    await expect(execute("knowledge_verify_extraction", { context, request })).resolves.toMatchObject({
+      isError: true,
+    });
     expect(resolveVerificationContext).not.toHaveBeenCalled();
     expect(submitVerifyExtraction).not.toHaveBeenCalled();
   });
@@ -308,14 +290,8 @@ describe("claims/report read MCP adapter", () => {
         }),
       };
     const readContext = { tenantId: tenant, correlationId: "mcp-read" };
-    await createClaimsReportReadMcpExecutor(
-      options,
-      "claims",
-    )({ context: readContext, operationId: id(50) });
-    await createClaimsReportReadMcpExecutor(
-      options,
-      "report",
-    )({ context: readContext, operationId: id(51) });
+    await createClaimsReportReadMcpExecutor(options, "claims")({ context: readContext, operationId: id(50) });
+    await createClaimsReportReadMcpExecutor(options, "report")({ context: readContext, operationId: id(51) });
     expect(getClaims).toHaveBeenCalledWith({
       tenantId: tenant,
       operationId: id(50),
@@ -341,9 +317,7 @@ describe("claims/report read MCP adapter", () => {
           apiOrigin: "https://knowledge.example",
           identity: {
             actor,
-            grants: [
-              { tenantId: id(99), roles: ["knowledge_operator"], scopes: [] },
-            ],
+            grants: [{ tenantId: id(99), roles: ["knowledge_operator"], scopes: [] }],
           },
           verificationReads: createVerificationResourceReads({
             claimsReportReads: { getClaims, getReport: vi.fn() },
