@@ -89,7 +89,7 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -119,7 +119,7 @@ The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTT
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -146,7 +146,7 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -175,7 +175,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
@@ -254,7 +254,7 @@ Composes knowledge use cases, capability admission, preparation, retrieval execu
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
@@ -333,7 +333,7 @@ Composition root: configuration and identity resolution, shared knowledge and ve
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -380,7 +380,7 @@ Pinned schema workspace navigation, bounded read snapshots and deterministic ing
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version

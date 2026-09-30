@@ -24,7 +24,7 @@
     },
     {
       "path": "docs/operations/package-cleanup/UNIT-5-SLICES.md",
-      "task": "Next: Unit 5 slices (5C), linked spec",
+      "task": "Next: Q0, 5P, 5D1 slices",
       "status": "proposed",
       "modules": [
         "verification-executor",

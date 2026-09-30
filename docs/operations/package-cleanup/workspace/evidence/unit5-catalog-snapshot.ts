@@ -1,5 +1,5 @@
 // Unit 5 evidence helper (copy of unit4-catalog-snapshot.ts): prints the transport catalog as JSON — durable kinds and
-// their admission state, API routes, registered MCP tools and CLI commands — and every operation-catalog
+// their admission state, API routes, registered MCP tools and CLI commands (from 5C, `ks` names) — and every operation-catalog
 // row with its admission, bindings and per-profile transport state (and, from 5B, its local host profile state). Run by the Unit 5 slice inventories
 // (unit5a-inventory.mjs, …) through tsx from the repository root; it reads source, not dist.
 import { createRequire } from "node:module";
@@ -48,8 +48,17 @@ const tools = (await client.listTools()).tools.map((tool: { name: string }) => t
 await client.close();
 await server.close();
 
-const cli = Object.entries(CLI_COMMANDS).flatMap(([group, actions]) =>
-  Object.entries(actions).map(([action, command]) => ({ command: `${group} ${action}`, ...command })));
+// From 5C the CLI is `ks`: command names come from KS_COMMANDS (with each command's profile and binding);
+// earlier slices list the CLI_COMMANDS resource/action keys.
+const ks = (await import("../../../../../apps/cli/src/ks-commands.js").catch((error: { code?: string }) => {
+  if (error?.code === "ERR_MODULE_NOT_FOUND") return undefined;
+  throw error;
+})) as
+  { KS_COMMANDS?: Readonly<Record<string, Readonly<Record<string, unknown>>>> } | undefined;
+const cli = ks?.KS_COMMANDS
+  ? Object.entries(ks.KS_COMMANDS).map(([command, binding]) => ({ command, ...binding }))
+  : Object.entries(CLI_COMMANDS).flatMap(([group, actions]) =>
+    Object.entries(actions).map(([action, command]) => ({ command: `${group} ${action}`, ...command })));
 
 process.stdout.write(`${JSON.stringify({
   kinds: Object.keys(operationStepsByKind).sort().map((kind) => ({
