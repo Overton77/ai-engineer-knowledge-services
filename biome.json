@@ -1,7 +1,11 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "root": true,
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "ignoreUnknown": true,
     "includes": [
@@ -29,9 +33,67 @@
     "lineEnding": "auto"
   },
   "javascript": {
-    "formatter": { "quoteStyle": "double", "semicolons": "always", "trailingCommas": "all" }
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
   },
-  "json": { "formatter": { "enabled": false }, "linter": { "enabled": false } },
-  "linter": { "enabled": true, "rules": { "recommended": true } },
-  "assist": { "enabled": false }
+  "json": {
+    "formatter": {
+      "enabled": false
+    },
+    "linter": {
+      "enabled": false
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noCommaOperator": "warn",
+        "noExtraBooleanCast": "warn",
+        "noUselessCatch": "warn",
+        "noUselessEscapeInRegex": "warn",
+        "noUselessUndefinedInitialization": "warn",
+        "useLiteralKeys": "warn",
+        "useOptionalChain": "warn"
+      },
+      "correctness": {
+        "noUnsafeFinally": "warn",
+        "noUnsafeOptionalChaining": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "noVoidTypeReturn": "warn"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "useConst": "warn",
+        "useImportType": "warn",
+        "useShorthandFunctionType": "warn",
+        "useTemplate": "warn"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "warn",
+        "noCatchAssign": "warn",
+        "noControlCharactersInRegex": "warn",
+        "noExplicitAny": "warn",
+        "noImplicitAnyLet": "warn",
+        "noNonNullAssertedOptionalChain": "warn",
+        "noProto": "warn",
+        "noPrototypeBuiltins": "warn",
+        "noShadowRestrictedNames": "warn",
+        "noUselessEscapeInString": "warn",
+        "useIterableCallbackReturn": "warn"
+      }
+    }
+  },
+  "assist": {
+    "enabled": false
+  }
 }
