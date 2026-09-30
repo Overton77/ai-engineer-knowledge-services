@@ -45,9 +45,9 @@ function validatePem(value: unknown, code: string): string {
   if (typeof value !== "string" || value.length < 1 || value.length > 64 * 1024 || value.includes("\u0000")) fail(code);
   return value;
 }
-function parseArgs(args: readonly string[], action: "attestation-export" | "attestation-inspect"): Readonly<Record<string, string>> {
-  if (args[0] !== "verification" || args[1] !== action) fail("ATTESTATION_COMMAND_INVALID");
-  const required = action === "attestation-export"
+function parseArgs(args: readonly string[], action: "export" | "inspect"): Readonly<Record<string, string>> {
+  if (args[0] !== "attestation" || args[1] !== action) fail("ATTESTATION_COMMAND_INVALID");
+  const required = action === "export"
     ? ["--audit-bundle", "--trusted-public-keys", "--trusted-binding", "--output"]
     : ["--audit-bundle", "--trusted-public-keys", "--trusted-binding", "--attestation"];
   const allowed = new Set(required), values: Record<string, string> = {};
@@ -126,7 +126,7 @@ function stableCoreError(error: unknown, fallback: string): never {
   fail(fallback);
 }
 export async function runVerificationAttestationExport(args: readonly string[], environment: NodeJS.ProcessEnv = process.env): Promise<VerificationAttestationCliResult> {
-  const flags = parseArgs(args, "attestation-export");
+  const flags = parseArgs(args, "export");
   const [inputs, outputPath] = await Promise.all([loadInputs(flags), assertOutputAbsent(flags["--output"]!)]);
   const privateKey = environment[VERIFICATION_ATTESTATION_SIGNING_KEY_ENV];
   if (!privateKey) fail("ATTESTATION_SIGNING_KEY_REQUIRED");
@@ -139,15 +139,15 @@ export async function runVerificationAttestationExport(args: readonly string[], 
   if (!createdInspection.verified) fail("ATTESTATION_SIGNING_KEY_UNTRUSTED");
   const metadata = { schemaVersion: "verification-attestation-cli.v1", subjectDigest: result.subjectDigest, signerKeyId: result.signerKeyId, builderId: result.builderId, payloadType: result.envelope.payloadType, predicateType: result.statement.predicateType };
   await writeExclusive(outputPath, result.envelope);
-  return { exitCode: 0, output: { command: "verification attestation-export", envelopePath: outputPath, ...metadata } };
+  return { exitCode: 0, output: { command: "verify attestation export", envelopePath: outputPath, ...metadata } };
 }
 export async function runVerificationAttestationInspect(args: readonly string[]): Promise<VerificationAttestationCliResult> {
-  const flags = parseArgs(args, "attestation-inspect");
+  const flags = parseArgs(args, "inspect");
   const inputs = await loadInputs(flags);
   const envelope = await readLocalJson(flags["--attestation"]!, MAX_ENVELOPE_BYTES);
   let inspection: Awaited<ReturnType<typeof inspectVerificationDsseSlsaAttestation>>;
   try { inspection = await inspectVerificationDsseSlsaAttestation({ auditBundle: inputs.auditBundle, auditBundleVerifier: inputs.verifier, envelope, attestationVerifier: inputs.verifier, expectedBinding: inputs.binding }); }
   catch (error) { stableCoreError(error, "ATTESTATION_INSPECTION_FAILED"); }
-  return { exitCode: inspection.verified ? 0 : 1, output: { command: "verification attestation-inspect", ...inspection } };
+  return { exitCode: inspection.verified ? 0 : 1, output: { command: "verify attestation inspect", ...inspection } };
 }
 export function isVerificationAttestationCliError(error: unknown): error is VerificationAttestationCliError { return error instanceof VerificationAttestationCliError; }

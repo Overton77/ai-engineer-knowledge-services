@@ -14,8 +14,10 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | --- | --- | --- | --- | --- | --- |
 | 5A | KS | Entry evidence and R1 `knowledge-db → persistence` inversion | Unit 4 main | — | merged locally 2026-09-28 |
 | 5B | KS | Local host profile and capability matrix | 5A | — | merged locally 2026-09-28 |
-| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | — | queued |
-| 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5C | — | queued |
+| 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | — | merged locally 2026-09-29 |
+| Q0 | KS | Quality gates: formatter, lint ratchet, architecture boundary rules in `verify`/CI | 5C | — | proposed ([plan](./APP-AND-SKILL-QUALITY.md#q0--quality-gates-new-slice-after-5c-merges-before-5p)) |
+| 5P | KS | Transport structure before the folds: catalog module, MCP tool table, API route modules, golden error tests, MCP naming decision | Q0 | — | proposed ([plan](./APP-AND-SKILL-QUALITY.md#5p--transport-structure-before-the-folds-new-slice-before-5d1)) |
+| 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5P | — | queued |
 | 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
 | 5D3 | KS | Fold the `verification` group (intent pipeline, `verify_*`, recovery), executor HTTP routes, MCP stdio | 5D2 | 5F | queued |
 | 5F | KS | Jev transport consolidation (`ks jev`) | 5C | 5D3 | queued |
@@ -23,7 +25,7 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | 5E2 | Eve | Historical adaptation | — | — | superseded by [DR1–DR5](./DEEPAGENTS-READINESS.md) |
 | 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5C–5D3, 5F; DeepAgents smoke against ks (DR2 exit) | — | queued |
 
-Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/operation-catalog.ts`, the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
+Q0 and 5P were added on 2026-09-29 (proposed; [app and skill quality plan](./APP-AND-SKILL-QUALITY.md)) so the folds add table entries to small modules instead of growing `apps/api/src/server.ts` (2,763 lines), `apps/mcp/src/index.ts` (1,250) and the CLI dispatch switch. Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: the operation catalog (`apps/mcp/src/tests/operation-catalog.ts`; `packages/application/src/operations/catalog.ts` once 5P moves it), the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
 
 ## Rules for every slice
 
@@ -41,6 +43,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   6. `node .agent-docs/cli.mjs check --repo .` and `git diff --check`.
 
   Run one heavy command at a time: memory pressure has stopped a full run before.
+- **Quality (from 5P onward).** New operations are table entries in the 5P route/tool/command modules; `server.ts`, MCP `index.ts` and CLI dispatch do not grow. Folded handlers keep the four-step shape — authorization and admission move into application use cases. Format, lint ratchet and boundary baseline (Q0) may only improve. Apply the slice's additions in [APP-AND-SKILL-QUALITY.md §2](./APP-AND-SKILL-QUALITY.md#2-new-and-changed-work-by-slot).
 - **Team shape.** Use one coordinator that owns the ledger, acceptance and the merge. Add at most one implementation worker per disjoint file set and one read-only reviewer. There is a single test-graph owner; no competing suites run.
 - **Finish.** Record the slice in the ledger and `workspace/evidence/unit5<letter>-validation.json`, update navigation, merge locally with a merge commit and return to a clean `main`. Keep the stage-graph experiment milestone in the handoff. No push, deployment, paid provider call or shared-database mutation.
 
@@ -90,6 +93,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
 - **Exit:**
   - The installed `ks` tarball, outside the workspace with no secrets, passes `--help`, a remote command against a local API, and an offline command.
   - Catalog CLI bindings updated to `ks` command names.
+- **Delivered:** `apps/cli` builds one self-contained `ks` binary (the `knowledge` bin is gone). Command names live in `apps/cli/src/ks-commands.ts`: every platform command keeps its dispatcher entry and gains one name in the `knowledge`, `verify` or `db` group (the `verify` and `db` resources sit at their group root: `ks verify citations`, `ks db verify`); the intent pipeline is `ks verify capture|artifact|chain …` on the local profile; the offline utilities are `ks verify demo|benchmark diff|benchmark capture diagnostics-companies|attestation export|inspect`; `ks jev` is reserved for 5F. Each command has one profile, never a fallback. Recorded decisions: `ks` reaches the 5B seam only through the executor's transitional `./local-verification` export, imported by the lazily loaded `src/local/offline.ts`, and host's new `./local` entry (no server composition); 5D3 removes the export and the CLI's executor dependency. Local configuration: `--store`/`KNOWLEDGE_LOCAL_STORE_DIR` (default `.knowledge-store`), identity flags or `KNOWLEDGE_LOCAL_*`, providers only when named (`--providers`/`KNOWLEDGE_LOCAL_PROVIDERS`) with keys only from `KNOWLEDGE_LOCAL_FIRECRAWL_API_KEY`/`KNOWLEDGE_LOCAL_AI_GATEWAY_API_KEY`; no `VERIFY_*` name. `remote-profile.test.ts` checks the bundle metafile's static graph. `pack:sandbox` builds `apps/cli/dist/sandbox/ks-<version>.tgz` with the `platform-cli` skills and `zod`; catalog rows use `ks` names and the 16 intent-pipeline rows record `executor.ks`. See the ledger's 5C entry.
 
 ### 5D1 — Fold the `db` group
 
@@ -100,6 +104,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - The executor's registry calls the same use cases until 5H.
   - Record the MCP names chosen per R3.
   - **First, remove the test-only `knowledge-db → persistence` edge** (carried from 5A). Turbo and pnpm order builds over devDependencies, so `application → knowledge-db` plus that edge closes `knowledge-db → persistence → application → knowledge-db`. Move the database-backed knowledge-db suites that need `TenantPostgres` (the seven `*.integration.test.ts` files, `test/ingestion` fixtures and `content-links/sources.test.ts`) to where host composes knowledge-db, or inject the transaction adapter through a test setup owned there; record every moved identity. Move the executor's `knowledge-db-ports.test.ts` conformance test with the composition into host.
+- **Quality additions:** begin collapsing `CLI_COMMANDS` into `KS_COMMANDS` entries `{ profile, schema, summary, run }` with one shared argv parser; db-group errors use the contracts code set.
 - **Exit:**
   - Every db-group catalog row leaves `executor`.
   - Bounded-read and ingestion tests keep their identities.
@@ -112,8 +117,10 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - Root and scoped host composition moves from the executor into host.
   - Bind on API, MCP and `ks knowledge …`, and update catalog rows.
   - Preserve provider accounting, custody and checkpoint semantics.
+- **Quality additions:** break the executor ↔ worker relative `src/` imports first (activity registry, `CanonicalDurableKnowledgeWorker` and promotion-selection ports move to application/host); name an owner for every `root-host-*` module; move test-only fixtures (`selected-candidate-fixture.ts`, `report-dependency-fixture.ts`, `recovery-test-fixtures.ts`) to host test support with their suites, replacing sibling-repository paths with explicit configuration.
 - **Exit:**
   - Those catalog rows leave `executor`.
+  - No package or app imports another app's `src/`.
   - Custody, recovery and checkpoint suites keep their identities.
 
 ### 5D3 — Fold the `verification` group, executor HTTP routes and MCP stdio
@@ -125,6 +132,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - MCP stdio in `apps/mcp` runs on the local profile; `ks verify …` covers the CLI.
   - Decide replacements for `root-host/v1`, `scoped-host/v1` and `evidence-reader/v1` per consumer.
   - Retire 5B's `verification` seam: the local profile composes the application use cases directly, and the executor's `local-services.ts` and host devDependency go.
+- **Quality additions:** split `executor.ts` into one use case per `verify_*` operation rather than moving the class; reuse core's `deterministicUuid`; no `process.env` provider reads.
 - **Exit:**
   - No catalog row left in `executor` admission.
   - The offline example passes through `ks` with receipts and zero provider calls.
@@ -137,6 +145,7 @@ Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: `apps/mcp/src/tests/o
   - HTTP and MCP in the owner process share that instance; other processes use the client.
   - Define the owner start command and reject dual ownership.
   - `ks jev …` replaces `jev`; the six Jev MCP tools and the registered skill stay.
+- **Quality additions:** `jev_*` as an MCP tool-table group and `ks jev` table entries; drop repository-file serving; not-found is an error and unknown errors map to 500; shared exit-code mapping.
 - **Must not:** remove `apps/jev` before equivalent surfaces and lifecycle proofs pass (recovery, cancel, retry, auth).
 - **Exit:** Jev core, service and client suites pass, with lifecycle proofs recorded.
 
@@ -173,12 +182,13 @@ Superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md). Eve stays in it
 - **Scope:**
   - Remove its package, exports, binaries and sandbox packer; move its skill home to `skills/` if 5C did not.
   - Final Unit 5 acceptance (full graph, inventories, installed `ks` smoke, DeepAgents smoke against ks).
-  - Update the documentation and ledger, and write the bounded Unit 6 (skills) specification.
+  - Update the documentation and ledger, and write the bounded Unit 6 (skills) specification, absorbing the [Unit 6 quality additions](./UNIT-6-SKILLS-DIRECTION.md#additions-from-the-2026-09-29-quality-review).
+  - Replace `apps/api/src/tests/consumer-transports.integration.test.ts`'s sibling-repository Eve import with a public-contract test (or remove it once DR2's smoke covers it); drop executor entries from the Q0 boundary baseline.
 - **Exit:** everything in the Unit 5 specification's acceptance evidence, recorded; rerun the DR2 smoke after executor removal. Full DR4/Unit 6 readiness is not a prerequisite for this minimal smoke.
 
 ## Instruction template
 
-Paste this into the next session, replacing `<slice>` with the next slice from the map (next is **5C**; 5A/5B are delivered and 5E1/5E2 are superseded):
+Paste this into the next session, replacing `<slice>` with the next slice from the map (next: **Q0**, then **5P**, **5D1**; 5A–5C are delivered and 5E1/5E2 are superseded; 5F now depends only on delivered 5C; run beside 5D3 only with disjoint files, merging 5D3 first):
 
 > Continue the Knowledge Services package cleanup, Unit 5 slice `<slice>`, from local main in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`.
 >

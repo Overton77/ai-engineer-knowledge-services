@@ -2,7 +2,7 @@
 description: Use when converting sealed captures, inspecting nodes, previewing admitted chunks, and submitting a promotion proposal.
 license: Proprietary
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   contract: "knowledge-service/v1"
 ---
 
@@ -40,7 +40,7 @@ Vendor MCP stays in the **agent** toolbox. After their skill runs, `source impor
 | Surface | Binary | Convert / chunk |
 |---|---|---|
 | Executor | `knowledge` / `knowledge-verify` | `source prepare-captured` for existing plain text or Markdown captures only |
-| Platform | `knowledge` (API client) | `document convert` (`transformation`), `chunk preview`, `chunk build` |
+| Platform | `ks` (API client) | `ks knowledge document convert` (`transformation`), `ks knowledge chunk preview`, `ks knowledge chunk build` |
 
 Hosts without `source_prepare_captured` reject it rather than substituting a local converter. Platform `document inspect` and `chunk inspect` are not admitted; inspect nodes from the conversion output or an executor read of sealed bytes.
 
@@ -97,17 +97,17 @@ is unknown, never zero.
 
 ## Submit only the proposal and review operations
 
-The platform CLI has `knowledge promotion propose`, `knowledge promotion review`, and
-`knowledge promotion status`. The equivalent MCP catalog exposes `promotion.submit` and
+The platform CLI has `ks knowledge promotion propose`, `ks knowledge promotion review`, and
+`ks knowledge promotion status`. The equivalent MCP catalog exposes `promotion.submit` and
 `promotion.status`. A successful submission is an operation receipt, not selection, evaluation,
 activation, or publication. There is no public `promotion select` command and no
 `promotion_selection_select` MCP tool; do not substitute a capability catalog or an internal host
 helper for either one.
 
 ```text
-knowledge promotion propose --context '<OperationContext>' --input '<promotion proposal input>'
-knowledge promotion review --context '<OperationContext>' --input '<promotion decision input>'
-knowledge promotion status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
+ks knowledge promotion propose --context '<OperationContext>' --input '<promotion proposal input>'
+ks knowledge promotion review --context '<OperationContext>' --input '<promotion decision input>'
+ks knowledge promotion status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
 ```
 
 Keep proposer and reviewer identities distinct. Selection, evaluated publication, pointer activation,

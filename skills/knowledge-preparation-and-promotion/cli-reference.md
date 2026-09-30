@@ -1,6 +1,6 @@
 # Preparation CLI reference
 
-Two binaries share the `knowledge` name. Use the one your environment loaded.
+The executor ships `knowledge` (and `knowledge-verify`); the platform CLI is `ks` (`@aiengineer/knowledge-cli`). Use the one your environment loaded.
 
 ## Executor (`apps/verification-executor`)
 
@@ -22,13 +22,13 @@ knowledge content prepare-summary <operation.json>
 ## Platform (`apps/cli`)
 
 ```text
-knowledge document convert --context '<OperationContext>' --input '<knowledge.transformation/v1>'
-knowledge document compare --context '<OperationContext>' --input '<representation comparison input>'
-knowledge chunk preview --context '<OperationContext>' --input '<knowledge.chunk-preview/v1>'
-knowledge chunk build --context '<OperationContext>' --input '<knowledge.chunk-set/v1>'
-knowledge promotion propose --context '<OperationContext>' --input '<promotion proposal input>'
-knowledge promotion review --context '<OperationContext>' --input '<promotion decision input>'
-knowledge promotion status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
+ks knowledge document convert --context '<OperationContext>' --input '<knowledge.transformation/v1>'
+ks knowledge document compare --context '<OperationContext>' --input '<representation comparison input>'
+ks knowledge chunk preview --context '<OperationContext>' --input '<knowledge.chunk-preview/v1>'
+ks knowledge chunk build --context '<OperationContext>' --input '<knowledge.chunk-set/v1>'
+ks knowledge promotion propose --context '<OperationContext>' --input '<promotion proposal input>'
+ks knowledge promotion review --context '<OperationContext>' --input '<promotion decision input>'
+ks knowledge promotion status --context '<OperationContext>' --input '{"operationId":"<uuid>"}'
 ```
 
 `document convert` submits operation kind `transformation`. Input must name a completed capture and a `providerRoute` of admitted keys. The worker applies package policy order among those keys: text → Docling → gated Unstructured.

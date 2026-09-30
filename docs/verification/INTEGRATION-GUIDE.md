@@ -62,7 +62,7 @@ Receipt `statusUrl` / `eventStreamUrl` / `cancellationUrl` / `retryUrl` / `recon
 }
 ```
 
-1. Poll `GET /v1/verification/operations/{id}` (`knowledge.read`) — or the receipt `statusUrl` `GET /v1/operations/{id}` — until a terminal state: `succeeded`, `needs_review`, `failed`, `cancelled`, `quarantined`. Prefer the verification-aware route. CLI: `knowledge verify status --input '{"operationId":"<uuid>"}'` (`getVerificationOperation`). MCP: `knowledge_get_verification_operation` `{context:{tenantId,correlationId},operationId}` (spec §19 `knowledge_get_operation`). `knowledge operation status` calls generic `GET /v1/operations/{id}`.
+1. Poll `GET /v1/verification/operations/{id}` (`knowledge.read`) — or the receipt `statusUrl` `GET /v1/operations/{id}` — until a terminal state: `succeeded`, `needs_review`, `failed`, `cancelled`, `quarantined`. Prefer the verification-aware route. CLI: `ks verify status --input '{"operationId":"<uuid>"}'` (`getVerificationOperation`). MCP: `knowledge_get_verification_operation` `{context:{tenantId,correlationId},operationId}` (spec §19 `knowledge_get_operation`). `ks knowledge operation status` calls generic `GET /v1/operations/{id}`.
 2. Then GET the family terminal resource (`/v1/verification/claims/{id}`, `/reports/{id}`, `/captures/{id}`, `/extractions/{id}`, `/adjudications/{id}`, `/audit-inspections/{id}`, …).
 
 KS operation `state` values: `queued` | `running` | `needs_review` | `quarantined` | `succeeded` | `failed` | `cancelled`.

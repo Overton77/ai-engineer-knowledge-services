@@ -10,6 +10,10 @@
     "./evidence-reader/v1": {
       "types": "./dist/evidence-reader.d.ts",
       "import": "./dist/evidence-reader.js"
+    },
+    "./local-verification": {
+      "types": "./dist/local-services.d.ts",
+      "import": "./dist/local-services.js"
     }
   },
   "bin": {
@@ -21,7 +25,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.evidence-reader.json",
+    "build": "tsup && tsc -p tsconfig.evidence-reader.json && tsc -p tsconfig.local-verification.json",
     "dev": "tsx src/index.ts",
     "dev:knowledge": "tsx src/knowledge.ts",
     "typecheck": "tsc --noEmit",

@@ -9,7 +9,7 @@
  * Catalogs are read from source, never invented here:
  *   executor operations  apps/verification-executor/src/knowledge/{operations,recovery-host-operations,content-link-operations}.ts
  *   executor MCP tools   apps/verification-executor/src/mcp.ts  (verify_* tools) + the operations above
- *   platform CLI         apps/cli/src/commands.ts CLI_COMMANDS + apps/cli/src/index.ts local commands
+ *   platform CLI (ks)    apps/cli/src/ks-commands.ts KS_COMMANDS; remote status from apps/cli/src/commands.ts CLI_COMMANDS
  *   platform MCP tools   apps/mcp/src/index.ts
  *   Jev MCP / CLI        apps/jev/src/{mcp,index}.ts
  * When apps/verification-executor/dist/knowledge.js exists, its `ops` output is compared against the
@@ -53,20 +53,32 @@ function verifyMcpTools() {
   return new Set([...source.matchAll(/registerTool\(\s*"([a-z][a-z0-9_]*)"/g)].map((match) => match[1]));
 }
 
-function platformCommands() {
+/** The dispatcher's status per resource/action key: "unsupported" when the command fails closed, else "admitted". */
+function remoteStatuses() {
   const source = read(join(repoRoot, "apps/cli/src/commands.ts"));
   const table = source.slice(source.indexOf("export const CLI_COMMANDS"), source.indexOf("export function resolveCommand"));
   if (!table) die("apps/cli/src/commands.ts: CLI_COMMANDS table not found");
-  const commands = new Map();
+  const statuses = new Map();
   let group;
   for (const line of table.split("\n")) {
     const groupMatch = /^\s{2}([a-z_]+):\s*\{\s*$/.exec(line);
     if (groupMatch) { group = groupMatch[1]; continue; }
     const actionMatch = /^\s{4}"?([a-z][a-z-]*)"?:\s*(submit\(|unsupported\(|\{)/.exec(line);
-    if (group && actionMatch) commands.set(`${group} ${actionMatch[1]}`, actionMatch[2] === "unsupported(" ? "unsupported" : "admitted");
+    if (group && actionMatch) statuses.set(`${group} ${actionMatch[1]}`, actionMatch[2] === "unsupported(" ? "unsupported" : "admitted");
   }
-  for (const match of read(join(repoRoot, "apps/cli/src/index.ts")).matchAll(/group === "([a-z]+)" &&\s*\n?\s*action === "([a-z-]+)"/g)) {
-    commands.set(`${match[1]} ${match[2]}`, "admitted");
+  return statuses;
+}
+
+/** Every `ks` command name (without the binary): "unsupported" when it fails closed, else "admitted". */
+function platformCommands() {
+  const statuses = remoteStatuses();
+  const commands = new Map();
+  const source = read(join(repoRoot, "apps/cli/src/ks-commands.ts"));
+  for (const [, name, profile, first, second] of source.matchAll(/^\s{2}"([a-z][a-z -]*)": (remote|local|utility)\("([a-z_-]+)"(?:, "([a-z-]+)")?\)/gm)) {
+    if (profile !== "remote") { commands.set(name, "admitted"); continue; }
+    const status = statuses.get(`${first} ${second}`);
+    if (!status) die(`apps/cli/src/ks-commands.ts: "${name}" binds ${first} ${second}, which CLI_COMMANDS does not define`);
+    commands.set(name, status);
   }
   return commands;
 }
@@ -83,6 +95,14 @@ function platformMcpTools() {
 const executorOperations = executorOperationCatalog();
 const executorMcpTools = new Set([...executorOperations.keys(), ...verifyMcpTools()]);
 const executorCommands = new Set(executorOperations.values());
+/** The longest `ks` command name the leading words spell. */
+const ksCommand = (words) => {
+  for (let length = Math.min(words.length, 4); length > 0; length -= 1) {
+    const name = words.slice(0, length).join(" ");
+    if (platform.has(name)) return name;
+  }
+  return undefined;
+};
 const platform = platformCommands();
 const platformTools = platformMcpTools();
 const jevSource = read(join(repoRoot, "apps/jev/src/mcp.ts"));
@@ -179,16 +199,25 @@ for (const skill of manifest.skills) {
       if (!jevCommands.has(jevInvocation[1])) fail(`${skill.id}: Jev command "${jevInvocation[1]}" is not implemented`);
       if (!surfaces.has("jev-cli")) fail(`${skill.id}: uses a Jev command without declaring jev-cli`);
     }
+    const ks = /^\s*(?:\$\s+)?ks\s+([a-z][a-z-]*(?:\s+[a-z][a-z-]*){0,3})/.exec(span);
+    if (ks) {
+      const words = ks[1].split(/\s+/);
+      // `ks help` and a bare group (`ks verify`) name no command.
+      if (words[0] === "help" || (words.length === 1 && [...platform.keys()].some((name) => name.startsWith(`${words[0]} `)))) continue;
+      const name = ksCommand(words);
+      if (!name) fail(`${skill.id}: "ks ${ks[1]}" is not an implemented ks command`);
+      else if (platform.get(name) === "unsupported") fail(`${skill.id}: "ks ${name}" is explicitly unsupported`);
+      else if (!surfaces.has("platform-cli")) fail(`${skill.id}: uses "ks ${name}" without declaring the platform-cli surface`);
+      continue;
+    }
+    // The executor distribution still ships `knowledge` until 5H; the platform CLI is `ks` from Unit 5C.
     const invocation = /^\s*(?:\$\s+)?knowledge(?:-verify)?\s+([a-z][a-z-]*)\s+([a-z][a-z-]*)/.exec(span);
     if (!invocation) continue;
     const pair = `${invocation[1]} ${invocation[2]}`;
     if (["help", "serve", "health", "ops"].includes(invocation[1])) continue;
-    const onExecutor = executorCommands.has(pair);
-    const onPlatform = platform.has(pair);
-    if (!onExecutor && !onPlatform) fail(`${skill.id}: "knowledge ${pair}" is not an implemented command on either distribution`);
-    else if (onPlatform && !onExecutor && platform.get(pair) === "unsupported") fail(`${skill.id}: "knowledge ${pair}" is explicitly unsupported on the platform CLI`);
-    else if (onExecutor && !onPlatform && !surfaces.has("executor-cli")) fail(`${skill.id}: uses executor command "knowledge ${pair}" without declaring the executor-cli surface`);
-    else if (onPlatform && !onExecutor && !surfaces.has("platform-cli")) fail(`${skill.id}: uses platform command "knowledge ${pair}" without declaring the platform-cli surface`);
+    if (!executorCommands.has(pair)) fail(`${skill.id}: "knowledge ${pair}" is not an executor command; the platform CLI is ks (${
+      [`knowledge ${pair}`, `verify ${pair}`, `db ${pair}`, pair].find((name) => platform.has(name)) ?? "see ks --help"})`);
+    else if (!surfaces.has("executor-cli")) fail(`${skill.id}: uses executor command "knowledge ${pair}" without declaring the executor-cli surface`);
   }
 
   // 3. Every MCP tool name spelled in the text must exist, unless the skill declares it absent on purpose.

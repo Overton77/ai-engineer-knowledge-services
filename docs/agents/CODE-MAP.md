@@ -20,7 +20,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | Module | Source | Responsibility | State |
 |---|---|---|---|
 | [api](#api) | apps/api | Fastify HTTP transport. createApiRuntime composes through createHost (role api) and maps host services onto buildServer. | implemented |
-| [cli](#cli) | apps/cli | Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files. | implemented |
+| [cli](#cli) | apps/cli | The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTTP; the verification intent pipeline runs on host's local file-store profile, loaded lazily; offline demo, attestation and benchmark utilities use application or verification on frozen files. pack:sandbox builds the installable ks tarball. | implemented |
 | [mcp](#mcp) | apps/mcp | In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHost (role mcp), which supplies the same knowledge, verify and operations groups as the API role; MCP never calls the API. | implemented |
 | [verification-executor](#verification-executor) | apps/verification-executor | Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP. | implemented |
 | [worker](#worker) | apps/worker | Durable knowledge-operation execution and activity dispatch over host-composed adapters; verification runtime wiring stays in the worker execution factory. | implemented |
@@ -89,7 +89,7 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -105,21 +105,21 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 
 **apps/cli** · app · implemented
 
-Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files.
+The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTTP; the verification intent pipeline runs on host's local file-store profile, loaded lazily; offline demo, attestation and benchmark utilities use application or verification on frozen files. pack:sandbox builds the installable ks tarball.
 
-**Enter:** [`apps/cli/src/index.ts`](../../apps/cli/src/index.ts), [`apps/cli/src/commands.ts`](../../apps/cli/src/commands.ts)
-**Interface:** Remote catalog requires API URL and token and dispatches through KnowledgeClient. Local commands stay outside the remote catalog and must not use HTTP.
+**Enter:** [`apps/cli/src/index.ts`](../../apps/cli/src/index.ts), [`apps/cli/src/ks.ts`](../../apps/cli/src/ks.ts), [`apps/cli/src/ks-commands.ts`](../../apps/cli/src/ks-commands.ts), [`apps/cli/src/commands.ts`](../../apps/cli/src/commands.ts), [`apps/cli/src/local/offline.ts`](../../apps/cli/src/local/offline.ts)
+**Interface:** ks <group> <command…>: KS_COMMANDS names every command and its one profile (remote, local, offline utility). Remote commands need an API URL and bearer and dispatch through KnowledgeClient (dispatchCliCommand); local commands map flags and KNOWLEDGE_LOCAL_* variables onto the local host's explicit identity and providers (no VERIFY_* names). Exit 0 success, 1 gate failed, 2 usage/auth/network/executor error, never a fallback. jev is reserved until 5F.
 **Package:** @aiengineer/knowledge-cli ([`apps/cli/package.json`](../../apps/cli/package.json))
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
-**Declared internal package dependencies:** [application](#application), [client](#client), [contracts](#contracts), [verification](#verification)
-**Other runtime dependencies:** none declared
-**Reviewed runtime/data relationships:** none declared
-**Checks:** [`apps/cli/src/tests/commands.test.ts`](../../apps/cli/src/tests/commands.test.ts) Package script names: build, dev, test, typecheck.
-- Remote CLI must not import persistence or POSTGRES_URL. Do not fold local or mixed commands into dispatchCliCommand.
+**Declared internal package dependencies:** [application](#application), [client](#client), [contracts](#contracts), [host](#host), [verification](#verification), [verification-executor](#verification-executor)
+**Other runtime dependencies:** zod
+**Reviewed runtime/data relationships:** [host](#host), [verification-executor](#verification-executor)
+**Checks:** [`apps/cli/src/tests/ks.test.ts`](../../apps/cli/src/tests/ks.test.ts), [`apps/cli/src/tests/remote-profile.test.ts`](../../apps/cli/src/tests/remote-profile.test.ts), [`apps/cli/src/tests/commands.test.ts`](../../apps/cli/src/tests/commands.test.ts) Package script names: build, dev, pack:sandbox, test, typecheck.
+- --help and remote commands must not load host, the executor seam, persistence or pg (bundle module-graph test). Do not fold local or mixed commands into dispatchCliCommand. The executor seam import (./local-verification) is transitional and goes with 5D3.
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -146,7 +146,7 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -163,9 +163,9 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 Sandbox verification executor that also hosts schema, bounded-read, and ingestion operations on CLI, MCP, and HTTP.
 
 **Enter:** [`apps/verification-executor/src/index.ts`](../../apps/verification-executor/src/index.ts), [`apps/verification-executor/src/executor.ts`](../../apps/verification-executor/src/executor.ts), [`apps/verification-executor/src/knowledge/operations.ts`](../../apps/verification-executor/src/knowledge/operations.ts), [`apps/verification-executor/src/knowledge/cli.ts`](../../apps/verification-executor/src/knowledge/cli.ts), [`apps/verification-executor/src/knowledge/context.ts`](../../apps/verification-executor/src/knowledge/context.ts), [`apps/verification-executor/src/operations/define.ts`](../../apps/verification-executor/src/operations/define.ts)
-**Interface:** knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP.
+**Interface:** knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP. ./local-verification publishes the 5B file-backed seam for ks until 5D3.
 **Package:** @aiengineer/knowledge-verification-executor ([`apps/verification-executor/package.json`](../../apps/verification-executor/package.json))
-**Export subpaths:** ./evidence-reader/v1, ./root-host/v1, ./scoped-host/v1. Declared metadata; build outputs are not read.
+**Export subpaths:** ./evidence-reader/v1, ./local-verification, ./root-host/v1, ./scoped-host/v1. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [application](#application), [contracts](#contracts), [core](#core), [knowledge-db](#knowledge-db), [persistence](#persistence), [policy](#policy), [verification](#verification)
 **Other runtime dependencies:** @aiengineer/database-contract, @modelcontextprotocol/sdk, pg, zod
 **Reviewed runtime/data relationships:** [knowledge-db](#knowledge-db)
@@ -175,7 +175,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
@@ -254,7 +254,7 @@ Composes knowledge use cases, capability admission, preparation, retrieval execu
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
@@ -322,9 +322,9 @@ Out-of-process typed HTTP SDK (@aiengineer/knowledge-client, folder packages/cli
 Composition root: configuration and identity resolution, shared knowledge and verification composition, createHost for the server roles (API, MCP, worker) and the file-backed local profile, with owned lifecycle and the server/local/remote-CLI capability matrix.
 
 **Enter:** [`packages/host/src/index.ts`](../../packages/host/src/index.ts), [`packages/host/src/create-host.ts`](../../packages/host/src/create-host.ts), [`packages/host/src/server/verification.ts`](../../packages/host/src/server/verification.ts), [`packages/host/src/local/local-host.ts`](../../packages/host/src/local/local-host.ts), [`packages/host/src/local/capabilities.ts`](../../packages/host/src/local/capabilities.ts), [`packages/host/src/verification/host-runtime.ts`](../../packages/host/src/verification/host-runtime.ts)
-**Interface:** createHost({ profile: "server", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); createHost({ profile: "local", storeDir, providers?, verification }) composes the verification intent pipeline lazily over a file store: offline operations need no network, database or credentials; online capture, document conversion and semantic judging need explicit providers, else CAPABILITY_NOT_ADMITTED; other operations are server-only (profileAvailability). The verification seam is supplied by the executor until 5D3. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; access rules are re-exported from application.
+**Interface:** createHost({ profile: "server", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); createHost({ profile: "local", storeDir, providers?, verification }) composes the verification intent pipeline lazily over a file store: offline operations need no network, database or credentials; online capture, document conversion and semantic judging need explicit providers, else CAPABILITY_NOT_ADMITTED; other operations are server-only (profileAvailability). The verification seam is supplied by the executor until 5D3. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; @aiengineer/knowledge-host/local exposes the local profile and capability matrix without the server composition (what ks loads); access rules are re-exported from application.
 **Package:** @aiengineer/knowledge-host ([`packages/host/package.json`](../../packages/host/package.json))
-**Export subpaths:** ., ./config. Declared metadata; build outputs are not read.
+**Export subpaths:** ., ./config, ./local. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** [sources](#sources), [application](#application), [contracts](#contracts), [core](#core), [persistence](#persistence), [preparation](#preparation), [retrieval](#retrieval), [verification](#verification)
 **Other runtime dependencies:** zod
 **Reviewed runtime/data relationships:** [application](#application), [persistence](#persistence)
@@ -333,7 +333,7 @@ Composition root: configuration and identity resolution, shared knowledge and ve
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
 
@@ -380,7 +380,7 @@ Pinned schema workspace navigation, bounded read snapshots and deterministic ing
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Unit 5 slices (5C), linked spec
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: Q0, 5P, 5D1 slices
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version

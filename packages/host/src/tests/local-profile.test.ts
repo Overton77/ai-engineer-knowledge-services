@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHost, type LocalHostOptions, type LocalVerificationSeam, type LocalVerificationServices } from "../index.js";
 import { localVerificationOperations, type LocalOperation } from "../local/capabilities.js";
@@ -218,5 +220,23 @@ describe("local host lifecycle", () => {
     }).options);
     await invoke(host, "verify_list_captures");
     await expect(host.close()).rejects.toThrow("STORE_RELEASE_FAILED");
+  });
+});
+
+describe("local profile entry", () => {
+  it("composes the same local host as createHost and imports no server composition", async () => {
+    const entry = await import("../local/index.js");
+    const calls: string[] = [];
+    const host = await entry.createLocalHost({ profile: "local", storeDir: "never-created-store", verification: { captureMediaKind, create: () => stubServices(calls) } });
+    await invoke(host, "verify_run_status");
+    expect(calls).toEqual(["runStatus"]);
+    await host.close();
+    // `@aiengineer/knowledge-host/local` is what the ks CLI loads for offline commands: only the local modules and the
+    // lifecycle resources, never the server roles, persistence or a database driver.
+    const directory = join(import.meta.dirname, "../local");
+    const specifiers = readdirSync(directory).filter((name) => name.endsWith(".ts"))
+      .flatMap((name) => [...readFileSync(join(directory, name), "utf8").matchAll(/^(?:import|export)[^;]*?from\s+"([^"]+)"/gmu)].map((match) => match[1]!));
+    expect(specifiers).toContain("../lifecycle/resources.js");
+    expect(specifiers.filter((specifier) => !specifier.startsWith("./") && specifier !== "../lifecycle/resources.js" && !specifier.startsWith("node:"))).toEqual([]);
   });
 });

@@ -38,7 +38,7 @@ try{
  const apiOrigin=`http://127.0.0.1:${origin.port}`;
  const context=OperationContextSchema.parse({...ownership.request.authenticatedContext,correlationId:namespace});
  const runCli=(action:string,input:unknown)=>new Promise<unknown>((done,reject)=>{
-   const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"reconciliation",action,"--base-url",apiOrigin,"--context",JSON.stringify(context),"--input",JSON.stringify(input)],{windowsHide:true,env:{SYSTEMROOT:process.env.SYSTEMROOT,WINDIR:process.env.WINDIR,KNOWLEDGE_API_TOKEN:"proof"},stdio:["ignore","pipe","pipe"]});
+   const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"verify","reconciliation",action,"--base-url",apiOrigin,"--context",JSON.stringify(context),"--input",JSON.stringify(input)],{windowsHide:true,env:{SYSTEMROOT:process.env.SYSTEMROOT,WINDIR:process.env.WINDIR,KNOWLEDGE_API_TOKEN:"proof"},stdio:["ignore","pipe","pipe"]});
    let stdout="",stderr="";const timer=setTimeout(()=>child.kill("SIGKILL"),30_000);
    child.stdout.on("data",value=>{stdout+=value;});child.stderr.on("data",value=>{stderr+=value;});child.on("error",error=>{clearTimeout(timer);reject(error);});
    child.on("close",code=>{clearTimeout(timer);try{assert.equal(code,0,stderr);done(JSON.parse(stdout));}catch(error){reject(error);}});

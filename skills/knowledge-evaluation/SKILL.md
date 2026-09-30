@@ -2,7 +2,7 @@
 description: Use when creating reviewed retrieval cases, running ablations, diagnosing failures, or recommending a knowledge release.
 license: Proprietary
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   contract: "knowledge-service/v1"
 ---
 
@@ -14,16 +14,16 @@ Record recall, nDCG, MRR, citation/locator validity, false acceptance, abstentio
 
 ## Real evaluation and status commands
 
-Use only the admitted platform commands: `knowledge eval generate`, `knowledge eval run`,
-`knowledge eval compare`, and `knowledge eval failures`. The MCP catalog has
+Use only the admitted platform commands: `ks knowledge eval generate`, `ks knowledge eval run`,
+`ks knowledge eval compare`, and `ks knowledge eval failures`. The MCP catalog has
 `evaluation.generate_query_candidates`, `evaluation.run_experiment`,
 `evaluation.compare_experiments`, and `evaluation.inspect_failures`. Persist the evaluated
 candidate, query set, result digest, gates and exclusions so a distinct publisher can bind them.
 
 ```text
-knowledge eval generate --context '<OperationContext>' --input '<evaluation dataset input>'
-knowledge eval run --context '<OperationContext>' --input '<evaluation run input>'
-knowledge eval failures --context '<OperationContext>' --input '{"runId":"<uuid>"}'
+ks knowledge eval generate --context '<OperationContext>' --input '<evaluation dataset input>'
+ks knowledge eval run --context '<OperationContext>' --input '<evaluation run input>'
+ks knowledge eval failures --context '<OperationContext>' --input '{"runId":"<uuid>"}'
 ```
 
 An evaluation report is a recommendation and evidence binding. It never switches an official

@@ -5,8 +5,9 @@
  *   local      — `createHost({ profile: "local" })` over a file-backed store; offline operations need no
  *                network, database or credentials, provider operations need explicit provider configuration,
  *                and everything else is server-only;
- *   remote-cli — the CLI through `KnowledgeClient`; it never constructs host, so an authorization or network
- *                error surfaces to the caller and never falls back to local execution.
+ *   remote-cli — `ks` remote commands through `KnowledgeClient`; they never load host, so an authorization or
+ *                network error surfaces to the caller and never falls back to local execution. `ks` local commands
+ *                load the local profile (`@aiengineer/knowledge-host/local`) lazily instead.
  */
 export type ExecutionProfile = "server" | "local" | "remote-cli";
 

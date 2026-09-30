@@ -77,7 +77,7 @@ describe("offline diagnostics command", () => {
       // Includes fresh native report verification and 67 captured semantic replays.
       const child = spawnSync(
         process.execPath,
-        ["--import", pathToFileURL(guard).href, cli, ...args(output), "--open"],
+        ["--import", pathToFileURL(guard).href, cli, "verify", ...args(output), "--open"],
         {
           cwd: directory,
           env,

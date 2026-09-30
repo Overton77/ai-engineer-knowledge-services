@@ -128,21 +128,29 @@
       "path": "apps/cli",
       "kind": "app",
       "state": "implemented",
-      "summary": "Laptop transport: remote commands call KnowledgeClient over HTTP; local demo, attestation, and benchmark diff use application or verification on frozen files.",
+      "summary": "The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTTP; the verification intent pipeline runs on host's local file-store profile, loaded lazily; offline demo, attestation and benchmark utilities use application or verification on frozen files. pack:sandbox builds the installable ks tarball.",
       "entrypoints": [
         "apps/cli/src/index.ts",
-        "apps/cli/src/commands.ts"
+        "apps/cli/src/ks.ts",
+        "apps/cli/src/ks-commands.ts",
+        "apps/cli/src/commands.ts",
+        "apps/cli/src/local/offline.ts"
       ],
       "interface": [
-        "Remote catalog requires API URL and token and dispatches through KnowledgeClient. Local commands stay outside the remote catalog and must not use HTTP."
+        "ks <group> <command…>: KS_COMMANDS names every command and its one profile (remote, local, offline utility). Remote commands need an API URL and bearer and dispatch through KnowledgeClient (dispatchCliCommand); local commands map flags and KNOWLEDGE_LOCAL_* variables onto the local host's explicit identity and providers (no VERIFY_* names). Exit 0 success, 1 gate failed, 2 usage/auth/network/executor error, never a fallback. jev is reserved until 5F."
       ],
       "tests": [
+        "apps/cli/src/tests/ks.test.ts",
+        "apps/cli/src/tests/remote-profile.test.ts",
         "apps/cli/src/tests/commands.test.ts"
       ],
       "constraints": [
-        "Remote CLI must not import persistence or POSTGRES_URL. Do not fold local or mixed commands into dispatchCliCommand."
+        "--help and remote commands must not load host, the executor seam, persistence or pg (bundle module-graph test). Do not fold local or mixed commands into dispatchCliCommand. The executor seam import (./local-verification) is transitional and goes with 5D3."
       ],
-      "uses": [],
+      "uses": [
+        "host",
+        "verification-executor"
+      ],
       "packageJson": "apps/cli/package.json"
     },
     {
@@ -188,7 +196,7 @@
         "apps/verification-executor/src/operations/define.ts"
       ],
       "interface": [
-        "knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP."
+        "knowledge-verify plus knowledge schema_*/db_*/ingest_*/artifact_get; one OperationDefinition feeds CLI, POST /knowledge/<name>, and MCP. ./local-verification publishes the 5B file-backed seam for ks until 5D3."
       ],
       "tests": [
         "apps/verification-executor/src/knowledge/cli.test.ts",
@@ -360,7 +368,7 @@
         "packages/host/src/verification/host-runtime.ts"
       ],
       "interface": [
-        "createHost({ profile: \"server\", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); createHost({ profile: \"local\", storeDir, providers?, verification }) composes the verification intent pipeline lazily over a file store: offline operations need no network, database or credentials; online capture, document conversion and semantic judging need explicit providers, else CAPABILITY_NOT_ADMITTED; other operations are server-only (profileAvailability). The verification seam is supplied by the executor until 5D3. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; access rules are re-exported from application."
+        "createHost({ profile: \"server\", role: api, mcp or worker }) returns role-typed services grouped as knowledge, verify and operations plus close(); createHost({ profile: \"local\", storeDir, providers?, verification }) composes the verification intent pipeline lazily over a file store: offline operations need no network, database or credentials; online capture, document conversion and semantic judging need explicit providers, else CAPABILITY_NOT_ADMITTED; other operations are server-only (profileAvailability). The verification seam is supplied by the executor until 5D3. composeKnowledgeServices and composeVerificationServices are shared by the API and MCP roles; verification/api/ holds read, reconciliation, decision, capture-profile and drift construction. @aiengineer/knowledge-host/config exposes configuration and identity; @aiengineer/knowledge-host/local exposes the local profile and capability matrix without the server composition (what ks loads); access rules are re-exported from application."
       ],
       "tests": [
         "packages/host/src/tests/composition.test.ts",

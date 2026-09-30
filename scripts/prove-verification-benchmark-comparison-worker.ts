@@ -96,7 +96,7 @@ async function registerSnapshot(value: unknown) {
 
 function runCli(baseUrl: string, request: unknown, context: unknown) {
   return new Promise<{ code: number | null; stdout: string; stderr: string }>((done, reject) => {
-    const child = spawn(process.execPath, [resolve("apps/cli/dist/index.js"), "benchmark", "compare", "--base-url", baseUrl, "--context", JSON.stringify(context), "--input", JSON.stringify(request), "--wait", "--timeout-ms", "120000"], {
+    const child = spawn(process.execPath, [resolve("apps/cli/dist/index.js"), "verify","benchmark", "compare", "--base-url", baseUrl, "--context", JSON.stringify(context), "--input", JSON.stringify(request), "--wait", "--timeout-ms", "120000"], {
       windowsHide: true,
       env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, KNOWLEDGE_API_TOKEN: token },
       stdio: ["ignore", "pipe", "pipe"],

@@ -47,18 +47,18 @@ corepack pnpm --filter @aiengineer/knowledge-verification build
 
 ## CLI invocation
 
-Bin name: `knowledge` (`apps/cli/package.json`).
+Bin name: `ks` (`apps/cli/package.json`; `ks --help` lists the commands).
 
 In-repo from source (passes args after `--` to `tsx src/index.ts`):
 
 ```bash
-corepack pnpm --filter @aiengineer/knowledge-cli dev -- <group> <action> ...
+corepack pnpm --filter @aiengineer/knowledge-cli dev -- <group> <command…> ...
 ```
 
 After `build`:
 
 ```bash
-corepack pnpm --filter @aiengineer/knowledge-cli exec node dist/index.js <group> <action> ...
+corepack pnpm --filter @aiengineer/knowledge-cli exec node dist/index.js <group> <command…> ...
 ```
 
 Generic HTTP commands need `KNOWLEDGE_API_URL` or `--base-url`, and `KNOWLEDGE_API_TOKEN`. `--context` must be JSON that parses as `OperationContextSchema` (full envelope: `tenantId`, `operationId`, `attemptId`, `correlationId`, `actor`, `capabilityVersion`, `idempotencyKey`, `reason`, `contractVersion`). The API ignores caller-supplied actor/operation identity and builds a trusted context from the bearer and ownership grants.
@@ -230,7 +230,7 @@ Full matrix: [DEPLOYMENT.md](DEPLOYMENT.md).
 Local frozen-input execution. No HTTP client, access token, or provider authority.
 
 ```bash
-corepack pnpm --filter @aiengineer/knowledge-cli dev -- demo diagnostics-companies --dataset diagnostics-companies-v1 --output <dir>
+corepack pnpm --filter @aiengineer/knowledge-cli dev -- verify demo diagnostics-companies --dataset diagnostics-companies-v1 --output <dir>
 ```
 
 `--dataset` must be `diagnostics-companies-v1`. `--output` is required and must not already exist. Optional `--open` opens `verification-audit.html` when stdin/stdout are TTYs.
@@ -260,10 +260,10 @@ Conditionally written when fixtures replay: `semantic-replay.json`, `policy-repl
 `--wait` on `verify citations` is handled (`verification_claims`, receipt `verify_claims_and_register.succeeded`). Completion `{operationId,state,claims:{runId,manifestDigest,policyOutcome,mechanicalStatus,disposition},receiptId,exitCode}` is a compact projection: `admitted` exit 0, `held_for_review` / `quality_failed` exit 1. The signed `verify claims-result` read is authoritative. `held_for_review` / `needs_review` / `review_required`: escalate to adjudication; do not retry or override.
 
 ```bash
-knowledge verify citations --input '<VerifyClaimsRequestSchema JSON>' --context '<OperationContextSchema JSON>' --wait
+ks verify citations --input '<VerifyClaimsRequestSchema JSON>' --context '<OperationContextSchema JSON>' --wait
 # or poll then read:
-knowledge verify status --input '{"operationId":"<uuid>"}' --context '<same context>'
-knowledge verify claims-result --input '{"operationId":"<uuid>"}' --context '<same context>'
+ks verify status --input '{"operationId":"<uuid>"}' --context '<same context>'
+ks verify claims-result --input '{"operationId":"<uuid>"}' --context '<same context>'
 ```
 
 `VerifyClaimsRequestSchema` fields: `verificationContractVersion` (`verification.v1`), `captureIds` (unique, 1–100), `assertions` `{artifactId, digest}`.
@@ -275,8 +275,8 @@ When `--wait` is used on a handled kind (capture, extraction, replay, metric, be
 Local only. Does not call the API.
 
 ```bash
-knowledge verification attestation-export --audit-bundle <path> --trusted-public-keys <path> --trusted-binding <path> --output <path>
-knowledge verification attestation-inspect --audit-bundle <path> --trusted-public-keys <path> --trusted-binding <path> --attestation <path>
+ks verify attestation export --audit-bundle <path> --trusted-public-keys <path> --trusted-binding <path> --output <path>
+ks verify attestation inspect --audit-bundle <path> --trusted-public-keys <path> --trusted-binding <path> --attestation <path>
 ```
 
 Export signs with `KNOWLEDGE_VERIFICATION_ATTESTATION_SIGNING_KEY_PEM`. Inspect: exit 0 verified, 1 not verified, 2 error.
@@ -284,7 +284,7 @@ Export signs with `KNOWLEDGE_VERIFICATION_ATTESTATION_SIGNING_KEY_PEM`. Inspect:
 ## Replay
 
 ```bash
-knowledge bundle replay --input '<ReplayRunRequestSchema JSON>' --context '<OperationContextSchema JSON>'
+ks verify bundle replay --input '<ReplayRunRequestSchema JSON>' --context '<OperationContextSchema JSON>'
 ```
 
 `ReplayRunRequestSchema`: `verificationContractVersion`, `runId`, `replayMode` (`deterministic_only` | `recorded_provider_outputs`). Path `runId` must match the body. `--wait` handles `verification_replay` (uses `result.valid`).
@@ -292,10 +292,10 @@ knowledge bundle replay --input '<ReplayRunRequestSchema JSON>' --context '<Oper
 ## Adjudication
 
 ```bash
-knowledge adjudication request --input '<RequestAdjudicationRequestSchema JSON>' --context '<context>'
-knowledge adjudication get --input '{"operationId":"<uuid>"}' --context '<context>'
-knowledge adjudication decision --input '<VerificationAdjudicationDecisionRequestSchema JSON>' --context '<context>'
-knowledge adjudication get-decision --input '{"operationId":"<uuid>"}' --context '<context>'
+ks verify adjudication request --input '<RequestAdjudicationRequestSchema JSON>' --context '<context>'
+ks verify adjudication get --input '{"operationId":"<uuid>"}' --context '<context>'
+ks verify adjudication decision --input '<VerificationAdjudicationDecisionRequestSchema JSON>' --context '<context>'
+ks verify adjudication get-decision --input '{"operationId":"<uuid>"}' --context '<context>'
 ```
 
 Decision POST requires the **authenticated** actor to be `human`, or `service` with `serviceIdentity` `human_reviewer`; never `model`. That identity comes from `KNOWLEDGE_API_IDENTITIES`, not from forging `--context.actor`. Decisions record review only; `admissionChanged` is always `false`. `--wait` does not handle these kinds.
@@ -303,8 +303,8 @@ Decision POST requires the **authenticated** actor to be `human`, or `service` w
 ## Provider reconciliation
 
 ```bash
-knowledge reconciliation apply --input '{"operationId":"<uuid>","providerAttemptId":"<uuid>","artifact":<VerificationArtifactHandle>}' --context '<context>'
-knowledge reconciliation show --input '{"operationId":"<uuid>","providerAttemptId":"<uuid>"}' --context '<context>'
+ks verify reconciliation apply --input '{"operationId":"<uuid>","providerAttemptId":"<uuid>","artifact":<VerificationArtifactHandle>}' --context '<context>'
+ks verify reconciliation show --input '{"operationId":"<uuid>","providerAttemptId":"<uuid>"}' --context '<context>'
 ```
 
 Apply never authorizes redispatch. Extraction vs claims/report HTTP hosts differ; the CLI apply/show path uses the extraction host.
@@ -315,8 +315,8 @@ Apply never authorizes redispatch. Extraction vs claims/report HTTP hosts differ
 - Retry / reconcile (generic operation control):
 
 ```bash
-knowledge operation retry --input '{"operationId":"<uuid>"}' --context '<full OperationContext>'
-knowledge operation reconcile --input '{"operationId":"<uuid>"}' --context '<full OperationContext>'
+ks knowledge operation retry --input '{"operationId":"<uuid>"}' --context '<full OperationContext>'
+ks knowledge operation reconcile --input '{"operationId":"<uuid>"}' --context '<full OperationContext>'
 ```
 
 Manual retry is restricted to deterministic replay/extraction infrastructure failures. It does not retry provider-capable, unknown, policy, or quality outcomes.

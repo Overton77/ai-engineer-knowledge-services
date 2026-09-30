@@ -151,9 +151,18 @@ importers:
       '@aiengineer/knowledge-contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@aiengineer/knowledge-host':
+        specifier: workspace:*
+        version: link:../../packages/host
       '@aiengineer/knowledge-verification':
         specifier: workspace:*
         version: link:../../packages/verification
+      '@aiengineer/knowledge-verification-executor':
+        specifier: workspace:*
+        version: link:../verification-executor
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       tsup:
         specifier: 'catalog:'

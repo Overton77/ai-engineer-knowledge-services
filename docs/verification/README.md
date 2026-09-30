@@ -99,7 +99,7 @@ flowchart TD
   O -.-> N
 ```
 
-Offline diagnostics (`knowledge demo diagnostics-companies`) compose the same algorithms in-process without HTTP or provider authority.
+Offline diagnostics (`ks verify demo diagnostics-companies`) compose the same algorithms in-process without HTTP or provider authority.
 
 ## Documentation map
 

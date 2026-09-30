@@ -60,7 +60,7 @@ try{
   for(const item of sourceSnapshot){const bytes=await readFile(item.path);assert.equal(sha256Digest(bytes),item.digest);const target=resolve(snapshotDirectory,item.path);await mkdir(dirname(target),{recursive:true});await writeFile(target,bytes,{flag:"wx"});}
   await writeFile(resolve(snapshotDirectory,"manifest.json"),JSON.stringify(sourceSnapshot,null,2),{flag:"wx"});
   const cli=await new Promise<{exitCode:number|null;stdout:string;stderr:string}>((complete,reject)=>{
-    const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"benchmark","capture","diagnostics-companies","--propose-version","diagnostics-companies-v2","--output",proposalDirectory,"--timeout-ms","20000"],{cwd:resolve("../internal"),env:{...inherited,KNOWLEDGE_API_URL:address,KNOWLEDGE_API_TOKEN:token},windowsHide:true});
+    const child=spawn(process.execPath,[resolve("apps/cli/dist/index.js"),"verify","benchmark","capture","diagnostics-companies","--propose-version","diagnostics-companies-v2","--output",proposalDirectory,"--timeout-ms","20000"],{cwd:resolve("../internal"),env:{...inherited,KNOWLEDGE_API_URL:address,KNOWLEDGE_API_TOKEN:token},windowsHide:true});
     let stdout="",stderr="";const timeout=setTimeout(()=>child.kill(),360_000);
     child.stdout.on("data",bytes=>{stdout+=String(bytes);if(stdout.length>2_000_000)child.kill();});child.stderr.on("data",bytes=>{stderr+=String(bytes);if(stderr.length>2_000_000)child.kill();});
     child.once("error",reject);child.once("close",exitCode=>{clearTimeout(timeout);complete({exitCode,stdout,stderr});});

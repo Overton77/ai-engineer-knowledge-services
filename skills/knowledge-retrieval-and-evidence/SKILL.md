@@ -2,7 +2,7 @@
 description: Use when planning scoped knowledge retrieval, inspecting retrieval explanations, or building immutable evidence packets.
 license: Proprietary
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   contract: "knowledge-service/v1"
 ---
 
@@ -12,20 +12,20 @@ Declare the tenant, purpose, admitted vector-store/version, domains, hard filter
 
 ## Official retrieval operations
 
-The platform CLI commands are `knowledge retrieve plan`, `knowledge retrieve search`,
-`knowledge retrieve explain`, `knowledge retrieve run`, `knowledge retrieve packet`, and `knowledge retrieve citations`.
+The platform CLI commands are `ks knowledge retrieve plan`, `ks knowledge retrieve search`,
+`ks knowledge retrieve explain`, `ks knowledge retrieve run`, `ks knowledge retrieve packet`, and `ks knowledge retrieve citations`.
 Their MCP equivalents are `retrieval.plan_validate`, `retrieval.search`, `retrieval.explain_run`,
 `retrieval.read_run`, `retrieval.read_evidence_packet`, and `retrieval.replay_citations`. The search creates the canonical retrieval run;
 the result is an immutable evidence packet. Save its `retrievalRunId`, packet ID, member IDs and
 citation locators before answering.
 
 ```text
-knowledge retrieve plan --context '<OperationContext>' --input '<RetrievalPlan>'
-knowledge retrieve search --context '<OperationContext>' --input '<RetrievalPlan>'
-knowledge retrieve explain --context '<OperationContext>' --input '{"runId":"<uuid>"}'
-knowledge retrieve run --context '<OperationContext>' --input '{"runId":"<uuid>"}'
-knowledge retrieve packet --context '<OperationContext>' --input '{"packetId":"<uuid>"}'
-knowledge retrieve citations --context '<OperationContext>' --input '{"packetId":"<uuid>"}'
+ks knowledge retrieve plan --context '<OperationContext>' --input '<RetrievalPlan>'
+ks knowledge retrieve search --context '<OperationContext>' --input '<RetrievalPlan>'
+ks knowledge retrieve explain --context '<OperationContext>' --input '{"runId":"<uuid>"}'
+ks knowledge retrieve run --context '<OperationContext>' --input '{"runId":"<uuid>"}'
+ks knowledge retrieve packet --context '<OperationContext>' --input '{"packetId":"<uuid>"}'
+ks knowledge retrieve citations --context '<OperationContext>' --input '{"packetId":"<uuid>"}'
 ```
 
 Use the accepted search operation ID as `runId` for the run read, then read the returned evidence
@@ -39,7 +39,7 @@ Inspect exact, FTS, semantic, graph, rerank, diversity, context, freshness, and 
 
 ## Citation replay and revoked support
 
-Replay a citation with `knowledge retrieve citations` or `retrieval.replay_citations`, supplying
+Replay a citation with `ks knowledge retrieve citations` or `retrieval.replay_citations`, supplying
 only the retained `packetId`. The authenticated host resolves its stored representation, byte
 digest and exact selector; never supply replacement bytes or a storage address. Check the returned
 packet digest, selected-content digests, and every replay failure before citing the result. A later retrieval

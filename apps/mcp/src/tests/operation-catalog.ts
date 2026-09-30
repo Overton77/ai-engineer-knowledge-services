@@ -1,8 +1,9 @@
 // The Knowledge Services operation catalog (FINAL-LAYOUT §4.5), classified per transport.
 // operation-catalog.test.ts derives the operation list from the production catalogs
-// (operations/surface.ts, the verification catalogs, API routes, MCP registrations, CLI
-// commands and the executor registry) and requires every operation here to be exposed on
-// API, MCP and CLI or excluded with a reason.
+// (operations/surface.ts, the verification catalogs, API routes, MCP registrations, the `ks`
+// command table in apps/cli/src/ks-commands.ts and the executor registry) and requires every
+// operation here to be exposed on API, MCP and CLI or excluded with a reason. CLI bindings are
+// `ks` command names without the binary (`knowledge store create`, `verify citations`).
 //
 // admission (server profile):
 //   admitted — a production worker or API-owned kind, or a read/control host composes whenever the
@@ -11,13 +12,16 @@
 //              admission and read flags, Storage custody, operator reconciliation authority, the internal
 //              drift queue, callback signing keys, the demo bundle port);
 //   declared — contract vocabulary only; every bound surface fails closed with CAPABILITY_NOT_ADMITTED;
-//   executor — served only by the verification executor (its own MCP/CLI and store mode), not by ks api/mcp/cli.
+//   executor — served by the verification executor (its own MCP/CLI and store mode), not by the ks api or mcp;
+//              the verification intent-pipeline rows also name the `ks` command that runs them on the local
+//              profile (5C, `executor.ks`).
 // Parity never promotes a declared operation: declared rows may only use `failsClosed` bindings.
 // transportState() derives the per-profile, per-transport state: executable, executable when composed,
-// declared (fails closed), excluded, executor only, or server only. The local host profile composes only
-// the verification intent pipeline over the executor's file store, so every platform row is server only
-// there; executor rows stay executor only on ks transports until 5C/5D bind them. localProfileState()
-// reports what the local host itself admits, from host's capability matrix (profileAvailability).
+// declared (fails closed), excluded, executor only, server only, or local profile. The local host profile
+// composes only the verification intent pipeline over the executor's file store, so every platform row is
+// server only there; the 16 intent-pipeline rows run through `ks` on the local profile and stay executor only
+// on ks api/mcp until 5D3; the registry rows stay executor only until 5D1/5D2. localProfileState() reports
+// what the local host itself admits, from host's capability matrix (profileAvailability).
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
 import { profileAvailability, type ProfileAvailability } from "@aiengineer/knowledge-host";
 
@@ -39,8 +43,11 @@ export interface CatalogOperation {
   readonly cli: Binding;
   /** Optional configuration or authority host must compose before the operation is executable. */
   readonly requires?: string;
-  /** Executor-only surfaces: tool name on the executor MCP server and executor CLI command. */
-  readonly executor?: { readonly mcp: string; readonly cli?: string };
+  /**
+   * Executor surfaces: tool name on the executor MCP server and executor CLI command; for the verification intent
+   * pipeline, the `ks` command that runs it on the local host profile (5C).
+   */
+  readonly executor?: { readonly mcp: string; readonly cli?: string; readonly ks?: string };
 }
 
 const on = (...names: string[]): Binding => ({ on: names });
@@ -58,28 +65,28 @@ const EXECUTOR = "executor-only surface; Unit 5 folds the verification executor 
 // ── Durable knowledge operations (operations/surface.ts kinds) ──────────────────────────
 const knowledgeMutations: readonly CatalogOperation[] = [
   { id: "knowledge.source_discovery", group: "knowledge", effect: "mutation", kind: "source_discovery", admission: "admitted",
-    api: on("POST /v1/:sourceAction"), mcp: on("source.discover"), cli: on("source discover") },
+    api: on("POST /v1/:sourceAction"), mcp: on("source.discover"), cli: on("knowledge source discover") },
   { id: "knowledge.source_resolution", group: "knowledge", effect: "mutation", kind: "source_resolution", admission: "admitted",
     api: on("POST /v1/:sourceAction"), mcp: on("source.resolve_identity"), cli: NO_CLI },
   { id: "knowledge.capture", group: "knowledge", effect: "mutation", kind: "capture", admission: "admitted",
-    api: on("POST /v1/captures"), mcp: on("source.fetch"), cli: on("source fetch") },
+    api: on("POST /v1/captures"), mcp: on("source.fetch"), cli: on("knowledge source fetch") },
   { id: "knowledge.capture_inspection", group: "knowledge", effect: "mutation", kind: "capture_inspection", admission: "declared",
-    api: DECLARED_API("POST /v1/captures/:target"), mcp: failsClosed("source.inspect_capture"), cli: failsClosed("source inspect") },
+    api: DECLARED_API("POST /v1/captures/:target"), mcp: failsClosed("source.inspect_capture"), cli: failsClosed("knowledge source inspect") },
   { id: "knowledge.capture_comparison", group: "knowledge", effect: "mutation", kind: "capture_comparison", admission: "declared",
     api: DECLARED_API("POST /v1/captures/:target"), mcp: failsClosed("source.compare_captures"), cli: excluded("declared only; no CLI binding") },
   { id: "knowledge.source_vetting", group: "knowledge", effect: "mutation", kind: "source_vetting", admission: "admitted",
-    api: on("POST /v1/captures/:target"), mcp: on("source.propose_vetting"), cli: on("source vet") },
+    api: on("POST /v1/captures/:target"), mcp: on("source.propose_vetting"), cli: on("knowledge source vet") },
   { id: "knowledge.vector_store_create", group: "knowledge", effect: "mutation", kind: "vector_store_create", admission: "admitted",
-    api: on("POST /v1/vector-stores"), mcp: on("vector_store.create"), cli: on("store create") },
+    api: on("POST /v1/vector-stores"), mcp: on("vector_store.create"), cli: on("knowledge store create") },
   { id: "knowledge.vector_store_documents", group: "knowledge", effect: "mutation", kind: "vector_store_documents", admission: "admitted",
-    api: on("POST /v1/vector-stores/:id/documents"), mcp: on("vector_store.add_documents"), cli: on("store add-documents") },
+    api: on("POST /v1/vector-stores/:id/documents"), mcp: on("vector_store.add_documents"), cli: on("knowledge store add-documents") },
   { id: "knowledge.vector_store_ingestion", group: "knowledge", effect: "mutation", kind: "vector_store_ingestion", admission: "admitted",
     api: on("POST /v1/vector-stores/:id/ingestion-jobs", "POST /v1/a2a/tasks"),
     mcp: excluded("ingestion jobs start over HTTP or A2A; MCP reads their status (vector_store.ingestion_status)"), cli: NO_CLI },
   { id: "knowledge.vector_store_search", group: "knowledge", effect: "mutation", kind: "vector_store_search", admission: "declared",
-    api: DECLARED_API("POST /v1/vector-stores/:target"), mcp: failsClosed("vector_store.search"), cli: failsClosed("store search") },
+    api: DECLARED_API("POST /v1/vector-stores/:target"), mcp: failsClosed("vector_store.search"), cli: failsClosed("knowledge store search") },
   { id: "knowledge.vector_store_evaluation", group: "knowledge", effect: "mutation", kind: "vector_store_evaluation", admission: "admitted",
-    api: on("POST /v1/vector-stores/:target"), mcp: on("vector_store.evaluate"), cli: on("store evaluate") },
+    api: on("POST /v1/vector-stores/:target"), mcp: on("vector_store.evaluate"), cli: on("knowledge store evaluate") },
   { id: "knowledge.document", group: "knowledge", effect: "mutation", kind: "document", admission: "declared",
     api: DECLARED_API("POST /v1/documents"), mcp: excluded("declared only; no MCP binding"), cli: excluded("declared only; no CLI binding") },
   { id: "knowledge.document_version", group: "knowledge", effect: "mutation", kind: "document_version", admission: "declared",
@@ -87,46 +94,46 @@ const knowledgeMutations: readonly CatalogOperation[] = [
   { id: "knowledge.representation", group: "knowledge", effect: "mutation", kind: "representation", admission: "declared",
     api: DECLARED_API("POST /v1/representations"), mcp: excluded("declared only; no MCP binding"), cli: excluded("declared only; no CLI binding") },
   { id: "knowledge.transformation", group: "knowledge", effect: "mutation", kind: "transformation", admission: "admitted",
-    api: on("POST /v1/transformations", "POST /v1/a2a/tasks"), mcp: on("document.convert"), cli: on("document convert") },
+    api: on("POST /v1/transformations", "POST /v1/a2a/tasks"), mcp: on("document.convert"), cli: on("knowledge document convert") },
   { id: "knowledge.representation_inspection", group: "knowledge", effect: "mutation", kind: "representation_inspection", admission: "declared",
-    api: DECLARED_API("POST /v1/representations/:target"), mcp: failsClosed("document.inspect_representation"), cli: failsClosed("document inspect") },
+    api: DECLARED_API("POST /v1/representations/:target"), mcp: failsClosed("document.inspect_representation"), cli: failsClosed("knowledge document inspect") },
   { id: "knowledge.representation_comparison", group: "knowledge", effect: "mutation", kind: "representation_comparison", admission: "admitted",
-    api: on("POST /v1/representations/:target"), mcp: on("document.compare_representations"), cli: on("document compare") },
+    api: on("POST /v1/representations/:target"), mcp: on("document.compare_representations"), cli: on("knowledge document compare") },
   { id: "knowledge.representation_decision", group: "knowledge", effect: "mutation", kind: "representation_decision", admission: "admitted",
     api: on("POST /v1/representations/:target"), mcp: DECISION_AUTHORITY, cli: NO_CLI },
   { id: "knowledge.chunk_preview", group: "knowledge", effect: "mutation", kind: "chunk_preview", admission: "admitted",
-    api: on("POST /v1/chunk-previews"), mcp: on("chunk.preview"), cli: on("chunk preview") },
+    api: on("POST /v1/chunk-previews"), mcp: on("chunk.preview"), cli: on("knowledge chunk preview") },
   { id: "knowledge.chunk_comparison", group: "knowledge", effect: "mutation", kind: "chunk_comparison", admission: "admitted",
     api: on("POST /v1/chunk-comparisons"), mcp: on("chunk.compare"), cli: NO_CLI },
   { id: "knowledge.chunk_set", group: "knowledge", effect: "mutation", kind: "chunk_set", admission: "admitted",
-    api: on("POST /v1/chunk-sets"), mcp: on("chunk.create_intent"), cli: on("chunk build") },
+    api: on("POST /v1/chunk-sets"), mcp: on("chunk.create_intent"), cli: on("knowledge chunk build") },
   { id: "knowledge.chunk_set_inspection", group: "knowledge", effect: "mutation", kind: "chunk_set_inspection", admission: "declared",
-    api: DECLARED_API("POST /v1/chunk-sets/:target"), mcp: failsClosed("chunk.inspect"), cli: failsClosed("chunk inspect") },
+    api: DECLARED_API("POST /v1/chunk-sets/:target"), mcp: failsClosed("chunk.inspect"), cli: failsClosed("knowledge chunk inspect") },
   { id: "knowledge.promotion_proposal", group: "knowledge", effect: "mutation", kind: "promotion_proposal", admission: "admitted",
     api: on("POST /v1/promotion-proposals"),
     mcp: on("promotion.submit", "knowledge.propose_domain_mapping", "knowledge.propose_claims", "knowledge.propose_entity_links"),
-    cli: on("promotion propose") },
+    cli: on("knowledge promotion propose") },
   { id: "knowledge.promotion_decision", group: "knowledge", effect: "mutation", kind: "promotion_decision", admission: "admitted",
-    api: on("POST /v1/promotion-decisions"), mcp: DECISION_AUTHORITY, cli: on("promotion review") },
+    api: on("POST /v1/promotion-decisions"), mcp: DECISION_AUTHORITY, cli: on("knowledge promotion review") },
   { id: "knowledge.embedding_run", group: "knowledge", effect: "mutation", kind: "embedding_run", admission: "admitted",
-    api: on("POST /v1/embedding-runs"), mcp: on("embedding.create_intent"), cli: on("embed run") },
+    api: on("POST /v1/embedding-runs"), mcp: on("embedding.create_intent"), cli: on("knowledge embed run") },
   { id: "knowledge.space_publication", group: "knowledge", effect: "mutation", kind: "space_publication", admission: "admitted",
-    api: on("POST /v1/space-publications"), mcp: PUBLICATION_AUTHORITY, cli: on("space publish") },
+    api: on("POST /v1/space-publications"), mcp: PUBLICATION_AUTHORITY, cli: on("knowledge space publish") },
   { id: "knowledge.publication_verification", group: "knowledge", effect: "mutation", kind: "publication_verification", admission: "admitted",
-    api: on("POST /v1/space-publications/:target"), mcp: PUBLICATION_AUTHORITY, cli: on("embed verify") },
+    api: on("POST /v1/space-publications/:target"), mcp: PUBLICATION_AUTHORITY, cli: on("knowledge embed verify") },
   { id: "knowledge.publication_rollback", group: "knowledge", effect: "mutation", kind: "publication_rollback", admission: "admitted",
-    api: on("POST /v1/space-publications/:target"), mcp: PUBLICATION_AUTHORITY, cli: on("space rollback") },
+    api: on("POST /v1/space-publications/:target"), mcp: PUBLICATION_AUTHORITY, cli: on("knowledge space rollback") },
   { id: "knowledge.retrieval_run", group: "knowledge", effect: "mutation", kind: "retrieval_run", admission: "admitted",
-    api: on("POST /v1/retrieval-runs", "POST /v1/a2a/tasks"), mcp: on("retrieval.search"), cli: on("retrieve search"),
+    api: on("POST /v1/retrieval-runs", "POST /v1/a2a/tasks"), mcp: on("retrieval.search"), cli: on("knowledge retrieve search"),
     requires: "AI Gateway embedding configuration for the canonical retrieval executor" },
   { id: "knowledge.evidence_packet", group: "knowledge", effect: "mutation", kind: "evidence_packet", admission: "admitted",
     api: on("POST /v1/a2a/tasks"), mcp: on("retrieval.build_evidence_packet"), cli: NO_CLI },
   { id: "knowledge.evaluation_dataset", group: "knowledge", effect: "mutation", kind: "evaluation_dataset", admission: "admitted",
-    api: on("POST /v1/eval-datasets"), mcp: on("evaluation.generate_query_candidates"), cli: on("eval generate") },
+    api: on("POST /v1/eval-datasets"), mcp: on("evaluation.generate_query_candidates"), cli: on("knowledge eval generate") },
   { id: "knowledge.experiment", group: "knowledge", effect: "mutation", kind: "experiment", admission: "admitted",
-    api: on("POST /v1/experiments"), mcp: on("evaluation.compare_experiments"), cli: on("eval compare") },
+    api: on("POST /v1/experiments"), mcp: on("evaluation.compare_experiments"), cli: on("knowledge eval compare") },
   { id: "knowledge.evaluation_run", group: "knowledge", effect: "mutation", kind: "evaluation_run", admission: "admitted",
-    api: on("POST /v1/eval-runs"), mcp: on("evaluation.run_experiment"), cli: on("eval run") },
+    api: on("POST /v1/eval-runs"), mcp: on("evaluation.run_experiment"), cli: on("knowledge eval run") },
   { id: "knowledge.review", group: "knowledge", effect: "mutation", kind: "review", admission: "declared",
     api: DECLARED_API("POST /v1/reviews"), mcp: failsClosed("document.request_manual_review"), cli: excluded("declared only; no CLI binding") },
   { id: "knowledge.review_decision", group: "knowledge", effect: "mutation", kind: "review_decision", admission: "admitted",
@@ -142,20 +149,20 @@ const verifyMutation = (kind: OperationKind, route: string, tool: string, comman
     : "verification configured and its request admission gate",
 });
 const verifyMutations: readonly CatalogOperation[] = [
-  { ...verifyMutation("verification_capture", "POST /v1/verification/captures", "knowledge_capture_source", "benchmark capture"),
+  { ...verifyMutation("verification_capture", "POST /v1/verification/captures", "knowledge_capture_source", "verify benchmark capture"),
     api: on("POST /v1/verification/captures", "POST /v1/verification/benchmark-capture-profiles/:profileName/captures") },
-  verifyMutation("verification_parse_artifact", "POST /v1/verification/artifacts::parse", "knowledge_parse_artifact", "artifact parse"),
+  verifyMutation("verification_parse_artifact", "POST /v1/verification/artifacts::parse", "knowledge_parse_artifact", "verify artifact parse"),
   verifyMutation("verification_extraction", "POST /v1/verification/extractions::verify", "knowledge_verify_extraction", "verify extract"),
-  verifyMutation("verification_structured_extraction", "POST /v1/verification/extractions", "knowledge_extract_structured_data", "extraction run"),
+  verifyMutation("verification_structured_extraction", "POST /v1/verification/extractions", "knowledge_extract_structured_data", "verify extraction run"),
   verifyMutation("verification_claims", "POST /v1/verification/claims::verify", "knowledge_verify_claims", "verify citations"),
   verifyMutation("verification_report", "POST /v1/verification/reports::verify", "knowledge_verify_report", "verify report"),
   verifyMutation("verification_metric", "POST /v1/verification/metrics::verify", "knowledge_verify_metric", "verify metric"),
-  verifyMutation("verification_adjudication", "POST /v1/verification/adjudications::request", "knowledge_request_adjudication", "adjudication request"),
-  verifyMutation("verification_adjudication_decision", "POST /v1/verification/adjudications::record-decision", "knowledge_record_adjudication_decision", "adjudication decision"),
-  verifyMutation("verification_audit_bundle", "POST /v1/verification/audit-bundles::inspect", "knowledge_inspect_audit_bundle", "bundle inspect"),
-  verifyMutation("verification_replay", "POST /v1/verification/runs/:runId(^[^:]+)::replay", "knowledge_replay_run", "bundle replay"),
-  verifyMutation("verification_benchmark", "POST /v1/verification/benchmarks::run", "knowledge_run_benchmark", "benchmark run"),
-  verifyMutation("verification_benchmark_compare", "POST /v1/verification/benchmarks::compare", "knowledge_compare_benchmark_runs", "benchmark compare"),
+  verifyMutation("verification_adjudication", "POST /v1/verification/adjudications::request", "knowledge_request_adjudication", "verify adjudication request"),
+  verifyMutation("verification_adjudication_decision", "POST /v1/verification/adjudications::record-decision", "knowledge_record_adjudication_decision", "verify adjudication decision"),
+  verifyMutation("verification_audit_bundle", "POST /v1/verification/audit-bundles::inspect", "knowledge_inspect_audit_bundle", "verify bundle inspect"),
+  verifyMutation("verification_replay", "POST /v1/verification/runs/:runId(^[^:]+)::replay", "knowledge_replay_run", "verify bundle replay"),
+  verifyMutation("verification_benchmark", "POST /v1/verification/benchmarks::run", "knowledge_run_benchmark", "verify benchmark run"),
+  verifyMutation("verification_benchmark_compare", "POST /v1/verification/benchmarks::compare", "knowledge_compare_benchmark_runs", "verify benchmark compare"),
 ];
 
 // ── Reads, controls and non-kind mutations ────────────────────────────────────────────
@@ -175,12 +182,12 @@ const operationsSurface: readonly CatalogOperation[] = [
     requires: "callback signing keys (KNOWLEDGE_CALLBACK_SIGNING_KEYS)" },
   read("operations.list", "operations", on("GET /v1/operations"), BY_ID, BY_ID),
   read("operations.status", "operations", on("GET /v1/operations/:id"), on("embedding.run_status", "promotion.status"),
-    on("operation status", "promotion status", "embed status")),
+    on("knowledge operation status", "knowledge promotion status", "knowledge embed status")),
   read("operations.events", "operations", on("GET /v1/operations/:id/events"),
-    excluded("event pages are an HTTP polling surface; MCP polls status"), on("operation events")),
+    excluded("event pages are an HTTP polling surface; MCP polls status"), on("knowledge operation events")),
   { id: "operations.control", group: "operations", effect: "control", admission: "admitted",
     api: on("POST /v1/operations/:target"), mcp: excluded("operation cancel/retry/reconcile belong to Mission Control and operators, not agents"),
-    cli: on("operation retry", "operation reconcile") },
+    cli: on("knowledge operation retry", "knowledge operation reconcile") },
   read("operations.receipt", "operations", on("GET /v1/receipts/:id"), NO_MCP, NO_CLI),
   read("operations.artifact", "operations", on("GET /v1/artifacts/:id"), NO_MCP, NO_CLI),
 ];
@@ -191,16 +198,16 @@ const knowledgeReads: readonly CatalogOperation[] = [
     "GET /v1/promotion-proposals", "GET /v1/promotion-decisions", "GET /v1/embedding-runs", "GET /v1/space-publications",
     "GET /v1/eval-datasets", "GET /v1/experiments", "GET /v1/eval-runs", "GET /v1/reviews", "GET /v1/review-decisions",
     "GET /v1/retrieval-runs"), BY_ID, BY_ID),
-  read("knowledge.vector_store", "knowledge", on("GET /v1/vector-stores/:id"), NO_MCP, on("store show")),
+  read("knowledge.vector_store", "knowledge", on("GET /v1/vector-stores/:id"), NO_MCP, on("knowledge store show")),
   read("knowledge.vector_store_operation", "knowledge", on("GET /v1/vector-stores/:id/operations/:operationId"),
-    on("vector_store.ingestion_status"), on("store status")),
-  read("knowledge.retrieval_plan_validation", "knowledge", on("POST /v1/retrieval-plans:validate"), on("retrieval.plan_validate"), on("retrieve plan")),
-  read("knowledge.get_retrieval_run", "knowledge", on("GET /v1/retrieval-runs/:id"), on("retrieval.read_run"), on("retrieve run")),
-  read("knowledge.retrieval_explanation", "knowledge", on("GET /v1/retrieval-runs/:id/explanation"), on("retrieval.explain_run"), on("retrieve explain")),
-  read("knowledge.get_evidence_packet", "knowledge", on("GET /v1/evidence-packets/:id"), on("retrieval.read_evidence_packet"), on("retrieve packet")),
-  read("knowledge.citation_replay", "knowledge", on("GET /v1/evidence-packets/:id/citations"), on("retrieval.replay_citations"), on("retrieve citations"),
+    on("vector_store.ingestion_status"), on("knowledge store status")),
+  read("knowledge.retrieval_plan_validation", "knowledge", on("POST /v1/retrieval-plans:validate"), on("retrieval.plan_validate"), on("knowledge retrieve plan")),
+  read("knowledge.get_retrieval_run", "knowledge", on("GET /v1/retrieval-runs/:id"), on("retrieval.read_run"), on("knowledge retrieve run")),
+  read("knowledge.retrieval_explanation", "knowledge", on("GET /v1/retrieval-runs/:id/explanation"), on("retrieval.explain_run"), on("knowledge retrieve explain")),
+  read("knowledge.get_evidence_packet", "knowledge", on("GET /v1/evidence-packets/:id"), on("retrieval.read_evidence_packet"), on("knowledge retrieve packet")),
+  read("knowledge.citation_replay", "knowledge", on("GET /v1/evidence-packets/:id/citations"), on("retrieval.replay_citations"), on("knowledge retrieve citations"),
     "gated", "Supabase Storage for citation custody"),
-  read("knowledge.evaluation_failures", "knowledge", on("GET /v1/eval-runs/:id/failures"), on("evaluation.inspect_failures"), on("eval failures")),
+  read("knowledge.evaluation_failures", "knowledge", on("GET /v1/eval-runs/:id/failures"), on("evaluation.inspect_failures"), on("knowledge eval failures")),
   read("knowledge.evaluation_report", "knowledge", on("GET /v1/eval-runs/:id/report"), NO_MCP, NO_CLI),
   read("knowledge.chunking_procedures", "knowledge", on("GET /v1/chunking-procedures"), on("chunk.strategy_list"), NO_CLI),
   read("knowledge.embedding_models", "knowledge", excluded("declared only; no route"), failsClosed("embedding.model_list"),
@@ -211,7 +218,7 @@ const knowledgeReads: readonly CatalogOperation[] = [
     api: on("POST /v1/demo/evaluations"), mcp: excluded("in-memory exploratory demo; composed only with the demo bundle port"),
     cli: excluded("in-memory exploratory demo; composed only with the demo bundle port"), requires: "the demo bundle port (loadDemoEvaluationBundles)" },
   { id: "knowledge.space_rebuild", group: "knowledge", effect: "mutation", admission: "declared",
-    api: excluded("declared only; no route"), mcp: excluded("declared only; no MCP binding"), cli: failsClosed("space rebuild") },
+    api: excluded("declared only; no route"), mcp: excluded("declared only; no MCP binding"), cli: failsClosed("knowledge space rebuild") },
 ];
 
 const verifyReads: readonly CatalogOperation[] = [
@@ -223,25 +230,25 @@ const verifyReads: readonly CatalogOperation[] = [
   read("verify.evidence", "verify", on("GET /v1/verification/evidence/:id"), on("knowledge_get_verification_evidence"), on("verify evidence"), "gated", VERIFICATION_READS),
   read("verify.claims_result", "verify", on("GET /v1/verification/claims/:operationId"), on("knowledge_get_verification_claims_result"), on("verify claims-result"), "gated", VERIFICATION_RESULT_READS),
   read("verify.report_result", "verify", on("GET /v1/verification/reports/:operationId"), on("knowledge_get_verification_report_result"), on("verify report-result"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.get_structured_extraction", "verify", on("GET /v1/verification/extractions/:operationId"), on("knowledge_get_structured_extraction"), on("extraction show"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.audit_inspection", "verify", on("GET /v1/verification/audit-inspections/:operationId"), on("knowledge_get_audit_inspection"), on("bundle show"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.get_adjudication", "verify", on("GET /v1/verification/adjudications/:operationId"), on("knowledge_get_adjudication"), on("adjudication get"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.get_adjudication_decision", "verify", on("GET /v1/verification/adjudication-decisions/:operationId"), on("knowledge_get_adjudication_decision"), on("adjudication get-decision"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.benchmark_run", "verify", on("GET /v1/verification/benchmarks/:runId"), on("knowledge_get_benchmark_run"), on("benchmark show"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.benchmark_manifest", "verify", on("GET /v1/verification/benchmarks/:runId/manifest"), on("knowledge_get_benchmark_manifest"), on("benchmark manifest"), "gated", VERIFICATION_RESULT_READS),
-  read("verify.benchmark_comparison", "verify", on("GET /v1/verification/benchmarks/comparisons/:comparisonId"), on("knowledge_get_benchmark_comparison"), on("benchmark comparison"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.get_structured_extraction", "verify", on("GET /v1/verification/extractions/:operationId"), on("knowledge_get_structured_extraction"), on("verify extraction show"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.audit_inspection", "verify", on("GET /v1/verification/audit-inspections/:operationId"), on("knowledge_get_audit_inspection"), on("verify bundle show"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.get_adjudication", "verify", on("GET /v1/verification/adjudications/:operationId"), on("knowledge_get_adjudication"), on("verify adjudication get"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.get_adjudication_decision", "verify", on("GET /v1/verification/adjudication-decisions/:operationId"), on("knowledge_get_adjudication_decision"), on("verify adjudication get-decision"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.benchmark_run", "verify", on("GET /v1/verification/benchmarks/:runId"), on("knowledge_get_benchmark_run"), on("verify benchmark show"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.benchmark_manifest", "verify", on("GET /v1/verification/benchmarks/:runId/manifest"), on("knowledge_get_benchmark_manifest"), on("verify benchmark manifest"), "gated", VERIFICATION_RESULT_READS),
+  read("verify.benchmark_comparison", "verify", on("GET /v1/verification/benchmarks/comparisons/:comparisonId"), on("knowledge_get_benchmark_comparison"), on("verify benchmark comparison"), "gated", VERIFICATION_RESULT_READS),
   read("verify.capture_result", "verify", on("GET /v1/verification/captures/:operationId"), NO_MCP, NO_CLI, "gated", VERIFICATION_RESULT_READS),
   read("verify.provider_reconciliation", "verify", on(
     "GET /v1/verification/claims/:operationId/provider-attempts/:providerAttemptId/reconciliation",
     "GET /v1/verification/reports/:operationId/provider-attempts/:providerAttemptId/reconciliation",
     "GET /v1/verification/extractions/:operationId/provider-attempts/:providerAttemptId/reconciliation"),
-  on("knowledge_get_provider_reconciliation"), on("reconciliation show"), "gated", "operator provider reconciliation authority"),
+  on("knowledge_get_provider_reconciliation"), on("verify reconciliation show"), "gated", "operator provider reconciliation authority"),
   { id: "verify.apply_provider_reconciliation", group: "verify", effect: "control", admission: "gated",
     api: on(
       "POST /v1/verification/claims/:operationId/provider-attempts/:providerAttemptId/reconciliation",
       "POST /v1/verification/reports/:operationId/provider-attempts/:providerAttemptId/reconciliation",
       "POST /v1/verification/extractions/:operationId/provider-attempts/:providerAttemptId/reconciliation"),
-    mcp: on("knowledge_apply_provider_reconciliation"), cli: on("reconciliation apply"), requires: "operator provider reconciliation authority" },
+    mcp: on("knowledge_apply_provider_reconciliation"), cli: on("verify reconciliation apply"), requires: "operator provider reconciliation authority" },
   { id: "verify.drift_revalidation", group: "verify", effect: "control", admission: "gated",
     api: on("GET /v1/internal/verification/drift-alerts", "POST /v1/internal/verification/drift-revalidations/scan",
       "POST /v1/internal/verification/drift-revalidations/claim", "POST /v1/internal/verification/drift-revalidations/ack"),
@@ -257,7 +264,7 @@ const offline = (id: string, command: string): CatalogOperation => ({
 });
 const offlineWorkflows: readonly CatalogOperation[] = [
   offline("db.maintenance_verify", "db verify"), offline("db.types_generate", "db types"), offline("db.rls_test", "db rls-test"),
-  offline("db.fixture_load", "fixture load"), offline("db.fixture_reset", "fixture reset"),
+  offline("db.fixture_load", "db fixture load"), offline("db.fixture_reset", "db fixture reset"),
 ];
 const system: readonly CatalogOperation[] = [
   read("system.health", "system", on("GET /health", "GET /readiness"), excluded("process probe; the MCP app serves its own /health"), excluded("process probe")),
@@ -293,21 +300,31 @@ const executorKnowledge: readonly CatalogOperation[] = [
     "recovery_wait:recovery wait:read", "recovery_resume:recovery resume:control"] as const)
     .map((entry) => { const [name, cli, effect] = entry.split(":"); return executorOperation("verify", effect as CatalogOperation["effect"], name!, cli); }),
 ];
+// The intent pipeline: executor MCP tool and the `ks` command that runs it on the local host profile. The server
+// profile serves none of them until 5D3, so their ks cli binding stays excluded for the server.
+const LOCAL_PROFILE_ONLY = "runs through the `ks` command in executor.ks on the local profile only; the server profile serves it after 5D3";
 const executorVerify: readonly CatalogOperation[] = ([
-  "verify_capture_source:mutation", "verify_capture_file:mutation", "verify_supported_media_types:read", "verify_list_captures:read",
-  "verify_read_capture:read", "verify_search_capture:read", "verify_locate_quote:read", "verify_register_artifact:mutation",
-  "verify_claims:mutation", "verify_extraction:mutation", "verify_judge_semantics:mutation", "verify_evaluate_policy:mutation",
-  "verify_seal_run:mutation", "verify_check_report:read", "verify_run_status:read", "verify_get_artifact:read",
+  "verify_capture_source:mutation:verify capture source", "verify_capture_file:mutation:verify capture file",
+  "verify_supported_media_types:read:verify capture media-types", "verify_list_captures:read:verify capture list",
+  "verify_read_capture:read:verify capture read", "verify_search_capture:read:verify capture search",
+  "verify_locate_quote:read:verify capture locate", "verify_register_artifact:mutation:verify artifact register",
+  "verify_claims:mutation:verify chain claims", "verify_extraction:mutation:verify chain extraction",
+  "verify_judge_semantics:mutation:verify chain judge", "verify_evaluate_policy:mutation:verify chain policy",
+  "verify_seal_run:mutation:verify chain seal", "verify_check_report:read:verify chain check-report",
+  "verify_run_status:read:verify chain status", "verify_get_artifact:read:verify artifact get",
 ] as const).map((entry) => {
-  const [name, effect] = entry.split(":");
-  return executorOperation("verify", effect as CatalogOperation["effect"], name!, undefined);
+  const [name, effect, ks] = entry.split(":");
+  return { ...executorOperation("verify", effect as CatalogOperation["effect"], name!, undefined),
+    cli: excluded(`${EXECUTOR}; ${LOCAL_PROFILE_ONLY}`), executor: { mcp: name!, ks: ks! } };
 });
 
 export type Profile = "server" | "local";
-export type TransportState = "executable" | "executable when composed" | "declared (fails closed)" | "excluded" | "executor only" | "server only";
+export type TransportState = "executable" | "executable when composed" | "declared (fails closed)" | "excluded" | "executor only"
+  | "server only" | "local profile";
 
 /** The declared/admitted/executable state of one operation on one transport under one host profile. */
 export function transportState(operation: CatalogOperation, profile: Profile, transport: "api" | "mcp" | "cli"): TransportState {
+  if (profile === "local" && transport === "cli" && operation.executor?.ks) return "local profile";
   if (operation.admission === "executor") return "executor only";
   if (profile === "local") return "server only";
   const binding = operation[transport];
