@@ -14,7 +14,8 @@
     "Knowledge schema/read/ingest live in packages/knowledge-db and the verification-executor knowledge surfaces. Retrieval read ops are skipped; ingestion does not write knowledge_service.operation."
   ],
   "commands": [
-    "corepack pnpm verify"
+    "corepack pnpm verify",
+    "Gates: tools/quality/README.md"
   ],
   "docs": [
     {
@@ -24,7 +25,7 @@
     },
     {
       "path": "docs/operations/package-cleanup/UNIT-5-SLICES.md",
-      "task": "Next: Q0, 5P, 5D1 slices",
+      "task": "Next: 5P, 5D1 slices",
       "status": "proposed",
       "modules": [
         "verification-executor",

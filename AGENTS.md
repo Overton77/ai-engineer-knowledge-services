@@ -52,7 +52,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 ### Task routes
 
 - [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next: Q0, 5P, 5D1 slices: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
+- [proposed] Next: 5P, 5D1 slices: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
 - [reference] Unit 4 folders, names, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
 - [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
@@ -90,6 +90,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 Run from this repository root; choose checks relevant to the change. Commands are documented here, never executed by the documentation updater.
 
 - `corepack pnpm verify`
+- `Gates: tools/quality/README.md`
 
 Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .agent-docs/cli.mjs build --repo .`. Edit `.agent-docs/config.json` to change this guide.
 
