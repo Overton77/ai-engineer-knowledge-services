@@ -19,12 +19,22 @@ const suites = ["packages/host", "packages/application", "apps/verification-exec
 const exportedPackages = { host: "packages/host", application: "packages/application" };
 // Runtime exports added on purpose to the root entries (5C adds the separate `@aiengineer/knowledge-host/local` entry instead).
 const addedExports = {
-  host: ["localProfileState"],
+  host: ["localProfileState", "AgenticKnowledgeService", "createIntegrationService", "createKnowledgeApplication", "OperationCapabilityUnavailableError", "retrievalExecutionProblem", "DeterministicFakeEmbeddingAdapter", "VerificationOperationApplicationService", "assertOperationKindAdmitted", "bindResolvedVerificationContext", "createKnowledgeResourceReads", "createVerificationResourceReads", "isAdjudicationDecisionReviewerActor", "operationCatalog", "productionWorkerOperationKinds", "submitCanonicalRetrievalRun", "transportProblem"],
   application: ["declaredApiRequests", "operationCatalog", "transportState"],
 };
 // Tests replaced on purpose by the slice's stated surface change: the remote-profile dependency check becomes a check
 // over the module graph `--help` and remote commands load.
 const replacedTests = {};
+const nameTable = readFileSync(join(repository, "docs/operations/package-cleanup/UNIT-5P-TRANSPORT-STRUCTURE.md"), "utf8");
+const mcpRenames = new Map([...nameTable.matchAll(/^\| `([^`]+)`(?: \(declared\))? \| `([^`]+)` \|$/gm)]
+  .map(([, oldName, newName]) => [oldName, newName]));
+if (mcpRenames.size !== 70) throw new Error(`Expected 70 MCP name mappings, found ${mcpRenames.size}`);
+const orderedRenames = [...mcpRenames].sort(([left], [right]) => right.length - left.length);
+const renameMcpText = (value) => orderedRenames.reduce((text, [oldName, newName]) => text.replaceAll(oldName, newName), value);
+const mapMcpNames = (value) => Array.isArray(value) ? value.map(mapMcpNames)
+  : typeof value === "string" ? renameMcpText(value)
+  : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, mapMcpNames(child)]))
+  : value;
 // 5C decision: the CLI depends on host (its ./local entry) and on the executor's transitional ./local-verification seam,
 // imported only by the lazily loaded local profile module (and a type-only import in the command table).
 const CLI_LOCAL_IMPORTERS = { host: ["apps/cli/src/ks-commands.ts", "apps/cli/src/local/offline.ts"], executor: ["apps/cli/src/local/offline.ts"] };
@@ -197,7 +207,13 @@ function stateChanges(before, after) {
 }
 
 // Some parameterized titles embed a fresh randomUUID per run (executor evidence-reader boundary); compare them without it.
-const stableIdentity = (identity) => identity.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/giu, "<uuid>");
+const stableIdentity = (identity) => renameMcpText(identity
+  .replace("apps/api/src/verification-benchmark-reads.test.ts", "apps/api/src/tests/verification-benchmark-reads.test.ts")
+  .replace(/'([^']+)(?:\u00e2\u20ac\u00a6|\u2026)' API\/MCP parity/gu, (match, prefix) => {
+    const matches = orderedRenames.filter(([oldName, newName]) => oldName.startsWith(prefix) || newName.startsWith(prefix));
+    return matches.length === 1 ? `'${matches[0][1]}' API/MCP parity` : match;
+  }))
+  .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/giu, "<uuid>");
 
 function compare(before, after) {
   const beforeTests = new Map(before.runs.flatMap((run) => run.tests.map((test) => [stableIdentity(test.identity), test.status])));
@@ -210,6 +226,13 @@ function compare(before, after) {
     added: after.catalog[key].map(keyOf).filter((item) => !before.catalog[key].map(keyOf).includes(item)),
   });
   return {
+    recordedMcpRenames: mcpRenames.size,
+    movedTestFiles: [{
+      from: "apps/api/src/verification-benchmark-reads.test.ts",
+      to: "apps/api/src/tests/verification-benchmark-reads.test.ts",
+      identities: before.runs.flatMap((run) => run.tests).filter((test) =>
+        test.identity.startsWith("apps/api/src/verification-benchmark-reads.test.ts :: ")).length,
+    }],
     missingTests: [...beforeTests.keys()].filter((identity) => !afterTests.has(identity) && !afterTests.has(replacedTests[identity])),
     replacedTests: Object.fromEntries(Object.entries(replacedTests).filter(([was, now]) => beforeTests.has(was) && afterTests.has(now))),
     changedOutcomes: [...beforeTests].filter(([identity, status]) => afterTests.has(identity) && afterTests.get(identity) !== status)
@@ -252,12 +275,20 @@ function compare(before, after) {
     catalog: {
       kinds: JSON.stringify(before.catalog.kinds) === JSON.stringify(after.catalog.kinds) ? "unchanged" : { before: before.catalog.kinds, after: after.catalog.kinds },
       apiRoutes: difference("apiRoutes"),
-      mcpTools: difference("mcpTools"),
+      mcpTools: {
+        removed: before.catalog.mcpTools.map((name) => mcpRenames.get(name) ?? name).filter((name) => !after.catalog.mcpTools.includes(name)),
+        added: after.catalog.mcpTools.filter((name) => !before.catalog.mcpTools.map((old) => mcpRenames.get(old) ?? old).includes(name)),
+      },
       // Row definitions without their derived state.
-      operationsOutsideCli: difference("operations", ({ state, localProfile, ...row }) => JSON.stringify(row)),
+      operationsOutsideCli: {
+        removed: before.catalog.operations.map(({ state, localProfile, ...row }) => JSON.stringify({ ...row, mcp: mapMcpNames(row.mcp) }))
+          .filter((row) => !after.catalog.operations.map(({ state, localProfile, ...item }) => JSON.stringify(item)).includes(row)),
+        added: after.catalog.operations.map(({ state, localProfile, ...row }) => JSON.stringify(row))
+          .filter((row) => !before.catalog.operations.map(({ state, localProfile, ...item }) => JSON.stringify({ ...item, mcp: mapMcpNames(item.mcp) })).includes(row)),
+      },
       // Q0 changes no CLI name or binding: the whole CLI table and every operation row (with state) must be identical.
       cliCommandsIdentical: JSON.stringify(before.catalog.cliCommands) === JSON.stringify(after.catalog.cliCommands),
-      operationsIdentical: JSON.stringify(before.catalog.operations) === JSON.stringify(after.catalog.operations),
+      operationsIdentical: JSON.stringify(before.catalog.operations.map((row) => ({ ...row, mcp: mapMcpNames(row.mcp) }))) === JSON.stringify(after.catalog.operations),
     },
     catalogStateChanges: stateChanges(before.catalog.operations, after.catalog.operations),
     eve: JSON.stringify(before.eve) === JSON.stringify(after.eve) ? "unchanged" : { before: before.eve, after: after.eve },
@@ -271,7 +302,7 @@ else if (command === "compare" && arguments_[0] && arguments_[1]) {
   console.log(JSON.stringify(changes, null, 2));
   const blocking = ["missingTests", "changedOutcomes", "cycles", "cyclesWithDevDependencies", "knowledgeDbProductionPersistenceImports", "hostImportsApps",
     "applicationOrPersistenceDependOnHost", "applicationHostImports", "persistenceHostImports"];
-  // Q0 is mechanical: kinds, routes, tools, every operation row and the CLI table must not move.
+  // Only the recorded MCP names and test path move; kinds, routes, row meaning and CLI bindings stay fixed.
   const catalogChanged = changes.catalog.kinds !== "unchanged" || ["apiRoutes", "mcpTools", "operationsOutsideCli"]
     .some((key) => changes.catalog[key].removed.length || changes.catalog[key].added.length)
     || !changes.catalog.cliCommandsIdentical || !changes.catalog.operationsIdentical;

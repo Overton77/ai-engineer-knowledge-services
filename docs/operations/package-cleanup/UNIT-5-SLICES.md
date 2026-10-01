@@ -16,7 +16,7 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | 5B | KS | Local host profile and capability matrix | 5A | — | merged locally 2026-09-28 |
 | 5C | KS | `ks` CLI skeleton (remote), lazy offline dispatch and packaging | 5B | — | merged locally 2026-09-29 |
 | Q0 | KS | Quality gates: formatter, lint ratchet, architecture boundary rules in `verify`/CI | 5C | — | merged locally 2026-09-29 (Biome, lint ratchet, boundary baseline; [record](./workspace/evidence/q0-validation.json)) |
-| 5P | KS | Transport structure before the folds: catalog module, MCP tool table, API route modules, golden error tests, MCP naming decision | Q0 | — | proposed ([plan](./APP-AND-SKILL-QUALITY.md#5p--transport-structure-before-the-folds-new-slice-before-5d1)) |
+| 5P | KS | Transport structure before the folds: catalog module, MCP tool table, API route modules, golden error tests, MCP naming decision | Q0 | — | merged locally 2026-10-01 ([validation](./workspace/evidence/unit5p-validation.json)) |
 | 5D1 | KS | Fold the `db` group (schema, db, ingest, artifact) | 5P | — | queued |
 | 5D2 | KS | Fold the `knowledge` group (source, checkpoint, content, report) | 5D1 | — | queued |
 | 5D3 | KS | Fold the `verification` group (intent pipeline, `verify_*`, recovery), executor HTTP routes, MCP stdio | 5D2 | 5F | queued |
@@ -188,7 +188,7 @@ Superseded by [DeepAgents readiness](./DEEPAGENTS-READINESS.md). Eve stays in it
 
 ## Instruction template
 
-Paste this into the next session, replacing `<slice>` with the next slice from the map (next: **5P**, then **5D1**; 5A–5C and Q0 are delivered and 5E1/5E2 are superseded; 5F now depends only on delivered 5C; run beside 5D3 only with disjoint files, merging 5D3 first):
+Paste this into the next session, replacing `<slice>` with the next slice from the map (next: **5D1**; 5A–5C, Q0 and 5P are delivered and 5E1/5E2 are superseded; 5F now depends only on delivered 5C; run beside 5D3 only with disjoint files, merging 5D3 first):
 
 > Continue the Knowledge Services package cleanup, Unit 5 slice `<slice>`, from local main in `C:/Users/Pinda/Proyectos/aiengineer/ai-engineer-knowledge-services`.
 >

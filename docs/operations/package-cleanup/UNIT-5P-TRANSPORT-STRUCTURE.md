@@ -1,6 +1,6 @@
 # Slice 5P — transport structure before the folds
 
-Status: proposed, 2026-09-29. Coordinator specification for slice 5P of the [quality plan](./APP-AND-SKILL-QUALITY.md#5p--transport-structure-before-the-folds-new-slice-before-5d1). Branch `refactor/ks-unit-5p-transport-structure` from local `main` `d7f55e4` (5C and Q0 merged). Rules: [UNIT-5-SLICES.md](./UNIT-5-SLICES.md#rules-for-every-slice). Progress: [ledger](./workspace/PROGRESS.md).
+Status: delivered and validated, 2026-10-01. Coordinator specification for slice 5P of the [quality plan](./APP-AND-SKILL-QUALITY.md#5p--transport-structure-before-the-folds-new-slice-before-5d1). Branch `refactor/ks-unit-5p-transport-structure` from local `main` `d7f55e4` (5C and Q0 merged). Rules: [UNIT-5-SLICES.md](./UNIT-5-SLICES.md#rules-for-every-slice). Progress: [ledger](./workspace/PROGRESS.md).
 
 Structure only. Every API route, MCP tool behavior, CLI command, status code, problem code and message stays the same, except for the two recorded fixes (§6) and the MCP tool names (§4). The Q0 gates (format, lint ratchet, boundaries) may only improve.
 
@@ -132,3 +132,13 @@ The six `jev_*` tools (Jev's own server) and the executor's tools (its own serve
 - `server.ts` and MCP `index.ts` are composition-only; no route/tool/command lost; catalog, API/MCP parity, no-HTTP-shim and golden error tests pass unchanged apart from the recorded name table and fixes.
 - Inventory (`unit5p-inventory.mjs`): moved/renamed tests listed, no missing identities; catalog rows differ only by the MCP names in §4.
 - The full sequential graph with only the retained replay failure; examples; `node skills/check.mjs`; installed `ks` smoke; format/lint/boundaries not worse; docs check.
+
+## Delivered structure and decisions
+
+The canonical operation table now lives in `packages/application/src/operations/catalog.ts`; host owns local-profile state. MCP registers typed tool definitions from `tools/` and composes its transports through a short `index.ts`. All 70 platform MCP tools use the approved group-prefix names, with no old-name aliases; the 95 `ks` command names are unchanged. The API's `server.ts` composes route-group registrars. Shared auth, correlation, problem mapping, admission, read mapping and declarative route registration live under `plugins/` and `http/`. Group service interfaces compose `ServerOptions`, while the host still assembles optional services, so partial test servers and the existing in-memory defaults remain valid until 5D.
+
+API tests now live under `src/tests/`, with shared identity, token-header and disposable persistence support. The benchmark-read test moved there; test imports use `@aiengineer/knowledge-host/config` and the deprecated `auth.ts` shim is removed. `RUN_LOCAL_PERSISTENCE_TESTS=1` is the single opt-in gate; all enabled database suites use `KS_TEST_DATABASE_URL` after the disposable-project identity check. Storage suites additionally require checked `KS_TEST_SUPABASE_URL` and `KS_TEST_SUPABASE_SECRET_KEY`. No shared database is an allowed test target.
+
+The two intentional behavior fixes are isolated: A2A retrieval uses `submitCanonicalRetrievalRun`, so invalid retrieval input and a non-v1 retrieval version fail before submission; unexpected API 500s emit a sanitized error-name record with the correlation id, while the client receives the same `INTERNAL_ERROR` problem. Golden error tests pin the other historical status, content-type, title, detail and correlation mappings. The route helper leaves response mapping to each group, including the historical replies that do not use `application/problem+json`; the shared `sendProblem` applies where a route already used that type.
+
+The [inventory comparison](./workspace/evidence/unit5p-comparison.json) normalizes only the 70 recorded MCP renames and the benchmark test's path move. It finds no missing tests, changed outcomes, lost exports, route/command/catalog rows or cycles. The [validation record](./workspace/evidence/unit5p-validation.json) documents the single retained replay failure and passing quality and installed-package checks.
