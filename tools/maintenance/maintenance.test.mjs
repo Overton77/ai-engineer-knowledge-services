@@ -138,6 +138,31 @@ test("documentation-only classification rejects tests and executable metadata", 
   assert.equal(docsOnly(["docs/example.test.mjs"]), false);
   assert.equal(docsOnly([".agent-docs/cli.mjs"]), false);
 });
+
+test("merge introducing code uses full validation even for a documentation-only proposal", (t) => {
+  const engine = fixture(t);
+  git(engine.repo, "checkout", "-b", "feature/code");
+  mkdirSync(join(engine.repo, "packages"));
+  writeFileSync(join(engine.repo, "packages", "feature.mjs"), "export const enabled = true;\n");
+  git(engine.repo, "add", "packages/feature.mjs");
+  git(engine.repo, "commit", "-m", "add feature code");
+  git(engine.repo, "checkout", "main");
+  git(engine.repo, "merge", "--no-ff", "feature/code", "-m", "merge feature");
+  enqueue(engine);
+  const validationCommands = [];
+  const result = runJob(engine, {
+    invoke: (command, args, options) => {
+      if (command === "codex") {
+        writeFileSync(join(options.cwd, "README.md"), "Document merged feature.\n");
+        writeFileSync(join(options.cwd, "maintenance-review.json"), JSON.stringify(review));
+      } else validationCommands.push([command, ...args]);
+      return "done";
+    },
+  });
+  assert.equal(result.status, "proposed");
+  assert.equal(result.validationProfile, "full");
+  assert.deepEqual(validationCommands, engine.policy.validation);
+});
 test("review report requires meaningful documentation and test evidence", () => {
   assert.equal(validateReview(review).schema, "review-evidence.v1");
   assert.throws(() => validateReview({ ...review, docs: [] }), /assessment/);

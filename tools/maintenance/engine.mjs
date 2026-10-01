@@ -408,10 +408,21 @@ export function runJob(engine, { provider = engine.policy.provider, dryRun = fal
       writeFileSync(join(output, "review.json"), JSON.stringify(receipt.review, null, 2));
       const beforeValidation = proposalState(worktree);
       const changed = beforeValidation.paths;
-      const inputs = git(engine.repo, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", job.head)
-        .trim()
-        .split("\n")
-        .filter(Boolean);
+      const [, firstParent] = git(engine.repo, "rev-list", "--parents", "-n", "1", job.head).trim().split(/\s+/);
+      const inputDiff = firstParent
+        ? git(engine.repo, "diff", "--no-renames", "--name-only", "-z", firstParent, job.head, "--")
+        : git(
+            engine.repo,
+            "diff-tree",
+            "--root",
+            "--no-commit-id",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            "-r",
+            job.head,
+          );
+      const inputs = inputDiff.split("\0").filter(Boolean);
       const validation = docsOnly([...inputs, ...changed])
         ? [["node", ".agent-docs/cli.mjs", "check", "--repo", "."]]
         : engine.policy.validation;
