@@ -155,6 +155,7 @@ async function main() {
       return uninstallHooks();
     case "watch": {
       let stop = false;
+      let lastResult;
       process.once("SIGINT", () => {
         stop = true;
       });
@@ -165,14 +166,16 @@ async function main() {
         try {
           enqueue(engine, { kind: "working" });
           enqueue(engine);
-          print(runJob(engine));
+          lastResult = runJob(engine);
+          print(lastResult);
         } catch (error) {
-          print({ error: error.message });
+          lastResult = { status: "failed", error: error.message };
+          print(lastResult);
         }
         if (args.includes("--once")) break;
         await new Promise((resolve) => setTimeout(resolve, policy.pollMs));
       } while (!stop);
-      return { stopped: true };
+      return args.includes("--once") ? lastResult : { stopped: true };
     }
     default:
       throw new Error(`Unknown command: ${command}`);

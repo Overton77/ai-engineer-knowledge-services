@@ -1408,7 +1408,8 @@
         "tools/maintenance/cli.mjs",
         "tools/maintenance/engine.mjs",
         ".github/maintenance/dispatch.mjs",
-        "tools/maintenance/install-watcher.ps1"
+        "tools/maintenance/install-watcher.ps1",
+        ".github/maintenance/cursor-run.mjs"
       ],
       "interface": [
         "Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands."
@@ -1416,7 +1417,8 @@
       "tests": [
         "tools/maintenance/maintenance.test.mjs",
         ".github/maintenance/dispatch.test.mjs",
-        ".github/maintenance/proposal.test.mjs"
+        ".github/maintenance/proposal.test.mjs",
+        ".github/maintenance/cursor-run.test.mjs"
       ],
       "constraints": [
         "A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt."

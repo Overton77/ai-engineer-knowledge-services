@@ -66,7 +66,7 @@ jobs:
             if (!request) return;
             const output = path.join(process.env.RUNNER_TEMP, 'maintenance-plan');
             fs.mkdirSync(output, { recursive: true });
-            for (const name of ['dispatch.mjs', 'proposal.mjs', 'review-policy.md']) fs.copyFileSync(path.join(source,name), path.join(output,name));
+            for (const name of ['dispatch.mjs', 'proposal.mjs', 'cursor-run.mjs', 'review-policy.md']) fs.copyFileSync(path.join(source,name), path.join(output,name));
             fs.writeFileSync(path.join(output,'request.json'), JSON.stringify(request,null,2));
             const execution = request.provider === 'codex'
               ? 'This isolated sandbox permits relevant repository checks with no production credentials. Run only bounded local checks; do not contact production services. Report dependency/network limitations accurately.'
@@ -175,15 +175,20 @@ jobs:
     needs: plan
     if: needs.plan.outputs.enabled == 'true' && needs.plan.outputs.provider == 'cursor'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     permissions:
       contents: read
+      pull-requests: read
+    outputs:
+      status: ${{ steps.cursor.outputs.status }}
+      url: ${{ steps.cursor.outputs.url }}
     steps:
       - uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317
         with:
           name: maintenance-plan
           path: ${{ runner.temp }}/maintenance-plan
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        id: cursor
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         with:
@@ -191,10 +196,28 @@ jobs:
             const fs = await import('node:fs');
             const {pathToFileURL} = await import('node:url');
             const control = `${process.env.RUNNER_TEMP}/maintenance-plan`;
-            const {launchCursor} = await import(pathToFileURL(`${control}/dispatch.mjs`));
+            const {launchCursor,assertCurrent} = await import(pathToFileURL(`${control}/dispatch.mjs`));
+            const {pollCursorRun} = await import(pathToFileURL(`${control}/cursor-run.mjs`));
             const request = JSON.parse(fs.readFileSync(`${control}/request.json`,'utf8'));
             const receipt = await launchCursor({request,apiKey:process.env.CURSOR_API_KEY});
-            await core.summary.addHeading('Cursor task dispatched').addCodeBlock(JSON.stringify(receipt,null,2),'json').write();
+            const output = `${process.env.RUNNER_TEMP}/maintenance-cursor`;
+            fs.mkdirSync(output,{recursive:true});
+            fs.writeFileSync(`${output}/launch.json`,JSON.stringify(receipt,null,2));
+            const [owner,repo] = request.repository.split('/');
+            const result = await pollCursorRun({receipt,apiKey:process.env.CURSOR_API_KEY,assertCurrent:()=>assertCurrent({github,owner,repo,request})});
+            fs.writeFileSync(`${output}/result.json`,JSON.stringify(result,null,2));
+            if (result.result) fs.writeFileSync(`${output}/report.txt`,result.result);
+            core.setOutput('status',result.status);
+            core.setOutput('url',result.url);
+            await core.summary.addHeading(`Cursor task ${result.status}`).addLink('Open Cursor agent',result.url).addCodeBlock(JSON.stringify({head:result.head,status:result.status,remoteStatus:result.remoteStatus,polls:result.polls},null,2),'json').write();
+            if (result.status === 'failed') core.setFailed('Cursor run failed; inspect retained receipt');
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: maintenance-cursor
+          path: ${{ runner.temp }}/maintenance-cursor
+          if-no-files-found: warn
+          retention-days: 14
 
   publish:
     needs: [plan, provider]
@@ -236,7 +259,7 @@ jobs:
 
   report:
     needs: [plan, provider, cursor]
-    if: always() && needs.plan.outputs.enabled == 'true' && (needs.provider.result == 'success' || needs.cursor.result == 'success')
+    if: always() && needs.plan.outputs.enabled == 'true' && (needs.provider.result == 'success' || (needs.plan.outputs.provider == 'cursor' && needs.cursor.result != 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -249,16 +272,30 @@ jobs:
           name: maintenance-plan
           path: ${{ runner.temp }}/maintenance-plan
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        env:
+          CURSOR_STATUS: ${{ needs.cursor.outputs.status }}
+          CURSOR_URL: ${{ needs.cursor.outputs.url }}
         with:
           script: |
             const fs = await import('node:fs');
+            const {pathToFileURL} = await import('node:url');
             const request = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/maintenance-plan/request.json`,'utf8'));
+            const {assertCurrent} = await import(pathToFileURL(`${process.env.RUNNER_TEMP}/maintenance-plan/dispatch.mjs`));
+            const [owner,repo] = request.repository.split('/');
+            let sourceStatus = 'current';
+            try { await assertCurrent({github,owner,repo,request}); }
+            catch (error) { sourceStatus = error.message === 'SUPERSEDED_REVISION' ? 'superseded' : 'unverified'; }
             const url = `https://github.com/${request.repository}/actions/runs/${context.runId}`;
-            const disposition = request.provider === 'cursor' ? 'Cursor task dispatched asynchronously; this is not completion evidence.' : `${request.provider} ${request.task} report is available in the maintenance-proposal artifact. Generated changes remain proposals requiring fresh CI and review.`;
+            let disposition = `${request.provider} ${request.task} report is available in the maintenance-proposal artifact. Generated changes remain proposals requiring fresh CI and review.`;
+            if (request.provider === 'cursor') {
+              const status = ['pending','failed','completed','superseded'].includes(process.env.CURSOR_STATUS) ? process.env.CURSOR_STATUS : 'failed';
+              disposition = `Cursor run ${status}. ${status === 'pending' ? 'The bounded polling window ended; the remote task may still be running. Launch is not completion.' : status === 'completed' ? 'Execution finished; its findings and changes still require review and fresh CI.' : 'This run does not establish a completed current review.'}`;
+              if (/^https:\/\/cursor\.com\/agents\/[A-Za-z0-9_-]{1,160}$/.test(process.env.CURSOR_URL || '')) disposition += `\n\n[Open Cursor result](${process.env.CURSOR_URL})`;
+            }
+            if (sourceStatus !== 'current') disposition = `Source revision ${sourceStatus}; this result does not review the current revision.\n\n${disposition}`;
             const body = `${disposition}\n\n[View run and downloadable artifacts](${url})\n\nReviewed revision: ${request.head}\n<!-- maintenance-report:${request.key} -->`;
             await core.summary.addRaw(body).write();
             if (!request.number) return;
-            const [owner,repo] = request.repository.split('/');
             const comments = await github.rest.issues.listComments({owner,repo,issue_number:request.number,per_page:100});
             const existing = comments.data.find(comment => comment.user?.type === 'Bot' && comment.body?.includes(`<!-- maintenance-report:${request.key} -->`));
             if (existing) await github.rest.issues.updateComment({owner,repo,comment_id:existing.id,body});

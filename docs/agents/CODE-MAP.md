@@ -1237,14 +1237,14 @@ Agent procedure for closed-choice tasks, captured input references, process work
 
 Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.
 
-**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1)
+**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs)
 **Interface:** Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs)
+**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs)
 - A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt.
 
 **Architecture and detailed docs:**

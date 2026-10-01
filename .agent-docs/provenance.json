@@ -38,7 +38,7 @@
     "docs/architecture/modules/jev.md": "91018a16a5f8aff1615baf55c015dd9c3ad32766f7d40daf0be7492bd0272c92",
     "docs/architecture/technology-stack.md": "584f3d69714aba95f11999999488f9445629c2d24b0ea05eda4c25941873f965",
     "docs/architecture/transport-call-graph-refactor-snapshot-20260916.md": "8afe668c4dd5a378e2d40b3901e7904c4b0f7a8c7c2b354f7569e7cc16b45cea",
-    "docs/operations/agent-maintenance.md": "f355b15e69108d10a43fb31da76eca41a6efa92ac853db125162bcadc19d442f",
+    "docs/operations/agent-maintenance.md": "cf70af504c660c3afba0517c6ff5b5c00d02d4ef85ea282d5565ce192b27b67c",
     "docs/operations/code-quality-and-delivery-process.md": "efc34be5e8aa54298b18fc98ffa95c89e6944ba9cac246c311cb881d93293d87",
     "docs/operations/conversion-and-chunking.md": "d90ca2cedf8af0d871b5c42ae57e553a922ef08d401f8e8f1c2bd680aae92291",
     "docs/operations/internal-fallbacks-and-application-order.md": "e835ec4eea1c8aff7c874427c1bef77f4b9cc3f69a8b4cd23f51009cf44589af",
@@ -74,7 +74,7 @@
     "knowledge/schema-read-and-ingestion.md": "caeab44d6019639ea079a85663e7df4b43cf64598803bef8ba7041120495bac5",
     "knowledge/service-boundaries.md": "c6da954cc94781071ab08e5cf93436d21af65eae0dc24c24160faf3e00cc813c",
     "knowledge/verification-and-admission.md": "911e1d14d7731b1305827e336cc9e563bc7b5f7fdad94d09c5c0e08e100c885f",
-    "package.json": "9bca8ca69daf1eaf8ef60f86e393ede72ec9448fa1d5a5d824915e20fee699a9",
+    "package.json": "7a0b3d5b4a5294a718e45e9e536e844137a9ee267f53d42e3a0812a15f6f7783",
     "packages/core/src/runtime/ledger.ts": "c6b7b17b69e847dc489a097942b7f395c9c774a91e30d116c71d0baca4d35d29",
     "packages/knowledge-db/src/db-read/read-executor.ts": "47923c5fbaf4fa8c5cc3c7632d350a38f7981346341052c1b6091a1588e950e9",
     "packages/knowledge-db/src/ingestion/executor.ts": "5c59e2090ac55845ce5bf2f129e4513ff5d31f4ccd02bdc4d3a30fc4584916f2",
@@ -216,7 +216,9 @@
   },
   "semantic": {
     "inputs": {
-      ".agent-docs/modules.json": "22b435b8c18cbff9e2b850e6ba82febb809d49415a330670a9ff9f20b292b38e",
+      ".agent-docs/modules.json": "1ce0a641778c1832ead125f2980d0c0bee634ff639993ebbf748823a7b92178d",
+      ".github/maintenance/cursor-run.mjs": "1ddbcc901e858f25a437ec3bef8e741ebdb69b38d7d7b8666f1578c9df7d0919",
+      ".github/maintenance/cursor-run.test.mjs": "2d156b53ea9ce59029424083d4c3272d7c56877295ae909447074fef3b3c6681",
       ".github/maintenance/dispatch.mjs": "6f2f57451fe9e985758fb263724fc7bcf38a77b51fc2ea4d3d02bac1ae36688c",
       ".github/maintenance/dispatch.test.mjs": "e57568e7a681b710fe695be32499652c60309e01d70877852914f1cdf6b02c71",
       ".github/maintenance/proposal.test.mjs": "46e83d5cdc8d31525001e5111d8a1b1b057fbe877a97e44e506a4014cf4f2239",
@@ -505,10 +507,10 @@
       "skills/knowledge-verification/SKILL.md": "a3ef76ab6b16b11ecd486e6a28ae00f5cedbcbe872d8f1313e0f00c1eeb4c069",
       "skills/schema-explore/SKILL.md": "8ee13e886c4d539a043fdf6b48668ba706e895b9c5b6cc018e3906cbe6767cf0",
       "skills/vector-store-management/SKILL.md": "e4dc87bfdc08c3ad148d0f99c73a061a224c2604be6dd228ce1fb728dd30ef71",
-      "tools/maintenance/cli.mjs": "8101d09a4ddd8d28a23397f43fff7cae84cb33435ff1ae81edb3e176f0e18c83",
+      "tools/maintenance/cli.mjs": "de9696539af87ab1e3b3388aedfe61ef31d0aede473fe3a9ed76e42f8b9b02ef",
       "tools/maintenance/engine.mjs": "0676eb145ff0fb23ded5f2de5d27ac6cfaf8e798b72b624f0518e38227d593d8",
       "tools/maintenance/install-watcher.ps1": "490af09edcf59d27ed90dfc0e88c3f00a24371d4423237cf9281c795580b57f7",
-      "tools/maintenance/maintenance.test.mjs": "4b1322b22eb18e2e6a8b7a5e2ecaeb4f30298491ac34a4966b8cf33f10574073"
+      "tools/maintenance/maintenance.test.mjs": "d7cb8da59dcbc5c70d6f70aacc3aaeabfba31fe20e4d7a4adf368b5d971d8013"
     },
     "inventories": {
       "apps": [
