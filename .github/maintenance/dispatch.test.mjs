@@ -15,7 +15,8 @@ function fixture(options = {}) {
     github: { rest: {
       repos: { getCollaboratorPermissionLevel: async () => ({ data: { permission: options.permission ?? 'write' } }),
         get: async () => ({ data: { full_name: 'owner/repo', default_branch: 'main' } }),
-        getCommit: async () => ({ data: { sha: head, parents: [{ sha: base }] } }) },
+        getCommit: async () => ({ data: { sha: head, parents: [{ sha: base }] } }),
+        compareCommits: async () => ({ data: { files: options.files ?? [{ filename: 'packages/example/index.ts' }] } }) },
       pulls: { get: async () => ({ data: pull }) },
     } },
   };
@@ -50,6 +51,25 @@ test('automatic review is explicitly configured and skips drafts', async () => {
   assert.equal(await planRequest(options), null);
   assert.equal(await planRequest({ ...options, automaticProvider: 'codex' }), null);
 });
+test('GitHub events cannot automatically dispatch Codex or Claude', async () => {
+  for (const provider of ['codex', 'claude']) {
+    const options = fixture();
+    options.context.eventName = 'push';
+    assert.equal(await planRequest({ ...options, automaticProvider: provider }), null);
+  }
+});
+test('automatic Cursor dispatch skips empty and excluded-only revisions before a paid call', async () => {
+  for (const files of [[], [{ filename: 'artifacts/result.json' }]]) {
+    const options = fixture({ files });
+    options.context.eventName = 'push';
+    assert.equal(await planRequest({ ...options, automaticProvider: 'cursor' }), null);
+  }
+});
+test('a truncated comparison cannot prove an automatic review unnecessary', async () => {
+  const options = fixture({ files: Array.from({ length: 300 }, () => ({ filename: 'artifacts/result.json' })) });
+  options.context.eventName = 'push';
+  assert.equal((await planRequest({ ...options, automaticProvider: 'cursor' })).provider, 'cursor');
+});
 test('stale review results cannot be published against a newer revision', async () => {
   const options = fixture(); const request = await planRequest(options);
   await assert.rejects(assertCurrent({ github: options.github, owner: 'owner', repo: 'repo', request: { ...request, head: base } }), /SUPERSEDED_REVISION/);
@@ -72,5 +92,9 @@ test('Cursor dispatch pins commit and never targets the developer branch', async
   } });
   assert.equal(observed.body.repos[0].startingRef, head);
   assert.equal(observed.body.workOnCurrentBranch, false);
+  assert.deepEqual(observed.body.model, { id: 'grok-4.7', params: [
+    { id: 'reasoning_effort', value: 'high' }, { id: 'fast', value: 'false' },
+  ] });
+  assert.equal(observed.body.envVars.KS_MAINTENANCE_CHILD, '1');
   assert.equal(result.status, 'dispatched');
 });

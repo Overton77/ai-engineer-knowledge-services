@@ -7,6 +7,5 @@ $stateDirectory = [IO.Path]::GetFullPath((Join-Path $repository (Join-Path $gitD
 New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
 $runtime = Get-Content -LiteralPath (Join-Path $stateDirectory 'watcher-runtime.json') -Raw | ConvertFrom-Json
 $env:Path = (@($runtime.directories) + @($env:Path)) -join [IO.Path]::PathSeparator
-& $runtime.node (Join-Path $PSScriptRoot 'cli.mjs') doctor *> (Join-Path $stateDirectory 'watcher-last-run.log')
-& $runtime.node (Join-Path $PSScriptRoot 'cli.mjs') watch --once *>> (Join-Path $stateDirectory 'watcher-last-run.log')
+& $runtime.node (Join-Path $PSScriptRoot 'cli.mjs') watch --once *> (Join-Path $stateDirectory 'watcher-last-run.log')
 exit $LASTEXITCODE

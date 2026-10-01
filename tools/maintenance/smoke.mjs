@@ -1,9 +1,12 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { enqueue, git, openEngine, runJob } from "./engine.mjs";
+import { enqueue, git, openEngine, runJob, cursorApiKey, CURSOR_MODEL } from "./engine.mjs";
+import { fileURLToPath } from "node:url";
 
 if (!process.argv.includes("--run-provider")) throw new Error("Paid provider smoke requires --run-provider");
+const previousKey = process.env.CURSOR_API_KEY;
+process.env.CURSOR_API_KEY = cursorApiKey(fileURLToPath(new URL("../../", import.meta.url)));
 const repo = mkdtempSync(join(tmpdir(), "ks-maintenance-provider-smoke-"));
 git(repo, "init", "-b", "main");
 git(repo, "config", "user.name", "Maintenance Smoke");
@@ -26,9 +29,10 @@ git(repo, "add", ".");
 git(repo, "commit", "-m", "Add calculator smoke fixture");
 const engine = openEngine(repo, {
   observe: false,
-  provider: "codex",
-  timeoutMs: 180000,
-  leaseMs: 240000,
+  provider: "cursor",
+  model: CURSOR_MODEL,
+  timeoutMs: 900000,
+  leaseMs: 960000,
   maxAttempts: 1,
   validation: [["node", "--test", "packages/sum.test.mjs"]],
 });
@@ -39,4 +43,6 @@ try {
   if (receipt.status !== "proposed") process.exitCode = 1;
 } finally {
   engine.db.close();
+  if (previousKey === undefined) delete process.env.CURSOR_API_KEY;
+  else process.env.CURSOR_API_KEY = previousKey;
 }

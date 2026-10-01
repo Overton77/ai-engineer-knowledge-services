@@ -1,17 +1,37 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { enqueue, execute, git, openEngine, runJob } from "./engine.mjs";
+import {
+  enqueue,
+  execute,
+  git,
+  openEngine,
+  runJob,
+  cursorApiKey,
+  childEnvironment,
+  CURSOR_MODEL,
+  providerCommand,
+  maintenanceChild,
+} from "./engine.mjs";
 
 const location = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const command = args.shift() ?? "status";
+if (process.env.KS_MAINTENANCE_CHILD === "1") {
+  process.stdout.write('{"skipped":"maintenance child"}\n');
+  process.exit(0);
+}
 const option = (name) => {
   const index = args.indexOf(name);
   return index < 0 ? undefined : args[index + 1];
 };
 const policy = JSON.parse(readFileSync(join(location, "policy.json"), "utf8"));
 const engine = openEngine(option("--repo") ?? process.cwd(), policy);
+if (maintenanceChild(engine.repo)) {
+  engine.db.close();
+  process.stdout.write('{"skipped":"maintenance child"}\n');
+  process.exit(0);
+}
 const print = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 const hookNames = ["pre-commit", "post-commit", "post-merge", "post-checkout", "post-rewrite", "pre-push"];
 const marker = "# ks-maintenance-managed-v1";
@@ -90,7 +110,9 @@ async function main() {
   switch (command) {
     case "status":
       return engine.db
-        .prepare("SELECT id,head,kind,status,attempts,created FROM jobs ORDER BY created DESC LIMIT 30")
+        .prepare(
+          "SELECT id,head,kind,status,attempts,created,json_extract(receipt,'$.output') AS output,json_extract(receipt,'$.model') AS model FROM jobs WHERE kind!='working' ORDER BY created DESC LIMIT 30",
+        )
         .all();
     case "enqueue":
       return enqueue(engine, { commit: option("--commit") });
@@ -122,7 +144,11 @@ async function main() {
     case "check-push":
       return checkPush();
     case "run":
-      return runJob(engine, { provider: option("--provider"), dryRun: args.includes("--dry-run") });
+      return runJob(engine, {
+        provider: option("--provider"),
+        dryRun: args.includes("--dry-run"),
+        jobId: option("--job"),
+      });
     case "pause":
     case "resume":
       engine.db
@@ -132,9 +158,15 @@ async function main() {
     case "doctor": {
       let provider;
       try {
+        providerCommand(policy.provider, "validate", policy.model);
+        const env = childEnvironment(cursorApiKey(engine.repo));
+        const models = execute("agent", ["--list-models"], { env });
+        if (!models.split(/\r?\n/).some((line) => line.trim().split(/\s+-\s+/)[0] === CURSOR_MODEL))
+          throw new Error(`CURSOR_MODEL_UNAVAILABLE:${CURSOR_MODEL}`);
         provider = {
           available: true,
-          version: execute(policy.provider === "cursor" ? "agent" : policy.provider, ["--version"]).trim(),
+          model: CURSOR_MODEL,
+          version: execute("agent", ["--version"], { env }).trim(),
         };
       } catch (error) {
         provider = { available: false, error: error.message };

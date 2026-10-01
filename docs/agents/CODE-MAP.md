@@ -70,7 +70,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [jev](#jev) | packages/jev | Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes. | implemented |
 | [jev-service](#jev-service) | apps/jev | Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the public client. | implemented |
 | [skill-jev-system-one](#skill-jev-system-one) | skills/jev-system-one | Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition. | implemented |
-| [agent-maintenance](#agent-maintenance) | tools/maintenance | Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions. | implemented |
+| [agent-maintenance](#agent-maintenance) | tools/maintenance | Git and Cursor hook-driven review queue with Grok 4.7, bounded context and isolated proposals; GitHub dispatch handles remote work. | implemented |
 
 ## api
 
@@ -1235,16 +1235,16 @@ Agent procedure for closed-choice tasks, captured input references, process work
 
 **tools/maintenance** · tooling · implemented
 
-Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.
+Git and Cursor hook-driven review queue with Grok 4.7, bounded context and isolated proposals; GitHub dispatch handles remote work.
 
-**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs), [`tools/maintenance/run-watcher.ps1`](../../tools/maintenance/run-watcher.ps1), [`tools/maintenance/policy.json`](../../tools/maintenance/policy.json), [`.github/workflows/agent-maintenance.yml`](../../.github/workflows/agent-maintenance.yml)
-**Interface:** Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands.
+**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`tools/maintenance/cursor-hooks.mjs`](../../tools/maintenance/cursor-hooks.mjs), [`tools/maintenance/context.mjs`](../../tools/maintenance/context.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`tools/maintenance/policy.json`](../../tools/maintenance/policy.json), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs)
+**Interface:** Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; Cursor prompt/edit/shell/stop hooks; explicit /agent provider task commands.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs), [`.github/maintenance/workflow.test.mjs`](../../.github/maintenance/workflow.test.mjs)
+**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs), [`.github/maintenance/workflow.test.mjs`](../../.github/maintenance/workflow.test.mjs), [`tools/maintenance/cursor-hooks.test.mjs`](../../tools/maintenance/cursor-hooks.test.mjs), [`tools/maintenance/context.test.mjs`](../../tools/maintenance/context.test.mjs)
 - A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt.
 
 **Architecture and detailed docs:**

@@ -1403,26 +1403,28 @@
       "path": "tools/maintenance",
       "kind": "tooling",
       "state": "implemented",
-      "summary": "Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.",
+      "summary": "Git and Cursor hook-driven review queue with Grok 4.7, bounded context and isolated proposals; GitHub dispatch handles remote work.",
       "entrypoints": [
         "tools/maintenance/cli.mjs",
         "tools/maintenance/engine.mjs",
-        ".github/maintenance/dispatch.mjs",
+        "tools/maintenance/cursor-hooks.mjs",
+        "tools/maintenance/context.mjs",
         "tools/maintenance/install-watcher.ps1",
-        ".github/maintenance/cursor-run.mjs",
-        "tools/maintenance/run-watcher.ps1",
         "tools/maintenance/policy.json",
-        ".github/workflows/agent-maintenance.yml"
+        ".github/maintenance/dispatch.mjs",
+        ".github/maintenance/cursor-run.mjs"
       ],
       "interface": [
-        "Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands."
+        "Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; Cursor prompt/edit/shell/stop hooks; explicit /agent provider task commands."
       ],
       "tests": [
         "tools/maintenance/maintenance.test.mjs",
         ".github/maintenance/dispatch.test.mjs",
         ".github/maintenance/proposal.test.mjs",
         ".github/maintenance/cursor-run.test.mjs",
-        ".github/maintenance/workflow.test.mjs"
+        ".github/maintenance/workflow.test.mjs",
+        "tools/maintenance/cursor-hooks.test.mjs",
+        "tools/maintenance/context.test.mjs"
       ],
       "constraints": [
         "A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt."

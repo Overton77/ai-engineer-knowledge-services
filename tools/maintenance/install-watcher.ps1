@@ -19,7 +19,7 @@ $gitDirectory = & git -C $repository rev-parse --git-common-dir
 if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve Git common directory.' }
 $stateDirectory = [IO.Path]::GetFullPath((Join-Path $repository (Join-Path $gitDirectory 'maintenance')))
 New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
-$runtimeDirectories = @('node', 'git', 'codex', 'claude', 'agent') | ForEach-Object {
+$runtimeDirectories = @('node', 'git', 'gh', 'agent') | ForEach-Object {
     $installedCommand = Get-Command $_ -ErrorAction SilentlyContinue
     if ($installedCommand -and $installedCommand.Source) { Split-Path -Parent $installedCommand.Source }
 } | Select-Object -Unique

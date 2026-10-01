@@ -25,7 +25,7 @@ export async function planRequest({ github, context, automaticProvider = '' }) {
   if (context.eventName === 'issue_comment') command = parseCommand(payload.comment?.body);
   else if (context.eventName === 'workflow_dispatch') {
     command = { provider: payload.inputs.provider, task: payload.inputs.task };
-  } else if (['pull_request', 'push'].includes(context.eventName) && providers.has(automaticProvider)) {
+  } else if (['pull_request', 'push'].includes(context.eventName) && automaticProvider === 'cursor') {
     command = { provider: automaticProvider, task: 'review' };
   }
   if (!command) return null;
@@ -50,6 +50,14 @@ export async function planRequest({ github, context, automaticProvider = '' }) {
   const head = pull?.head.sha ?? defaultCommit.sha;
   const base = pull?.base.sha ?? defaultCommit.parents[0]?.sha ?? head;
   if (!shaPattern.test(head) || !shaPattern.test(base)) throw new Error('INVALID_REVISION');
+  if (['pull_request', 'push'].includes(context.eventName)) {
+    if (base === head) return null;
+    const comparison = await github.rest.repos.compareCommits({ ...context.repo, base, head });
+    const files = comparison.data.files;
+    // GitHub caps comparison files at 300; an incomplete list must not prove a no-op.
+    if (Array.isArray(files) && files.length < 300 && !files.some((file) =>
+      permittedPath(file.filename) || (file.previous_filename && permittedPath(file.previous_filename)))) return null;
+  }
   const request = {
     schemaVersion: 1, policyVersion: 'knowledge-maintenance/1',
     repository: repo.data.full_name, number, pullRequest: Boolean(pull),
@@ -70,6 +78,10 @@ Read AGENTS.md, docs/architecture/current-state.md, and docs/operations/agent-ma
 Use node .agent-docs/cli.mjs context --repo . --query "relevant business terms" --format json.
 Find affected business invariants, implementation, tests and accepted decisions before judging.
 Review correctness, clean code, semantic documentation accuracy, and meaningful test coverage.
+First inspect the actual diff. If there is no substantive eligible change, report skipped with the reason and stop.
+Do not manufacture cleanups, documentation edits, or tests to satisfy a checklist. Leave correct code and accurate documentation unchanged.
+Only propose a test when a plausible changed behavior or regression risk lacks an observable assertion.
+Do not delegate to subagents, start another agent CLI, or change the selected model or provider.
 For every test recommendation state the plausible failure, test boundary, and observable assertion.
 Review task: do not change tracked files. Other tasks: make only scoped fixes in this isolated checkout.
 Do not commit, push, merge, post messages, edit workflows/credentials, load .env, or contact production services.
@@ -104,8 +116,13 @@ export async function launchCursor({ request, apiKey, fetcher = fetch }) {
     method: 'POST', signal: AbortSignal.timeout(30000),
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      prompt: { text: `${promptFor(request)}\nCloud exception: for a non-review task you may commit your scoped changes on a NEW branch and open a PR. Never push to the source branch. Run the repository's deterministic checks before proposing it.` },
+      prompt: { text: `Before any other shell work, run git config --local maintenance.child true to suppress nested maintenance hooks in this provider-managed checkout.\n${promptFor(request)}\nCloud exception: for a non-review task you may commit your scoped changes on a NEW branch and open a PR. Never push to the source branch. Run the repository's deterministic checks before proposing it.` },
       repos: [{ url: `https://github.com/${request.repository}`, startingRef: request.head }],
+      model: { id: 'grok-4.7', params: [
+        { id: 'reasoning_effort', value: 'high' },
+        { id: 'fast', value: 'false' },
+      ] },
+      envVars: { KS_MAINTENANCE_CHILD: '1' },
       workOnCurrentBranch: false, autoCreatePR: request.task !== 'review',
       name: `KS ${request.task} ${request.key}`,
     }),

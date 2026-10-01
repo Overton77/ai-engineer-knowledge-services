@@ -1,7 +1,8 @@
 {
   "version": 1,
   "observe": false,
-  "provider": "codex",
+  "provider": "cursor",
+  "model": "grok-4.7-high",
   "timeoutMs": 900000,
   "leaseMs": 1200000,
   "maxAttempts": 2,
