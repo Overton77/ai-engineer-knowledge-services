@@ -71,7 +71,8 @@ test('rejects an ancestor junction before reading outside the checkout', t => {
   const outside = join(root, 'outside');
   renameSync(join(repo, 'docs'), outside);
   writeFileSync(join(outside, 'guide.md'), 'outside bytes');
-  symlinkSync(outside, join(repo, 'docs'), process.platform === 'win32' ? 'junction' : 'dir');
+  mkdirSync(join(repo, 'docs'));
+  symlinkSync(outside, join(repo, 'docs', 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
   assert.throws(() => collectProposal(repo, request), /PROPOSAL_SYMLINK/);
 });
 

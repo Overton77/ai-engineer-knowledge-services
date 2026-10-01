@@ -219,7 +219,7 @@
       ".agent-docs/modules.json": "22b435b8c18cbff9e2b850e6ba82febb809d49415a330670a9ff9f20b292b38e",
       ".github/maintenance/dispatch.mjs": "6f2f57451fe9e985758fb263724fc7bcf38a77b51fc2ea4d3d02bac1ae36688c",
       ".github/maintenance/dispatch.test.mjs": "e57568e7a681b710fe695be32499652c60309e01d70877852914f1cdf6b02c71",
-      ".github/maintenance/proposal.test.mjs": "884dff721ce67779887b62cae80abc1569bc4d1a17cbc43bfc84325ab4fc4ca1",
+      ".github/maintenance/proposal.test.mjs": "46e83d5cdc8d31525001e5111d8a1b1b057fbe877a97e44e506a4014cf4f2239",
       "apps/api/package.json": "08aee6770639e975f8dbff53f530c627c78571ddddacd9f5d06b4d8b6ff85758",
       "apps/api/src/a2a-adapter.ts": "385f15280f6bf71930e894568e960dfcfceababcd42f079a9def144e8e1a9374",
       "apps/api/src/composition.ts": "66b19e76b72edb57c7a05eea0437268fa7ea28c217271a4c101a0020b23b7da1",
