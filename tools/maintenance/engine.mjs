@@ -634,7 +634,7 @@ export function runJob(
     const queueStatus =
       receipt.status === "dry-run"
         ? "queued"
-        : receipt.status === "failed" && job.attempts + 1 < engine.policy.maxAttempts
+        : receipt.status === "failed" && !receipt.review && job.attempts + 1 < engine.policy.maxAttempts
           ? "queued"
           : receipt.status;
     const completion = engine.db

@@ -109,6 +109,12 @@ Cursor Cloud uses its provider-managed isolated environment, pinned starting rev
 
 Remote configuration and local installation should be recorded separately from code validation. Never infer that a workflow is active, a provider is authenticated, or a deployed service is healthy solely because the corresponding files exist.
 
+## Cursor hook validation
+
+Maintenance/retrieval fixtures passed locally on Windows and in Linux CI. A real Grok 4.7 High run on a disposable calculator fixture completed in 338 seconds: valid evidence report, two independently passing tests, and an empty patch. The reviewer explained why existing code, documentation and tests did not need edits. Account-plugin initialization contributed substantial startup time; allow several minutes for a meaningful review. The production timeout remains fifteen minutes. Earlier short trials timed out and remain failures. Native Cursor IDE event delivery still needs the operator's next task; script protocol and Git fixture tests are separate evidence.
+
+After a valid review has been produced, failed deterministic validation is terminal for that job: it does not purchase the same review again without new input. Failures before a valid review retain the bounded retry policy. The historical missing sealed replay checkpoint remains a real validation failure.
+
 ## Initial validation evidence
 
 The documentation/retrieval generator passed 80 canonical tests; the portable KS retrieval, dispatch, publication and local-engine suites passed 79 tests. Formatting, the unchanged lint ratchet and all 21 packages' typechecks passed. A genuine local Codex run in a disposable repository produced a valid report and passed its independent test. A separate live trial exceeded its 180-second budget and correctly retained a failed receipt. A live Cursor Cloud review also completed against the published pilot revision, reporting no critical findings; subsequent changes still require their own checks. These trials do not establish unattended reliability; the pilot policy allows fifteen minutes per job and two attempts, preserving failures for inspection.

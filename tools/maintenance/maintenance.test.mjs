@@ -214,6 +214,25 @@ test("missing review fails and retries retain distinct attempt directories", (t)
   assert.notEqual(first.output, second.output);
   assert.equal(engine.db.prepare("SELECT status FROM jobs").get().status, "failed");
 });
+
+test("a completed review with failed validation does not pay for the same review again", (t) => {
+  const engine = fixture(t);
+  enqueue(engine);
+  let generations = 0;
+  const options = {
+    invoke: (command, _args, settings) => {
+      if (command !== "agent") throw new Error("Known deterministic validation failure");
+      generations += 1;
+      writeFileSync(join(settings.cwd, "maintenance-review.json"), JSON.stringify(review));
+      return "Reviewed";
+    },
+  };
+  const result = runJob(engine, options);
+  assert.equal(result.status, "failed");
+  assert.equal(enqueue(engine).status, "failed");
+  assert.ok(runJob(engine, options).skipped);
+  assert.equal(generations, 1);
+});
 test("workflow modifications fail proposal admission despite valid report", (t) => {
   const engine = fixture(t);
   enqueue(engine);

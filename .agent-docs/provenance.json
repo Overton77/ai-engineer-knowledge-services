@@ -38,7 +38,7 @@
     "docs/architecture/modules/jev.md": "91018a16a5f8aff1615baf55c015dd9c3ad32766f7d40daf0be7492bd0272c92",
     "docs/architecture/technology-stack.md": "584f3d69714aba95f11999999488f9445629c2d24b0ea05eda4c25941873f965",
     "docs/architecture/transport-call-graph-refactor-snapshot-20260916.md": "8afe668c4dd5a378e2d40b3901e7904c4b0f7a8c7c2b354f7569e7cc16b45cea",
-    "docs/operations/agent-maintenance.md": "fd383cbadee847e0449f2ab62dc0cc4836dbe7d182705cbdf3ab854b70d953ae",
+    "docs/operations/agent-maintenance.md": "04c5e7da937b76472b5436ccc22f9f1b3f6a92529c5ef85d9946a7d64bf856b1",
     "docs/operations/code-quality-and-delivery-process.md": "efc34be5e8aa54298b18fc98ffa95c89e6944ba9cac246c311cb881d93293d87",
     "docs/operations/conversion-and-chunking.md": "d90ca2cedf8af0d871b5c42ae57e553a922ef08d401f8e8f1c2bd680aae92291",
     "docs/operations/internal-fallbacks-and-application-order.md": "e835ec4eea1c8aff7c874427c1bef77f4b9cc3f69a8b4cd23f51009cf44589af",
@@ -513,9 +513,9 @@
       "tools/maintenance/context.test.mjs": "c0c01ae7181b152ec43a3264722ef84e4adc113bb4fb876353b00d84c7d10185",
       "tools/maintenance/cursor-hooks.mjs": "5b258d6bcc6b42fc9a72da0f2f786a2bb2a2c73e2333e1211e88eba8daf02ac5",
       "tools/maintenance/cursor-hooks.test.mjs": "0bac105a6dc5dd76adf7b6c2f3d0b58a6c1f5d7b0373107376ee2cf798564f83",
-      "tools/maintenance/engine.mjs": "899bc7de50cb07c91476cd973d59033d7e8fffabc20f393ed893fdb4f9798e5b",
+      "tools/maintenance/engine.mjs": "6402aad80b44a3e02c4ac7aa3439fd3332e86439d18024ec9f12d04411a4a7c9",
       "tools/maintenance/install-watcher.ps1": "b1e5e0e24d68d19108366e1c38c2d1ea4547cf73e2186320b176cdcc63701f20",
-      "tools/maintenance/maintenance.test.mjs": "19269cd557b0c136cc83dfd1ecbd595d523b75b633ca54a24f125426e5296a8c",
+      "tools/maintenance/maintenance.test.mjs": "3dad5903e1c9d2b6fd7175caa1275ad4e981faaa944df84811d9e61b947dc394",
       "tools/maintenance/policy.json": "b3dec6b1e93bdd0fb8678ec6138467697adf1982715a0d3eb744f089a8f40e27"
     },
     "inventories": {
