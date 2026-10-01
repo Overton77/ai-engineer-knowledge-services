@@ -61,7 +61,10 @@
     "jev:build": "turbo run build --filter=@aiengineer/knowledge-jev-service...",
     "jev:serve": "node --env-file=.env apps/jev/dist/index.js serve",
     "jev": "node apps/jev/dist/index.js",
-    "jev:test": "pnpm --filter @aiengineer/knowledge-jev --filter @aiengineer/knowledge-jev-service --filter @aiengineer/knowledge-client test"
+    "jev:test": "pnpm --filter @aiengineer/knowledge-jev --filter @aiengineer/knowledge-jev-service --filter @aiengineer/knowledge-client test",
+    "maintenance": "node tools/maintenance/cli.mjs",
+    "test:maintenance": "node --test tools/maintenance/maintenance.test.mjs .github/maintenance/dispatch.test.mjs .github/maintenance/proposal.test.mjs .github/maintenance/cursor-run.test.mjs",
+    "test:context": "node --test .agent-docs/retrieval.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

@@ -4,14 +4,6 @@ title: Verification and admission
 description: How Knowledge Services verifies evidence and admits it to knowledge effects.
 tags: [verification, evidence, admission, ingestion, policy]
 owner: ai-engineer-knowledge-services
-aliases: [deterministic gate, semantic verdict, policy outcome, sealed evidence]
-questions:
-  - Can a semantic judgment override a deterministic failure?
-  - What is the difference between verification success and admission?
-  - What evidence is needed before a verified claim can be ingested?
-implementation_status: implemented-with-quality-gates
-decision_status: reference
-validation_status: source-and-test-inspected
 okf_target: "0.2"
 sources:
   - id: verification-guide
@@ -44,12 +36,6 @@ the service hydrates it from registered, sealed artifacts and the intended
 downstream use is admitted.
 
 ## Route a request
-
-First choose the [execution profile and transport](execution-profiles-and-transports.md).
-A local intent-pipeline run and a platform durable verification operation have
-different custody and identifiers. The existence of both surfaces does not
-make their receipts interchangeable. Current grouped platform MCP names are
-`verify_*`; executor fold and retirement remain planned.
 
 | Need | Use | Result |
 | --- | --- | --- |

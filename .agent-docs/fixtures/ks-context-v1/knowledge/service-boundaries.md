@@ -3,14 +3,6 @@ type: Service Boundary
 title: Knowledge service boundaries
 description: Ownership and safe entry points for schema navigation, bounded reads, ingestion, and retrieval.
 tags: [knowledge, boundaries, schema, ingestion, retrieval]
-aliases: [service ownership, caller contract, application boundary]
-questions:
-  - Which repository owns a database or verification change?
-  - Can another agent import Knowledge Services algorithm packages?
-  - Where should a new shared API and MCP behavior live?
-implementation_status: implemented-with-transitional-surfaces
-decision_status: reference
-validation_status: source-and-test-inspected
 owner: ai-engineer-knowledge-services
 sources:
   - resource: ../packages/knowledge-db/src/schema-workspace/workspace.ts
@@ -43,16 +35,10 @@ authority. The accepted lifecycle design is
 
 # Choose the owner
 
-For the present executable surface, pair this ownership map with
-[execution profiles and transports](execution-profiles-and-transports.md).
-The accepted target layout describes later consolidation; it does not imply
-that executor-only capabilities already exist on the platform API or MCP.
-
 | Need | Read first | Owner and result |
 | --- | --- | --- |
 | Change a service use case shared by transports | [`application`](../packages/application/src/index.ts) | Shared use-case composition; keep algorithms out of transport handlers. |
 | Change the main service HTTP, CLI, or MCP surface | [API runtime](../apps/api/src/index.ts), [CLI commands](../apps/cli/src/commands.ts), [MCP runtime](../apps/mcp/src/index.ts) | Transport adaptation to published contracts and shared application behavior. |
-| Decide whether a named capability is executable on a transport | [Operation catalog](../packages/application/src/operations/catalog.ts) | Application-owned availability, gates and explicit exclusions; parity checks do not turn declared operations into implementation. |
 | Compose verification ownership and admission for API or MCP | [`createVerificationHostRuntime`](../packages/host/src/verification/host-runtime.ts) | Shared host; transports are not a second algorithm authority. |
 | Find schema meaning, a relation, vocabulary, rule, or named query | [`schema-workspace`](../packages/knowledge-db/src/schema-workspace/index.ts) | Loads and searches the pinned workspace; it does not query tenant data. |
 | Read tenant knowledge reproducibly | [`ReadExecutor`](../packages/knowledge-db/src/db-read/read-executor.ts) | Executes catalog queries in a read-only transaction and returns a digestible snapshot. |
@@ -163,11 +149,6 @@ implemented package and a catalog entry may describe a retrieval-shaped query.
 | A caller wants a semantic answer from prepared records. | Use the published retrieval surface and preserve the evidence packet. | Treating a skipped db-read retrieval operation as empty search results. |
 
 # Known gaps and decisions
-
-- 5P established grouped platform MCP names, typed transport structure and the
-  application-owned operation catalog. Executor database/knowledge/verification
-  folds and Jev consolidation remain subsequent slices. The current and target
-  distinction is summarized in [current state](../docs/architecture/current-state.md).
 
 - The bounded read executor skips retrieval operations rather than executing
   them. A future bridge must make

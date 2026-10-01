@@ -4,14 +4,6 @@ title: Schema, bounded reads, and deterministic ingestion
 description: A safe sequence for navigating the pinned schema, creating reproducible reads, and applying admitted knowledge changes.
 tags: [knowledge, schema, read, ingestion, receipts]
 owner: ai-engineer-knowledge-services
-aliases: [database snapshot, named query, ingestion receipt, knowledge head]
-questions:
-  - How do I read tenant knowledge before writing an ingestion intent?
-  - What should I do when an ingestion response is lost?
-  - Does a read snapshot prove that a canonical write committed?
-implementation_status: partial
-decision_status: reference
-validation_status: source-and-test-inspected
 sources:
   - resource: ../packages/knowledge-db/src/schema-workspace/workspace.ts
     title: Workspace loader
@@ -158,12 +150,6 @@ read path stores the intent and snapshot as separate ledger artifacts with a
 [`ReadExecutor.persist`](../packages/knowledge-db/src/db-read/read-executor.ts).
 
 # Current limitations
-
-- Schema, bounded-read and ingestion operations are still served by the
-  executor registry. The [application catalog](../packages/application/src/operations/catalog.ts)
-  records these as executor-only; the accepted `ks db` fold is future work.
-  Use [execution profiles](execution-profiles-and-transports.md) before
-  selecting a binary or assuming MCP parity means every group is available.
 
 - Persistence of a read intent/snapshot is opt-in (`persist: true`); an
   ordinary snapshot has no artifact handle to cite later.

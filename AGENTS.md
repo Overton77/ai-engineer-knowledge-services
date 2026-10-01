@@ -19,12 +19,14 @@ Read the relevant documents below before changing behavior. Inspect more-specifi
 
 Start with `knowledge/index.md`; read one matching concept, then its implementation/tests. Do not load the whole bundle.
 
-- Ownership and caller contracts: `knowledge/service-boundaries.md`
-- Schema, bounded reads, canonical writes: `knowledge/schema-read-and-ingestion.md`
-- Capture, prepare, publish: `knowledge/preparation-and-publication.md`
-- Search, evidence packets, citation replay: `knowledge/retrieval-and-evidence.md`
-- Claims, deterministic failures, admission: `knowledge/verification-and-admission.md`
-- Leases, retries, cancellation, repair: `knowledge/durable-execution-and-recovery.md`
+- Ownership, profiles and caller contracts: `knowledge/service-boundaries.md` → `knowledge/execution-profiles-and-transports.md`
+- Capture, convert and prepare faithful content: `knowledge/capture-conversion-and-custody.md` → `knowledge/preparation-and-publication.md`
+- Schema, bounded reads and canonical ingestion: `knowledge/schema-read-and-ingestion.md`
+- Retrieve evidence, evaluate and publish: `knowledge/retrieval-and-evidence.md` → `knowledge/evaluation-and-publication-gates.md`
+- Verify claims and policy admission: `knowledge/verification-and-admission.md`
+- Leases, retries, cancellation and recovery: `knowledge/durable-execution-and-recovery.md`
+- Jev decisions and workers: `knowledge/jev-decisions-and-workers.md`
+- Agent skills and consumer readiness: `knowledge/agent-skills-and-consumer-readiness.md`
 
 Search: `node .agent-docs/cli.mjs search --repo . --query "your terms"` (add `--format json`).
 Exact text: `rg -n -i "your terms" knowledge -g "*.md"`.
@@ -41,6 +43,7 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 - `services/AGENTS.md`: Separately deployed conversion and native parser boundaries.
 - `scripts/AGENTS.md`: Explicit proof, evaluation, reconciliation, and experiment commands.
 - `skills/AGENTS.md`: Agent skills for schema navigation, bounded reads, and ingestion.
+- `tools/AGENTS.md`: Repository quality and Git-driven maintenance tooling.
 - Change an HTTP/MCP/CLI verification surface: contracts → application → api → mcp → cli
 - Change locator or evidence verification: verification → verification-evidence-selection → verification-deterministic → verification-semantic
 - Debug worker retry or persistence: worker → core → persistence
@@ -52,38 +55,27 @@ Read `docs/agents/CODE-MAP.md` for source entrypoints, interfaces, dependencies,
 ### Task routes
 
 - [reference] Current handoff and experiment milestone: `docs/operations/package-cleanup/NEXT-PACKAGE-CLEANUP.md`
-- [proposed] Next: 5P, 5D1 slices: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
-- [reference] Unit 4 folders, names, catalog: `docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`
+- [proposed] Remaining cleanup: 5D folds, Jev and executor retirement: `docs/operations/package-cleanup/UNIT-5-SLICES.md`
 - [accepted] Accepted cleanup layout and sequence: `docs/operations/package-cleanup/FINAL-LAYOUT.md`
 - [reference] Cleanup index and archive: `docs/operations/package-cleanup/README.md`
 - [proposed] Module review and delivery workflow: `docs/operations/code-quality-and-delivery-process.md`
-- [proposed] Internal fallbacks and application folder order: `docs/operations/internal-fallbacks-and-application-order.md`
-- [accepted] Acquisition HTTP, upload, and sealed-byte inspection review record: `docs/operations/reviews/acquisition.md`
-- [reference] Conversion route (text, Docling, gated Unstructured) and receipt review record: `docs/operations/reviews/conversion.md`
-- [reference] Retrieval package review record: `docs/operations/reviews/retrieval.md`
-- [reference] Vector-backends package review record: `docs/operations/reviews/vector-backends.md`
-- [reference] Projections package review record: `docs/operations/reviews/projections.md`
-- [reference] Embeddings package review record: `docs/operations/reviews/embeddings.md`
-- [reference] Policy package review record, including selection eligibility: `docs/operations/reviews/policy.md`
-- [reference] Bounded read executor and space manifest review record: `docs/operations/reviews/db-read.md`
-- [proposed] Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters: `docs/operations/conversion-and-chunking.md`
 - Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills: `README.md`
 - [accepted] Runtime, transport, and deployment changes: `docs/architecture/0001-runtime-and-deployment.md`
 - [accepted] Preparation pipeline: `docs/architecture/0002-deterministic-preparation.md`
 - [accepted] Embedding, retrieval, evaluation: `docs/architecture/0003-embedding-retrieval-evaluation.md`
 - [accepted] In-process servers call application; out-of-process callers use KnowledgeClient HTTP: `docs/architecture/0004-transport-call-graph.md`
-- [reference] Dated snapshot of later transport-call-graph refactors; will go stale: `docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`
 - Verification behavior and invariants: `docs/verification/README.md`
 - Cross-service verification integration: `docs/verification/INTEGRATION-GUIDE.md`
 - Verification recovery and operator actions: `docs/verification/OPERATOR-RUNBOOK.md`
 - Verification deployment and rollback: `docs/verification/DEPLOYMENT.md`
 - Worker restart, leases, callbacks, incidents: `docs/operations/runbooks.md`
 - Authentication, capability admission, parser isolation: `docs/security.md`
-- [reference] Verification package quality review and executable media locator examples: `docs/operations/reviews/verification.md`
-- [reference] Verification executor intent, skill, example and consumer pin review: `docs/operations/reviews/verification-executor.md`
 - [reference] Verification library capability matrix: selectors, deterministic diversity, semantic scope, linked to examples: `packages/verification/CAPABILITIES.md`
 - [reference] Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits: `apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`
 - [reference] Jev processes, API, MCP, CLI and research: `docs/architecture/modules/jev.md`
+- [reference] Current implementation, ownership and remaining cleanup: `docs/architecture/current-state.md`
+- [reference] Pinned technology stack and runtime definitions: `docs/architecture/technology-stack.md`
+- [reference] Git-driven maintenance, provider setup and test evidence: `docs/operations/agent-maintenance.md`
 
 ### Validation
 
@@ -91,17 +83,17 @@ Run from this repository root; choose checks relevant to the change. Commands ar
 
 - `corepack pnpm verify`
 - `Gates: tools/quality/README.md`
+- `corepack pnpm test:maintenance && corepack pnpm test:context`
 
 Documentation: `node .agent-docs/cli.mjs check --repo .`; refresh with `node .agent-docs/cli.mjs build --repo .`. Edit `.agent-docs/config.json` to change this guide.
 
 [Docs index]|root:.
 |.:{README.md}
 |apps/verification-executor/examples:{CAPABILITIES-ACQUISITION.md}
-|docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,transport-call-graph-refactor-snapshot-20260916.md}
+|docs/architecture:{0001-runtime-and-deployment.md,0002-deterministic-preparation.md,0003-embedding-retrieval-evaluation.md,0004-transport-call-graph.md,current-state.md,technology-stack.md}
 |docs/architecture/modules:{jev.md}
-|docs/operations:{code-quality-and-delivery-process.md,conversion-and-chunking.md,internal-fallbacks-and-application-order.md,runbooks.md}
-|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-4-APPLICATION-ORDER-AND-CATALOG.md,UNIT-5-SLICES.md}
-|docs/operations/reviews:{acquisition.md,conversion.md,db-read.md,embeddings.md,policy.md,projections.md,retrieval.md,vector-backends.md,verification-executor.md,verification.md}
+|docs/operations:{agent-maintenance.md,code-quality-and-delivery-process.md,runbooks.md}
+|docs/operations/package-cleanup:{FINAL-LAYOUT.md,NEXT-PACKAGE-CLEANUP.md,README.md,UNIT-5-SLICES.md}
 |docs:{security.md}
 |docs/verification:{DEPLOYMENT.md,INTEGRATION-GUIDE.md,OPERATOR-RUNBOOK.md,README.md}
 |packages/verification:{CAPABILITIES.md}

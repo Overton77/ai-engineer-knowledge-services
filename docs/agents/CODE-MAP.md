@@ -70,6 +70,7 @@ Paths below are repository-relative. Use the task routes, then search the module
 | [jev](#jev) | packages/jev | Jev decision provider adapters, captured input snapshots, local SQLite queue and bounded OS worker processes. | implemented |
 | [jev-service](#jev-service) | apps/jev | Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the public client. | implemented |
 | [skill-jev-system-one](#skill-jev-system-one) | skills/jev-system-one | Agent procedure for closed-choice tasks, captured input references, process workers, uncertainty handling and LLM composition. | implemented |
+| [agent-maintenance](#agent-maintenance) | tools/maintenance | Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions. | implemented |
 
 ## api
 
@@ -89,7 +90,7 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -100,6 +101,8 @@ Fastify HTTP transport. createApiRuntime composes through createHost (role api) 
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## cli
 
@@ -119,7 +122,7 @@ The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTT
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -127,6 +130,8 @@ The ks binary: remote knowledge/verify/db commands call KnowledgeClient over HTT
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`knowledge/agent-skills-and-consumer-readiness.md`](../../knowledge/agent-skills-and-consumer-readiness.md) — Skill selection, packaging and DeepAgents readiness
 
 ## mcp
 
@@ -146,7 +151,7 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
@@ -155,6 +160,8 @@ In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHo
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## verification-executor
 
@@ -175,7 +182,7 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [reference] [`knowledge/service-boundaries.md`](../../knowledge/service-boundaries.md) — Choose a transport and the owning module
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
@@ -184,6 +191,9 @@ Sandbox verification executor that also hosts schema, bounded-read, and ingestio
 - [reference] [`README.md`](../../README.md) — Service boundaries, startup, and transferable use of HTTP/MCP/CLI/skills
 - [reference] [`docs/operations/reviews/verification-executor.md`](../../docs/operations/reviews/verification-executor.md) — Verification executor intent, skill, example and consumer pin review
 - [reference] [`apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md`](../../apps/verification-executor/examples/CAPABILITIES-ACQUISITION.md) — Executor acquisition, capture catalog, intent-expressible selectors and public-surface limits
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`knowledge/agent-skills-and-consumer-readiness.md`](../../knowledge/agent-skills-and-consumer-readiness.md) — Skill selection, packaging and DeepAgents readiness
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## worker
 
@@ -213,6 +223,7 @@ Durable knowledge-operation execution and activity dispatch over host-composed a
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## sources
 
@@ -235,6 +246,7 @@ Source acquisition and inspection (folder renamed from packages/acquisition; npm
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [accepted] [`docs/operations/reviews/acquisition.md`](../../docs/operations/reviews/acquisition.md) — Acquisition HTTP, upload, and sealed-byte inspection review record
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
+- [reference] [`knowledge/capture-conversion-and-custody.md`](../../knowledge/capture-conversion-and-custody.md) — Acquire source bytes and preserve conversion custody
 
 ## application
 
@@ -254,7 +266,7 @@ Composes knowledge use cases, capability admission, preparation, retrieval execu
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [proposed] [`docs/operations/internal-fallbacks-and-application-order.md`](../../docs/operations/internal-fallbacks-and-application-order.md) — Internal fallbacks and application folder order
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
@@ -268,6 +280,8 @@ Composes knowledge use cases, capability admission, preparation, retrieval execu
 - [reference] [`docs/architecture/transport-call-graph-refactor-snapshot-20260916.md`](../../docs/architecture/transport-call-graph-refactor-snapshot-20260916.md) — Dated snapshot of later transport-call-graph refactors; will go stale
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## preparation
 
@@ -290,6 +304,7 @@ Artifact conversion, immutable document nodes, admitted chunk profiles and recon
 - [reference] [`docs/operations/reviews/conversion.md`](../../docs/operations/reviews/conversion.md) — Conversion route (text, Docling, gated Unstructured) and receipt review record
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
+- [reference] [`knowledge/capture-conversion-and-custody.md`](../../knowledge/capture-conversion-and-custody.md) — Acquire source bytes and preserve conversion custody
 
 ## client
 
@@ -333,9 +348,12 @@ Composition root: configuration and identity resolution, shared knowledge and ve
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
+- [reference] [`knowledge/execution-profiles-and-transports.md`](../../knowledge/execution-profiles-and-transports.md) — Choose server, local or remote CLI execution
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
+- [reference] [`docs/architecture/technology-stack.md`](../../docs/architecture/technology-stack.md) — Pinned technology stack and runtime definitions
 
 ## contracts
 
@@ -357,6 +375,7 @@ Versioned Zod schemas and types shared by transports, application composition, a
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [reference] [`docs/verification/INTEGRATION-GUIDE.md`](../../docs/verification/INTEGRATION-GUIDE.md) — Cross-service verification integration
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+- [reference] [`docs/architecture/technology-stack.md`](../../docs/architecture/technology-stack.md) — Pinned technology stack and runtime definitions
 
 ## knowledge-db
 
@@ -380,7 +399,7 @@ Pinned schema workspace navigation, bounded read snapshots and deterministic ing
 
 **Architecture and detailed docs:**
 
-- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Next: 5P, 5D1 slices
+- [proposed] [`docs/operations/package-cleanup/UNIT-5-SLICES.md`](../../docs/operations/package-cleanup/UNIT-5-SLICES.md) — Remaining cleanup: 5D folds, Jev and executor retirement
 - [reference] [`docs/operations/reviews/db-read.md`](../../docs/operations/reviews/db-read.md) — Bounded read executor and space manifest review record
 - [reference] [`knowledge/schema-read-and-ingestion.md`](../../knowledge/schema-read-and-ingestion.md) — Read a bounded knowledge snapshot or apply evidence-backed changes
 - [reference] [`knowledge/preparation-and-publication.md`](../../knowledge/preparation-and-publication.md) — Prepare source material and publish a retrieval version
@@ -436,6 +455,7 @@ Policy-scoped search, evidence-bound projections, embedding routes and receipts,
 - [reference] [`knowledge/retrieval-and-evidence.md`](../../knowledge/retrieval-and-evidence.md) — Retrieve supported results and replay citations
 - [accepted] [`docs/architecture/0002-deterministic-preparation.md`](../../docs/architecture/0002-deterministic-preparation.md) — Preparation pipeline
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
+- [reference] [`knowledge/evaluation-and-publication-gates.md`](../../knowledge/evaluation-and-publication-gates.md) — Evaluate, admit publication and verify rollback
 
 ## evaluation
 
@@ -455,6 +475,7 @@ Retrieval evaluations, benchmark statistics/comparisons, and human review struct
 **Architecture and detailed docs:**
 
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
+- [reference] [`knowledge/evaluation-and-publication-gates.md`](../../knowledge/evaluation-and-publication-gates.md) — Evaluate, admit publication and verify rollback
 
 ## persistence
 
@@ -481,6 +502,9 @@ Postgres, storage, operation ledger, verification records, and runtime wiring ad
 - [accepted] [`docs/architecture/0004-transport-call-graph.md`](../../docs/architecture/0004-transport-call-graph.md) — In-process servers call application; out-of-process callers use KnowledgeClient HTTP
 - [reference] [`docs/verification/OPERATOR-RUNBOOK.md`](../../docs/verification/OPERATOR-RUNBOOK.md) — Verification recovery and operator actions
 - [reference] [`docs/operations/runbooks.md`](../../docs/operations/runbooks.md) — Worker restart, leases, callbacks, incidents
+- [reference] [`knowledge/capture-conversion-and-custody.md`](../../knowledge/capture-conversion-and-custody.md) — Acquire source bytes and preserve conversion custody
+- [reference] [`knowledge/evaluation-and-publication-gates.md`](../../knowledge/evaluation-and-publication-gates.md) — Evaluate, admit publication and verify rollback
+- [reference] [`docs/architecture/technology-stack.md`](../../docs/architecture/technology-stack.md) — Pinned technology stack and runtime definitions
 
 ## policy
 
@@ -507,6 +531,7 @@ Authorization, capability, retrieval, promotion, selection-eligibility, and veri
 - [accepted] [`docs/architecture/0003-embedding-retrieval-evaluation.md`](../../docs/architecture/0003-embedding-retrieval-evaluation.md) — Embedding, retrieval, evaluation
 - [reference] [`docs/verification/README.md`](../../docs/verification/README.md) — Verification behavior and invariants
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
+- [reference] [`knowledge/evaluation-and-publication-gates.md`](../../knowledge/evaluation-and-publication-gates.md) — Evaluate, admit publication and verify rollback
 
 ## testkit
 
@@ -777,6 +802,8 @@ Pinned Docling Serve conversion deployment boundary.
 - [proposed] [`docs/operations/conversion-and-chunking.md`](../../docs/operations/conversion-and-chunking.md) — Conversion route and admitted chunk profiles; vendor MCP import; no session-local splitters
 - [accepted] [`docs/architecture/0001-runtime-and-deployment.md`](../../docs/architecture/0001-runtime-and-deployment.md) — Runtime, transport, and deployment changes
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
+- [reference] [`knowledge/capture-conversion-and-custody.md`](../../knowledge/capture-conversion-and-custody.md) — Acquire source bytes and preserve conversion custody
+- [reference] [`docs/architecture/technology-stack.md`](../../docs/architecture/technology-stack.md) — Pinned technology stack and runtime definitions
 
 ## parser
 
@@ -799,6 +826,8 @@ Isolated native PDF geometry and HTML DOM parser (folder renamed from services/v
 - [reference] [`docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md`](../../docs/operations/package-cleanup/UNIT-4-APPLICATION-ORDER-AND-CATALOG.md) — Unit 4 folders, names, catalog
 - [reference] [`docs/verification/DEPLOYMENT.md`](../../docs/verification/DEPLOYMENT.md) — Verification deployment and rollback
 - [reference] [`docs/security.md`](../../docs/security.md) — Authentication, capability admission, parser isolation
+- [reference] [`knowledge/capture-conversion-and-custody.md`](../../knowledge/capture-conversion-and-custody.md) — Acquire source bytes and preserve conversion custody
+- [reference] [`docs/architecture/technology-stack.md`](../../docs/architecture/technology-stack.md) — Pinned technology stack and runtime definitions
 
 ## script-proofs
 
@@ -985,7 +1014,7 @@ No module-specific architecture document registered. Do not infer a design decis
 Conversion route, node inspection, admitted chunk-profile preview, content linking, embedding and promotion-proposal procedure over already stored bytes; a routing receipt or chunk preview is not admission.
 
 **Enter:** [`skills/knowledge-preparation-and-promotion/SKILL.md`](../../skills/knowledge-preparation-and-promotion/SKILL.md), [`skills/knowledge-preparation-and-promotion/cli-reference.md`](../../skills/knowledge-preparation-and-promotion/cli-reference.md), [`skills/knowledge-preparation-and-promotion/mcp-reference.md`](../../skills/knowledge-preparation-and-promotion/mcp-reference.md), [`skills/knowledge-preparation-and-promotion/examples.md`](../../skills/knowledge-preparation-and-promotion/examples.md)
-**Interface:** knowledge-preparation-and-promotion skill 1.3.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents.
+**Interface:** knowledge-preparation-and-promotion skill 1.4.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
@@ -1005,7 +1034,7 @@ No module-specific architecture document registered. Do not infer a design decis
 Scoped retrieval planning, search, per-stage explanation, immutable evidence-packet reads and citation replay through the platform CLI and MCP.
 
 **Enter:** [`skills/knowledge-retrieval-and-evidence/SKILL.md`](../../skills/knowledge-retrieval-and-evidence/SKILL.md)
-**Interface:** knowledge-retrieval-and-evidence skill 1.1.0: platform retrieve plan/search/explain/run/packet/citations and operation status; MCP retrieval.plan_validate/search/explain_run/read_run/read_evidence_packet/replay_citations.
+**Interface:** knowledge-retrieval-and-evidence skill 1.2.0: ks knowledge retrieve plan/search/explain/run/packet/citations; MCP knowledge_retrieve_plan/search/explain/run/packet/citations.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.
 **Declared internal package dependencies:** none declared
@@ -1158,6 +1187,7 @@ Jev decision provider adapters, captured input snapshots, local SQLite queue and
 **Architecture and detailed docs:**
 
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+- [reference] [`knowledge/jev-decisions-and-workers.md`](../../knowledge/jev-decisions-and-workers.md) — Closed-choice decisions and Jev worker lifecycle
 
 ## jev-service
 
@@ -1178,6 +1208,8 @@ Dedicated Jev HTTP/Streamable HTTP MCP and stdio host, plus HTTP CLI through the
 **Architecture and detailed docs:**
 
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+- [reference] [`knowledge/jev-decisions-and-workers.md`](../../knowledge/jev-decisions-and-workers.md) — Closed-choice decisions and Jev worker lifecycle
+- [reference] [`docs/architecture/current-state.md`](../../docs/architecture/current-state.md) — Current implementation, ownership and remaining cleanup
 
 ## skill-jev-system-one
 
@@ -1198,4 +1230,24 @@ Agent procedure for closed-choice tasks, captured input references, process work
 **Architecture and detailed docs:**
 
 - [reference] [`docs/architecture/modules/jev.md`](../../docs/architecture/modules/jev.md) — Jev processes, API, MCP, CLI and research
+
+## agent-maintenance
+
+**tools/maintenance** · tooling · implemented
+
+Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.
+
+**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs)
+**Interface:** Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands.
+**Package:** not a standalone package
+**Export subpaths:** none declared. Declared metadata; build outputs are not read.
+**Declared internal package dependencies:** none declared
+**Other runtime dependencies:** none declared
+**Reviewed runtime/data relationships:** none declared
+**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs)
+- A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt.
+
+**Architecture and detailed docs:**
+
+- [reference] [`docs/operations/agent-maintenance.md`](../../docs/operations/agent-maintenance.md) — Git-driven maintenance, provider setup and test evidence
 <!-- END GENERATED: semantic-map -->

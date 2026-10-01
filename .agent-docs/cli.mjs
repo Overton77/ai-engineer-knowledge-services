@@ -4,7 +4,7 @@ import { existsSync, lstatSync, mkdirSync, openSync, opendirSync, closeSync, rea
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planSemanticMaps } from './semantic-maps.mjs';
-import { planKnowledge, readKnowledge, searchKnowledge } from './knowledge.mjs';
+import { planKnowledge, readKnowledge, searchKnowledge, contextKnowledge } from './knowledge.mjs';
 
 export const VERSION = '1.2.0';
 const MAX_FILE_BYTES = 1024 * 1024;
@@ -22,7 +22,24 @@ const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const normalize = (text) => text.replace(/\r\n/g, '\n');
 const sorted = (items) => [...items].sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
 const semanticGenerator = readFileSync(new URL('./semantic-maps.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-const supportFiles = ['knowledge.mjs', 'vendor/js-yaml.mjs', 'vendor/js-yaml.LICENSE', 'vendor/README.md'];
+const supportFiles = [
+  "knowledge.mjs",
+  "vendor/js-yaml.mjs",
+  "vendor/js-yaml.LICENSE",
+  "vendor/README.md",
+  "retrieval.test.mjs",
+  "retrieval-benchmark.mjs",
+  "fixtures/ks-context-v1/manifest.json",
+  "fixtures/ks-context-v1/queries.json",
+  "fixtures/ks-context-v1/README.md",
+  "fixtures/ks-context-v1/baseline-knowledge.mjs",
+  "fixtures/ks-context-v1/knowledge/service-boundaries.md",
+  "fixtures/ks-context-v1/knowledge/schema-read-and-ingestion.md",
+  "fixtures/ks-context-v1/knowledge/preparation-and-publication.md",
+  "fixtures/ks-context-v1/knowledge/retrieval-and-evidence.md",
+  "fixtures/ks-context-v1/knowledge/verification-and-admission.md",
+  "fixtures/ks-context-v1/knowledge/durable-execution-and-recovery.md"
+];
 const supportSources = Object.fromEntries(supportFiles.map((path) => [path, normalize(readFileSync(new URL(path, import.meta.url), 'utf8'))]));
 
 function requireValue(condition, message) {
@@ -110,6 +127,7 @@ function validateConfig(config) {
     requireValue(config[field].every((item) => typeof item === 'string' && item.length > 0 && item.length < 2000), `Invalid ${field} entry`);
   }
   requireValue(config.docs.length > 0 && config.docs.every((doc) => typeof doc.path === 'string' && typeof doc.task === 'string' && doc.task.length > 0), 'Invalid documentation routes');
+  requireValue(config.docs.every((doc) => doc.navigation === undefined || typeof doc.navigation === 'boolean'), 'Document navigation must be boolean');
   requireValue(new Set(config.docs.map((doc) => doc.path)).size === config.docs.length, 'Duplicate documentation path');
 }
 
@@ -125,7 +143,7 @@ function compactIndex(docs) {
 }
 
 function renderRepository(config, semantic, knowledge) {
-  const routes = config.docs.filter((doc) => !knowledge.paths.includes(doc.path));
+  const routes = config.docs.filter((doc) => doc.navigation !== false && !knowledge.paths.includes(doc.path));
   return [
     '## Repository guide', '', config.purpose, '', `Lifecycle: ${config.lifecycle}`, '',
     'Read the relevant documents below before changing behavior. Inspect more-specific AGENTS.md files in the destination directory. Accepted docs record settled decisions; proposed, reference, and deprecated docs are labelled context. The map is navigation, not proof of implementation or deployment.', '',
@@ -338,7 +356,12 @@ export function search(options) {
   validateConfig(config);
   requireValue(config.knowledge, 'No knowledge bundle registered for this repository');
   const bundle = readKnowledge(config, { read: (path) => read(root, path), directory: (path) => directory(root, path) });
-  return searchKnowledge(bundle, options);
+  if (options.command === 'context') requireValue((options.limit ?? 5) <= 5, 'Context limit must be 1–5');
+  const result = searchKnowledge(bundle, options);
+  if (options.command !== 'context') return result;
+  const modules = config.codeMap ? parse(root, config.codeMap).modules : [];
+  const provenance = existsSync(safePath(root, PROVENANCE)) ? parse(root, PROVENANCE) : {};
+  return contextKnowledge(bundle, result, { read: (path) => read(root, path) }, { modules, provenance, docs: config.docs });
 }
 
 function parseArgs(args) {
@@ -352,7 +375,7 @@ function parseArgs(args) {
       requireValue(['json', 'text'].includes(value), 'Format must be json or text');
       options.format = value;
     } else if (['--query', '--type', '--tag', '--limit'].includes(flag)) {
-      requireValue(command === 'search', `${flag} is only supported by search`);
+      requireValue(['search', 'context'].includes(command), `${flag} is only supported by search`);
       options[flag.slice(2)] = flag === '--limit' ? Number(value) : value;
     } else {
       requireValue(['--repo', '--workspace'].includes(flag) && !options.scope, 'Specify exactly one --repo or --workspace');
@@ -361,16 +384,16 @@ function parseArgs(args) {
     }
   }
   requireValue(options.root, 'Usage: node cli.mjs check|build|audit --repo PATH|--workspace PATH [--format json]');
-  requireValue(command !== 'search' || options.scope === 'repo', 'Search requires --repo');
+  requireValue(!['search', 'context'].includes(command) || options.scope === 'repo', 'Search requires --repo');
   return options;
 }
 
 function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const result = options.command === 'search' ? search(options) : run(options);
+    const result = ['search', 'context'].includes(options.command) ? search(options) : run(options);
     if (options.format === 'json') process.stdout.write(json(result));
-    else if (options.command === 'search') {
+    else if (['search', 'context'].includes(options.command)) {
       for (const item of result.results) {
         process.stdout.write(`${item.path} — ${item.title} [${item.type}; ${item.status}]\n`);
         for (const snippet of item.snippets) process.stdout.write(`  ${item.path}:${snippet.line}: ${snippet.text}\n`);

@@ -15,7 +15,8 @@
   ],
   "commands": [
     "corepack pnpm verify",
-    "Gates: tools/quality/README.md"
+    "Gates: tools/quality/README.md",
+    "corepack pnpm test:maintenance && corepack pnpm test:context"
   ],
   "docs": [
     {
@@ -25,7 +26,7 @@
     },
     {
       "path": "docs/operations/package-cleanup/UNIT-5-SLICES.md",
-      "task": "Next: 5P, 5D1 slices",
+      "task": "Remaining cleanup: 5D folds, Jev and executor retirement",
       "status": "proposed",
       "modules": [
         "verification-executor",
@@ -49,7 +50,8 @@
         "sources",
         "client",
         "parser"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/package-cleanup/FINAL-LAYOUT.md",
@@ -81,7 +83,8 @@
         "worker",
         "verification-executor",
         "docling"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/acquisition.md",
@@ -90,7 +93,8 @@
       "modules": [
         "sources",
         "worker"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/conversion.md",
@@ -99,7 +103,8 @@
       "modules": [
         "preparation",
         "worker"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/retrieval.md",
@@ -107,7 +112,8 @@
       "status": "reference",
       "modules": [
         "retrieval"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/vector-backends.md",
@@ -115,7 +121,8 @@
       "status": "reference",
       "modules": [
         "retrieval"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/projections.md",
@@ -123,7 +130,8 @@
       "status": "reference",
       "modules": [
         "retrieval"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/embeddings.md",
@@ -131,7 +139,8 @@
       "status": "reference",
       "modules": [
         "retrieval"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/policy.md",
@@ -139,7 +148,8 @@
       "status": "reference",
       "modules": [
         "policy"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/db-read.md",
@@ -147,7 +157,8 @@
       "status": "reference",
       "modules": [
         "knowledge-db"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/conversion-and-chunking.md",
@@ -157,7 +168,8 @@
         "preparation",
         "application",
         "docling"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "knowledge/service-boundaries.md",
@@ -303,7 +315,8 @@
         "cli",
         "client",
         "application"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/verification/README.md",
@@ -384,7 +397,8 @@
         "verification-deterministic",
         "verification-extraction",
         "skill-knowledge-verification"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "docs/operations/reviews/verification-executor.md",
@@ -393,7 +407,8 @@
       "modules": [
         "verification-executor",
         "skill-verification-executor"
-      ]
+      ],
+      "navigation": false
     },
     {
       "path": "packages/verification/CAPABILITIES.md",
@@ -423,6 +438,94 @@
         "client",
         "skill-jev-system-one"
       ]
+    },
+    {
+      "path": "knowledge/execution-profiles-and-transports.md",
+      "task": "Choose server, local or remote CLI execution",
+      "status": "reference",
+      "modules": [
+        "host",
+        "application",
+        "api",
+        "mcp",
+        "cli",
+        "verification-executor"
+      ]
+    },
+    {
+      "path": "knowledge/capture-conversion-and-custody.md",
+      "task": "Acquire source bytes and preserve conversion custody",
+      "status": "reference",
+      "modules": [
+        "sources",
+        "preparation",
+        "parser",
+        "docling",
+        "persistence"
+      ]
+    },
+    {
+      "path": "knowledge/evaluation-and-publication-gates.md",
+      "task": "Evaluate, admit publication and verify rollback",
+      "status": "reference",
+      "modules": [
+        "evaluation",
+        "retrieval",
+        "persistence",
+        "policy"
+      ]
+    },
+    {
+      "path": "knowledge/jev-decisions-and-workers.md",
+      "task": "Closed-choice decisions and Jev worker lifecycle",
+      "status": "reference",
+      "modules": [
+        "jev",
+        "jev-service"
+      ]
+    },
+    {
+      "path": "knowledge/agent-skills-and-consumer-readiness.md",
+      "task": "Skill selection, packaging and DeepAgents readiness",
+      "status": "reference",
+      "modules": [
+        "verification-executor",
+        "cli"
+      ]
+    },
+    {
+      "path": "docs/architecture/current-state.md",
+      "task": "Current implementation, ownership and remaining cleanup",
+      "status": "reference",
+      "modules": [
+        "application",
+        "host",
+        "api",
+        "mcp",
+        "worker",
+        "verification-executor",
+        "jev-service"
+      ]
+    },
+    {
+      "path": "docs/architecture/technology-stack.md",
+      "task": "Pinned technology stack and runtime definitions",
+      "status": "reference",
+      "modules": [
+        "host",
+        "contracts",
+        "persistence",
+        "parser",
+        "docling"
+      ]
+    },
+    {
+      "path": "docs/operations/agent-maintenance.md",
+      "task": "Git-driven maintenance, provider setup and test evidence",
+      "status": "reference",
+      "modules": [
+        "agent-maintenance"
+      ]
     }
   ],
   "watch": [
@@ -445,39 +548,54 @@
     "root": "knowledge",
     "routes": [
       {
-        "task": "Ownership and caller contracts",
+        "task": "Ownership, profiles and caller contracts",
         "concepts": [
-          "service-boundaries"
+          "service-boundaries",
+          "execution-profiles-and-transports"
         ]
       },
       {
-        "task": "Schema, bounded reads, canonical writes",
+        "task": "Capture, convert and prepare faithful content",
+        "concepts": [
+          "capture-conversion-and-custody",
+          "preparation-and-publication"
+        ]
+      },
+      {
+        "task": "Schema, bounded reads and canonical ingestion",
         "concepts": [
           "schema-read-and-ingestion"
         ]
       },
       {
-        "task": "Capture, prepare, publish",
+        "task": "Retrieve evidence, evaluate and publish",
         "concepts": [
-          "preparation-and-publication"
+          "retrieval-and-evidence",
+          "evaluation-and-publication-gates"
         ]
       },
       {
-        "task": "Search, evidence packets, citation replay",
-        "concepts": [
-          "retrieval-and-evidence"
-        ]
-      },
-      {
-        "task": "Claims, deterministic failures, admission",
+        "task": "Verify claims and policy admission",
         "concepts": [
           "verification-and-admission"
         ]
       },
       {
-        "task": "Leases, retries, cancellation, repair",
+        "task": "Leases, retries, cancellation and recovery",
         "concepts": [
           "durable-execution-and-recovery"
+        ]
+      },
+      {
+        "task": "Jev decisions and workers",
+        "concepts": [
+          "jev-decisions-and-workers"
+        ]
+      },
+      {
+        "task": "Agent skills and consumer readiness",
+        "concepts": [
+          "agent-skills-and-consumer-readiness"
         ]
       }
     ]
