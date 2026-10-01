@@ -4,14 +4,6 @@ title: Durable execution and recovery
 description: How verification recovery preserves authority, scope, and bounded repair work.
 tags: [verification, recovery, durability, custody, operations]
 owner: ai-engineer-knowledge-services
-aliases: [retry, cancellation, repair reservation, recovery case, worker restart]
-questions:
-  - When is a failed verification retry safe?
-  - Why does a recovery case preserve the original denominator?
-  - Does reading recovery evidence enable repair execution?
-implementation_status: partial
-decision_status: reference
-validation_status: source-and-test-inspected
 okf_target: "0.2"
 sources:
   - id: verification-guide
@@ -205,14 +197,6 @@ and exercised by
 [`recovery-authority.test.ts`](../apps/verification-executor/src/knowledge/recovery-authority.test.ts).
 
 ## Durable recovery flow
-
-Availability must be checked independently of the case state. A notification
-or read-only authority composition can retain and inspect a case without the
-ports needed to dispatch repairs. Use the
-[execution-profile guide](execution-profiles-and-transports.md) and the
-[operation catalog](../packages/application/src/operations/catalog.ts) to
-identify executor-only and gated capabilities. Reading a valid receipt does
-not install an execution runtime or authorize a new provider call.
 
 1. The executor authorizes the completed run against its recovery artifact.
 2. It builds the authoritative initial batch and triages custody-bound results,

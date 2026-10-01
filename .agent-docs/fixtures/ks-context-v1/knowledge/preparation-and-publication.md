@@ -4,14 +4,6 @@ title: Knowledge preparation and publication
 description: How admitted source material becomes traceable, policy-gated knowledge and a versioned retrieval publication.
 tags: [knowledge, preparation, provenance, publication]
 owner: ai-engineer-knowledge-services
-aliases: [prepare preview, document nodes, chunk lineage, promotion]
-questions:
-  - What does preparation produce before embedding or publication?
-  - Does a successful conversion allow canonical ingestion?
-  - How are chunks traced back to immutable source material?
-implementation_status: implemented-with-admission-gates
-decision_status: reference
-validation_status: source-and-test-inspected
 sources:
   - id: preparation-repository
     resource: ../packages/persistence/src/preparation.ts
@@ -44,13 +36,6 @@ The service needs a repeatable answer to three practical questions:
 The answer is a chain of immutable identities, bounded procedures, and receipts. A successful conversion, embedding, or test is useful evidence about processing; it is not a publication decision.
 
 ## Core flow
-
-For acquisition and parser boundaries, start with
-[capture, conversion and custody](capture-conversion-and-custody.md).
-For frozen cases and publication authority, use
-[evaluation and publication gates](evaluation-and-publication-gates.md).
-This page connects those concerns without turning conversion or evaluation
-success into authority to write or publish.
 
 ```text
 source identity and captured bytes

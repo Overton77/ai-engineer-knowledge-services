@@ -1,14 +1,14 @@
 # Knowledge Services code quality and delivery process
 
-Status: **Proposed; implementation waits for completion of the pre–Mission Control Knowledge Services sprint.**
+Status: **Proposed workflow; some implementation foundations are already delivered.**
 
-Owner: the main developer. This document records the requested follow-up process, not an audit of current completeness or a claim that delivery controls are installed. Creating this document does not start refactoring, change CI, or schedule automatic work.
+Owner: the main developer. This document records the broader delivery process, not a claim that every control is installed. Q0 delivered formatting, lint and boundary gates; 5P delivered transport structure and parity/error checks. See [current architecture](../architecture/current-state.md) and [quality tooling](../../tools/quality/README.md). Creating or updating this prose does not schedule automatic work.
 
 ## Purpose and sequence
 
 Knowledge Services supplies the underlying research and ingestion capabilities used by agents and other clients. Its code must be easy for humans and agents to read, its interfaces must be demonstrable, and its behavior must remain dependable when external providers change or fail.
 
-First concrete slice (still proposed, not started): [internal fallbacks, inspection, conversion, and application order](internal-fallbacks-and-application-order.md). Conversion and chunking policy for that slice: [conversion route and admitted chunk profiles](conversion-and-chunking.md).
+The earlier [internal fallbacks, inspection, conversion, and application order](internal-fallbacks-and-application-order.md) proposal is historical planning context; consult the [cleanup continuation](package-cleanup/NEXT-PACKAGE-CLEANUP.md), current source and accepted decisions before treating any item as pending. [Conversion route and admitted chunk profiles](conversion-and-chunking.md) retains its own proposal status.
 
 After the current sprint is complete:
 
@@ -132,7 +132,7 @@ Implement this workflow incrementally and test the controls before treating it a
 | Review | Review the diff against requirements, readability, contracts, examples, docs, affected skill scenarios and consumer pins, test evidence, and operational impact. Use a PR by default; the main developer can self-review. |
 | Merge and delivery | Confirm relevant checks against the final revision, merge deliberately, and follow existing deployment/rollback procedures when deployment is in scope. |
 
-The existing repository-wide command is `corepack pnpm verify`; its current script runs typecheck, tests, and build. Inspect its definition when adopting the process. Do not assume it includes every integration, example, provider, or documentation check. Build an explicit check matrix from existing scripts before adding missing automation. Shared database schema changes remain owned by `ai-engineer-db-contract`; preserve the populated shared database and use disposable environments for destructive proofs.
+The repository-wide command is `corepack pnpm verify`; its current script runs formatting, the lint ratchet, typecheck, tests, build, dependency boundaries and verification examples. Inspect [package.json](../../package.json) when adopting the process. It does not imply every database integration, live provider, skill or documentation check ran. Build an explicit check matrix from existing scripts before adding automation. Shared database schema changes remain owned by `ai-engineer-db-contract`; preserve the populated shared database and use disposable environments for destructive proofs.
 
 Proposed enforcement consists of a concise change/PR template, reliable local commands, CI checks for objective requirements, and documented review criteria. CI can verify runnable examples and documentation freshness; a human or reviewing agent must judge readability and whether the example is useful. Configure branch protections only as part of the later workflow setup, preserving the main developer's override route.
 

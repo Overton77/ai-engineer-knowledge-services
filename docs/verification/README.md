@@ -58,7 +58,7 @@ packages/application           use-case composition, admission, catalogs
 apps/api | apps/cli | apps/mcp | apps/worker
 ```
 
-- Persistence, schema workspace and verification executor use the pinned `@aiengineer/database-contract` **0.4.1** (vendored tgz), migration head `20260913020000`. Migrations live in `../ai-engineer-db-contract`. Apps do not own a second schema tree.
+- Persistence, knowledge-db and verification executor currently pin the vendored `@aiengineer/database-contract` **0.4.16**; inspect the [persistence manifest](../../packages/persistence/package.json), [knowledge-db manifest](../../packages/knowledge-db/package.json) and [executor manifest](../../apps/verification-executor/package.json). Migrations live in `../ai-engineer-db-contract`. The package pin does not attest a live database's migration head; verify the target head through the contract workspace before operating. Apps do not own a second schema tree.
 - Object storage bucket: `VERIFICATION_STORAGE_BUCKET` (default `ai-engineer-cloud-bucket`). Object key: `{tenantId}/{digest[7:9]}/{digest[7:]}` where digest is the hex after `sha256:`.
 - Mission Control / Temporal in `../ai-engineer-mission-control` is the cross-service orchestrator (`verificationWorkflow`, launch `REJECT_DUPLICATE`). KS owns algorithms and durable execution; MC owns dispatch, cancellation, and retry classification.
 

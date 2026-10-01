@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { posix } from 'node:path';
-import { load, JSON_SCHEMA } from './vendor/js-yaml.mjs';
+import { load, JSON_SCHEMA } from '../../vendor/js-yaml.mjs';
 
 const MAX_CONCEPTS = 40;
 const MAX_EVIDENCE_FILES = 256;
@@ -25,7 +25,6 @@ function parseConcept(doc, text, root) {
   check(singleLine(metadata.title) && singleLine(metadata.description), `Navigation requires one-line title and description: ${doc.path}`);
   check(metadata.tags === undefined || (Array.isArray(metadata.tags) && metadata.tags.length <= 30 && metadata.tags.every(singleLine)), `Invalid navigation tags: ${doc.path}`);
   check(metadata.status === undefined || metadata.status === (doc.status ?? 'reference'), `Knowledge status disagrees with registry: ${doc.path}`);
-  for (const field of ['aliases', 'questions']) check(metadata[field] === undefined || (Array.isArray(metadata[field]) && metadata[field].length <= 30 && metadata[field].every(singleLine)), `Invalid navigation ${field}: ${doc.path}`);
   return { ...doc, id: posix.relative(root, doc.path).slice(0, -3), metadata, text: normalized, bodyStart: match[0].split('\n').length - 1 };
 }
 
@@ -90,7 +89,6 @@ function renderIndex(bundle) {
     'node .agent-docs/cli.mjs search --repo . --query "admission" --format json',
     `rg -n -i -C 2 "admission|deterministic" ${bundle.root} -g "*.md"`, '```', '',
     'The executable searches registered concepts only, using current files. It ranks title, description, tags, headings, and body matches; returns paths and line snippets; accepts --type, --tag and --limit. It is lexical search, not embeddings. No match exits 1; invalid input exits 2. Try a domain term from the routes or rg when wording differs.', '',
-    'For bounded source/test context: `node .agent-docs/cli.mjs context --repo . --query "worker lease" --limit 2 --format json`.', '',
     '## Maintain this bundle', '',
     'Edit concept Markdown and its registration in `.agent-docs/config.json`; keep `type`, `title`, and `description` in YAML frontmatter. Types are open vocabulary. Acceptance status stays in the registry. Retain source/test links and identify uncertainties. Build and check with the repository-local CLI. Do not edit this generated listing.', '',
     'Build validates the local navigation profile and cited local file paths; provenance hashes cited files so changed evidence requires review. It does not prove prose is semantically correct. Reconcile code and accepted architecture rather than refreshing hashes blindly.', '',
@@ -137,78 +135,26 @@ export function planKnowledge(config, io) {
     inputs: Object.fromEntries([...cache].sort(([a], [b]) => compare(a, b)).map(([path, text]) => [path, hash(text)])), paths: bundle.concepts.map((concept) => concept.path) };
 }
 
-// Domain words remain searchable; conversational filler never supplies relevance.
-const STOP_WORDS = new Set('a an the i we you it is are was were be been do does did how what where when why which who can should could would to of for and or in on at by with from its this that as after into'.split(' '));
-export function queryTokens(text) {
-  const expanded = text.normalize('NFKC').replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
-  return [...new Set((expanded.match(/[\p{L}\p{N}]+/gu) ?? []).filter((term) => !STOP_WORDS.has(term)))];
-}
-
-function fieldsFor(concept) {
-  const { title, description, tags = [], aliases = [], questions = [] } = concept.metadata;
-  const body = concept.text.split('\n').slice(concept.bodyStart).join('\n');
-  return [[title, 5], [description, 3], [tags.join(' '), 4], [aliases.join(' '), 5],
-    [questions.join(' '), 4], [body.match(/^#+ .+$/gm)?.join(' ') ?? '', 2], [body, 1]];
-}
-
-function rankConcept(concept, terms, frequencies, count) {
-  const fields = fieldsFor(concept).map(([text, weight]) => ({ tokens: queryTokens(text), weight }));
-  const allTokens = new Set(fields.flatMap(({ tokens }) => tokens));
-  const matchedTerms = terms.filter((term) => allTokens.has(term));
-  const score = terms.reduce((sum, term) => {
-    const rarity = Math.log(1 + (count - (frequencies.get(term) ?? 0) + 0.5) / ((frequencies.get(term) ?? 0) + 0.5));
-    return sum + fields.reduce((value, field) => value + (field.tokens.includes(term) ? field.weight * rarity : 0), 0);
-  }, 0) * (matchedTerms.length / Math.max(1, terms.length));
-  const snippets = concept.text.split('\n').map((text, index) => ({ line: index + 1, text: text.slice(0, 280) }))
-    .filter((item) => item.line > concept.bodyStart && queryTokens(item.text).some((term) => terms.includes(term)))
-    .sort((a, b) => queryTokens(b.text).filter((term) => terms.includes(term)).length - queryTokens(a.text).filter((term) => terms.includes(term)).length || a.line - b.line).slice(0, 3);
-  return { path: concept.path, id: concept.id, title: concept.metadata.title, type: concept.metadata.type,
-    status: concept.status ?? 'reference', score, matchedTerms, snippets };
+function rankConcept(concept, terms) {
+  const { title, description, tags = [] } = concept.metadata;
+  const lines = concept.text.split('\n');
+  const fields = [[title, 12], [description, 8], [tags.join(' '), 10], [lines.filter((line) => /^#+ /.test(line)).join(' '), 6], [concept.text, 1]];
+  const matched = terms.filter((term) => concept.text.toLowerCase().includes(term));
+  const score = matched.length * 20 + fields.reduce((sum, [text, weight]) => sum + terms.filter((term) => text.toLowerCase().includes(term)).length * weight, 0);
+  const snippets = lines.map((text, index) => ({ line: index + 1, text: text.slice(0, 280) }))
+    .filter((item) => item.line > concept.bodyStart && terms.some((term) => item.text.toLowerCase().includes(term)))
+    .sort((a, b) => terms.filter((term) => b.text.toLowerCase().includes(term)).length - terms.filter((term) => a.text.toLowerCase().includes(term)).length || a.line - b.line).slice(0, 3);
+  return { path: concept.path, id: concept.id, title, type: concept.metadata.type, status: concept.status ?? 'reference', score, matchedTerms: matched, snippets };
 }
 
 export function searchKnowledge(bundle, options) {
   check(typeof options.query === 'string' && options.query.trim().length > 0 && options.query.length <= 200, 'Search requires a query of 1–200 characters');
-  check(/[\p{L}\p{N}]/u.test(options.query), 'Search query needs at least one word');
-  const terms = queryTokens(options.query);
+  const terms = [...new Set(options.query.toLowerCase().match(/[\p{L}\p{N}_-]+/gu) ?? [])];
+  check(terms.length > 0, 'Search query needs at least one word');
   const limit = options.limit ?? 5;
   check(Number.isInteger(limit) && limit >= 1 && limit <= 20, 'Search limit must be 1–20');
-  const frequencies = new Map(terms.map((term) => [term, bundle.concepts.filter((concept) => fieldsFor(concept).some(([text]) => queryTokens(text).includes(term))).length]));
   const results = bundle.concepts.filter((concept) => (!options.type || concept.metadata.type === options.type) && (!options.tag || concept.metadata.tags?.includes(options.tag)))
-    .map((concept) => rankConcept(concept, terms, frequencies, bundle.concepts.length)).filter((result) => result.matchedTerms.length > 0)
+    .map((concept) => rankConcept(concept, terms)).filter((result) => result.matchedTerms.length > 0)
     .sort((a, b) => b.score - a.score || compare(a.path, b.path));
   return { query: options.query, total: results.length, results: results.slice(0, limit), exitCode: results.length ? 0 : 1 };
-}
-
-export function contextKnowledge(bundle, result, io, registry = {}) {
-  let evidenceBytes = 0;
-  const evidenceCache = new Map();
-  const provenance = registry.provenance?.knowledge?.inputs ?? {};
-  const results = result.results.map((item) => {
-    const concept = bundle.concepts.find((candidate) => candidate.path === item.path);
-    const lines = concept.text.split('\n');
-    const sectionStarts = lines.flatMap((line, index) => /^#+ /.test(line) ? [index] : []);
-    const sections = [...new Set(item.snippets.map((snippet) => sectionStarts.filter((index) => index < snippet.line).at(-1)).filter((index) => index !== undefined))].slice(0, 2).map((start) => {
-      const end = sectionStarts.find((index) => index > start) ?? lines.length;
-      return { heading: lines[start].replace(/^#+ /, ''), line: start + 1, text: lines.slice(start, Math.min(end, start + 24)).join('\n').slice(0, 2400), truncated: end - start > 24 || lines.slice(start, Math.min(end, start + 24)).join('\n').length > 2400 };
-    });
-    const evidence = [...new Set(evidencePaths(concept, bundle.root))].filter((path) => !path.startsWith(bundle.root + '/')).slice(0, 24).map((path) => {
-      check(!path.endsWith('AGENTS.md') && path !== 'docs/agents/CODE-MAP.md', `Knowledge evidence cannot cite generated guidance: ${path}`);
-      if (!evidenceCache.has(path)) {
-        try {
-          const text = io.read(path); evidenceBytes += Buffer.byteLength(text);
-          check(evidenceBytes <= MAX_EVIDENCE_BYTES, 'Context evidence exceeds 8 MiB total');
-          evidenceCache.set(path, { path, hash: hash(text), freshness: provenance[path] === undefined ? 'untracked' : provenance[path] === hash(text) ? 'unchanged' : 'changed' });
-        } catch (error) {
-          if (error.code !== 'ENOENT') throw error;
-          evidenceCache.set(path, { path, freshness: 'missing' });
-        }
-      }
-      return evidenceCache.get(path);
-    });
-    const modules = (registry.modules ?? []).filter((module) => concept.modules?.includes(module.id)).slice(0, 8).map((module) => ({ id: module.id, path: module.path, state: module.state, entrypoints: module.entrypoints?.slice(0, 8), tests: module.tests?.slice(0, 8) }));
-    const architecture = (registry.docs ?? []).filter((doc) => !doc.path.startsWith(bundle.root + '/') && doc.modules?.some((id) => concept.modules?.includes(id))).map(({ path, status = 'reference', task }) => ({ path, status, task })).sort((a, b) => Number(b.status === 'accepted') - Number(a.status === 'accepted') || compare(a.path, b.path)).slice(0, 12);
-    const conceptFreshness = provenance[concept.path] === undefined ? 'untracked' : provenance[concept.path] === hash(concept.text) ? 'unchanged' : 'changed';
-    return { ...item, conceptFreshness, sections, evidence, evidenceTruncated: evidencePaths(concept, bundle.root).filter((path) => !path.startsWith(bundle.root + '/')).length > 24, modules, architecture };
-  });
-  return { ...result, results, freshnessMeaning: 'Hashes compare current files with the last generated provenance; unchanged does not attest semantic correctness or deployment.', bounded: { maximumSectionsPerResult: 2, maximumSectionCharacters: 2400, maximumEvidenceFilesPerResult: 24, maximumEvidenceBytes: MAX_EVIDENCE_BYTES } };
 }

@@ -8,6 +8,8 @@ Product context: [vision](../ai-engineer-meta/docs/product/00-vision.md) and [no
 
 Working-copy explanations of observed behavior live in [`knowledge/`](knowledge/index.md). Start there when you need a concept, not a file dump.
 
+For the implemented architecture after 5P, read [current state](docs/architecture/current-state.md) and [technology stack](docs/architecture/technology-stack.md). The [accepted cleanup layout](docs/operations/package-cleanup/FINAL-LAYOUT.md) describes the target; executor folds, `ks jev`, and canonical skill consolidation remain separate work.
+
 ## Contents
 
 - [What this is](#what-this-is)
@@ -84,9 +86,9 @@ skills + CLI  ──HTTP/MCP──►   verification-executor
                               │
      ┌───────────┬────────────┼────────────┬──────────────┐
      ▼           ▼            ▼            ▼              ▼
- acquisition  conversion  documents    chunking      embeddings
- retrieval    evaluation  verification  policy     vector-backends
- schema-workspace   db-read   ingestion   persistence   runtime
+ sources      preparation       retrieval       verification
+ evaluation   policy            knowledge-db    persistence
+ core         host              contracts       client / jev
                               │
               ┌───────────────┴────────────────┐
               ▼                                ▼
@@ -101,6 +103,7 @@ skills + CLI  ──HTTP/MCP──►   verification-executor
 | Worker | `apps/worker` | Durable executor for queued knowledge operations. Always-on container. Requires `WORKER_TENANT_ID`. |
 | CLI | `apps/cli` | `ks`: remote `knowledge`/`verify`/`db` commands through the HTTP API, the verification intent pipeline on the local file-store profile, and offline utilities. `pack:sandbox` builds the installable `ks` tarball. |
 | Verification executor | `apps/verification-executor` | Sandbox host: `knowledge-verify` plus schema/read/ingest. CLI, HTTP, MCP stdio, MCP Streamable HTTP. Default serve port **4310**. |
+| Jev | `apps/jev` | Dedicated `jev` CLI, HTTP/MCP host and bounded child workers over local SQLite; `ks jev` remains reserved for slice 5F. |
 | Docling | `services/docling` | Pinned conversion boundary. `docker compose -f services/docling/compose.yaml up -d` → `http://127.0.0.1:5001/health`. |
 | Verification parser | `services/parser` | Isolated native PDF/HTML parser for verification projections. Not Docling. |
 
@@ -112,15 +115,15 @@ Honest status from the code map and accepted docs. “Implemented” means the m
 
 | Capability | Owner | Maturity |
 |---|---|---|
-| Deterministic capture, convert, chunk, preview | `acquisition`, `conversion`, `documents`, `chunking`, `application` | Implemented. `vetOnly` / `preparePreview` stop at a review proposal. |
-| Embeddings, hybrid retrieval, evidence packets | `embeddings`, `retrieval`, `vector-backends` | Implemented. Canonical search is pgvector; evaluation uses frozen corpora. |
+| Deterministic capture, convert, chunk, preview | `packages/sources`, `packages/preparation`, `packages/application` | Implemented. `vetOnly` / `preparePreview` stop at a review proposal. |
+| Embeddings, hybrid retrieval, evidence packets | `packages/retrieval` (search, embeddings, projections and vector-backends submodules) | Implemented with explicit capability limits. Canonical search is pgvector; evaluation uses frozen corpora. |
 | Platform verification (`verification.v1`) | `verification*` packages, API, worker | Implemented for Mission Control integration. Quality promotion still gated (see [verification guide](docs/verification/README.md)). |
 | Sandbox verification (`knowledge-verify`) | `apps/verification-executor` | Implemented. Agent writes intents; executor compiles and seals. |
-| Schema navigation | `schema-workspace`, executor `knowledge schema *` | Implemented. Contract view, not live tenant data. |
-| Bounded reads | `db-read`, executor `knowledge db *` | **Partial.** Named-query snapshots work. `retrieval` operations on a read intent are skipped as `RETRIEVAL_UNAVAILABLE`. |
-| Canonical ingestion | `ingestion`, executor `knowledge ingest *` | **Partial.** Plan/apply/receipt as `executor_service` exist. Ingestion records `orchestration.operation_intent` / `receipt` and does **not** write `knowledge_service.operation` or an outbox. |
-| Agent skills | `skills/` | Ten versioned skills plus executor-local `knowledge-verify`. Pin `manifest.json`; do not fork semantics. |
-| Evaluation / publication | `evaluation`, `vector-backends`, platform CLI | Implemented as gates and pointer moves. Real embedding bundles remain `internal_exploratory` until promoted. |
+| Schema navigation | `packages/knowledge-db/src/schema-workspace`, executor `knowledge schema *` | Implemented. Contract view, not live tenant data. |
+| Bounded reads | `packages/knowledge-db/src/db-read`, executor `knowledge db *` | **Partial.** Named-query snapshots work. `retrieval` operations on a read intent are skipped as `RETRIEVAL_UNAVAILABLE`. |
+| Canonical ingestion | `packages/knowledge-db/src/ingestion`, executor `knowledge ingest *` | **Partial.** Plan/apply/receipt as `executor_service` exist. Ingestion records `orchestration.operation_intent` / `receipt` and does **not** write `knowledge_service.operation` or an outbox. |
+| Agent skills | `skills/` | Eleven root versioned skills plus executor-local `knowledge-verify`. Pin `manifest.json`; eight-skill consolidation and DeepAgents parser conformance remain planned. |
+| Evaluation / publication | `packages/evaluation`, `packages/retrieval/src/vector-backends`, platform CLI | Implemented as gates and pointer moves. Real embedding bundles remain `internal_exploratory` until promoted. |
 
 ## Prerequisites
 
@@ -145,7 +148,7 @@ From this repository root:
 
 ```bash
 corepack pnpm install
-corepack pnpm verify          # typecheck && test && build
+corepack pnpm verify          # format, lint ratchet, typecheck, tests, build, boundaries, examples
 corepack pnpm dev:api         # http://127.0.0.1:4100
 ```
 
@@ -179,7 +182,7 @@ What is portable today:
 - Versioned skills in `skills/` and the executor-local `knowledge-verify` skill
 - The OKF concept bundle in `knowledge/`
 - `@aiengineer/knowledge-contracts` and `@aiengineer/knowledge-client`
-- HTTP `/v1/*`, platform MCP tools, and the `knowledge` / `knowledge-verify` CLIs
+- HTTP `/v1/*`, platform MCP tools, `ks`, transitional executor `knowledge` / `knowledge-verify`, and dedicated `jev`
 - The sandbox tarball from `pnpm --filter @aiengineer/knowledge-verification-executor pack:sandbox`
 - Algorithm packages **in this repo** for local `pnpm verify` with fakes
 
@@ -271,7 +274,7 @@ After build: `node apps/cli/dist/index.js <group> <command…> ...` (`ks --help`
 
 ### 3. Skills in Cursor, Claude Code, or Codex
 
-`skills/` is the source of truth for the ten versioned skills. Consumers pin a released version. You may add runtime-specific wrapper instructions. You **must not** fork authority, evidence, tenant, or publication semantics.
+`skills/` is the source of truth for eleven root versioned skills; the executor-local `knowledge-verify` skill is additional. Consumers pin a released version. You may add runtime-specific wrapper instructions. You **must not** fork authority, evidence, tenant, or publication semantics.
 
 ```bash
 node skills/check.mjs          # exit 1 on drift, 2 if a catalog source cannot be read
@@ -279,6 +282,8 @@ node skills/check.mjs --json   # per-skill digests for a run pin
 ```
 
 The check reads the implemented catalogs (executor operation registry and MCP, platform `CLI_COMMANDS`, platform MCP tools) and fails when a skill names an unimplemented or unsupported command.
+
+It does not currently prove DeepAgents metadata-parser conformance: five skill files lack `name:`. The [agent-skills concept](knowledge/agent-skills-and-consumer-readiness.md) separates current catalog checks from the proposed Unit 6 loader and installed-bundle gates.
 
 Install pattern:
 
@@ -385,9 +390,10 @@ Canonical catalog: [`skills/README.md`](skills/README.md) and [`skills/manifest.
 | `knowledge-retrieval-and-evidence` | platform | Answer against a **published** scope with replayable packets. |
 | `knowledge-evaluation` | platform | Pre-publication quality gates and release **recommendations**. Does not move the pointer. |
 | `vector-store-management` | platform | Store lifecycle, document ingest, submit publish/rollback. Poll `operation status`. |
+| `jev-system-one` | Jev CLI, HTTP, MCP | Closed-choice judgments with captured inputs and bounded process workers; caller owns thresholds and escalation. |
 | `knowledge-verify` | executor only | Sandbox research capture → seal. Canonical path: `apps/verification-executor/skills/knowledge-verify/`. |
 
-Skills last, after internal acquisition / conversion / chunking fallbacks. See [docs/operations/internal-fallbacks-and-application-order.md](docs/operations/internal-fallbacks-and-application-order.md) (proposed).
+The planned eight-skill consolidation follows the remaining transport folds. See [agent skills and consumer readiness](knowledge/agent-skills-and-consumer-readiness.md); older internal-fallback proposals do not establish today's delivery order.
 
 MCP and CLI skills share one rule: no raw SQL beyond the guarded read-only capability, no secrets, no private bucket listing, no direct vector writes, no self-approval, no publication from the skill itself.
 
@@ -405,17 +411,17 @@ Representative platform HTTP families (see OpenAPI for the full set): `/v1/sourc
 
 ## Deterministic preparation pipeline
 
-Implemented as small, independently testable packages. Accepted design: [docs/architecture/0002-deterministic-preparation.md](docs/architecture/0002-deterministic-preparation.md).
+Implemented as focused submodules in the merged packages. Accepted design: [docs/architecture/0002-deterministic-preparation.md](docs/architecture/0002-deterministic-preparation.md).
 
 | Package | Role |
 |---|---|
-| `runtime` | Content-addressed artifacts plus operation, step, lease, event, and receipt ledger |
-| `acquisition` | Admitted acquisition contracts, SSRF-safe HTTP, deterministic fakes |
-| `conversion` | Deterministic text / transcript / Markdown / HTML; Unstructured and Docling adapters |
-| `documents` | Immutable structural nodes and verifiable locators |
-| `chunking` | Admitted profiles, reconstructable spans, quality checks, duplicate / boilerplate handling |
-| `projections` | Evidence-validated procedures for public domains and source-native sections |
-| `application` | `vetOnly` and `preparePreview` orchestration |
+| `packages/core` | Content-addressed artifacts and operation lifecycle primitives |
+| `packages/sources` | Admitted acquisition contracts, SSRF-safe HTTP, deterministic fakes; npm name remains `knowledge-acquisition` |
+| `packages/preparation/src/conversion` | Deterministic text / transcript / Markdown / HTML; Unstructured and Docling adapters |
+| `packages/preparation/src/documents` | Immutable structural nodes and verifiable locators |
+| `packages/preparation/src/chunking` | Admitted profiles, reconstructable spans, quality checks, duplicate / boilerplate handling |
+| `packages/retrieval/src/projections` | Evidence-validated procedures for public domains and source-native sections |
+| `packages/application` | `vetOnly` and `preparePreview` orchestration |
 
 `preparePreview` **does not** embed, publish, or write canonical records. It stops at a curation proposal. Publication is a later, evaluated pointer move.
 
@@ -446,7 +452,7 @@ Guide: [docs/verification/README.md](docs/verification/README.md). Recovery: [do
 | [`ai-engineer-db-contract`](../ai-engineer-db-contract) | Canonical shared schema. KS consumes the pin. Do not add app-local migrations or generated `Database` types. |
 | [`ai-engineer-mission-control`](../ai-engineer-mission-control) | Durable mission planning and verification **dispatch**. KS executes and admits. |
 | [`research_starter_pre_research_agent`](../research_starter_pre_research_agent) | Transcript-grounded pre-research packets and deterministic apply to `research_*` tables. Supplies embedding-bundle fixtures to this repo’s testkit. Not the same path as canonical KB ingestion. |
-| [`research_ingestion_systems_agent`](../research_ingestion_systems_agent) | Eve research agents that trust **executor-captured** evidence. Builds and packs `verification-executor` and syncs KS skills. |
+| [`research_ingestion_systems_agent`](../research_ingestion_systems_agent) | Owns the DeepAgents readiness and real-fixture harness under `agents/deepagents-stage`; historical Eve work is preserved. Public service/skill integration still has explicit readiness gates. |
 | [`aiengineerapp`](../aiengineerapp) | Learner UI. Will consume retrieval / notes / KB through the same contract; it is not a second knowledge authority. |
 
 ## Documentation map

@@ -4,14 +4,6 @@ title: Retrieval and evidence
 description: How policy-scoped retrieval produces bounded, replayable evidence packets instead of unsupported answers.
 tags: [knowledge, retrieval, evidence, provenance]
 owner: ai-engineer-knowledge-services
-aliases: [evidence packet, citation replay, supported search, semantic search]
-questions:
-  - How does retrieval avoid returning unsupported claims?
-  - Why can a valid retrieval plan fail capability preflight?
-  - How do world time and knowledge sequence differ?
-implementation_status: partial
-decision_status: reference
-validation_status: source-and-test-inspected
 sources:
   - id: retrieval-contract
     resource: ../packages/contracts/src/retrieval.ts
@@ -53,17 +45,6 @@ For example, a caller can ask what a tenant knew at sequence 42 about a feature 
 The contract enforces distinct bounded entity anchors, unique vector spaces and subquery identifiers, `finalK <= candidateK`, nonempty world intervals, and microsecond-valid timestamps. These are covered by [`packages/contracts/src/retrieval.test.ts`](../packages/contracts/src/retrieval.test.ts).
 
 ## Required capability must be real
-
-The 5P platform tool is `knowledge_retrieve_search`, with companion
-`knowledge_retrieve_plan`, `knowledge_retrieve_explain`, `knowledge_retrieve_run`,
-`knowledge_retrieve_packet` and `knowledge_retrieve_citations` tools. Former
-dotted tool names are absent, not aliases. Confirm bindings in the
-[MCP catalog](../apps/mcp/src/catalog.ts) and availability in the
-[application catalog](../packages/application/src/operations/catalog.ts).
-
-This is corpus retrieval over admitted records. The repository's
-`.agent-docs` concept search is a separate documentation-navigation tool;
-its results are not evidence packets and carry no knowledge admission.
 
 Some plan features may be expressed as optional, but that declaration is explicit. When a requested feature is absent, the service returns a typed `RETRIEVAL_CAPABILITY_UNSUPPORTED` response before calling a provider. If the caller marks that same capability optional, the omission is recorded in the packet instead of silently changing the query.
 

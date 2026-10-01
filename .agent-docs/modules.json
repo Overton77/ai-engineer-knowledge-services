@@ -30,6 +30,11 @@
       "path": "skills",
       "summary": "Agent skills for schema navigation, bounded reads, and ingestion.",
       "inventory": "none"
+    },
+    {
+      "path": "tools",
+      "summary": "Repository quality and Git-driven maintenance tooling.",
+      "inventory": "none"
     }
   ],
   "routes": [
@@ -1146,7 +1151,7 @@
         "skills/knowledge-preparation-and-promotion/examples.md"
       ],
       "interface": [
-        "knowledge-preparation-and-promotion skill 1.3.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents."
+        "knowledge-preparation-and-promotion skill 1.4.0: executor source_prepare_captured, content_link_plan/apply/receipt, content_summary_prepare; platform document convert/compare, chunk preview/build, promotion propose/review/status, embed run/verify/status; platform MCP equivalents."
       ],
       "tests": [],
       "constraints": [
@@ -1170,7 +1175,7 @@
         "skills/knowledge-retrieval-and-evidence/SKILL.md"
       ],
       "interface": [
-        "knowledge-retrieval-and-evidence skill 1.1.0: platform retrieve plan/search/explain/run/packet/citations and operation status; MCP retrieval.plan_validate/search/explain_run/read_run/read_evidence_packet/replay_citations."
+        "knowledge-retrieval-and-evidence skill 1.2.0: ks knowledge retrieve plan/search/explain/run/packet/citations; MCP knowledge_retrieve_plan/search/explain/run/packet/citations."
       ],
       "tests": [],
       "constraints": [
@@ -1392,6 +1397,31 @@
       "uses": [
         "jev-service"
       ]
+    },
+    {
+      "id": "agent-maintenance",
+      "path": "tools/maintenance",
+      "kind": "tooling",
+      "state": "implemented",
+      "summary": "Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.",
+      "entrypoints": [
+        "tools/maintenance/cli.mjs",
+        "tools/maintenance/engine.mjs",
+        ".github/maintenance/dispatch.mjs",
+        "tools/maintenance/install-watcher.ps1"
+      ],
+      "interface": [
+        "Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands."
+      ],
+      "tests": [
+        "tools/maintenance/maintenance.test.mjs",
+        ".github/maintenance/dispatch.test.mjs",
+        ".github/maintenance/proposal.test.mjs"
+      ],
+      "constraints": [
+        "A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt."
+      ],
+      "uses": []
     }
   ]
 }
