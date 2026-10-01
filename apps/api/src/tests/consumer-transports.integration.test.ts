@@ -13,7 +13,7 @@ import {
   PostgresKnowledgeOperationService,
   createRemoteRetrievalArtifactReader,
 } from "@aiengineer/knowledge-persistence";
-import { disposableDatabaseUrl, disposableStorageConfig } from "../../../../packages/persistence/test/disposable.mjs";
+import { databaseUrl, storage, runLocalStorageTests } from "./support/persistence.js";
 import {
   createSelectedCandidateFixture,
   type SelectedCandidateFixture,
@@ -26,9 +26,7 @@ import {
 import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
 
-const databaseUrl = disposableDatabaseUrl(),
-  storage = disposableStorageConfig(),
-  token = "consumer-transport-proof-token";
+const token = "consumer-transport-proof-token";
 const hash = async (path: string) =>
   createHash("sha256")
     .update(await readFile(path))
@@ -97,7 +95,7 @@ async function policy(fixture: SelectedCandidateFixture) {
   return version;
 }
 
-describe.skipIf(!databaseUrl || !storage)("consumer CLI and MCP transports over a real canonical KS host", () => {
+describe.skipIf(!runLocalStorageTests)("consumer CLI and MCP transports over a real canonical KS host", () => {
   let fixture: SelectedCandidateFixture,
     api: ReturnType<typeof buildServer>,
     mcpApp: any,

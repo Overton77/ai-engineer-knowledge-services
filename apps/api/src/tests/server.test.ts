@@ -3,7 +3,7 @@ import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
 import { PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { buildServer } from "../server.js";
 import { loadRepositoryDemoEvaluationBundles } from "../demo-evaluation-bundles.js";
-import type { ApiRole, LocalApiIdentity } from "../auth.js";
+import type { ApiRole, LocalApiIdentity } from "@aiengineer/knowledge-host/config";
 
 const server = buildServer();
 

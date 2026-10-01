@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createLocalIdentityResolver, isAuthorized } from "../auth.js";
+import { createLocalIdentityResolver, isAuthorized } from "@aiengineer/knowledge-host/config";
 
 const tenant = "00000000-0000-4000-8000-000000000001";
 const actorId = "00000000-0000-4000-8000-000000000002";

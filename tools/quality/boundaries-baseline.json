@@ -72,49 +72,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/api/src/server.ts",
-    "to": "packages/application/dist/index.d.ts",
-    "unresolvedTo": "@aiengineer/knowledge-application",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "apps-import-host-contracts-client"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/api/src/server.ts",
-    "to": "packages/persistence/dist/index.d.ts",
-    "unresolvedTo": "@aiengineer/knowledge-persistence",
-    "dependencyTypes": [
-      "undetermined",
-      "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "apps-import-host-contracts-client"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/api/src/server.ts",
-    "to": "packages/retrieval/dist/index.d.ts",
-    "unresolvedTo": "@aiengineer/knowledge-retrieval",
-    "dependencyTypes": [
-      "undetermined",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "apps-import-host-contracts-client"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/cli/scripts/copy-demo-assets.mjs",
     "to": "packages/verification/dist/index.js",
     "unresolvedTo": "../../../packages/verification/dist/index.js",
@@ -248,20 +205,6 @@
     "dependencyTypes": [
       "undetermined",
       "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "apps-import-host-contracts-client"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/mcp/src/index.ts",
-    "to": "packages/application/dist/index.d.ts",
-    "unresolvedTo": "@aiengineer/knowledge-application",
-    "dependencyTypes": [
-      "undetermined",
       "import"
     ],
     "rule": {

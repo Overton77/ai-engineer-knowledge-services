@@ -13,24 +13,40 @@ export * from "./local/catalog-profile.js";
 export * from "./local/local-host.js";
 export {
   assertOperationKindAdmitted,
+  AgenticKnowledgeService,
   bindResolvedVerificationContext,
+  createIntegrationService,
+  createKnowledgeApplication,
   createKnowledgeResourceReads,
   createVerificationResourceReads,
   isAdjudicationDecisionReviewerActor,
   operationCatalog,
+  OperationCapabilityUnavailableError,
   productionWorkerOperationKinds,
   submitCanonicalRetrievalRun,
   transportProblem,
+  retrievalExecutionProblem,
+  type CallbackReplayStore,
   type CanonicalRetrievalExecutorPort,
   type CatalogOperation,
   type Group,
   type KnowledgeOperationPort,
+  type KnowledgeIntegrationService,
   type KnowledgeResourceReads,
   type ResolveVerificationContext,
   type ResourceReadResult,
+  type VettedBundleInput,
+  type VerificationBenchmarkComparisonReadService,
+  type VerificationBenchmarkReadService,
+  type VerificationCaseReadService,
+  type VerificationContextBindingFailure,
+  type VerificationResourceReadServices,
+  type VerificationServiceCatalog,
   type VerificationResourceReads,
   VerificationOperationApplicationService,
 } from "@aiengineer/knowledge-application";
+export type { ResourceReadRepository } from "@aiengineer/knowledge-persistence";
+export { DeterministicFakeEmbeddingAdapter } from "@aiengineer/knowledge-retrieval";
 export type { HostEnvironment } from "./server/shared.js";
 export { HostResources, constructWithResources } from "./lifecycle/resources.js";
 export { startPollingLoop, type PollingLoop } from "./lifecycle/polling.js";

@@ -1,7 +1,7 @@
 {
   "tool": "@biomejs/biome",
   "version": "2.5.14",
-  "total": 4385,
+  "total": 4384,
   "rules": {
     "lint/complexity/noCommaOperator": 2,
     "lint/complexity/noExtraBooleanCast": 1,
@@ -13,7 +13,7 @@
     "lint/correctness/noUnsafeFinally": 7,
     "lint/correctness/noUnsafeOptionalChaining": 4,
     "lint/correctness/noUnusedFunctionParameters": 7,
-    "lint/correctness/noUnusedImports": 83,
+    "lint/correctness/noUnusedImports": 82,
     "lint/correctness/noUnusedVariables": 26,
     "lint/correctness/noVoidTypeReturn": 1,
     "lint/performance/noAccumulatingSpread": 2,

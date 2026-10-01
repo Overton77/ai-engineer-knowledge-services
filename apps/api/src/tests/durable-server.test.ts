@@ -1,29 +1,21 @@
+import { requireDisposableDatabaseUrl, runLocalPersistenceTests } from "./support/persistence.js";
 import { randomUUID } from "node:crypto";
 import { AcceptedOperationSchema, OperationStatusSchema } from "@aiengineer/knowledge-contracts";
 import { PostgresCanonicalRepository, PostgresKnowledgeOperationService } from "@aiengineer/knowledge-persistence";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { LocalApiIdentity } from "../auth.js";
+import { serviceIdentity } from "./support/identity.js";
 import { buildServer } from "../server.js";
 
-describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")("durable operation API local integration", () => {
+describe.skipIf(!runLocalPersistenceTests)("durable operation API local integration", () => {
   const tenantId = randomUUID();
-  const actor = {
-    kind: "service" as const,
-    id: randomUUID(),
-    serviceIdentity: "mission_control_client" as const,
-  };
+  const { actor, identity } = serviceIdentity(tenantId, randomUUID());
   const token = "durable-api-test-token";
-  const identity: LocalApiIdentity = {
-    actor,
-    grants: [{ tenantId, roles: ["knowledge_operator"], scopes: [] }],
-  };
   let apiRepository: PostgresCanonicalRepository;
   let workerRepository: PostgresCanonicalRepository;
   let api: ReturnType<typeof buildServer>;
 
   beforeAll(() => {
-    const connectionString = process.env.POSTGRES_URL;
-    if (!connectionString) throw new Error("POSTGRES_URL_REQUIRED");
+    const connectionString = requireDisposableDatabaseUrl();
     apiRepository = new PostgresCanonicalRepository({
       connectionString,
       localOnly: true,

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { buildServer } from "./server.js";
+import { buildServer } from "../server.js";
 
 describe("benchmark public reads", () => {
   it("authenticates before repository access and sanitizes unavailable custody", async () => {

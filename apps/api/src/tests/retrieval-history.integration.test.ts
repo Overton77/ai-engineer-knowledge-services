@@ -15,7 +15,7 @@ import {
   PostgresKnowledgeOperationService,
   createRemoteRetrievalArtifactReader,
 } from "@aiengineer/knowledge-persistence";
-import { disposableDatabaseUrl, disposableStorageConfig } from "../../../../packages/persistence/test/disposable.mjs";
+import { databaseUrl, storage, runLocalStorageTests } from "./support/persistence.js";
 import {
   buildRetrievalHistoryFixture,
   retrievalHistoryEvents,
@@ -31,7 +31,7 @@ import {
   publicationIdFor,
   publishCandidate,
 } from "../../../verification-executor/src/knowledge/selected-candidate-publication.js";
-import type { LocalApiIdentity } from "../auth.js";
+import type { LocalApiIdentity } from "@aiengineer/knowledge-host/config";
 import { CanonicalRetrievalExecutor } from "@aiengineer/knowledge-application";
 import { buildServer } from "../server.js";
 
@@ -41,8 +41,6 @@ const FIXTURE_TIMEOUT_MS = 240_000;
 const TEMPORAL_CORPUS_TIMEOUT_MS = 480_000;
 const TOKEN_A = "t7-retrieval-tenant-a-token";
 const TOKEN_B = "t7-retrieval-tenant-b-token";
-const databaseUrl = disposableDatabaseUrl();
-const storage = disposableStorageConfig();
 
 const HISTORY_ACTOR_ENCODING = "Official publication must be authorized by the persisted operation identities";
 
@@ -242,7 +240,7 @@ async function readAuthorizedPacket(input: {
   return EvidencePacketSchema.parse(packet.json());
 }
 
-describe.skipIf(!databaseUrl || !storage)("T7 temporal retrieval and citation replay through the API", () => {
+describe.skipIf(!runLocalStorageTests)("T7 temporal retrieval and citation replay through the API", () => {
   let harness: RetrievalHarness;
 
   beforeAll(async () => {
@@ -537,7 +535,7 @@ describe.skipIf(!databaseUrl || !storage)("T7 temporal retrieval and citation re
   );
 });
 
-describe.skipIf(!databaseUrl || !storage)("T7 announcement and GA temporal packets", () => {
+describe.skipIf(!runLocalStorageTests)("T7 announcement and GA temporal packets", () => {
   let fixture: SelectedCandidateFixture & { publicationId: string };
   let api: ReturnType<typeof buildServer>;
   let policyVersionId: string;
@@ -745,7 +743,7 @@ const scopedAvailability: NonNullable<SelectedCandidateFixtureOptions["temporalE
   },
 ];
 
-describe.skipIf(!databaseUrl || !storage)("T08/T09 corrected and surface-scoped temporal packets", () => {
+describe.skipIf(!runLocalStorageTests)("T08/T09 corrected and surface-scoped temporal packets", () => {
   let fixture: SelectedCandidateFixture;
   let api: ReturnType<typeof buildServer>;
   let policyVersionId: string;
@@ -949,7 +947,7 @@ describe.skipIf(!databaseUrl || !storage)("T08/T09 corrected and surface-scoped 
   );
 });
 
-describe.skipIf(!databaseUrl || !storage)("R02 canonical source-family diversity", () => {
+describe.skipIf(!runLocalStorageTests)("R02 canonical source-family diversity", () => {
   let fixture: SelectedCandidateFixture;
   let api: ReturnType<typeof buildServer>;
   let cappedPolicy: string, uncappedPolicy: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KnowledgeIntegrationService } from "@aiengineer/knowledge-application";
-import type { LocalApiIdentity } from "../auth.js";
+import type { LocalApiIdentity } from "@aiengineer/knowledge-host/config";
 import { buildServer } from "../server.js";
 import { createVerificationOwnershipResolver } from "@aiengineer/knowledge-host";
 

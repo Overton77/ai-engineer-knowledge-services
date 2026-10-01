@@ -551,12 +551,20 @@ describe("golden API errors: knowledge mutations", () => {
       code: "IDEMPOTENCY_CONFLICT",
       title: "Idempotency conflict",
     });
-    const broken = server({ operationService: failingPort(new Error("disk full")) });
+    const logUnexpectedError = vi.fn();
+    const broken = server({
+      operationService: failingPort(new Error("secret credential in error message")),
+      logUnexpectedError,
+    });
     expectProblem(await send(broken, { method: "POST", url: "/v1/chunk-sets", body: envelope() }), {
       status: 500,
       contentType: PROBLEM,
       code: "INTERNAL_ERROR",
       title: "Internal service error",
+    });
+    expect(logUnexpectedError).toHaveBeenCalledExactlyOnceWith({
+      correlationId: CORRELATION,
+      error: { name: "Error" },
     });
   });
 });
