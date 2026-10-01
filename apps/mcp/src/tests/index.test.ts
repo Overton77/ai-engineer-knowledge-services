@@ -119,7 +119,7 @@ describe("durable MCP operation facade", () => {
       apiOrigin: "https://api.example",
       identity,
     });
-    const pending = execute("source.fetch", "capture", {
+    const pending = execute("knowledge_source_fetch", "capture", {
       context,
       input: { query: "durable MCP operation" },
       expectedVersions: { api: "v1" },
@@ -149,12 +149,12 @@ describe("durable MCP operation facade", () => {
       apiOrigin: "https://api.example",
       identity,
     });
-    const denied = await execute("source.fetch", "capture", {
+    const denied = await execute("knowledge_source_fetch", "capture", {
       context: { ...context, tenantId: id(99) },
       input: { query: "forbidden" },
       expectedVersions: { api: "v1" },
     });
-    const forged = await execute("source.fetch", "capture", {
+    const forged = await execute("knowledge_source_fetch", "capture", {
       context: { ...context, actor: { ...context.actor, id: id(98) } },
       input: { query: "forged" },
       expectedVersions: { api: "v1" },
@@ -189,12 +189,12 @@ describe("durable MCP operation facade", () => {
       identity,
       knowledge: { reads: reads as never },
     });
-    const status = await execute("embedding.run_status", "embedding_run", {
+    const status = await execute("knowledge_embed_status", "embedding_run", {
       context,
       input: { operationId: id(20) },
       expectedVersions: { api: "v1" },
     });
-    const explanation = await execute("retrieval.explain_run", "retrieval_run", {
+    const explanation = await execute("knowledge_retrieve_explain", "retrieval_run", {
       context,
       input: { runId: id(20) },
       expectedVersions: { api: "v1" },
@@ -215,7 +215,7 @@ describe("durable MCP operation facade", () => {
       identity,
     });
     expect(
-      await execute("embedding.estimate", "embedding_run", {
+      await execute("knowledge_embed_estimate", "embedding_run", {
         context,
         input: {},
         expectedVersions: { api: "v1" },
@@ -301,7 +301,7 @@ describe.skipIf(process.env.RUN_LOCAL_PERSISTENCE_TESTS !== "1")("MCP durable Po
       apiOrigin: "https://api.example",
       identity: durableIdentity,
     });
-    const result = await execute("source.fetch", "capture", {
+    const result = await execute("knowledge_source_fetch", "capture", {
       context: durableContext,
       input: { subject: "durably admitted through MCP" },
       expectedVersions: { api: "v1" },

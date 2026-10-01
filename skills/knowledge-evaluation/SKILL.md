@@ -16,8 +16,8 @@ Record recall, nDCG, MRR, citation/locator validity, false acceptance, abstentio
 
 Use only the admitted platform commands: `ks knowledge eval generate`, `ks knowledge eval run`,
 `ks knowledge eval compare`, and `ks knowledge eval failures`. The MCP catalog has
-`evaluation.generate_query_candidates`, `evaluation.run_experiment`,
-`evaluation.compare_experiments`, and `evaluation.inspect_failures`. Persist the evaluated
+`knowledge_eval_generate`, `knowledge_eval_run`,
+`knowledge_eval_compare`, and `knowledge_eval_failures`. Persist the evaluated
 candidate, query set, result digest, gates and exclusions so a distinct publisher can bind them.
 
 ```text

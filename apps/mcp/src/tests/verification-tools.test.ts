@@ -57,12 +57,12 @@ describe("metric MCP adapter", () => {
       candidateRunId: id(82),
       comparisonProfile: "paired_default",
     };
-    await expect(execute("knowledge_compare_benchmark_runs", { context, request })).resolves.toMatchObject({
+    await expect(execute("verify_benchmark_compare", { context, request })).resolves.toMatchObject({
       structuredContent: { operationId: id(80) },
     });
     expect(submitCompareBenchmarkRuns).toHaveBeenCalledWith(request, bound());
     await expect(
-      execute("knowledge_compare_benchmark_runs", {
+      execute("verify_benchmark_compare", {
         context,
         request: { ...request, statistics: {} },
       }),
@@ -81,12 +81,12 @@ describe("metric MCP adapter", () => {
       },
       executionMode: "offline_recorded",
     };
-    await expect(execute("knowledge_run_benchmark", { context, request })).resolves.toMatchObject({
+    await expect(execute("verify_benchmark_run", { context, request })).resolves.toMatchObject({
       structuredContent: { operationId: id(8) },
     });
     expect(submitRunBenchmark).toHaveBeenCalledWith(request, bound());
     await expect(
-      execute("knowledge_run_benchmark", {
+      execute("verify_benchmark_run", {
         context,
         request: { ...request, checkpointPlan: [] },
       }),
@@ -106,7 +106,7 @@ describe("metric MCP adapter", () => {
       observations: { artifactId: id(12), digest: `sha256:${"3".repeat(64)}` },
     };
     await expect(
-      execute("knowledge_verify_metric", {
+      execute("verify_metric", {
         context: metricContext,
         request: metricRequest,
       }),
@@ -119,7 +119,7 @@ describe("metric MCP adapter", () => {
     );
     expect(submitVerifyMetricObservation).toHaveBeenCalledWith(metricRequest, bound(metricContext));
     await expect(
-      execute("knowledge_verify_metric", {
+      execute("verify_metric", {
         context: metricContext,
         request: { ...metricRequest, findings: [] },
       }),
@@ -157,7 +157,7 @@ describe("verification MCP adapter", () => {
       { execute, resolveVerificationContext } = inProcess({
         submitVerifyExtraction,
       });
-    await expect(execute("knowledge_verify_extraction", { context, request })).resolves.toMatchObject({
+    await expect(execute("verify_extract", { context, request })).resolves.toMatchObject({
       structuredContent: { operationId: id(5) },
     });
     expect(resolveVerificationContext).toHaveBeenCalledWith(
@@ -165,7 +165,7 @@ describe("verification MCP adapter", () => {
     );
     expect(submitVerifyExtraction).toHaveBeenCalledWith(request, bound());
     await expect(
-      execute("knowledge_verify_extraction", {
+      execute("verify_extract", {
         context: { ...context, actor },
         request,
       }),
@@ -174,7 +174,7 @@ describe("verification MCP adapter", () => {
   it("denies a tenant outside the authenticated grant before submission", async () => {
     const submitVerifyExtraction = vi.fn(),
       { execute, resolveVerificationContext } = inProcess({ submitVerifyExtraction }, id(99));
-    await expect(execute("knowledge_verify_extraction", { context, request })).resolves.toMatchObject({
+    await expect(execute("verify_extract", { context, request })).resolves.toMatchObject({
       isError: true,
     });
     expect(resolveVerificationContext).not.toHaveBeenCalled();
@@ -205,10 +205,10 @@ describe("parse MCP adapter", () => {
           parentArtifactIds: [],
         },
       };
-    await execute("knowledge_parse_artifact", { context, request: parse });
+    await execute("verify_artifact_parse", { context, request: parse });
     expect(submitParseArtifact).toHaveBeenCalledWith(parse, bound());
     await expect(
-      execute("knowledge_parse_artifact", {
+      execute("verify_artifact_parse", {
         context,
         request: { ...parse, parserKind: "html" },
       }),
@@ -233,12 +233,12 @@ describe("claims MCP adapter", () => {
         report: ref,
         claimLedger: { artifactId: id(31), digest: `sha256:${"b".repeat(64)}` },
       };
-    await execute("knowledge_verify_claims", { context, request: claims });
-    await execute("knowledge_verify_report", { context, request: report });
+    await execute("verify_citations", { context, request: claims });
+    await execute("verify_report", { context, request: report });
     expect(submitVerifyClaims).toHaveBeenCalledWith(claims, bound());
     expect(submitVerifyReport).toHaveBeenCalledWith(report, bound());
     await expect(
-      execute("knowledge_verify_claims", {
+      execute("verify_citations", {
         context,
         request: { ...claims, verifierDeploymentId: id(90) },
       }),
@@ -254,13 +254,13 @@ describe("audit inspection MCP adapter", () => {
         verificationContractVersion: "verification.v1",
         auditBundle: { artifactId: id(41), digest: `sha256:${"c".repeat(64)}` },
       };
-    await execute("knowledge_inspect_audit_bundle", {
+    await execute("verify_bundle_inspect", {
       context,
       request: auditRequest,
     });
     expect(submitInspectAuditBundle).toHaveBeenCalledWith(auditRequest, bound());
     await expect(
-      execute("knowledge_inspect_audit_bundle", {
+      execute("verify_bundle_inspect", {
         context,
         request: { ...auditRequest, publicKey: "caller" },
       }),

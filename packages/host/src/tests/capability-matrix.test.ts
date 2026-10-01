@@ -19,8 +19,8 @@ const serverBacked = [
   "checkpoint_commit",
   "report_register",
   "recovery_submit",
-  "knowledge_get_verification_run",
-  "retrieval.read_run",
+  "verify_run",
+  "knowledge_retrieve_run",
 ];
 
 // The remote CLI's client-only enforcement is tested in apps/cli (src/tests/remote-profile.test.ts).

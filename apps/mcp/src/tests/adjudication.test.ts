@@ -58,13 +58,13 @@ describe("adjudication MCP adapter", () => {
       resolveVerificationContext: () => resolved,
       verificationAdmission: { isAdjudicationRequestAdmitted },
     });
-    await expect(execute("knowledge_request_adjudication", { context, request })).resolves.toMatchObject({
+    await expect(execute("verify_adjudication_request", { context, request })).resolves.toMatchObject({
       structuredContent: { operationId: id(4) },
     });
     expect(isAdjudicationRequestAdmitted).toHaveBeenCalledWith(tenant, request);
     expect(submitRequestAdjudication).toHaveBeenCalledWith(request, resolved);
     await expect(
-      execute("knowledge_request_adjudication", {
+      execute("verify_adjudication_request", {
         context,
         request: { ...request, humanDecision: "overturn" },
       }),
@@ -93,7 +93,7 @@ describe("adjudication MCP adapter", () => {
       rationale: "Synthetic engineering review record.",
     };
     await expect(
-      execute("knowledge_record_adjudication_decision", {
+      execute("verify_adjudication_decision", {
         context,
         request: decision,
       }),
@@ -113,7 +113,7 @@ describe("adjudication MCP adapter", () => {
       verificationAdmission: { isAdjudicationDecisionAdmitted },
     });
     await expect(
-      nonReviewer("knowledge_record_adjudication_decision", {
+      nonReviewer("verify_adjudication_decision", {
         context,
         request: decision,
       }),
@@ -123,7 +123,7 @@ describe("adjudication MCP adapter", () => {
     });
     expect(isAdjudicationDecisionAdmitted).toHaveBeenCalledTimes(1);
     await expect(
-      execute("knowledge_record_adjudication_decision", {
+      execute("verify_adjudication_decision", {
         context,
         request: { ...decision, reviewerRole: "caller" },
       }),
@@ -146,7 +146,7 @@ describe("adjudication MCP adapter", () => {
       rationale: "Synthetic engineering review record.",
     };
     await expect(
-      execute("knowledge_record_adjudication_decision", {
+      execute("verify_adjudication_decision", {
         context,
         request: decision,
       }),

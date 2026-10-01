@@ -170,7 +170,7 @@
         "apps/mcp/src/server/vercel.ts"
       ],
       "interface": [
-        "MCP tool definitions are grouped under tools/ and checked against the application catalog at registration. index.ts composes the entrypoint; server/http.ts hosts Streamable HTTP and server/vercel.ts adapts the serverless request. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call shared application reads; retrieval.search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
+        "MCP tool definitions are grouped under tools/ and checked against the application catalog at registration. Public names use the knowledge_* and verify_* command-group prefixes with no old aliases. index.ts composes the entrypoint; server/http.ts hosts Streamable HTTP and server/vercel.ts adapts the serverless request. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call shared application reads; knowledge_retrieve_search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
       ],
       "tests": [
         "apps/mcp/src/tests/api-mcp-parity.test.ts",

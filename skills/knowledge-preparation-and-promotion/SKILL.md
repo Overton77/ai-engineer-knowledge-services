@@ -98,8 +98,8 @@ is unknown, never zero.
 ## Submit only the proposal and review operations
 
 The platform CLI has `ks knowledge promotion propose`, `ks knowledge promotion review`, and
-`ks knowledge promotion status`. The equivalent MCP catalog exposes `promotion.submit` and
-`promotion.status`. A successful submission is an operation receipt, not selection, evaluation,
+`ks knowledge promotion status`. The equivalent MCP catalog exposes `knowledge_promotion_propose` and
+`knowledge_promotion_status`. A successful submission is an operation receipt, not selection, evaluation,
 activation, or publication. There is no public `promotion select` command and no
 `promotion_selection_select` MCP tool; do not substitute a capability catalog or an internal host
 helper for either one.

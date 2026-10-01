@@ -58,19 +58,19 @@ export const McpToolArgumentsSchema = z.object({
 export type McpToolArguments = z.infer<typeof McpToolArgumentsSchema>;
 
 const verificationToolUseCases = {
-  knowledge_extract_structured_data: "extractStructuredData",
-  knowledge_compare_benchmark_runs: "compareBenchmarkRuns",
-  knowledge_run_benchmark: "runBenchmark",
-  knowledge_verify_claims: "verifyClaims",
-  knowledge_verify_report: "verifyReport",
-  knowledge_verify_metric: "verifyMetricObservation",
-  knowledge_capture_source: "captureSource",
-  knowledge_parse_artifact: "parseArtifact",
-  knowledge_verify_extraction: "verifyExtraction",
-  knowledge_request_adjudication: "requestAdjudication",
-  knowledge_record_adjudication_decision: "recordAdjudicationDecision",
-  knowledge_inspect_audit_bundle: "inspectAuditBundle",
-  knowledge_replay_run: "replayRun",
+  verify_extraction_run: "extractStructuredData",
+  verify_benchmark_compare: "compareBenchmarkRuns",
+  verify_benchmark_run: "runBenchmark",
+  verify_citations: "verifyClaims",
+  verify_report: "verifyReport",
+  verify_metric: "verifyMetricObservation",
+  verify_benchmark_capture: "captureSource",
+  verify_artifact_parse: "parseArtifact",
+  verify_extract: "verifyExtraction",
+  verify_adjudication_request: "requestAdjudication",
+  verify_adjudication_decision: "recordAdjudicationDecision",
+  verify_bundle_inspect: "inspectAuditBundle",
+  verify_bundle_replay: "replayRun",
 } as const;
 
 export interface KnowledgeMcpServerOptions {
@@ -93,7 +93,7 @@ export interface KnowledgeMcpServerOptions {
 
 export interface KnowledgeMcpServices {
   readonly reads: KnowledgeResourceReads;
-  /** Admits API-owned synchronous kinds; retrieval.search submits through it before executing. */
+  /** Admits API-owned synchronous kinds; knowledge_retrieve_search submits through it before executing. */
   readonly retrievalOperations?: Pick<KnowledgeOperationPort, "submit">;
   readonly retrievalExecutor?: CanonicalRetrievalExecutorPort;
 }
@@ -103,55 +103,55 @@ const verificationContextSchema = McpReadContextSchema.extend({
   ...VerificationOperationContextHintsSchema.shape,
 });
 export const verificationToolSchemas = {
-  knowledge_extract_structured_data: z.strictObject({
+  verify_extraction_run: z.strictObject({
     context: verificationContextSchema,
     request: ExtractStructuredDataRequestSchema,
   }),
-  knowledge_compare_benchmark_runs: z.strictObject({
+  verify_benchmark_compare: z.strictObject({
     context: verificationContextSchema,
     request: CompareBenchmarkRunsRequestSchema,
   }),
-  knowledge_run_benchmark: z.strictObject({
+  verify_benchmark_run: z.strictObject({
     context: verificationContextSchema,
     request: RunBenchmarkRequestSchema,
   }),
-  knowledge_capture_source: z.strictObject({
+  verify_benchmark_capture: z.strictObject({
     context: verificationContextSchema,
     request: CaptureSourceRequestSchema,
   }),
-  knowledge_parse_artifact: z.strictObject({
+  verify_artifact_parse: z.strictObject({
     context: verificationContextSchema,
     request: ParseArtifactRequestSchema,
   }),
-  knowledge_verify_metric: z.strictObject({
+  verify_metric: z.strictObject({
     context: verificationContextSchema,
     request: VerifyMetricObservationRequestSchema,
   }),
-  knowledge_request_adjudication: z.strictObject({
+  verify_adjudication_request: z.strictObject({
     context: verificationContextSchema,
     request: RequestAdjudicationRequestSchema,
   }),
-  knowledge_record_adjudication_decision: z.strictObject({
+  verify_adjudication_decision: z.strictObject({
     context: verificationContextSchema,
     request: VerificationAdjudicationDecisionRequestSchema,
   }),
-  knowledge_verify_extraction: z.strictObject({
+  verify_extract: z.strictObject({
     context: verificationContextSchema,
     request: VerifyExtractionRequestSchema,
   }),
-  knowledge_verify_claims: z.strictObject({
+  verify_citations: z.strictObject({
     context: verificationContextSchema,
     request: VerifyClaimsRequestSchema,
   }),
-  knowledge_verify_report: z.strictObject({
+  verify_report: z.strictObject({
     context: verificationContextSchema,
     request: VerifyReportRequestSchema,
   }),
-  knowledge_inspect_audit_bundle: z.strictObject({
+  verify_bundle_inspect: z.strictObject({
     context: verificationContextSchema,
     request: InspectAuditBundleRequestSchema,
   }),
-  knowledge_replay_run: z.strictObject({
+  verify_bundle_replay: z.strictObject({
     context: verificationContextSchema,
     request: ReplayRunRequestSchema,
   }),
@@ -166,14 +166,14 @@ const VERIFICATION_MCP_ADMISSION_GATES: {
     admission: VerificationHostAdmission,
   ) => VerificationAdmissionGate | undefined;
 } = {
-  knowledge_parse_artifact: (admission) => admission.isParseArtifactRequestAdmitted,
-  knowledge_extract_structured_data: (admission) => admission.isStructuredExtractionRequestAdmitted,
-  knowledge_run_benchmark: (admission) => admission.isBenchmarkRequestAdmitted,
-  knowledge_compare_benchmark_runs: (admission) => admission.isBenchmarkComparisonRequestAdmitted,
-  knowledge_verify_claims: (admission) => admission.isClaimsRequestAdmitted,
-  knowledge_verify_report: (admission) => admission.isClaimsRequestAdmitted,
-  knowledge_inspect_audit_bundle: (admission) => admission.isAuditInspectionRequestAdmitted,
-  knowledge_request_adjudication: (admission) => admission.isAdjudicationRequestAdmitted,
+  verify_artifact_parse: (admission) => admission.isParseArtifactRequestAdmitted,
+  verify_extraction_run: (admission) => admission.isStructuredExtractionRequestAdmitted,
+  verify_benchmark_run: (admission) => admission.isBenchmarkRequestAdmitted,
+  verify_benchmark_compare: (admission) => admission.isBenchmarkComparisonRequestAdmitted,
+  verify_citations: (admission) => admission.isClaimsRequestAdmitted,
+  verify_report: (admission) => admission.isClaimsRequestAdmitted,
+  verify_bundle_inspect: (admission) => admission.isAuditInspectionRequestAdmitted,
+  verify_adjudication_request: (admission) => admission.isAdjudicationRequestAdmitted,
 };
 
 const VERIFICATION_IN_PROCESS_SUBMIT: {
@@ -183,24 +183,20 @@ const VERIFICATION_IN_PROCESS_SUBMIT: {
     context: OperationContext,
   ) => unknown;
 } = {
-  knowledge_extract_structured_data: (operations, request, context) =>
-    operations.submitExtractStructuredData(request, context),
-  knowledge_compare_benchmark_runs: (operations, request, context) =>
-    operations.submitCompareBenchmarkRuns(request, context),
-  knowledge_run_benchmark: (operations, request, context) => operations.submitRunBenchmark(request, context),
-  knowledge_verify_claims: (operations, request, context) => operations.submitVerifyClaims(request, context),
-  knowledge_verify_report: (operations, request, context) => operations.submitVerifyReport(request, context),
-  knowledge_verify_metric: (operations, request, context) => operations.submitVerifyMetricObservation(request, context),
-  knowledge_capture_source: (operations, request, context) => operations.submitCaptureSource(request, context),
-  knowledge_parse_artifact: (operations, request, context) => operations.submitParseArtifact(request, context),
-  knowledge_verify_extraction: (operations, request, context) => operations.submitVerifyExtraction(request, context),
-  knowledge_request_adjudication: (operations, request, context) =>
-    operations.submitRequestAdjudication(request, context),
-  knowledge_record_adjudication_decision: (operations, request, context) =>
+  verify_extraction_run: (operations, request, context) => operations.submitExtractStructuredData(request, context),
+  verify_benchmark_compare: (operations, request, context) => operations.submitCompareBenchmarkRuns(request, context),
+  verify_benchmark_run: (operations, request, context) => operations.submitRunBenchmark(request, context),
+  verify_citations: (operations, request, context) => operations.submitVerifyClaims(request, context),
+  verify_report: (operations, request, context) => operations.submitVerifyReport(request, context),
+  verify_metric: (operations, request, context) => operations.submitVerifyMetricObservation(request, context),
+  verify_benchmark_capture: (operations, request, context) => operations.submitCaptureSource(request, context),
+  verify_artifact_parse: (operations, request, context) => operations.submitParseArtifact(request, context),
+  verify_extract: (operations, request, context) => operations.submitVerifyExtraction(request, context),
+  verify_adjudication_request: (operations, request, context) => operations.submitRequestAdjudication(request, context),
+  verify_adjudication_decision: (operations, request, context) =>
     operations.submitRecordAdjudicationDecision(request, context),
-  knowledge_inspect_audit_bundle: (operations, request, context) =>
-    operations.submitInspectAuditBundle(request, context),
-  knowledge_replay_run: (operations, request, context) => operations.submitReplayRun(request, context),
+  verify_bundle_inspect: (operations, request, context) => operations.submitInspectAuditBundle(request, context),
+  verify_bundle_replay: (operations, request, context) => operations.submitReplayRun(request, context),
 };
 
 async function admitVerificationMcpRequest(input: {
@@ -251,7 +247,7 @@ async function executeVerificationInProcess(input: {
     admission: options.verificationAdmission,
   });
   if (admission !== "ok") return toolError(admission);
-  if (name === "knowledge_record_adjudication_decision") {
+  if (name === "verify_adjudication_decision") {
     const gate = options.verificationAdmission?.isAdjudicationDecisionAdmitted;
     if (!gate) return toolError("CAPABILITY_NOT_ADMITTED");
     if (
@@ -418,13 +414,13 @@ export function createBenchmarkComparisonReadMcpExecutor(options: KnowledgeMcpSe
   };
 }
 export function createBenchmarkReadMcpExecutor(options: KnowledgeMcpServerOptions) {
-  return async (name: "knowledge_get_benchmark_run" | "knowledge_get_benchmark_manifest", value: unknown) => {
+  return async (name: "verify_benchmark_show" | "verify_benchmark_manifest", value: unknown) => {
     const { context, runId } = benchmarkReadSchema.parse(value);
     if (!isAuthorized(options.identity, context.tenantId, "knowledge.read")) return toolError("FORBIDDEN");
     const reads = options.verificationReads;
     if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
     const input = { tenantId: context.tenantId, runId };
-    return name === "knowledge_get_benchmark_run"
+    return name === "verify_benchmark_show"
       ? readToolResult(await reads.benchmarkRun(input))
       : readToolResult(await reads.benchmarkManifest(input));
   };
@@ -482,16 +478,16 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
   return async (name: keyof typeof MCP_TOOL_CATALOG, kind: OperationKind, argumentsValue: unknown) => {
     const { context, input, expectedVersions } = McpToolArgumentsSchema.parse(argumentsValue);
     const readTools = new Set([
-      "chunk.strategy_list",
-      "retrieval.plan_validate",
-      "retrieval.explain_run",
-      "retrieval.read_run",
-      "retrieval.read_evidence_packet",
-      "retrieval.replay_citations",
-      "evaluation.inspect_failures",
-      "embedding.run_status",
-      "promotion.status",
-      "vector_store.ingestion_status",
+      "knowledge_chunk_strategies",
+      "knowledge_retrieve_plan",
+      "knowledge_retrieve_explain",
+      "knowledge_retrieve_run",
+      "knowledge_retrieve_packet",
+      "knowledge_retrieve_citations",
+      "knowledge_eval_failures",
+      "knowledge_embed_status",
+      "knowledge_promotion_status",
+      "knowledge_store_status",
     ]);
     if (
       !isAuthorized(
@@ -535,7 +531,7 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
       return id ? inProcessRead(() => reads.citationReplay(context.tenantId, id)) : toolError("RESOURCE_ID_REQUIRED");
     };
     const readHandlers: Partial<Record<McpToolName, () => Promise<CallToolResult>>> = {
-      "chunk.strategy_list": async () =>
+      knowledge_chunk_strategies: async () =>
         success({
           items: [
             { id: "heading-sections-v1", version: "1.0.0", admitted: true },
@@ -543,44 +539,44 @@ export function createMcpToolExecutor(options: KnowledgeMcpServerOptions) {
           ],
           nextCursor: null,
         }),
-      "retrieval.plan_validate": async () => success(RetrievalPlanSchema.parse(inputObject.plan ?? inputObject)),
-      "retrieval.search": async () =>
+      knowledge_retrieve_plan: async () => success(RetrievalPlanSchema.parse(inputObject.plan ?? inputObject)),
+      knowledge_retrieve_search: async () =>
         options.knowledge
           ? searchCanonicalRetrieval(options, context, inputObject.plan ?? inputObject)
           : toolError("CAPABILITY_NOT_ADMITTED"),
-      "retrieval.explain_run": async () => {
+      knowledge_retrieve_explain: async () => {
         if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
         const id = uuid("runId");
         return id
           ? inProcessRead(() => reads.retrievalExplanation(context.tenantId, id))
           : toolError("RESOURCE_ID_REQUIRED");
       },
-      "retrieval.read_run": async () => {
+      knowledge_retrieve_run: async () => {
         if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
         const id = uuid("runId");
         if (!id || Object.keys(inputObject).some((key) => key !== "runId")) return toolError("RESOURCE_ID_REQUIRED");
         return inProcessRead(() => reads.retrievalRun(context.tenantId, id));
       },
-      "retrieval.read_evidence_packet": readPacket,
-      "retrieval.replay_citations": replayCitations,
-      "evaluation.inspect_failures": async () => {
+      knowledge_retrieve_packet: readPacket,
+      knowledge_retrieve_citations: replayCitations,
+      knowledge_eval_failures: async () => {
         if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
         const id = uuid("runId");
         return id
           ? inProcessRead(() => reads.evaluationFailures(context.tenantId, id))
           : toolError("RESOURCE_ID_REQUIRED");
       },
-      "embedding.run_status": operationStatus,
-      "promotion.status": operationStatus,
-      "vector_store.ingestion_status": async () => {
+      knowledge_embed_status: operationStatus,
+      knowledge_promotion_status: operationStatus,
+      knowledge_store_status: async () => {
         if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
         const storeId = uuid("vectorStoreId");
         const operationId = uuid("operationId");
         if (!storeId || !operationId) return toolError("RESOURCE_ID_REQUIRED");
         return inProcessRead(() => reads.vectorStoreOperation(context.tenantId, storeId, operationId));
       },
-      "embedding.model_list": async () => toolError("CAPABILITY_NOT_ADMITTED"),
-      "embedding.estimate": async () => toolError("CAPABILITY_NOT_ADMITTED"),
+      knowledge_embed_models: async () => toolError("CAPABILITY_NOT_ADMITTED"),
+      knowledge_embed_estimate: async () => toolError("CAPABILITY_NOT_ADMITTED"),
     };
     const readHandler = readHandlers[name];
     if (readHandler) return readHandler();

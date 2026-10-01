@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { createVerificationOperationReadMcpExecutor } from "../index.js";
 
-describe("knowledge_get_verification_operation MCP read", () => {
+describe("verify_status MCP read", () => {
   it("polls only tenant-owned operations through the verification-aware client read and never fabricates state", async () => {
     const tenantId = randomUUID(),
       operationId = randomUUID(),

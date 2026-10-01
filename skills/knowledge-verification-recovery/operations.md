@@ -36,7 +36,7 @@ Add `--out <file>` to write the JSON document and print a compact summary, `--re
 | Re-assess a report after repaired claims | `report_assess` | `knowledge report assess <reportVersionId>` |
 | Rebind report citations and canonical links | `content_link_plan`, `content_link_apply` | `knowledge content plan <intent.json>`, `knowledge content apply <intent.json>` |
 | Checkpoint a wait | `checkpoint_commit`, `checkpoint_head`, `checkpoint_read`, `checkpoint_restore` | `knowledge checkpoint commit <request.json>`, `knowledge checkpoint head <scope.json>`, `knowledge checkpoint read <request.json>`, `knowledge checkpoint restore <request.json>` |
-| Escalate a held item (platform distribution) | `knowledge_request_adjudication`, `knowledge_get_adjudication` | `ks verify adjudication request …`, `ks verify adjudication get …` |
+| Escalate a held item (platform distribution) | `verify_adjudication_request`, `verify_adjudication_get` | `ks verify adjudication request …`, `ks verify adjudication get …` |
 
 ## MCP
 

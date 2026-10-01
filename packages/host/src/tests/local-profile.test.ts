@@ -188,7 +188,7 @@ describe("local host admission", () => {
       "checkpoint_commit",
       "report_assess",
       "recovery_submit",
-      "knowledge_get_verification_run",
+      "verify_run",
     ])
       expect(host.admits(operation), operation).toBe(false);
     expect("dbHead" in host.verify).toBe(false);

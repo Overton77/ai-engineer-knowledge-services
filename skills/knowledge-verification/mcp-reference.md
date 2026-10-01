@@ -33,7 +33,7 @@ Against an API configured with `VERIFICATION_SERVICE_OWNERSHIP_GRANTS_JSON` (the
 
 Verification **reads** (and reconciliation show): `{context: {tenantId, correlationId}, …ids}`. No `idempotencyKey`.
 
-Auth scope: `operation.submit` (mutations, including `knowledge_apply_provider_reconciliation`) or `knowledge.read` (reads). Unauthorized → tool error `FORBIDDEN`. Missing API client → `CAPABILITY_NOT_ADMITTED`. MCP cannot grant capabilities.
+Auth scope: `operation.submit` (mutations, including `verify_reconciliation_apply`) or `knowledge.read` (reads). Unauthorized → tool error `FORBIDDEN`. Missing API client → `CAPABILITY_NOT_ADMITTED`. MCP cannot grant capabilities.
 
 ## Tool catalog (30)
 
@@ -41,38 +41,38 @@ Auth scope: `operation.submit` (mutations, including `knowledge_apply_provider_r
 
 | tool | mut/read | key input fields | maps to |
 | --- | --- | --- | --- |
-| `knowledge_extract_structured_data` | mut | context + `ExtractStructuredDataRequestSchema` | `extractStructuredData` |
-| `knowledge_capture_source` | mut | context + `CaptureSourceRequestSchema` | `captureVerificationSource` |
-| `knowledge_parse_artifact` | mut | context + `ParseArtifactRequestSchema` | `parseArtifact` |
-| `knowledge_verify_extraction` | mut | context + `VerifyExtractionRequestSchema` (exactly one `captureId`) | `verifyExtraction` |
-| `knowledge_verify_claims` | mut | context + `VerifyClaimsRequestSchema` | `verifyClaims` |
-| `knowledge_verify_report` | mut | context + `VerifyReportRequestSchema` | `verifyReport` |
-| `knowledge_verify_metric` | mut | context + `VerifyMetricObservationRequestSchema` | `verifyMetricObservation` |
-| `knowledge_request_adjudication` | mut | context + `RequestAdjudicationRequestSchema` | `requestAdjudication` |
-| `knowledge_record_adjudication_decision` | mut | context + `VerificationAdjudicationDecisionRequestSchema` | `recordAdjudicationDecision` |
-| `knowledge_inspect_audit_bundle` | mut | context + `InspectAuditBundleRequestSchema` | `inspectAuditBundle` |
-| `knowledge_replay_run` | mut | context + `ReplayRunRequestSchema` | `replayVerificationRun` |
-| `knowledge_run_benchmark` | mut | context + `RunBenchmarkRequestSchema` | `runBenchmark` |
-| `knowledge_compare_benchmark_runs` | mut | context + `CompareBenchmarkRunsRequestSchema` | `compareBenchmarkRuns` |
-| `knowledge_apply_provider_reconciliation` | mut | context, `operationId`, `providerAttemptId`, `artifact` | `applyProviderReconciliation` |
-| `knowledge_get_provider_reconciliation` | read | context, `operationId`, `providerAttemptId` | `getProviderReconciliation` |
-| `knowledge_get_structured_extraction` | read | context, `operationId` | `getStructuredExtraction` |
-| `knowledge_get_audit_inspection` | read | context, `operationId` | `getAuditInspection` |
-| `knowledge_get_verification_claims_result` | read | context, `operationId` | `getVerificationClaimsResult` |
-| `knowledge_get_verification_report_result` | read | context, `operationId` | `getVerificationReportResult` |
-| `knowledge_get_adjudication` | read | context, `operationId` | `getAdjudicationSubject` |
-| `knowledge_get_adjudication_decision` | read | context, `operationId` | `getAdjudicationDecision` |
-| `knowledge_get_benchmark_run` | read | context, `runId` | `getBenchmarkRun` |
-| `knowledge_get_benchmark_manifest` | read | context, `runId` | `getBenchmarkRunManifest` |
-| `knowledge_get_benchmark_comparison` | read | context, `comparisonId` | `getBenchmarkComparison` |
-| `knowledge_list_verification_cases` | read | context, `runId`, optional `pageSize`, `cursor` | `listVerificationRunCases` |
-| `knowledge_get_verification_case` | read | context, `caseRunId` | `getVerificationCase` |
-| `knowledge_get_verification_evidence` | read | context, `evidenceId` | `getVerificationEvidence` |
-| `knowledge_get_verification_run` | read | context, `runId` | `getVerificationRun` |
-| `knowledge_get_verification_manifest` | read | context, `runId` | `getVerificationRunManifest` |
-| `knowledge_get_verification_operation` | read | context `{tenantId,correlationId}`, `operationId` | `getVerificationOperation` |
+| `verify_extraction_run` | mut | context + `ExtractStructuredDataRequestSchema` | `extractStructuredData` |
+| `verify_benchmark_capture` | mut | context + `CaptureSourceRequestSchema` | `captureVerificationSource` |
+| `verify_artifact_parse` | mut | context + `ParseArtifactRequestSchema` | `parseArtifact` |
+| `verify_extract` | mut | context + `VerifyExtractionRequestSchema` (exactly one `captureId`) | `verifyExtraction` |
+| `verify_citations` | mut | context + `VerifyClaimsRequestSchema` | `verifyClaims` |
+| `verify_report` | mut | context + `VerifyReportRequestSchema` | `verifyReport` |
+| `verify_metric` | mut | context + `VerifyMetricObservationRequestSchema` | `verifyMetricObservation` |
+| `verify_adjudication_request` | mut | context + `RequestAdjudicationRequestSchema` | `requestAdjudication` |
+| `verify_adjudication_decision` | mut | context + `VerificationAdjudicationDecisionRequestSchema` | `recordAdjudicationDecision` |
+| `verify_bundle_inspect` | mut | context + `InspectAuditBundleRequestSchema` | `inspectAuditBundle` |
+| `verify_bundle_replay` | mut | context + `ReplayRunRequestSchema` | `replayVerificationRun` |
+| `verify_benchmark_run` | mut | context + `RunBenchmarkRequestSchema` | `runBenchmark` |
+| `verify_benchmark_compare` | mut | context + `CompareBenchmarkRunsRequestSchema` | `compareBenchmarkRuns` |
+| `verify_reconciliation_apply` | mut | context, `operationId`, `providerAttemptId`, `artifact` | `applyProviderReconciliation` |
+| `verify_reconciliation_show` | read | context, `operationId`, `providerAttemptId` | `getProviderReconciliation` |
+| `verify_extraction_show` | read | context, `operationId` | `getStructuredExtraction` |
+| `verify_bundle_show` | read | context, `operationId` | `getAuditInspection` |
+| `verify_claims_result` | read | context, `operationId` | `getVerificationClaimsResult` |
+| `verify_report_result` | read | context, `operationId` | `getVerificationReportResult` |
+| `verify_adjudication_get` | read | context, `operationId` | `getAdjudicationSubject` |
+| `verify_adjudication_get_decision` | read | context, `operationId` | `getAdjudicationDecision` |
+| `verify_benchmark_show` | read | context, `runId` | `getBenchmarkRun` |
+| `verify_benchmark_manifest` | read | context, `runId` | `getBenchmarkRunManifest` |
+| `verify_benchmark_comparison` | read | context, `comparisonId` | `getBenchmarkComparison` |
+| `verify_cases` | read | context, `runId`, optional `pageSize`, `cursor` | `listVerificationRunCases` |
+| `verify_case` | read | context, `caseRunId` | `getVerificationCase` |
+| `verify_evidence` | read | context, `evidenceId` | `getVerificationEvidence` |
+| `verify_run` | read | context, `runId` | `getVerificationRun` |
+| `verify_manifest` | read | context, `runId` | `getVerificationRunManifest` |
+| `verify_status` | read | context `{tenantId,correlationId}`, `operationId` | `getVerificationOperation` |
 
-Spec names `knowledge_extract_structured` and `knowledge_inspect_run` are **not** registered. Spec `knowledge_get_operation` maps to `knowledge_get_verification_operation`. There is no capture-show tool. Requires `knowledge.read`; missing API client → `CAPABILITY_NOT_ADMITTED`. Returns operation status (state, kind, receiptIds); read the kind-specific terminal result once `state` is `succeeded`.
+Spec names `knowledge_extract_structured` and `knowledge_inspect_run` are **not** registered. Spec `knowledge_get_operation` maps to `verify_status`. There is no capture-show tool. Requires `knowledge.read`; missing API client → `CAPABILITY_NOT_ADMITTED`. Returns operation status (state, kind, receiptIds); read the kind-specific terminal result once `state` is `succeeded`.
 
 Non-verification tools in `MCP_TOOL_CATALOG` (source, vector_store, retrieval, …) share the server and are out of scope.
 

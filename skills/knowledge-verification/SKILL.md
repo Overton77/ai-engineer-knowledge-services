@@ -94,7 +94,7 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 - `--wait` is verification_mutation only. It polls `getVerificationOperation`. Handled kinds (`WAITABLE_VERIFICATION_RECEIPTS`): `verification_capture`, `verification_extraction`, `verification_replay`, `verification_metric`, `verification_benchmark`, `verification_benchmark_compare`, `verification_claims`, `verification_report`.
 - `--wait` does **not** handle `verification_parse_artifact`, `verification_adjudication`, `verification_adjudication_decision`, `verification_audit_bundle`, `verification_structured_extraction` (throws a message that starts with `VERIFICATION_WAIT_UNSUPPORTED_KIND:<kind>` → exit `2`).
 - Prefer `ks verify status --input '{"operationId":"<uuid>"}'` (`getVerificationOperation`) over `operation status`. Then the family terminal read. `--wait` completion is a compact projection, not the authoritative result.
-- MCP: `knowledge_get_verification_operation` (spec §19 `knowledge_get_operation`), then the family `knowledge_get_*` tool.
+- MCP: `verify_status` (spec §19 `knowledge_get_operation`), then the family `knowledge_get_*` tool.
 
 `--wait` maps `needs_review` and claims/report `held_for_review` to exit `1`. Treat `held_for_review` / `needs_review` / `review_required` as held: escalate to adjudication; do not retry or override.
 
@@ -106,7 +106,7 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 
 **CLI.** `ks verify extract --context '<OperationContext>' --input '<VerifyExtractionRequest>' --wait`
 
-**MCP.** `knowledge_verify_extraction` `{context, request}`.
+**MCP.** `verify_extract` `{context, request}`.
 
 **Wait.** `--wait` is admitted (`verification_extraction`). Or `verify status` then there is no extract-result CLI; use receipt/`getVerificationOperation`. MCP: no dedicated extract-verify read tool.
 
@@ -116,15 +116,15 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 
 ## verify-source-attribution
 
-**Applies when** claims/citations/source attribution must be verified (`verify citations` / `knowledge_verify_claims`).
+**Applies when** claims/citations/source attribution must be verified (`verify citations` / `verify_citations`).
 
 **Inputs.** `VerifyClaimsRequestSchema`: `verificationContractVersion`, `captureIds`, `assertions` artifact.
 
 **CLI.** `ks verify citations --context '<OperationContext>' --input '<VerifyClaimsRequest>' --wait`
 
-**MCP.** `knowledge_verify_claims` `{context, request}`.
+**MCP.** `verify_citations` `{context, request}`.
 
-**Wait.** `--wait` admitted (`verification_claims`). Completion `{operationId,state,claims:{runId,manifestDigest,policyOutcome,mechanicalStatus,disposition},receiptId,exitCode}` is not authoritative. Or `verify status`, then `ks verify claims-result --input '{"operationId":"<uuid>"}'`. MCP: `knowledge_get_verification_operation` then `knowledge_get_verification_claims_result`.
+**Wait.** `--wait` admitted (`verification_claims`). Completion `{operationId,state,claims:{runId,manifestDigest,policyOutcome,mechanicalStatus,disposition},receiptId,exitCode}` is not authoritative. Or `verify status`, then `ks verify claims-result --input '{"operationId":"<uuid>"}'`. MCP: `verify_status` then `verify_claims_result`.
 
 **Interpret.** `--wait` `disposition` `admitted` (exit `0`): `mechanicalStatus==="passed"` and `policyOutcome` `pass` / `pass_with_warnings`. `held_for_review` (exit `1`): review/abstain policy or `review_required` mechanics — escalate, never retry or override. `quality_failed` (exit `1`). Authoritative result is the signed `claims-result` read. Submit/auth errors: infrastructure (`2`). Deterministic failures stay failed.
 
@@ -138,9 +138,9 @@ Generic CLI: `knowledge <group> <action> --context '<json>' --input '<json>' [--
 
 **CLI.** `ks verify report --context '<OperationContext>' --input '<VerifyReportRequest>' --wait`
 
-**MCP.** `knowledge_verify_report` `{context, request}`.
+**MCP.** `verify_report` `{context, request}`.
 
-**Wait.** `--wait` admitted (`verification_report`). Completion uses `report` instead of `claims` and is not authoritative. Or `verify status`, then `ks verify report-result --input '{"operationId":"<uuid>"}'`. MCP: `knowledge_get_verification_operation` then `knowledge_get_verification_report_result`.
+**Wait.** `--wait` admitted (`verification_report`). Completion uses `report` instead of `claims` and is not authoritative. Or `verify status`, then `ks verify report-result --input '{"operationId":"<uuid>"}'`. MCP: `verify_status` then `verify_report_result`.
 
 **Interpret.** Same lattice as claims (`admitted` / `held_for_review` / `quality_failed`). Report-wide mechanical gates are deterministic. Authoritative result is the signed `report-result` read.
 
@@ -159,9 +159,9 @@ A passing report verification is still not admission — read the report assessm
 
 **CLI.** `ks verify benchmark run --context '<OperationContext>' --input '<RunBenchmarkRequest>' --wait`
 
-**MCP.** `knowledge_run_benchmark` `{context, request}`.
+**MCP.** `verify_benchmark_run` `{context, request}`.
 
-**Wait.** `--wait` admitted (`verification_benchmark`): exit `0` on success receipt. Compare: `ks verify benchmark compare` / `knowledge_compare_benchmark_runs`; `--wait` exit `1` if `engineeringGateOutcome==="fail"`. Reads: `benchmark show|manifest|comparison`. MCP: `knowledge_get_benchmark_run`, `knowledge_get_benchmark_manifest`, `knowledge_get_benchmark_comparison`.
+**Wait.** `--wait` admitted (`verification_benchmark`): exit `0` on success receipt. Compare: `ks verify benchmark compare` / `verify_benchmark_compare`; `--wait` exit `1` if `engineeringGateOutcome==="fail"`. Reads: `benchmark show|manifest|comparison`. MCP: `verify_benchmark_show`, `verify_benchmark_manifest`, `verify_benchmark_comparison`.
 
 **Interpret.** `0`: admitted run. `1`: comparison engineering gate fail. `2`: infrastructure. Offline demo is **not** this workflow.
 
@@ -175,9 +175,9 @@ A passing report verification is still not admission — read the report assessm
 
 **CLI.** `ks verify bundle replay --context '<OperationContext>' --input '<ReplayRunRequest>' --wait`
 
-**MCP.** `knowledge_replay_run` `{context, request}`.
+**MCP.** `verify_bundle_replay` `{context, request}`.
 
-**Wait.** `--wait` admitted (`verification_replay`). Then `ks verify run|manifest --input '{"runId":"<id>"}'`. Audit inspect is separate: `ks verify bundle inspect` / `knowledge_inspect_audit_bundle` (no `--wait`); read `bundle show` / `knowledge_get_audit_inspection`.
+**Wait.** `--wait` admitted (`verification_replay`). Then `ks verify run|manifest --input '{"runId":"<id>"}'`. Audit inspect is separate: `ks verify bundle inspect` / `verify_bundle_inspect` (no `--wait`); read `bundle show` / `verify_bundle_show`.
 
 **Interpret.** Replay must match sealed deterministic results. Divergence is a quality or integrity failure, not a license to change the original verdict.
 
@@ -193,9 +193,9 @@ A passing report verification is still not admission — read the report assessm
 `ks verify adjudication decision --context '...' --input '<VerificationAdjudicationDecisionRequest>'`<br>
 Reads: `ks verify adjudication get` / `ks verify adjudication get-decision` with `{operationId}`.
 
-**MCP.** `knowledge_request_adjudication`, `knowledge_record_adjudication_decision`, `knowledge_get_adjudication`, `knowledge_get_adjudication_decision`.
+**MCP.** `verify_adjudication_request`, `verify_adjudication_decision`, `verify_adjudication_get`, `verify_adjudication_get_decision`.
 
-**Wait.** No `--wait` (unhandled). Poll `verify status` / `knowledge_get_verification_operation`, then the get command/tool.
+**Wait.** No `--wait` (unhandled). Poll `verify status` / `verify_status`, then the get command/tool.
 
 **Interpret.** Request output is `pending_human_adjudication`. Decision records review only (`admissionChanged` is always `false`). Quorum uses distinct `human_origin` `affirm` only.
 

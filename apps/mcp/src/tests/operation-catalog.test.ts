@@ -245,7 +245,7 @@ describe("operation catalog parity", async () => {
       expect(cliCommands.get(name)).toMatchObject({ mode: "verification_mutation", useCase: entry.useCase });
     }
     const decision = platform.find((operation) => operation.kind === "verification_adjudication_decision")!;
-    expect(bound(decision.mcp)).toEqual(["knowledge_record_adjudication_decision"]);
+    expect(bound(decision.mcp)).toEqual(["verify_adjudication_decision"]);
     expect(cliCommands.get(bound(decision.cli)[0]!)).toMatchObject({
       mode: "verification_mutation",
       useCase: "recordAdjudicationDecision",

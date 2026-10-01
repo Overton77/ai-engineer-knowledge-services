@@ -174,43 +174,43 @@ Shared mutation context fields: `tenantId`, `correlationId`, `idempotencyKey`, o
 
 | Tool | Input | Client call |
 | --- | --- | --- |
-| `knowledge_extract_structured_data` | context + `ExtractStructuredDataRequestSchema` | `extractStructuredData` |
-| `knowledge_capture_source` | context + `CaptureSourceRequestSchema` | `captureVerificationSource` |
-| `knowledge_parse_artifact` | context + `ParseArtifactRequestSchema` | `parseArtifact` |
-| `knowledge_verify_extraction` | context + `VerifyExtractionRequestSchema` | `verifyExtraction` |
-| `knowledge_verify_claims` | context + `VerifyClaimsRequestSchema` | `verifyClaims` |
-| `knowledge_verify_report` | context + `VerifyReportRequestSchema` | `verifyReport` |
-| `knowledge_verify_metric` | context + `VerifyMetricObservationRequestSchema` | `verifyMetricObservation` |
-| `knowledge_request_adjudication` | context + `RequestAdjudicationRequestSchema` | `requestAdjudication` |
-| `knowledge_record_adjudication_decision` | context + `VerificationAdjudicationDecisionRequestSchema` | `recordAdjudicationDecision` |
-| `knowledge_inspect_audit_bundle` | context + `InspectAuditBundleRequestSchema` | `inspectAuditBundle` |
-| `knowledge_replay_run` | context + `ReplayRunRequestSchema` | `replayVerificationRun` |
-| `knowledge_run_benchmark` | context + `RunBenchmarkRequestSchema` | `runBenchmark` |
-| `knowledge_compare_benchmark_runs` | context + `CompareBenchmarkRunsRequestSchema` | `compareBenchmarkRuns` |
+| `verify_extraction_run` | context + `ExtractStructuredDataRequestSchema` | `extractStructuredData` |
+| `verify_benchmark_capture` | context + `CaptureSourceRequestSchema` | `captureVerificationSource` |
+| `verify_artifact_parse` | context + `ParseArtifactRequestSchema` | `parseArtifact` |
+| `verify_extract` | context + `VerifyExtractionRequestSchema` | `verifyExtraction` |
+| `verify_citations` | context + `VerifyClaimsRequestSchema` | `verifyClaims` |
+| `verify_report` | context + `VerifyReportRequestSchema` | `verifyReport` |
+| `verify_metric` | context + `VerifyMetricObservationRequestSchema` | `verifyMetricObservation` |
+| `verify_adjudication_request` | context + `RequestAdjudicationRequestSchema` | `requestAdjudication` |
+| `verify_adjudication_decision` | context + `VerificationAdjudicationDecisionRequestSchema` | `recordAdjudicationDecision` |
+| `verify_bundle_inspect` | context + `InspectAuditBundleRequestSchema` | `inspectAuditBundle` |
+| `verify_bundle_replay` | context + `ReplayRunRequestSchema` | `replayVerificationRun` |
+| `verify_benchmark_run` | context + `RunBenchmarkRequestSchema` | `runBenchmark` |
+| `verify_benchmark_compare` | context + `CompareBenchmarkRunsRequestSchema` | `compareBenchmarkRuns` |
 
 ### Reads / reconciliation
 
 | Tool | Fields | Client call | Mut/read |
 | --- | --- | --- | --- |
-| `knowledge_get_benchmark_run` | context `{tenantId,correlationId}`, `runId` | `getBenchmarkRun` | read |
-| `knowledge_get_benchmark_manifest` | same | `getBenchmarkRunManifest` | read |
-| `knowledge_apply_provider_reconciliation` | context, `operationId`, `providerAttemptId`, `artifact` | `applyProviderReconciliation` | mut |
-| `knowledge_get_provider_reconciliation` | context, `operationId`, `providerAttemptId` | `getProviderReconciliation` | read |
-| `knowledge_get_structured_extraction` | context, `operationId` | `getStructuredExtraction` | read |
-| `knowledge_get_audit_inspection` | context, `operationId` | `getAuditInspection` | read |
-| `knowledge_get_verification_claims_result` | context, `operationId` | `getVerificationClaimsResult` | read |
-| `knowledge_get_verification_report_result` | context, `operationId` | `getVerificationReportResult` | read |
-| `knowledge_get_adjudication` | context, `operationId` | `getAdjudicationSubject` | read |
-| `knowledge_get_adjudication_decision` | context, `operationId` | `getAdjudicationDecision` | read |
-| `knowledge_get_benchmark_comparison` | context, `comparisonId` | `getBenchmarkComparison` | read |
-| `knowledge_list_verification_cases` | context, `runId`, optional `pageSize`, `cursor` | `listVerificationRunCases` | read |
-| `knowledge_get_verification_case` | context, `caseRunId` | `getVerificationCase` | read |
-| `knowledge_get_verification_evidence` | context, `evidenceId` | `getVerificationEvidence` | read |
-| `knowledge_get_verification_run` | context, `runId` | `getVerificationRun` | read |
-| `knowledge_get_verification_manifest` | context, `runId` | `getVerificationRunManifest` | read |
-| `knowledge_get_verification_operation` | context `{tenantId,correlationId}`, `operationId` | `getVerificationOperation` | read |
+| `verify_benchmark_show` | context `{tenantId,correlationId}`, `runId` | `getBenchmarkRun` | read |
+| `verify_benchmark_manifest` | same | `getBenchmarkRunManifest` | read |
+| `verify_reconciliation_apply` | context, `operationId`, `providerAttemptId`, `artifact` | `applyProviderReconciliation` | mut |
+| `verify_reconciliation_show` | context, `operationId`, `providerAttemptId` | `getProviderReconciliation` | read |
+| `verify_extraction_show` | context, `operationId` | `getStructuredExtraction` | read |
+| `verify_bundle_show` | context, `operationId` | `getAuditInspection` | read |
+| `verify_claims_result` | context, `operationId` | `getVerificationClaimsResult` | read |
+| `verify_report_result` | context, `operationId` | `getVerificationReportResult` | read |
+| `verify_adjudication_get` | context, `operationId` | `getAdjudicationSubject` | read |
+| `verify_adjudication_get_decision` | context, `operationId` | `getAdjudicationDecision` | read |
+| `verify_benchmark_comparison` | context, `comparisonId` | `getBenchmarkComparison` | read |
+| `verify_cases` | context, `runId`, optional `pageSize`, `cursor` | `listVerificationRunCases` | read |
+| `verify_case` | context, `caseRunId` | `getVerificationCase` | read |
+| `verify_evidence` | context, `evidenceId` | `getVerificationEvidence` | read |
+| `verify_run` | context, `runId` | `getVerificationRun` | read |
+| `verify_manifest` | context, `runId` | `getVerificationRunManifest` | read |
+| `verify_status` | context `{tenantId,correlationId}`, `operationId` | `getVerificationOperation` | read |
 
-**MCP verification tools:** 30 (13 named catalog + 17 extra). Spec `knowledge_get_operation` maps to `knowledge_get_verification_operation`.
+**MCP verification tools:** 30 (13 named catalog + 17 extra). Spec `knowledge_get_operation` maps to `verify_status`.
 
 ## Worker activities
 

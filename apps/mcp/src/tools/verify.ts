@@ -28,7 +28,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
   const { definitions, add } = toolCollector();
   const executeVerification = createVerificationMcpToolExecutor(options);
   const executeBenchmarkRead = createBenchmarkReadMcpExecutor(options);
-  for (const name of ["knowledge_get_benchmark_run", "knowledge_get_benchmark_manifest"] as const)
+  for (const name of ["verify_benchmark_show", "verify_benchmark_manifest"] as const)
     add(
       name,
       {
@@ -39,7 +39,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
       async (value: unknown) => executeBenchmarkRead(name, value),
     );
   add(
-    "knowledge_apply_provider_reconciliation",
+    "verify_reconciliation_apply",
     {
       description:
         "Apply a registered signed accounting decision under configured operator authority; never redispatches.",
@@ -48,7 +48,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createProviderReconciliationMcpExecutor(options, "apply"),
   );
   add(
-    "knowledge_get_provider_reconciliation",
+    "verify_reconciliation_show",
     {
       description: "Read an authenticated applied accounting decision.",
       inputSchema: reconciliationReadSchema.shape,
@@ -56,7 +56,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createProviderReconciliationMcpExecutor(options, "show"),
   );
   add(
-    "knowledge_get_structured_extraction",
+    "verify_extraction_show",
     {
       description: "Read compact authenticated extraction custody results; candidates remain unverified.",
       inputSchema: extractionReadSchema.shape,
@@ -64,7 +64,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createStructuredExtractionReadMcpExecutor(options),
   );
   add(
-    "knowledge_get_audit_inspection",
+    "verify_bundle_show",
     {
       description: "Read a compact authenticated audit inspection result and immutable proof reference.",
       inputSchema: extractionReadSchema.shape,
@@ -72,7 +72,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createAuditInspectionReadMcpExecutor(options),
   );
   add(
-    "knowledge_get_verification_claims_result",
+    "verify_claims_result",
     {
       description: "Read the compact signed terminal result for an authenticated claims verification operation.",
       inputSchema: extractionReadSchema.shape,
@@ -80,7 +80,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createClaimsReportReadMcpExecutor(options, "claims"),
   );
   add(
-    "knowledge_get_verification_report_result",
+    "verify_report_result",
     {
       description:
         "Read the compact signed terminal result and report-wide gate summary for an authenticated report verification operation.",
@@ -89,7 +89,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createClaimsReportReadMcpExecutor(options, "report"),
   );
   add(
-    "knowledge_get_adjudication",
+    "verify_adjudication_get",
     {
       description: "Read an authenticated pending adjudication subject and its verified source references.",
       inputSchema: extractionReadSchema.shape,
@@ -97,7 +97,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createAdjudicationReadMcpExecutor(options),
   );
   add(
-    "knowledge_get_adjudication_decision",
+    "verify_adjudication_get_decision",
     {
       description: "Read a compact authenticated packet-bound adjudication decision terminal result.",
       inputSchema: extractionReadSchema.shape,
@@ -105,7 +105,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     createAdjudicationDecisionReadMcpExecutor(options),
   );
   add(
-    "knowledge_get_benchmark_comparison",
+    "verify_benchmark_comparison",
     {
       description:
         "Read signed paired engineering statistics and corrected p-values for a completed benchmark comparison.",
@@ -116,7 +116,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
   const caseReadContext = McpReadContextSchema;
   const caseReadTools = [
     {
-      name: "knowledge_list_verification_cases",
+      name: "verify_cases",
       schema: z.strictObject({
         context: caseReadContext,
         runId: z.uuid(),
@@ -126,12 +126,12 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
       kind: "list",
     },
     {
-      name: "knowledge_get_verification_case",
+      name: "verify_case",
       schema: z.strictObject({ context: caseReadContext, caseRunId: z.uuid() }),
       kind: "case",
     },
     {
-      name: "knowledge_get_verification_evidence",
+      name: "verify_evidence",
       schema: z.strictObject({
         context: caseReadContext,
         evidenceId: z.uuid(),
@@ -172,7 +172,7 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
     context: McpReadContextSchema,
     runId: z.uuid(),
   });
-  for (const name of ["knowledge_get_verification_run", "knowledge_get_verification_manifest"] as const) {
+  for (const name of ["verify_run", "verify_manifest"] as const) {
     add(
       name,
       {
@@ -185,14 +185,14 @@ export function verificationToolDefinitions(options: KnowledgeMcpServerOptions) 
         const reads = options.verificationReads;
         if (!reads) return toolError("CAPABILITY_NOT_ADMITTED");
         const input = { tenantId: context.tenantId, runId };
-        return name === "knowledge_get_verification_run"
+        return name === "verify_run"
           ? readToolResult(await reads.run(input))
           : readToolResult(await reads.runManifest(input));
       },
     );
   }
   add(
-    "knowledge_get_verification_operation",
+    "verify_status",
     {
       description:
         "Poll the state and receipt ids of a tenant-owned verification operation; read the kind-specific terminal result once state is succeeded.",

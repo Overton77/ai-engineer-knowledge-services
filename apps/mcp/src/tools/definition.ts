@@ -1,4 +1,4 @@
-import { operationCatalog, type CatalogOperation, type Group } from "@aiengineer/knowledge-host";
+import { operationCatalog, type CatalogOperation } from "@aiengineer/knowledge-host";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z, type ZodRawShape } from "zod";
 
@@ -9,7 +9,7 @@ export const McpReadContextSchema = z.strictObject({
 
 export interface ToolDefinition {
   readonly name: string;
-  readonly group: Group;
+  readonly group: "knowledge" | "verify" | "db" | "jev";
   readonly operation: string;
   readonly inputSchema: ZodRawShape;
   readonly authority: "read" | "submit" | "review";
@@ -30,16 +30,15 @@ export function defineTool(
 ): ToolDefinition {
   const operation = operationCatalog.find((row) => bindingNames(row).includes(input.name));
   if (!operation) throw new Error(`UNREGISTERED_MCP_TOOL:${input.name}`);
+  const group = input.name.split("_", 1)[0];
+  if (group !== "knowledge" && group !== "verify" && group !== "db" && group !== "jev")
+    throw new Error(`INVALID_MCP_TOOL_GROUP:${input.name}`);
   return {
     ...input,
     operation: operation.id,
-    group: operation.group,
+    group,
     authority:
-      input.name === "knowledge_record_adjudication_decision"
-        ? "review"
-        : operation.effect === "read"
-          ? "read"
-          : "submit",
+      input.name === "verify_adjudication_decision" ? "review" : operation.effect === "read" ? "read" : "submit",
   };
 }
 

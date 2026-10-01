@@ -44,10 +44,10 @@ describe("MCP issues no HTTP request to the API", () => {
     expect(fetchTrap).not.toHaveBeenCalled();
   });
 
-  it.each([true, false])("runs retrieval.search in process (executor composed: %s)", async (configured) => {
+  it.each([true, false])("runs knowledge_retrieve_search in process (executor composed: %s)", async (configured) => {
     const transports = retrievalSearchTransports(configured);
     const outcome = answered(
-      await viaMcp(transports.mcp, tokens.owner, "retrieval.search", {
+      await viaMcp(transports.mcp, tokens.owner, "knowledge_retrieve_search", {
         context: operationContext(tenant, owner),
         input: { plan: retrievalPlan },
         expectedVersions: { api: "v1" },
@@ -66,7 +66,7 @@ describe("MCP issues no HTTP request to the API", () => {
       for (const entry of [
         ...verificationMutationInventory,
         {
-          tool: "knowledge_record_adjudication_decision",
+          tool: "verify_adjudication_decision",
           request: {
             subjectId: KNOWN,
             packetArtifact: { artifactId: KNOWN, digest: `sha256:${"b".repeat(64)}` },

@@ -112,13 +112,13 @@ verification reads call the shared
 [`createKnowledgeResourceReads`](../packages/application/src/knowledge/reads/knowledge-resource-reads.ts)
 and
 [`createVerificationResourceReads`](../packages/application/src/verification/reads/verification-resource-reads.ts);
-`retrieval.search` calls
+`knowledge_retrieve_search` calls
 [`submitCanonicalRetrievalRun`](../packages/application/src/knowledge/retrieval/canonical-retrieval-run.ts).
 Verification mutations call application after
 [`bindResolvedVerificationContext`](../packages/application/src/verification/operations/verification-context-binding.ts)
-and the shared admission gates. `knowledge_get_verification_operation`,
-`embedding.run_status` and `promotion.status` use `operationService.get`;
-`retrieval.plan_validate` is `RetrievalPlanSchema.parse`; pipeline catalog
+and the shared admission gates. `verify_status`,
+`knowledge_embed_status` and `knowledge_promotion_status` use `operationService.get`;
+`knowledge_retrieve_plan` is `RetrievalPlanSchema.parse`; pipeline catalog
 writes use `operationService.submit`. The API route is the behavioral
 reference: a [parity test](../apps/mcp/src/tests/api-mcp-parity.test.ts) runs
 both transports over identical fixtures for every former shim row. This

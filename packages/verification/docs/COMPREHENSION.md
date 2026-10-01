@@ -129,21 +129,21 @@ All request names below are contracts, primarily in [requests.ts](../contracts/s
 
 | Agent intention | Request and principal fields | MCP mutation | Next read / next action |
 | --- | --- | --- | --- |
-| Capture a source | `CaptureSourceRequest`: acquire URL or register content; requested projection kinds | `knowledge_capture_source` | Poll; HTTP `GET /v1/verification/captures/:operationId`. No platform capture-show MCP tool in the inspected skill. |
-| Parse an artifact | `ParseArtifactRequest` from [parse.ts](../contracts/src/verification/parse.ts) | `knowledge_parse_artifact` | Poll and follow parse result/receipt contract. |
-| Produce structured data | `ExtractStructuredDataRequest`: capture ID, representation handle, schema handle, `registered_default` profile | `knowledge_extract_structured_data` | `knowledge_get_structured_extraction`. |
-| Check an existing extraction | `VerifyExtractionRequest`: capture IDs, schema handle, output handle | `knowledge_verify_extraction` | Poll and inspect receipt; no dedicated verification-extraction result MCP read in the skill. |
-| Verify claims/citations | `VerifyClaimsRequest`: capture IDs, assertions artifact | `knowledge_verify_claims` | `knowledge_get_verification_claims_result`. |
-| Verify a report | `VerifyReportRequest`: report handle, claim-ledger handle, capture IDs | `knowledge_verify_report` | `knowledge_get_verification_report_result`. |
-| Verify metric observations | `VerifyMetricObservationRequest`: capture IDs, observations artifact | `knowledge_verify_metric` | Poll; inspect operation receipt and run/manifest. |
-| Inspect an audit bundle | `InspectAuditBundleRequest`: audit-bundle handle | `knowledge_inspect_audit_bundle` | `knowledge_get_audit_inspection`. |
-| Recompute a prior run | `ReplayRunRequest`: run ID, replay mode | `knowledge_replay_run` | Read verification run and manifest. |
-| Request human review | `RequestAdjudicationRequest`: target, reason, evidence packet, optional note | `knowledge_request_adjudication` | `knowledge_get_adjudication`. |
-| Record human decision | `VerificationAdjudicationDecisionRequest`: subject, packet, decision, rationale | `knowledge_record_adjudication_decision` | `knowledge_get_adjudication_decision`; restricted reviewer identity, not a model agent. |
-| Resolve an uncertain provider attempt | Reconciliation operation ID, attempt ID, artifact | `knowledge_apply_provider_reconciliation` | `knowledge_get_provider_reconciliation`; use retained observation, not an invented response. |
-| Run/compare offline benchmark | `RunBenchmarkRequest` / `CompareBenchmarkRunsRequest` | `knowledge_run_benchmark` / `knowledge_compare_benchmark_runs` | Benchmark run, manifest or comparison reads. Algorithm orchestration is in evaluation/application, outside this walkthrough. |
+| Capture a source | `CaptureSourceRequest`: acquire URL or register content; requested projection kinds | `verify_benchmark_capture` | Poll; HTTP `GET /v1/verification/captures/:operationId`. No platform capture-show MCP tool in the inspected skill. |
+| Parse an artifact | `ParseArtifactRequest` from [parse.ts](../contracts/src/verification/parse.ts) | `verify_artifact_parse` | Poll and follow parse result/receipt contract. |
+| Produce structured data | `ExtractStructuredDataRequest`: capture ID, representation handle, schema handle, `registered_default` profile | `verify_extraction_run` | `verify_extraction_show`. |
+| Check an existing extraction | `VerifyExtractionRequest`: capture IDs, schema handle, output handle | `verify_extract` | Poll and inspect receipt; no dedicated verification-extraction result MCP read in the skill. |
+| Verify claims/citations | `VerifyClaimsRequest`: capture IDs, assertions artifact | `verify_citations` | `verify_claims_result`. |
+| Verify a report | `VerifyReportRequest`: report handle, claim-ledger handle, capture IDs | `verify_report` | `verify_report_result`. |
+| Verify metric observations | `VerifyMetricObservationRequest`: capture IDs, observations artifact | `verify_metric` | Poll; inspect operation receipt and run/manifest. |
+| Inspect an audit bundle | `InspectAuditBundleRequest`: audit-bundle handle | `verify_bundle_inspect` | `verify_bundle_show`. |
+| Recompute a prior run | `ReplayRunRequest`: run ID, replay mode | `verify_bundle_replay` | Read verification run and manifest. |
+| Request human review | `RequestAdjudicationRequest`: target, reason, evidence packet, optional note | `verify_adjudication_request` | `verify_adjudication_get`. |
+| Record human decision | `VerificationAdjudicationDecisionRequest`: subject, packet, decision, rationale | `verify_adjudication_decision` | `verify_adjudication_get_decision`; restricted reviewer identity, not a model agent. |
+| Resolve an uncertain provider attempt | Reconciliation operation ID, attempt ID, artifact | `verify_reconciliation_apply` | `verify_reconciliation_show`; use retained observation, not an invented response. |
+| Run/compare offline benchmark | `RunBenchmarkRequest` / `CompareBenchmarkRunsRequest` | `verify_benchmark_run` / `verify_benchmark_compare` | Benchmark run, manifest or comparison reads. Algorithm orchestration is in evaluation/application, outside this walkthrough. |
 
-General inspection reads are `knowledge_get_verification_run`, `knowledge_get_verification_manifest`, `knowledge_list_verification_cases`, `knowledge_get_verification_case` and `knowledge_get_verification_evidence`. Their IDs refer to different entities: operation ID, run ID, case-run ID and evidence ID are not interchangeable.
+General inspection reads are `verify_run`, `verify_manifest`, `verify_cases`, `verify_case` and `verify_evidence`. Their IDs refer to different entities: operation ID, run ID, case-run ID and evidence ID are not interchangeable.
 
 **Current admission limits:** the skill documents exactly one capture for verification of an existing extraction, although the shared request schema accepts a larger capture list. Capture acquisition/registration also admits fewer combinations than its Zod schema expresses: web pages require `html_dom`; the PDF acquire path permits `pdf_text` plus `geometry`. Schema acceptance alone is insufficient to establish runtime capability.
 
