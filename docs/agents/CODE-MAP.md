@@ -1244,7 +1244,7 @@ Git-driven local review queue and isolated maintenance proposals; remote issue d
 **Declared internal package dependencies:** none declared
 **Other runtime dependencies:** none declared
 **Reviewed runtime/data relationships:** none declared
-**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs)
+**Checks:** [`tools/maintenance/maintenance.test.mjs`](../../tools/maintenance/maintenance.test.mjs), [`.github/maintenance/dispatch.test.mjs`](../../.github/maintenance/dispatch.test.mjs), [`.github/maintenance/proposal.test.mjs`](../../.github/maintenance/proposal.test.mjs), [`.github/maintenance/cursor-run.test.mjs`](../../.github/maintenance/cursor-run.test.mjs), [`.github/maintenance/workflow.test.mjs`](../../.github/maintenance/workflow.test.mjs)
 - A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt.
 
 **Architecture and detailed docs:**

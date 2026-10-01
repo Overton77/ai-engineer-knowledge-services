@@ -1421,7 +1421,8 @@
         "tools/maintenance/maintenance.test.mjs",
         ".github/maintenance/dispatch.test.mjs",
         ".github/maintenance/proposal.test.mjs",
-        ".github/maintenance/cursor-run.test.mjs"
+        ".github/maintenance/cursor-run.test.mjs",
+        ".github/maintenance/workflow.test.mjs"
       ],
       "constraints": [
         "A proposal is not merge approval. Remote activation needs published workflows and provider credentials. Full application verification retains its documented missing historical receipt."

@@ -23,7 +23,7 @@ jobs:
       - name: Local queue and isolated proposal fixtures
         run: node --test tools/maintenance/maintenance.test.mjs
       - name: Remote authorization and publication fixtures
-        run: node --test .github/maintenance/dispatch.test.mjs .github/maintenance/proposal.test.mjs .github/maintenance/cursor-run.test.mjs
+        run: node --test .github/maintenance/*.test.mjs
       - name: Portable retrieval fixtures
         run: node --test .agent-docs/retrieval.test.mjs
       - name: Generated documentation freshness
