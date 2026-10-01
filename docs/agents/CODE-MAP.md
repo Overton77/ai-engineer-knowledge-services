@@ -1237,7 +1237,7 @@ Agent procedure for closed-choice tasks, captured input references, process work
 
 Git-driven local review queue and isolated maintenance proposals; remote issue dispatch uses GitHub Actions.
 
-**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs)
+**Enter:** [`tools/maintenance/cli.mjs`](../../tools/maintenance/cli.mjs), [`tools/maintenance/engine.mjs`](../../tools/maintenance/engine.mjs), [`.github/maintenance/dispatch.mjs`](../../.github/maintenance/dispatch.mjs), [`tools/maintenance/install-watcher.ps1`](../../tools/maintenance/install-watcher.ps1), [`.github/maintenance/cursor-run.mjs`](../../.github/maintenance/cursor-run.mjs), [`tools/maintenance/run-watcher.ps1`](../../tools/maintenance/run-watcher.ps1), [`tools/maintenance/policy.json`](../../tools/maintenance/policy.json), [`.github/workflows/agent-maintenance.yml`](../../.github/workflows/agent-maintenance.yml)
 **Interface:** Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands.
 **Package:** not a standalone package
 **Export subpaths:** none declared. Declared metadata; build outputs are not read.

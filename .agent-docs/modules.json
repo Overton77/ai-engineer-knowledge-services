@@ -1409,7 +1409,10 @@
         "tools/maintenance/engine.mjs",
         ".github/maintenance/dispatch.mjs",
         "tools/maintenance/install-watcher.ps1",
-        ".github/maintenance/cursor-run.mjs"
+        ".github/maintenance/cursor-run.mjs",
+        "tools/maintenance/run-watcher.ps1",
+        "tools/maintenance/policy.json",
+        ".github/workflows/agent-maintenance.yml"
       ],
       "interface": [
         "Node CLI enqueue/reconcile/run/watch/status/pause/resume; Git hooks; explicit /agent provider task commands."

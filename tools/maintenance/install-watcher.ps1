@@ -15,6 +15,16 @@ if ($Remove) {
     exit
 }
 $shellPath = (Get-Process -Id $PID).Path
+$gitDirectory = & git -C $repository rev-parse --git-common-dir
+if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve Git common directory.' }
+$stateDirectory = [IO.Path]::GetFullPath((Join-Path $repository (Join-Path $gitDirectory 'maintenance')))
+New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
+$runtimeDirectories = @('node', 'git', 'codex', 'claude', 'agent') | ForEach-Object {
+    $installedCommand = Get-Command $_ -ErrorAction SilentlyContinue
+    if ($installedCommand -and $installedCommand.Source) { Split-Path -Parent $installedCommand.Source }
+} | Select-Object -Unique
+@{ node = (Get-Command node -ErrorAction Stop).Source; directories = @($runtimeDirectories) } |
+    ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateDirectory 'watcher-runtime.json') -Encoding utf8
 $runner = Join-Path $PSScriptRoot 'run-watcher.ps1'
 $action = New-ScheduledTaskAction -Execute $shellPath -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -File `"$runner`"" -WorkingDirectory $repository
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
