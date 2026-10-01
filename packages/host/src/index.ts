@@ -11,6 +11,26 @@ export * from "./server/verification.js";
 export * from "./local/capabilities.js";
 export * from "./local/catalog-profile.js";
 export * from "./local/local-host.js";
+export {
+  assertOperationKindAdmitted,
+  bindResolvedVerificationContext,
+  createKnowledgeResourceReads,
+  createVerificationResourceReads,
+  isAdjudicationDecisionReviewerActor,
+  operationCatalog,
+  productionWorkerOperationKinds,
+  submitCanonicalRetrievalRun,
+  transportProblem,
+  type CanonicalRetrievalExecutorPort,
+  type CatalogOperation,
+  type Group,
+  type KnowledgeOperationPort,
+  type KnowledgeResourceReads,
+  type ResolveVerificationContext,
+  type ResourceReadResult,
+  type VerificationResourceReads,
+  VerificationOperationApplicationService,
+} from "@aiengineer/knowledge-application";
 export type { HostEnvironment } from "./server/shared.js";
 export { HostResources, constructWithResources } from "./lifecycle/resources.js";
 export { startPollingLoop, type PollingLoop } from "./lifecycle/polling.js";

@@ -161,10 +161,16 @@
       "summary": "In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHost (role mcp), which supplies the same knowledge, verify and operations groups as the API role; MCP never calls the API.",
       "entrypoints": [
         "apps/mcp/src/index.ts",
-        "apps/mcp/src/catalog.ts"
+        "apps/mcp/src/catalog.ts",
+        "apps/mcp/src/tools/definition.ts",
+        "apps/mcp/src/tools/errors.ts",
+        "apps/mcp/src/tools/register.ts",
+        "apps/mcp/src/tools/executors.ts",
+        "apps/mcp/src/server/http.ts",
+        "apps/mcp/src/server/vercel.ts"
       ],
       "interface": [
-        "MCP catalog and tool handlers; not a second business-rule authority. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call the shared application reads; retrieval.search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
+        "MCP tool definitions are grouped under tools/ and checked against the application catalog at registration. index.ts composes the entrypoint; server/http.ts hosts Streamable HTTP and server/vercel.ts adapts the serverless request. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call shared application reads; retrieval.search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
       ],
       "tests": [
         "apps/mcp/src/tests/api-mcp-parity.test.ts",
