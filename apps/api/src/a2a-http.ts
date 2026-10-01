@@ -2,6 +2,7 @@ import { A2AKnowledgeAdapter, operationEnvelopeForA2ATask } from "./a2a-adapter.
 import {
   CallbackReplayGuard,
   authenticateCallback,
+  submitCanonicalRetrievalRun,
   type CallbackReplayStore,
   type KnowledgeOperationPort,
 } from "@aiengineer/knowledge-application";
@@ -10,6 +11,14 @@ import { actorsMatch, type ApiAction, type LocalApiIdentity } from "@aiengineer/
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { CanonicalRetrievalExecutorPort } from "@aiengineer/knowledge-application";
+import { sendProblem } from "./http/problem-map.js";
+import type { ServerOptionDependencies } from "./http/context.js";
+
+export interface A2ARouteServices
+  extends Pick<
+    ServerOptionDependencies,
+    "callbackReplayStore" | "resolveCallbackSigningSecret" | "callbackClock" | "maximumCallbackAgeMs"
+  > {}
 
 export type ResolveCallbackSigningSecret = (
   tenantId: string,
@@ -113,19 +122,40 @@ export function registerA2AHttpRoutes(server: FastifyInstance, dependencies: A2A
           ),
         );
       const envelope = operationEnvelopeForA2ATask(task);
-      const accepted = await dependencies.retrievalOperationService.submit(
-        "retrieval_run",
-        envelope,
-        dependencies.origin(request),
+      const submission = await submitCanonicalRetrievalRun(
+        {
+          operations: dependencies.retrievalOperationService,
+          executor: dependencies.canonicalRetrievalExecutor,
+        },
+        { envelope, identity: access.identity, origin: dependencies.origin(request) },
       );
-      await dependencies.canonicalRetrievalExecutor.execute(envelope, access.identity);
+      if (!submission.ok && submission.reason === "retrieval_version_required")
+        return sendProblem(
+          reply,
+          dependencies.problem(
+            400,
+            "INVALID_CONTRACT",
+            "Retrieval contract version v1 is required",
+            dependencies.correlationId(request),
+          ),
+        );
+      if (!submission.ok)
+        return sendProblem(
+          reply,
+          dependencies.problem(
+            503,
+            "INTERNAL_ERROR",
+            "Canonical retrieval executor unavailable",
+            dependencies.correlationId(request),
+          ),
+        );
       status = {
         taskId: task.taskId,
-        operationId: accepted.operationId,
+        operationId: submission.accepted.operationId,
         state: "accepted" as const,
-        statusUrl: accepted.statusUrl,
-        eventStreamUrl: accepted.eventStreamUrl,
-        cancellationUrl: accepted.cancellationUrl,
+        statusUrl: submission.accepted.statusUrl,
+        eventStreamUrl: submission.accepted.eventStreamUrl,
+        cancellationUrl: submission.accepted.cancellationUrl,
       };
     } else
       status = await new A2AKnowledgeAdapter(dependencies.operationService, dependencies.origin(request)).dispatch(
@@ -232,10 +262,6 @@ export function registerA2AHttpRoutes(server: FastifyInstance, dependencies: A2A
       }),
     );
   });
-}
-
-function sendProblem(reply: FastifyReply, body: ProblemDetails) {
-  return reply.status(body.status).type("application/problem+json").send(body);
 }
 
 function a2aCallbackBinding(value: unknown): { taskId: string; signingKeyReference: string } | undefined {

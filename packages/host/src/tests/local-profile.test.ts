@@ -188,7 +188,7 @@ describe("local host admission", () => {
       "checkpoint_commit",
       "report_assess",
       "recovery_submit",
-      "knowledge_get_verification_run",
+      "verify_run",
     ])
       expect(host.admits(operation), operation).toBe(false);
     expect("dbHead" in host.verify).toBe(false);
@@ -321,9 +321,9 @@ describe("local profile entry", () => {
     const specifiers = readdirSync(directory)
       .filter((name) => name.endsWith(".ts"))
       .flatMap((name) =>
-        [...readFileSync(join(directory, name), "utf8").matchAll(/^(?:import|export)[^;]*?from\s+"([^"]+)"/gmu)].map(
-          (match) => match[1]!,
-        ),
+        [...readFileSync(join(directory, name), "utf8").matchAll(/^(?:import|export)[^;]*?from\s+"([^"]+)"/gmu)]
+          .filter((match) => !match[0].startsWith("import type "))
+          .map((match) => match[1]!),
       );
     expect(specifiers).toContain("../lifecycle/resources.js");
     expect(

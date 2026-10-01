@@ -6,18 +6,16 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import {
   apiOwnedOperationKinds,
+  operationCatalog,
   operationStepsByKind,
   productionWorkerOperationKinds,
   verificationOwnedOperationKinds,
 } from "@aiengineer/knowledge-application";
+import { operationCatalog, transportState } from "../../../../../packages/application/src/operations/catalog.js";
+import { localProfileState } from "../../../../../packages/host/src/local/catalog-profile.js";
 import { buildServer } from "../../../../../apps/api/src/server.js";
 import { CLI_COMMANDS } from "../../../../../apps/cli/src/commands.js";
 import { createKnowledgeMcpServer } from "../../../../../apps/mcp/src/index.js";
-import * as catalogModule from "../../../../../apps/mcp/src/tests/operation-catalog.js";
-
-const { operationCatalog, transportState } = catalogModule;
-// From 5B the catalog also derives each row's state on the local host profile; earlier slices lack it.
-const localProfileState = (catalogModule as { localProfileState?: (operation: unknown) => string }).localProfileState;
 
 // The MCP SDK is a dependency of apps/mcp only; resolve it from there.
 const mcpRequire = createRequire(new URL("../../../../../apps/mcp/package.json", import.meta.url));

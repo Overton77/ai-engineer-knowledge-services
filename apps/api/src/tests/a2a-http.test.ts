@@ -168,6 +168,40 @@ describe("authenticated HTTP A2A transport", () => {
       },
       expectedVersions: { retrieval: "v1" },
     });
+    const invalidTask = {
+      ...retrievalTask,
+      taskId: id(35),
+      context: { ...retrievalContext, operationId: id(36), idempotencyKey: "a2a-retrieval-invalid-0001" },
+      operationInput: { ...retrievalTask.operationInput, queryEmbedding: [0, 1] },
+    };
+    const invalidA2A = await api.inject({ method: "POST", url: "/v1/a2a/tasks", headers, payload: invalidTask });
+    const invalidHttp = await api.inject({
+      method: "POST",
+      url: "/v1/retrieval-runs",
+      headers,
+      payload: {
+        context: invalidTask.context,
+        input: invalidTask.operationInput,
+        expectedVersions: { contract: "v1", retrieval: "v1" },
+      },
+    });
+    expect(invalidA2A.statusCode).toBe(400);
+    expect(invalidA2A.json().code).toBe(invalidHttp.json().code);
+    expect(invalidA2A.json().title).toBe(invalidHttp.json().title);
+    expect(retrieval.list(tenantId)).toHaveLength(1);
+    const wrongVersion = await api.inject({
+      method: "POST",
+      url: "/v1/a2a/tasks",
+      headers,
+      payload: {
+        ...invalidTask,
+        operationInput: retrievalTask.operationInput,
+        capabilityVersions: { retrieval: "v2" },
+      },
+    });
+    expect(wrongVersion.statusCode).toBe(400);
+    expect(wrongVersion.json().code).toBe("INVALID_CONTRACT");
+    expect(retrieval.list(tenantId)).toHaveLength(1);
     await api.close();
   });
   it("admits a task through the shared operation port with full nested lineage", async () => {

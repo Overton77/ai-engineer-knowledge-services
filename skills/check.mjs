@@ -10,7 +10,7 @@
  *   executor operations  apps/verification-executor/src/knowledge/{operations,recovery-host-operations,content-link-operations}.ts
  *   executor MCP tools   apps/verification-executor/src/mcp.ts  (verify_* tools) + the operations above
  *   platform CLI (ks)    apps/cli/src/ks-commands.ts KS_COMMANDS; remote status from apps/cli/src/commands.ts CLI_COMMANDS
- *   platform MCP tools   apps/mcp/src/index.ts
+ *   platform MCP tools   apps/mcp/src/catalog.ts and tools/verify.ts
  *   Jev MCP / CLI        apps/jev/src/{mcp,index}.ts
  * When apps/verification-executor/dist/knowledge.js exists, its `ops` output is compared against the
  * parsed executor catalog so a stale parser cannot pass silently.
@@ -85,10 +85,16 @@ function platformCommands() {
 
 function platformMcpTools() {
   const catalog = read(join(repoRoot, "apps/mcp/src/catalog.ts"));
-  const source = read(join(repoRoot, "apps/mcp/src/index.ts")) + catalog;
+  const catalogEnd = catalog.indexOf("export type McpToolName");
+  const verificationEnd = catalog.indexOf("export const FORBIDDEN_MCP_CAPABILITIES");
+  if (catalogEnd < 0 || verificationEnd < 0) die("platform MCP catalog markers changed");
+  const bounded = catalog.slice(catalog.indexOf("export const MCP_TOOL_CATALOG"), catalogEnd);
+  const verification = catalog.slice(catalog.indexOf("export const VERIFICATION_MCP_TOOL_NAMES"), verificationEnd);
+  const group = read(join(repoRoot, "apps/mcp/src/tools/verify.ts"));
   return new Set([
-    ...[...source.matchAll(/"(knowledge_[a-z_]+)"/g)].map((match) => match[1]),
-    ...[...catalog.matchAll(/^\s*"([a-z_]+\.[a-z_]+)":/gm)].map((match) => match[1]),
+    ...[...bounded.matchAll(/^\s*"?([a-z][a-z0-9_]*)"?:/gm)].map((match) => match[1]),
+    ...[...verification.matchAll(/"([a-z][a-z0-9_]*)"/g)].map((match) => match[1]),
+    ...[...group.matchAll(/"(verify_[a-z0-9_]+)"/g)].map((match) => match[1]),
   ]);
 }
 

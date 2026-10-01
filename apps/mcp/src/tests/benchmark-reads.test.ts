@@ -22,13 +22,13 @@ describe("benchmark MCP reads", () => {
       }),
     });
     await expect(
-      execute("knowledge_get_benchmark_run", {
+      execute("verify_benchmark_show", {
         context: { ...context, tenantId: randomUUID() },
         runId,
       }),
     ).resolves.toMatchObject({ isError: true });
     await expect(
-      execute("knowledge_get_benchmark_manifest", {
+      execute("verify_benchmark_manifest", {
         context,
         runId,
         publicKeyPem: "caller-key",
@@ -36,8 +36,8 @@ describe("benchmark MCP reads", () => {
     ).rejects.toThrow();
     expect(getRun).not.toHaveBeenCalled();
     expect(getManifest).not.toHaveBeenCalled();
-    await execute("knowledge_get_benchmark_run", { context, runId });
-    await execute("knowledge_get_benchmark_manifest", { context, runId });
+    await execute("verify_benchmark_show", { context, runId });
+    await execute("verify_benchmark_manifest", { context, runId });
     expect(getRun).toHaveBeenCalledWith({ tenantId, runId });
     expect(getManifest).toHaveBeenCalledWith({ tenantId, runId });
   });

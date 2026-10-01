@@ -106,7 +106,7 @@ describe("uncaught read failure API/MCP parity", () => {
       method: "GET",
       url: `/v1/retrieval-runs/${KNOWN}`,
     });
-    const mcp = await viaMcp(transports.mcp, tokens.owner, "retrieval.read_run", {
+    const mcp = await viaMcp(transports.mcp, tokens.owner, "knowledge_retrieve_run", {
       context,
       input: { runId: KNOWN },
       expectedVersions: { api: "v1" },
@@ -116,7 +116,7 @@ describe("uncaught read failure API/MCP parity", () => {
   });
 });
 
-describe("retrieval.search API/MCP parity", () => {
+describe("knowledge_retrieve_search API/MCP parity", () => {
   const search = async (options: {
     configured?: boolean;
     tenantId?: string;
@@ -133,7 +133,7 @@ describe("retrieval.search API/MCP parity", () => {
         url: "/v1/retrieval-runs",
         payload: { context, input: { plan: retrievalPlan }, expectedVersions: { api: "v1", retrieval: "v1" } },
       }),
-      mcp: await viaMcp(transports.mcp, tokens.owner, "retrieval.search", {
+      mcp: await viaMcp(transports.mcp, tokens.owner, "knowledge_retrieve_search", {
         context,
         input: { plan: retrievalPlan },
         expectedVersions: { api: "v1" },
@@ -221,7 +221,7 @@ describe("verification mutation API/MCP parity", () => {
       mcp: await viaMcp(
         transports.mcp,
         token,
-        kind === "claims" ? "knowledge_verify_claims" : "knowledge_record_adjudication_decision",
+        kind === "claims" ? "verify_citations" : "verify_adjudication_decision",
         {
           context: mcpContext(tenantId),
           request: kind === "claims" ? claimsRequest : decisionRequest,

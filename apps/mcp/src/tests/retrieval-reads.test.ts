@@ -96,7 +96,7 @@ describe("public retrieval citation adapters", () => {
 
   it("MCP permits a reader to replay without submitting an evidence-packet operation", async () => {
     const fixture = replayFixture();
-    const result = await fixture.executor("retrieval.replay_citations", "evidence_packet", {
+    const result = await fixture.executor("knowledge_retrieve_citations", "evidence_packet", {
       context: fixture.context,
       input: { packetId: fixture.packetId },
       expectedVersions: { api: "v1" },
@@ -117,7 +117,7 @@ describe("public retrieval citation adapters", () => {
       },
     ]) {
       expect(
-        await fixture.executor("retrieval.replay_citations", "evidence_packet", {
+        await fixture.executor("knowledge_retrieve_citations", "evidence_packet", {
           context,
           input: { packetId: fixture.packetId },
           expectedVersions: { api: "v1" },
@@ -129,7 +129,7 @@ describe("public retrieval citation adapters", () => {
       storageKey: "caller-controlled",
     };
     expect(
-      await fixture.executor("retrieval.replay_citations", "evidence_packet", {
+      await fixture.executor("knowledge_retrieve_citations", "evidence_packet", {
         context: fixture.context,
         input,
         expectedVersions: { api: "v1" },
@@ -160,7 +160,7 @@ describe("public retrieval citation adapters", () => {
       operationService: { submit: fixture.submit } as never,
     });
     expect(
-      await execute("retrieval.replay_citations", "evidence_packet", {
+      await execute("knowledge_retrieve_citations", "evidence_packet", {
         context: fixture.context,
         input: { packetId: fixture.packetId },
         expectedVersions: { api: "v1" },
@@ -186,7 +186,7 @@ describe("public retrieval citation adapters", () => {
       operationService: { submit: fixture.submit } as never,
     });
     expect(
-      await withoutCustody("retrieval.replay_citations", "evidence_packet", {
+      await withoutCustody("knowledge_retrieve_citations", "evidence_packet", {
         context: fixture.context,
         input: { packetId: fixture.packetId },
         expectedVersions: { api: "v1" },

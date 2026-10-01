@@ -20,10 +20,9 @@
 // declared (fails closed), excluded, executor only, server only, or local profile. The local host profile
 // composes only the verification intent pipeline over the executor's file store, so every platform row is
 // server only there; the 16 intent-pipeline rows run through `ks` on the local profile and stay executor only
-// on ks api/mcp until 5D3; the registry rows stay executor only until 5D1/5D2. localProfileState() reports
-// what the local host itself admits, from host's capability matrix (profileAvailability).
+// on ks api/mcp until 5D3; the registry rows stay executor only until 5D1/5D2. Host derives local
+// admission from its capability matrix.
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
-import { profileAvailability, type ProfileAvailability } from "@aiengineer/knowledge-host";
 
 export type Group = "operations" | "knowledge" | "verify" | "db" | "system";
 export type Admission = "admitted" | "gated" | "declared" | "executor";
@@ -75,7 +74,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "source_discovery",
     admission: "admitted",
     api: on("POST /v1/:sourceAction"),
-    mcp: on("source.discover"),
+    mcp: on("knowledge_source_discover"),
     cli: on("knowledge source discover"),
   },
   {
@@ -85,7 +84,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "source_resolution",
     admission: "admitted",
     api: on("POST /v1/:sourceAction"),
-    mcp: on("source.resolve_identity"),
+    mcp: on("knowledge_source_resolve"),
     cli: NO_CLI,
   },
   {
@@ -95,7 +94,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "capture",
     admission: "admitted",
     api: on("POST /v1/captures"),
-    mcp: on("source.fetch"),
+    mcp: on("knowledge_source_fetch"),
     cli: on("knowledge source fetch"),
   },
   {
@@ -105,7 +104,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "capture_inspection",
     admission: "declared",
     api: DECLARED_API("POST /v1/captures/:target"),
-    mcp: failsClosed("source.inspect_capture"),
+    mcp: failsClosed("knowledge_source_inspect_capture"),
     cli: failsClosed("knowledge source inspect"),
   },
   {
@@ -115,7 +114,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "capture_comparison",
     admission: "declared",
     api: DECLARED_API("POST /v1/captures/:target"),
-    mcp: failsClosed("source.compare_captures"),
+    mcp: failsClosed("knowledge_source_compare_captures"),
     cli: excluded("declared only; no CLI binding"),
   },
   {
@@ -125,7 +124,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "source_vetting",
     admission: "admitted",
     api: on("POST /v1/captures/:target"),
-    mcp: on("source.propose_vetting"),
+    mcp: on("knowledge_source_vet"),
     cli: on("knowledge source vet"),
   },
   {
@@ -135,7 +134,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "vector_store_create",
     admission: "admitted",
     api: on("POST /v1/vector-stores"),
-    mcp: on("vector_store.create"),
+    mcp: on("knowledge_store_create"),
     cli: on("knowledge store create"),
   },
   {
@@ -145,7 +144,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "vector_store_documents",
     admission: "admitted",
     api: on("POST /v1/vector-stores/:id/documents"),
-    mcp: on("vector_store.add_documents"),
+    mcp: on("knowledge_store_add_documents"),
     cli: on("knowledge store add-documents"),
   },
   {
@@ -155,7 +154,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "vector_store_ingestion",
     admission: "admitted",
     api: on("POST /v1/vector-stores/:id/ingestion-jobs", "POST /v1/a2a/tasks"),
-    mcp: excluded("ingestion jobs start over HTTP or A2A; MCP reads their status (vector_store.ingestion_status)"),
+    mcp: excluded("ingestion jobs start over HTTP or A2A; MCP reads their status (knowledge_store_status)"),
     cli: NO_CLI,
   },
   {
@@ -165,7 +164,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "vector_store_search",
     admission: "declared",
     api: DECLARED_API("POST /v1/vector-stores/:target"),
-    mcp: failsClosed("vector_store.search"),
+    mcp: failsClosed("knowledge_store_search"),
     cli: failsClosed("knowledge store search"),
   },
   {
@@ -175,7 +174,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "vector_store_evaluation",
     admission: "admitted",
     api: on("POST /v1/vector-stores/:target"),
-    mcp: on("vector_store.evaluate"),
+    mcp: on("knowledge_store_evaluate"),
     cli: on("knowledge store evaluate"),
   },
   {
@@ -215,7 +214,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "transformation",
     admission: "admitted",
     api: on("POST /v1/transformations", "POST /v1/a2a/tasks"),
-    mcp: on("document.convert"),
+    mcp: on("knowledge_document_convert"),
     cli: on("knowledge document convert"),
   },
   {
@@ -225,7 +224,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "representation_inspection",
     admission: "declared",
     api: DECLARED_API("POST /v1/representations/:target"),
-    mcp: failsClosed("document.inspect_representation"),
+    mcp: failsClosed("knowledge_document_inspect"),
     cli: failsClosed("knowledge document inspect"),
   },
   {
@@ -235,7 +234,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "representation_comparison",
     admission: "admitted",
     api: on("POST /v1/representations/:target"),
-    mcp: on("document.compare_representations"),
+    mcp: on("knowledge_document_compare"),
     cli: on("knowledge document compare"),
   },
   {
@@ -255,7 +254,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "chunk_preview",
     admission: "admitted",
     api: on("POST /v1/chunk-previews"),
-    mcp: on("chunk.preview"),
+    mcp: on("knowledge_chunk_preview"),
     cli: on("knowledge chunk preview"),
   },
   {
@@ -265,7 +264,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "chunk_comparison",
     admission: "admitted",
     api: on("POST /v1/chunk-comparisons"),
-    mcp: on("chunk.compare"),
+    mcp: on("knowledge_chunk_compare"),
     cli: NO_CLI,
   },
   {
@@ -275,7 +274,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "chunk_set",
     admission: "admitted",
     api: on("POST /v1/chunk-sets"),
-    mcp: on("chunk.create_intent"),
+    mcp: on("knowledge_chunk_build"),
     cli: on("knowledge chunk build"),
   },
   {
@@ -285,7 +284,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "chunk_set_inspection",
     admission: "declared",
     api: DECLARED_API("POST /v1/chunk-sets/:target"),
-    mcp: failsClosed("chunk.inspect"),
+    mcp: failsClosed("knowledge_chunk_inspect"),
     cli: failsClosed("knowledge chunk inspect"),
   },
   {
@@ -296,10 +295,10 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     admission: "admitted",
     api: on("POST /v1/promotion-proposals"),
     mcp: on(
-      "promotion.submit",
-      "knowledge.propose_domain_mapping",
-      "knowledge.propose_claims",
-      "knowledge.propose_entity_links",
+      "knowledge_promotion_propose",
+      "knowledge_promotion_propose_domain_mapping",
+      "knowledge_promotion_propose_claims",
+      "knowledge_promotion_propose_entity_links",
     ),
     cli: on("knowledge promotion propose"),
   },
@@ -320,7 +319,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "embedding_run",
     admission: "admitted",
     api: on("POST /v1/embedding-runs"),
-    mcp: on("embedding.create_intent"),
+    mcp: on("knowledge_embed_run"),
     cli: on("knowledge embed run"),
   },
   {
@@ -360,7 +359,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "retrieval_run",
     admission: "admitted",
     api: on("POST /v1/retrieval-runs", "POST /v1/a2a/tasks"),
-    mcp: on("retrieval.search"),
+    mcp: on("knowledge_retrieve_search"),
     cli: on("knowledge retrieve search"),
     requires: "AI Gateway embedding configuration for the canonical retrieval executor",
   },
@@ -371,7 +370,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "evidence_packet",
     admission: "admitted",
     api: on("POST /v1/a2a/tasks"),
-    mcp: on("retrieval.build_evidence_packet"),
+    mcp: on("knowledge_retrieve_build_packet"),
     cli: NO_CLI,
   },
   {
@@ -381,7 +380,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "evaluation_dataset",
     admission: "admitted",
     api: on("POST /v1/eval-datasets"),
-    mcp: on("evaluation.generate_query_candidates"),
+    mcp: on("knowledge_eval_generate"),
     cli: on("knowledge eval generate"),
   },
   {
@@ -391,7 +390,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "experiment",
     admission: "admitted",
     api: on("POST /v1/experiments"),
-    mcp: on("evaluation.compare_experiments"),
+    mcp: on("knowledge_eval_compare"),
     cli: on("knowledge eval compare"),
   },
   {
@@ -401,7 +400,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "evaluation_run",
     admission: "admitted",
     api: on("POST /v1/eval-runs"),
-    mcp: on("evaluation.run_experiment"),
+    mcp: on("knowledge_eval_run"),
     cli: on("knowledge eval run"),
   },
   {
@@ -411,7 +410,7 @@ const knowledgeMutations: readonly CatalogOperation[] = [
     kind: "review",
     admission: "declared",
     api: DECLARED_API("POST /v1/reviews"),
-    mcp: failsClosed("document.request_manual_review"),
+    mcp: failsClosed("knowledge_document_request_review"),
     cli: excluded("declared only; no CLI binding"),
   },
   {
@@ -446,7 +445,7 @@ const verifyMutations: readonly CatalogOperation[] = [
     ...verifyMutation(
       "verification_capture",
       "POST /v1/verification/captures",
-      "knowledge_capture_source",
+      "verify_benchmark_capture",
       "verify benchmark capture",
     ),
     api: on("POST /v1/verification/captures", "POST /v1/verification/benchmark-capture-profiles/:profileName/captures"),
@@ -454,73 +453,58 @@ const verifyMutations: readonly CatalogOperation[] = [
   verifyMutation(
     "verification_parse_artifact",
     "POST /v1/verification/artifacts::parse",
-    "knowledge_parse_artifact",
+    "verify_artifact_parse",
     "verify artifact parse",
   ),
   verifyMutation(
     "verification_extraction",
     "POST /v1/verification/extractions::verify",
-    "knowledge_verify_extraction",
+    "verify_extract",
     "verify extract",
   ),
   verifyMutation(
     "verification_structured_extraction",
     "POST /v1/verification/extractions",
-    "knowledge_extract_structured_data",
+    "verify_extraction_run",
     "verify extraction run",
   ),
-  verifyMutation(
-    "verification_claims",
-    "POST /v1/verification/claims::verify",
-    "knowledge_verify_claims",
-    "verify citations",
-  ),
-  verifyMutation(
-    "verification_report",
-    "POST /v1/verification/reports::verify",
-    "knowledge_verify_report",
-    "verify report",
-  ),
-  verifyMutation(
-    "verification_metric",
-    "POST /v1/verification/metrics::verify",
-    "knowledge_verify_metric",
-    "verify metric",
-  ),
+  verifyMutation("verification_claims", "POST /v1/verification/claims::verify", "verify_citations", "verify citations"),
+  verifyMutation("verification_report", "POST /v1/verification/reports::verify", "verify_report", "verify report"),
+  verifyMutation("verification_metric", "POST /v1/verification/metrics::verify", "verify_metric", "verify metric"),
   verifyMutation(
     "verification_adjudication",
     "POST /v1/verification/adjudications::request",
-    "knowledge_request_adjudication",
+    "verify_adjudication_request",
     "verify adjudication request",
   ),
   verifyMutation(
     "verification_adjudication_decision",
     "POST /v1/verification/adjudications::record-decision",
-    "knowledge_record_adjudication_decision",
+    "verify_adjudication_decision",
     "verify adjudication decision",
   ),
   verifyMutation(
     "verification_audit_bundle",
     "POST /v1/verification/audit-bundles::inspect",
-    "knowledge_inspect_audit_bundle",
+    "verify_bundle_inspect",
     "verify bundle inspect",
   ),
   verifyMutation(
     "verification_replay",
     "POST /v1/verification/runs/:runId(^[^:]+)::replay",
-    "knowledge_replay_run",
+    "verify_bundle_replay",
     "verify bundle replay",
   ),
   verifyMutation(
     "verification_benchmark",
     "POST /v1/verification/benchmarks::run",
-    "knowledge_run_benchmark",
+    "verify_benchmark_run",
     "verify benchmark run",
   ),
   verifyMutation(
     "verification_benchmark_compare",
     "POST /v1/verification/benchmarks::compare",
-    "knowledge_compare_benchmark_runs",
+    "verify_benchmark_compare",
     "verify benchmark compare",
   ),
 ];
@@ -572,7 +556,7 @@ const operationsSurface: readonly CatalogOperation[] = [
     "operations.status",
     "operations",
     on("GET /v1/operations/:id"),
-    on("embedding.run_status", "promotion.status"),
+    on("knowledge_embed_status", "knowledge_promotion_status"),
     on("knowledge operation status", "knowledge promotion status", "knowledge embed status"),
   ),
   read(
@@ -624,42 +608,42 @@ const knowledgeReads: readonly CatalogOperation[] = [
     "knowledge.vector_store_operation",
     "knowledge",
     on("GET /v1/vector-stores/:id/operations/:operationId"),
-    on("vector_store.ingestion_status"),
+    on("knowledge_store_status"),
     on("knowledge store status"),
   ),
   read(
     "knowledge.retrieval_plan_validation",
     "knowledge",
     on("POST /v1/retrieval-plans:validate"),
-    on("retrieval.plan_validate"),
+    on("knowledge_retrieve_plan"),
     on("knowledge retrieve plan"),
   ),
   read(
     "knowledge.get_retrieval_run",
     "knowledge",
     on("GET /v1/retrieval-runs/:id"),
-    on("retrieval.read_run"),
+    on("knowledge_retrieve_run"),
     on("knowledge retrieve run"),
   ),
   read(
     "knowledge.retrieval_explanation",
     "knowledge",
     on("GET /v1/retrieval-runs/:id/explanation"),
-    on("retrieval.explain_run"),
+    on("knowledge_retrieve_explain"),
     on("knowledge retrieve explain"),
   ),
   read(
     "knowledge.get_evidence_packet",
     "knowledge",
     on("GET /v1/evidence-packets/:id"),
-    on("retrieval.read_evidence_packet"),
+    on("knowledge_retrieve_packet"),
     on("knowledge retrieve packet"),
   ),
   read(
     "knowledge.citation_replay",
     "knowledge",
     on("GET /v1/evidence-packets/:id/citations"),
-    on("retrieval.replay_citations"),
+    on("knowledge_retrieve_citations"),
     on("knowledge retrieve citations"),
     "gated",
     "Supabase Storage for citation custody",
@@ -668,7 +652,7 @@ const knowledgeReads: readonly CatalogOperation[] = [
     "knowledge.evaluation_failures",
     "knowledge",
     on("GET /v1/eval-runs/:id/failures"),
-    on("evaluation.inspect_failures"),
+    on("knowledge_eval_failures"),
     on("knowledge eval failures"),
   ),
   read("knowledge.evaluation_report", "knowledge", on("GET /v1/eval-runs/:id/report"), NO_MCP, NO_CLI),
@@ -676,14 +660,14 @@ const knowledgeReads: readonly CatalogOperation[] = [
     "knowledge.chunking_procedures",
     "knowledge",
     on("GET /v1/chunking-procedures"),
-    on("chunk.strategy_list"),
+    on("knowledge_chunk_strategies"),
     NO_CLI,
   ),
   read(
     "knowledge.embedding_models",
     "knowledge",
     excluded("declared only; no route"),
-    failsClosed("embedding.model_list"),
+    failsClosed("knowledge_embed_models"),
     excluded("declared only; no CLI binding"),
     "declared",
   ),
@@ -691,7 +675,7 @@ const knowledgeReads: readonly CatalogOperation[] = [
     "knowledge.embedding_estimate",
     "knowledge",
     excluded("declared only; no route"),
-    failsClosed("embedding.estimate"),
+    failsClosed("knowledge_embed_estimate"),
     excluded("declared only; no CLI binding"),
     "declared",
   ),
@@ -721,14 +705,14 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.operation",
     "verify",
     on("GET /v1/verification/operations/:id"),
-    on("knowledge_get_verification_operation"),
+    on("verify_status"),
     on("verify status"),
   ),
   read(
     "verify.run",
     "verify",
     on("GET /v1/verification/runs/:runId"),
-    on("knowledge_get_verification_run"),
+    on("verify_run"),
     on("verify run"),
     "gated",
     VERIFICATION_READS,
@@ -737,7 +721,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.run_manifest",
     "verify",
     on("GET /v1/verification/runs/:runId/manifest"),
-    on("knowledge_get_verification_manifest"),
+    on("verify_manifest"),
     on("verify manifest"),
     "gated",
     VERIFICATION_READS,
@@ -746,7 +730,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.run_cases",
     "verify",
     on("GET /v1/verification/runs/:id/cases"),
-    on("knowledge_list_verification_cases"),
+    on("verify_cases"),
     on("verify cases"),
     "gated",
     VERIFICATION_READS,
@@ -755,7 +739,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.case",
     "verify",
     on("GET /v1/verification/cases/:id"),
-    on("knowledge_get_verification_case"),
+    on("verify_case"),
     on("verify case"),
     "gated",
     VERIFICATION_READS,
@@ -764,7 +748,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.evidence",
     "verify",
     on("GET /v1/verification/evidence/:id"),
-    on("knowledge_get_verification_evidence"),
+    on("verify_evidence"),
     on("verify evidence"),
     "gated",
     VERIFICATION_READS,
@@ -773,7 +757,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.claims_result",
     "verify",
     on("GET /v1/verification/claims/:operationId"),
-    on("knowledge_get_verification_claims_result"),
+    on("verify_claims_result"),
     on("verify claims-result"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -782,7 +766,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.report_result",
     "verify",
     on("GET /v1/verification/reports/:operationId"),
-    on("knowledge_get_verification_report_result"),
+    on("verify_report_result"),
     on("verify report-result"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -791,7 +775,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.get_structured_extraction",
     "verify",
     on("GET /v1/verification/extractions/:operationId"),
-    on("knowledge_get_structured_extraction"),
+    on("verify_extraction_show"),
     on("verify extraction show"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -800,7 +784,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.audit_inspection",
     "verify",
     on("GET /v1/verification/audit-inspections/:operationId"),
-    on("knowledge_get_audit_inspection"),
+    on("verify_bundle_show"),
     on("verify bundle show"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -809,7 +793,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.get_adjudication",
     "verify",
     on("GET /v1/verification/adjudications/:operationId"),
-    on("knowledge_get_adjudication"),
+    on("verify_adjudication_get"),
     on("verify adjudication get"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -818,7 +802,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.get_adjudication_decision",
     "verify",
     on("GET /v1/verification/adjudication-decisions/:operationId"),
-    on("knowledge_get_adjudication_decision"),
+    on("verify_adjudication_get_decision"),
     on("verify adjudication get-decision"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -827,7 +811,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.benchmark_run",
     "verify",
     on("GET /v1/verification/benchmarks/:runId"),
-    on("knowledge_get_benchmark_run"),
+    on("verify_benchmark_show"),
     on("verify benchmark show"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -836,7 +820,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.benchmark_manifest",
     "verify",
     on("GET /v1/verification/benchmarks/:runId/manifest"),
-    on("knowledge_get_benchmark_manifest"),
+    on("verify_benchmark_manifest"),
     on("verify benchmark manifest"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -845,7 +829,7 @@ const verifyReads: readonly CatalogOperation[] = [
     "verify.benchmark_comparison",
     "verify",
     on("GET /v1/verification/benchmarks/comparisons/:comparisonId"),
-    on("knowledge_get_benchmark_comparison"),
+    on("verify_benchmark_comparison"),
     on("verify benchmark comparison"),
     "gated",
     VERIFICATION_RESULT_READS,
@@ -867,7 +851,7 @@ const verifyReads: readonly CatalogOperation[] = [
       "GET /v1/verification/reports/:operationId/provider-attempts/:providerAttemptId/reconciliation",
       "GET /v1/verification/extractions/:operationId/provider-attempts/:providerAttemptId/reconciliation",
     ),
-    on("knowledge_get_provider_reconciliation"),
+    on("verify_reconciliation_show"),
     on("verify reconciliation show"),
     "gated",
     "operator provider reconciliation authority",
@@ -882,7 +866,7 @@ const verifyReads: readonly CatalogOperation[] = [
       "POST /v1/verification/reports/:operationId/provider-attempts/:providerAttemptId/reconciliation",
       "POST /v1/verification/extractions/:operationId/provider-attempts/:providerAttemptId/reconciliation",
     ),
-    mcp: on("knowledge_apply_provider_reconciliation"),
+    mcp: on("verify_reconciliation_apply"),
     cli: on("verify reconciliation apply"),
     requires: "operator provider reconciliation authority",
   },
@@ -1076,13 +1060,6 @@ export function transportState(
   if ("excluded" in binding) return "excluded";
   if ("failsClosed" in binding) return "declared (fails closed)";
   return operation.admission === "gated" ? "executable when composed" : "executable";
-}
-
-/** What the local host profile admits for this row: offline, a provider it needs, or server only. */
-export function localProfileState(operation: CatalogOperation): Exclude<ProfileAvailability, "server" | "remote"> {
-  const state = profileAvailability("local", operation.executor?.mcp ?? operation.id);
-  if (state === "server" || state === "remote") throw new Error(`UNEXPECTED_LOCAL_STATE:${operation.id}`);
-  return state;
 }
 
 export const operationCatalog: readonly CatalogOperation[] = [

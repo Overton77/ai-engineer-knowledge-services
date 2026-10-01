@@ -123,9 +123,9 @@ As-built surfaces vs `docs/specifications/verification-module.md` §17–§19. T
 | Spec | Stated | As-built |
 | --- | --- | --- |
 | §17 | `POST /v1/verification/reviews` | Absent. Review is `POST /v1/verification/adjudications:request` and `:record-decision`. |
-| §19 | `knowledge_extract_structured` | Registered as `knowledge_extract_structured_data`. |
-| §19 | `knowledge_get_operation` | Registered as `knowledge_get_verification_operation`. |
-| §19 | `knowledge_inspect_run` | Absent. Use `knowledge_get_verification_run` / `knowledge_get_verification_manifest`. |
+| §19 | `knowledge_extract_structured` | Registered as `verify_extraction_run`. |
+| §19 | `knowledge_get_operation` | Registered as `verify_status`. |
+| §19 | `knowledge_inspect_run` | Absent. Use `verify_run` / `verify_manifest`. |
 | §18 | `--work-item-id`, `--attempt-id`, `--idempotency-key`, `--output` on catalog commands | Absent. Those values travel in `--context` JSON (`missionId`, `workItemId`, `attemptId`, `idempotencyKey`). `--output` exists only on local specials (demo, attestation-export, benchmark capture diagnostics-companies). |
 | §18 | JSONL / manifest-URI input; checkpoint / resume | Absent. Catalog `--input` is a JSON object. |
 

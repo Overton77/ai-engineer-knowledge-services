@@ -592,7 +592,7 @@ const verificationRow = (
 
 export const readRows: readonly ParityRow[] = [
   knowledgeRow({
-    tool: "retrieval.read_run",
+    tool: "knowledge_retrieve_run",
     kind: "retrieval_run",
     http: (runId) => ({ method: "GET", url: `/v1/retrieval-runs/${runId}` }),
     args: catalogArgs((runId) => ({ runId })),
@@ -601,7 +601,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   knowledgeRow({
-    tool: "retrieval.explain_run",
+    tool: "knowledge_retrieve_explain",
     kind: "retrieval_run",
     http: (runId) => ({ method: "GET", url: `/v1/retrieval-runs/${runId}/explanation` }),
     args: catalogArgs((runId) => ({ runId })),
@@ -610,7 +610,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   knowledgeRow({
-    tool: "evaluation.inspect_failures",
+    tool: "knowledge_eval_failures",
     kind: "evaluation_run",
     http: (runId) => ({ method: "GET", url: `/v1/eval-runs/${runId}/failures` }),
     args: catalogArgs((runId) => ({ runId })),
@@ -619,7 +619,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   knowledgeRow({
-    tool: "vector_store.ingestion_status",
+    tool: "knowledge_store_status",
     kind: "vector_store_ingestion",
     http: (operationId) => ({ method: "GET", url: `/v1/vector-stores/${id(80)}/operations/${operationId}` }),
     args: catalogArgs((operationId) => ({ vectorStoreId: id(80), operationId })),
@@ -628,7 +628,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   knowledgeRow({
-    tool: "retrieval.read_evidence_packet",
+    tool: "knowledge_retrieve_packet",
     kind: "evidence_packet",
     http: (packetId) => ({ method: "GET", url: `/v1/evidence-packets/${packetId}` }),
     args: catalogArgs((packetId) => ({ packetId })),
@@ -638,7 +638,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   knowledgeRow({
-    tool: "retrieval.replay_citations",
+    tool: "knowledge_retrieve_citations",
     kind: "evidence_packet",
     http: (packetId) => ({ method: "GET", url: `/v1/evidence-packets/${packetId}/citations` }),
     args: catalogArgs((packetId) => ({ packetId })),
@@ -647,7 +647,7 @@ export const readRows: readonly ParityRow[] = [
     notFound: true,
   }),
   verificationRow({
-    tool: "knowledge_get_structured_extraction",
+    tool: "verify_extraction_show",
     actorCase: "owned",
     services: () => ({ structuredExtractionReads: { getExtraction: ownedRead(() => fixtures.structuredExtraction) } }),
     http: (operationId) => ({ method: "GET", url: `/v1/verification/extractions/${operationId}` }),
@@ -655,7 +655,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.structuredExtraction,
   }),
   verificationRow({
-    tool: "knowledge_get_audit_inspection",
+    tool: "verify_bundle_show",
     actorCase: "owned",
     services: () => ({ auditInspectionReads: { getInspection: ownedRead(() => fixtures.auditInspection) } }),
     http: (operationId) => ({ method: "GET", url: `/v1/verification/audit-inspections/${operationId}` }),
@@ -663,7 +663,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.auditInspection,
   }),
   verificationRow({
-    tool: "knowledge_get_verification_claims_result",
+    tool: "verify_claims_result",
     actorCase: "owned",
     services: () => ({
       claimsReportReads: { getClaims: ownedRead(() => fixtures.claims), getReport: ownedRead(() => fixtures.claims) },
@@ -673,7 +673,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.claims,
   }),
   verificationRow({
-    tool: "knowledge_get_verification_report_result",
+    tool: "verify_report_result",
     actorCase: "owned",
     // A claims terminal is not a report: both transports fail it closed as integrity.
     services: () => ({
@@ -683,7 +683,7 @@ export const readRows: readonly ParityRow[] = [
     args: (operationId, context) => ({ context: readContext(context), operationId }),
   }),
   verificationRow({
-    tool: "knowledge_get_adjudication",
+    tool: "verify_adjudication_get",
     actorCase: "owned",
     services: () => ({ adjudicationReads: { getPendingSubject: ownedRead(() => fixtures.adjudicationSubject) } }),
     http: (operationId) => ({ method: "GET", url: `/v1/verification/adjudications/${operationId}` }),
@@ -691,7 +691,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.adjudicationSubject,
   }),
   verificationRow({
-    tool: "knowledge_get_adjudication_decision",
+    tool: "verify_adjudication_get_decision",
     actorCase: "owned",
     services: () => ({
       adjudicationDecisionReads: { getDecision: ownedRead(() => fixtures.adjudicationDecision) },
@@ -702,7 +702,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.adjudicationDecision,
   }),
   verificationRow({
-    tool: "knowledge_get_provider_reconciliation",
+    tool: "verify_reconciliation_show",
     actorCase: "owned",
     services: () => ({
       providerReconciliation: {
@@ -718,7 +718,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.reconciliation,
   }),
   verificationRow({
-    tool: "knowledge_apply_provider_reconciliation",
+    tool: "verify_reconciliation_apply",
     actorCase: "owned",
     services: () => ({
       providerReconciliation: {
@@ -740,7 +740,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.reconciliation,
   }),
   verificationRow({
-    tool: "knowledge_get_benchmark_comparison",
+    tool: "verify_benchmark_comparison",
     actorCase: "tenant",
     services: () => ({
       benchmarkComparisonReads: { getComparison: tenantRead("comparisonId", () => ({ comparisonId: KNOWN })) },
@@ -749,7 +749,7 @@ export const readRows: readonly ParityRow[] = [
     args: (comparisonId, context) => ({ context: readContext(context), comparisonId }),
   }),
   verificationRow({
-    tool: "knowledge_get_benchmark_run",
+    tool: "verify_benchmark_show",
     actorCase: "tenant",
     services: () => ({
       benchmarkReads: {
@@ -762,7 +762,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.benchmarkRun,
   }),
   verificationRow({
-    tool: "knowledge_get_benchmark_manifest",
+    tool: "verify_benchmark_manifest",
     actorCase: "tenant",
     services: () => ({
       benchmarkReads: {
@@ -775,7 +775,7 @@ export const readRows: readonly ParityRow[] = [
     success: benchmarkManifest,
   }),
   verificationRow({
-    tool: "knowledge_get_verification_run",
+    tool: "verify_run",
     actorCase: "tenant",
     services: () => ({
       runReads: {
@@ -788,7 +788,7 @@ export const readRows: readonly ParityRow[] = [
     success: fixtures.run,
   }),
   verificationRow({
-    tool: "knowledge_get_verification_manifest",
+    tool: "verify_manifest",
     actorCase: "tenant",
     services: () => ({
       runReads: {
@@ -802,12 +802,7 @@ export const readRows: readonly ParityRow[] = [
   }),
   ...(["list", "case", "evidence"] as const).map((kind) =>
     verificationRow({
-      tool:
-        kind === "list"
-          ? "knowledge_list_verification_cases"
-          : kind === "case"
-            ? "knowledge_get_verification_case"
-            : "knowledge_get_verification_evidence",
+      tool: kind === "list" ? "verify_cases" : kind === "case" ? "verify_case" : "verify_evidence",
       actorCase: "tenant",
       services: () => ({
         caseReads: {
@@ -856,7 +851,7 @@ const reconciliationArtifact = {
 
 export const retrievalPlan = fixtures.evidencePacket.plan;
 
-/** retrieval.search: synchronous admission and execution with a fake executor. */
+/** knowledge_retrieve_search: synchronous admission and execution with a fake executor. */
 export function retrievalSearchTransports(configured: boolean, execute = vi.fn(async () => undefined)) {
   const api = new KnowledgeIntegrationService(),
     mcp = new KnowledgeIntegrationService();

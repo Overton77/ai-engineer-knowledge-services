@@ -17,7 +17,7 @@ Mission Control / Temporal (`../ai-engineer-mission-control`) dispatches KS capa
 
 ## Environment variable matrix
 
-Host configuration (`@aiengineer/knowledge-host/config`, formerly `packages/config`) has no `VERIFICATION_*` keys. The CLI does not read `VERIFICATION_*`. API, MCP and worker read `process.env` (or an injected `Environment`). Since Unit 3 the MCP role composes the same verification read, reconciliation, decision and capture-profile services as the API, so an MCP deployment needs the same `VERIFICATION_*` read configuration, Supabase Storage credentials and (for `retrieval.search`) gateway credentials for those tools; the same configuration failure codes apply at MCP startup. `KNOWLEDGE_API_URL` remains required: it roots accepted-operation poll links, and MCP never calls it.
+Host configuration (`@aiengineer/knowledge-host/config`, formerly `packages/config`) has no `VERIFICATION_*` keys. The CLI does not read `VERIFICATION_*`. API, MCP and worker read `process.env` (or an injected `Environment`). Since Unit 3 the MCP role composes the same verification read, reconciliation, decision and capture-profile services as the API, so an MCP deployment needs the same `VERIFICATION_*` read configuration, Supabase Storage credentials and (for `knowledge_retrieve_search`) gateway credentials for those tools; the same configuration failure codes apply at MCP startup. `KNOWLEDGE_API_URL` remains required: it roots accepted-operation poll links, and MCP never calls it.
 
 ### Shared / ownership
 

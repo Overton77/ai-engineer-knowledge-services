@@ -396,7 +396,7 @@ MCP and CLI skills share one rule: no raw SQL beyond the guarded read-only capab
 | Transport | Contract | Notes |
 |---|---|---|
 | **HTTP** | `/v1/*` | Cross-repo default. OpenAPI in `packages/contracts/generated/openapi.json`. |
-| **MCP (platform)** | `POST /mcp` on `apps/mcp` | Allow-listed tools. Forbidden: `raw_sql`, `secret.read`, `publication.publish`, and the rest of `FORBIDDEN_MCP_CAPABILITIES`. |
+| **MCP (platform)** | `POST /mcp` on `apps/mcp` | Allow-listed `knowledge_*` and `verify_*` tools, with names matching the `ks` command groups. The former dotted and `knowledge_verify_*` names have no aliases. Forbidden: `raw_sql`, `secret.read`, `publication.publish`, and the rest of `FORBIDDEN_MCP_CAPABILITIES`. |
 | **MCP (executor)** | `POST /mcp` or `mcp-stdio` | `verify_*` plus generated `schema_*` / `db_*` / `ingest_*` / … from one operation registry. `knowledge ops` prints the catalog; do not hand-write an operation list. |
 | **CLI** | `ks` / executor `knowledge` and `knowledge-verify` | `ks` calls the HTTP API and runs the intent pipeline on its local profile, never falling back between them. The executor CLI (until 5H) can be local or remote. |
 | **A2A** | `POST /v1/a2a/tasks`, `POST /v1/a2a/callbacks` | Async admission + signed callbacks. |

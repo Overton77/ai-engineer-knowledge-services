@@ -102,20 +102,26 @@
         "apps/api/src/index.ts",
         "apps/api/src/composition.ts",
         "apps/api/src/server.ts",
+        "apps/api/src/http/context.ts",
+        "apps/api/src/http/route.ts",
+        "apps/api/src/routes/verification.ts",
+        "apps/api/src/routes/retrieval.ts",
         "apps/api/src/a2a-adapter.ts"
       ],
       "interface": [
-        "Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. Routes keep their historical problem titles over shared application reads (createKnowledgeResourceReads, createVerificationResourceReads), submitCanonicalRetrievalRun and bindResolvedVerificationContext. The A2A task binding (a2a-adapter.ts: task-to-operation mapping and A2AKnowledgeAdapter) lives here; callback signing and replay protection stay in application. The demo evaluation route loads bundles only through the optional loadDemoEvaluationBundles port (demo-evaluation-bundles.ts lazily imports the test kit, a devDependency)."
+        "Versioned HTTP endpoints over application use cases. Host composes persistence, operation ports, knowledge services and the shared verify group; composition.ts only maps host services onto buildServer options. server.ts composes route registrars; http/context.ts assembles shared services; routes/{system,operationReads,verification,operationMutations,retrieval,knowledge}.ts own handlers; plugins/{correlation,auth,problem}.ts and http/{route,admission,problem-map,read-map}.ts share transport policy. Routes keep their historical problem titles over shared application reads, submitCanonicalRetrievalRun and bindResolvedVerificationContext. A2A retrieval uses the canonical submission path. The A2A task binding (a2a-adapter.ts) lives here; callback signing and replay protection stay in application. The demo evaluation route loads bundles only through the optional loadDemoEvaluationBundles port (demo-evaluation-bundles.ts lazily imports the test kit, a devDependency)."
       ],
       "tests": [
         "apps/api/src/tests/server.test.ts",
         "apps/api/src/tests/bootstrap.test.ts",
         "apps/api/src/tests/host-lifecycle.test.ts",
         "apps/api/src/tests/resource-reads.test.ts",
-        "apps/api/src/tests/a2a-adapter.test.ts"
+        "apps/api/src/tests/a2a-adapter.test.ts",
+        "apps/api/src/tests/golden-errors.test.ts",
+        "apps/api/src/tests/verification-benchmark-reads.test.ts"
       ],
       "constraints": [
-        "The API route is the behavioral reference for MCP parity (apps/mcp/src/tests/api-mcp-parity.test.ts). Public-origin validation, credential resolution, callbacks, listeners, drift consumer routes and the serverless singleton stay in the API; close the server before the host."
+        "The API route is the behavioral reference for MCP parity (apps/mcp/src/tests/api-mcp-parity.test.ts). Public-origin validation, credential resolution, callbacks, listeners, drift consumer routes and the serverless singleton stay in the API; close the server before the host. Unexpected 500 logs carry correlation and a sanitized error name. Persistence integration tests opt in with RUN_LOCAL_PERSISTENCE_TESTS=1 and use only the checked KS_TEST_DATABASE_URL disposable project; storage suites also require its checked storage configuration."
       ],
       "uses": [
         "host",
@@ -161,10 +167,16 @@
       "summary": "In-process Streamable HTTP MCP tools. createMcpRuntime composes through createHost (role mcp), which supplies the same knowledge, verify and operations groups as the API role; MCP never calls the API.",
       "entrypoints": [
         "apps/mcp/src/index.ts",
-        "apps/mcp/src/catalog.ts"
+        "apps/mcp/src/catalog.ts",
+        "apps/mcp/src/tools/definition.ts",
+        "apps/mcp/src/tools/errors.ts",
+        "apps/mcp/src/tools/register.ts",
+        "apps/mcp/src/tools/executors.ts",
+        "apps/mcp/src/server/http.ts",
+        "apps/mcp/src/server/vercel.ts"
       ],
       "interface": [
-        "MCP catalog and tool handlers; not a second business-rule authority. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call the shared application reads; retrieval.search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
+        "MCP tool definitions are grouped under tools/ and checked against the application catalog at registration. Public names use the knowledge_* and verify_* command-group prefixes with no old aliases. index.ts composes the entrypoint; server/http.ts hosts Streamable HTTP and server/vercel.ts adapts the serverless request. Retrieval, evidence packet, citation replay, evaluation, vector-store status and every verification read/reconciliation tool call shared application reads; knowledge_retrieve_search calls submitCanonicalRetrievalRun. Verification mutations call VerificationOperationApplicationService.submit* after bindResolvedVerificationContext and the shared admission gates. Failures carry the API problem code; an absent capability is CAPABILITY_NOT_ADMITTED."
       ],
       "tests": [
         "apps/mcp/src/tests/api-mcp-parity.test.ts",
@@ -173,7 +185,7 @@
         "apps/mcp/src/tests/verification-surface-inventory.test.ts"
       ],
       "constraints": [
-        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in tests/operation-catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed."
+        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in application operations/catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed."
       ],
       "uses": [
         "application",
@@ -271,12 +283,13 @@
         "packages/application/src/index.ts",
         "packages/application/src/access/api-access.ts",
         "packages/application/src/operations/surface.ts",
+        "packages/application/src/operations/catalog.ts",
         "packages/application/src/knowledge/retrieval/canonical-retrieval-executor.ts",
         "packages/application/src/verification/reads/verification-resource-reads.ts",
         "packages/application/src/verification/operations/verification-transport.ts"
       ],
       "interface": [
-        "Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission."
+        "Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, transport catalog, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission."
       ],
       "tests": [
         "packages/application/src/operations/capability-admission.test.ts",
