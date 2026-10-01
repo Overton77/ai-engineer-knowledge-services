@@ -173,7 +173,7 @@
         "apps/mcp/src/tests/verification-surface-inventory.test.ts"
       ],
       "constraints": [
-        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in tests/operation-catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed."
+        "No API client: MCP issues no HTTP request to the API and has no runtime @aiengineer/knowledge-client dependency. New tools call application use cases composed by host; keep tool names, schemas and authority outcomes in parity with the API route. KNOWLEDGE_API_URL only roots accepted-operation poll links. Every operation is classified in application operations/catalog.ts: exposed on API, MCP and CLI or excluded with a reason; declared kinds stay fail-closed."
       ],
       "uses": [
         "application",
@@ -271,12 +271,13 @@
         "packages/application/src/index.ts",
         "packages/application/src/access/api-access.ts",
         "packages/application/src/operations/surface.ts",
+        "packages/application/src/operations/catalog.ts",
         "packages/application/src/knowledge/retrieval/canonical-retrieval-executor.ts",
         "packages/application/src/verification/reads/verification-resource-reads.ts",
         "packages/application/src/verification/operations/verification-transport.ts"
       ],
       "interface": [
-        "Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission."
+        "Application service facades and use-case functions grouped by tool group: operations/ (durable operation surface, transport catalog, admission, A2A callback signing and replay protection), knowledge/ (preparation, source discovery, checkpoints, promotion selection, canonical retrieval, knowledge resource reads), verification/ (admission, operations, benchmark, recovery, source acquisition, verification resource reads) and quarantined diagnostics/ re-exported only by the barrel. access/api-access.ts owns isAuthorized/actorsMatch; reads/resource-read-result.ts is the shared read result; verification-context-binding.ts binds a resolved context to the authenticated submission."
       ],
       "tests": [
         "packages/application/src/operations/capability-admission.test.ts",

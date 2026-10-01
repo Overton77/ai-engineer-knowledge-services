@@ -3,11 +3,15 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import {
   operationStepsByKind,
+  declaredApiRequests,
+  operationCatalog,
   productionAdmittedOperationKinds,
+  transportState,
+  type Binding,
   verificationOwnedOperationKinds,
 } from "@aiengineer/knowledge-application";
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
-import { createHost } from "@aiengineer/knowledge-host";
+import { createHost, localProfileState } from "@aiengineer/knowledge-host";
 import { PostgresKnowledgeOperationService, type PostgresCanonicalRepository } from "@aiengineer/knowledge-persistence";
 import { buildServer } from "../../../api/src/server.js";
 import { dispatchCliCommand, type CliCommand } from "../../../cli/src/commands.js";
@@ -16,13 +20,6 @@ import { knowledgeOperations } from "../../../verification-executor/src/knowledg
 import { createVerificationMcpServer } from "../../../verification-executor/src/mcp.js";
 import { MCP_TOOL_CATALOG, VERIFICATION_MCP_TOOL_NAMES } from "../catalog.js";
 import { createKnowledgeMcpServer, createMcpToolExecutor } from "../index.js";
-import {
-  declaredApiRequests,
-  localProfileState,
-  operationCatalog,
-  transportState,
-  type Binding,
-} from "./operation-catalog.js";
 import { CORRELATION, id, operationContext, owner, resolveIdentity, tenant, tokens } from "./parity-rows.js";
 import { verificationMutationInventory } from "./verification-inventory.js";
 

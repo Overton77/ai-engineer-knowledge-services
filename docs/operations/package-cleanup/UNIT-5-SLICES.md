@@ -25,14 +25,14 @@ Between slices, `main` may briefly hold both the executor and the folded platfor
 | 5E2 | Eve | Historical adaptation | — | — | superseded by [DR1–DR5](./DEEPAGENTS-READINESS.md) |
 | 5H | KS | Remove the executor app; final acceptance; Unit 6 specification | 5C–5D3, 5F; DeepAgents smoke against ks (DR2 exit) | — | queued |
 
-Q0 and 5P were added on 2026-09-29 (proposed; [app and skill quality plan](./APP-AND-SKILL-QUALITY.md)) so the folds add table entries to small modules instead of growing `apps/api/src/server.ts` (2,763 lines), `apps/mcp/src/index.ts` (1,250) and the CLI dispatch switch. Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: the operation catalog (`apps/mcp/src/tests/operation-catalog.ts`; `packages/application/src/operations/catalog.ts` once 5P moves it), the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
+Q0 and 5P were added on 2026-09-29 (proposed; [app and skill quality plan](./APP-AND-SKILL-QUALITY.md)) so the folds add table entries to small modules instead of growing `apps/api/src/server.ts` (2,763 lines), `apps/mcp/src/index.ts` (1,250) and the CLI dispatch switch. Keep 5D1 → 5D2 → 5D3 sequential. They share hot files: the operation catalog (`packages/application/src/operations/catalog.ts`), the MCP registration, `apps/cli/src/commands.ts`, the application barrel and host composition. 5F touches Jev, CLI and MCP files; run it in parallel with 5D3 only when separate teams own disjoint files, and merge 5D3 first.
 
 ## Rules for every slice
 
 - Read AGENTS.md, this page, the Unit 5 specification, the ledger's latest entry and the previous slice's ledger entry. Read FINAL-REVIEW R1, R3, R4 and R5 where the slice touches them.
 - **Replay gate at entry.** Rerun `packages/application/src/verification/benchmark/verification-benchmark-registered-replay.test.ts` and record an explicit decision on the missing receipt (`SEALED_CHECKPOINT_MISSING:records/25-gl-repeatability-mutated-haiku_judge-failure.json`). No new failure, substitute receipt or weakened assertion.
 - **Preserve:** behavior outside the slice's stated surface change, custody and receipts, authority outcomes, persisted identities, API/MCP parity (`api-mcp-parity.test.ts`), the no-HTTP-shim test, and Jev.
-- **Catalog.** `apps/mcp/src/tests/operation-catalog.ts` is the ledger of surfaces. A folded operation leaves `executor` admission only with real API/MCP/CLI bindings or a recorded exclusion reason. Declared kinds stay fail-closed. Ingestion keeps its receipt semantics.
+- **Catalog.** `packages/application/src/operations/catalog.ts` is the ledger of surfaces. A folded operation leaves `executor` admission only with real API/MCP/CLI bindings or a recorded exclusion reason. Declared kinds stay fail-closed. Ingestion keeps its receipt semantics.
 - **Evidence.** Capture a before/after inventory with a copy of `workspace/evidence/unit4-inventory.mjs` renamed for the slice (`unit5a-inventory.mjs`, …). Record moved and renamed tests explicitly; allow no missing tests or changed outcomes.
 - **Validation, sequentially** (PowerShell for `corepack`; the Git Bash corepack shim is broken):
   1. Frozen install; forced typecheck and build.

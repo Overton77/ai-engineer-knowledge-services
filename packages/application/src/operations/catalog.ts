@@ -20,10 +20,9 @@
 // declared (fails closed), excluded, executor only, server only, or local profile. The local host profile
 // composes only the verification intent pipeline over the executor's file store, so every platform row is
 // server only there; the 16 intent-pipeline rows run through `ks` on the local profile and stay executor only
-// on ks api/mcp until 5D3; the registry rows stay executor only until 5D1/5D2. localProfileState() reports
-// what the local host itself admits, from host's capability matrix (profileAvailability).
+// on ks api/mcp until 5D3; the registry rows stay executor only until 5D1/5D2. Host derives local
+// admission from its capability matrix.
 import type { OperationKind } from "@aiengineer/knowledge-contracts";
-import { profileAvailability, type ProfileAvailability } from "@aiengineer/knowledge-host";
 
 export type Group = "operations" | "knowledge" | "verify" | "db" | "system";
 export type Admission = "admitted" | "gated" | "declared" | "executor";
@@ -1076,13 +1075,6 @@ export function transportState(
   if ("excluded" in binding) return "excluded";
   if ("failsClosed" in binding) return "declared (fails closed)";
   return operation.admission === "gated" ? "executable when composed" : "executable";
-}
-
-/** What the local host profile admits for this row: offline, a provider it needs, or server only. */
-export function localProfileState(operation: CatalogOperation): Exclude<ProfileAvailability, "server" | "remote"> {
-  const state = profileAvailability("local", operation.executor?.mcp ?? operation.id);
-  if (state === "server" || state === "remote") throw new Error(`UNEXPECTED_LOCAL_STATE:${operation.id}`);
-  return state;
 }
 
 export const operationCatalog: readonly CatalogOperation[] = [

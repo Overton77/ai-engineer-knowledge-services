@@ -18,7 +18,10 @@ const eveRepository = resolve(repository, "../research_ingestion_systems_agent")
 const suites = ["packages/host", "packages/application", "apps/verification-executor", "apps/api", "apps/mcp", "apps/cli"];
 const exportedPackages = { host: "packages/host", application: "packages/application" };
 // Runtime exports added on purpose to the root entries (5C adds the separate `@aiengineer/knowledge-host/local` entry instead).
-const addedExports = {};
+const addedExports = {
+  host: ["localProfileState"],
+  application: ["declaredApiRequests", "operationCatalog", "transportState"],
+};
 // Tests replaced on purpose by the slice's stated surface change: the remote-profile dependency check becomes a check
 // over the module graph `--help` and remote commands load.
 const replacedTests = {};

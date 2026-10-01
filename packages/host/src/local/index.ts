@@ -3,3 +3,4 @@
 // and never the server roles, their persistence or database driver. createHost({ profile: "local" }) composes the same host.
 export * from "./capabilities.js";
 export * from "./local-host.js";
+export * from "./catalog-profile.js";
